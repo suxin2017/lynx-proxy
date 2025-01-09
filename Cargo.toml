@@ -1,0 +1,45 @@
+[package]
+name = "proxy-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hyper = { version = "1", features = ["full"] }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["full"] }
+hyper-tungstenite = "0.17.0"
+
+
+http = "1.0"
+anyhow = "1.0.95"
+
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io-util", "compat"] }
+tokio-graceful = "0.2.2"
+tokio-rustls = { version = "0.26.0", default-features = false, features = [
+    "ring",
+    "tls12",
+    "logging",
+] }
+tokio-stream = { version = "0.1.14", default-features = false, features = [
+    "sync",
+] }
+tokio-tungstenite = { version = "0.26.1", features = [
+    "rustls",
+    "rustls-tls-webpki-roots",
+] }
+futures-util = "0.3.31"
+bytes = "1.9.0"
+reqwest = "0.12.12"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+hyper-rustls = { version = "0.27.3", default-features = false, features = [
+    "webpki-roots",
+    "webpki-tokio",
+    "ring",
+    "http1",
+    "http2",
+    "tls12",
+] }
+rustls = "0.23.20"
+rustls-pemfile = "2.2.0"

@@ -1,0 +1,8 @@
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = localhost
+DNS.2 = fake1.local
+DNS.3 = fake2.local
+IP.1 = 127.0.0.1
