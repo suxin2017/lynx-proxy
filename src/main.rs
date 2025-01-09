@@ -6,12 +6,20 @@ use bytes::Bytes;
 use futures_util::FutureExt;
 use http_body_util::{BodyDataStream, BodyExt, Full};
 use proxy_rust::server::Server;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing_subscriber::{filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Server {}.run().await;
+    let my_filter = FilterFn::new(|metadata| {
+        // Only enable spans or events with the target "interesting_things"
+        {
+            metadata.target().starts_with("proxy_rust")
+        }
+    });
+    tracing_subscriber::registry()
+        .with(fmt::layer().with_filter(my_filter))
+        .init();
+    Server {}.run().await?;
 
-    // 只有注册 subscriber 后， 才能在控制台上看到日志输出
     Ok(())
 }

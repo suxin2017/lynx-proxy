@@ -15,6 +15,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tracing::trace;
 
 use crate::http_proxy::HttpProxy;
+use crate::https_proxy::{self, HttpsProxy};
 use crate::tunnel_proxy::TunnelProxy;
 use crate::utils::full;
 
@@ -25,10 +26,18 @@ impl Schedular {
         &self,
         req: Request<hyper::body::Incoming>,
     ) -> Result<Response<BoxBody<Bytes, hyper::Error>>> {
+        trace!("dispatching request {:?}", req.uri());
         let http_proxy = HttpProxy {};
         if http_proxy.guard(&req).await.is_ok() {
             trace!("proxying http request {:?}", req);
             return http_proxy.proxy(req).await;
+        };
+
+        let https_proxy = HttpsProxy {};
+
+        if https_proxy.guard(&req).await.is_ok() {
+            trace!("proxying https request {:?}", req);
+            return https_proxy.proxy(req).await;
         };
 
         let tunnel_proxy = TunnelProxy {};

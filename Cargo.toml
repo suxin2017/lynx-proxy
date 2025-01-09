@@ -41,5 +41,10 @@ hyper-rustls = { version = "0.27.3", default-features = false, features = [
     "http2",
     "tls12",
 ] }
-rustls = "0.23.20"
 rustls-pemfile = "2.2.0"
+moka = { version = "0.12.10", features = ["future"] }
+rand = "0.8.5"
+rcgen = { version = "0.13.0", default-features = false, features = ["x509-parser", "pem", "ring"] }
+time = "0.3.37"
+rsa = "0.9.7"
+rewind = "0.1.0"
