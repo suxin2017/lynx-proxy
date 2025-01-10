@@ -1,5 +1,5 @@
-use std::{convert::Infallible, path::Path};
 use std::net::SocketAddr;
+use std::{convert::Infallible, path::Path};
 
 use anyhow::{Ok, Result};
 use bytes::Bytes;
@@ -28,7 +28,9 @@ async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(fmt::layer().with_filter(my_filter))
         .init();
-    Server::new().run().await?;
 
+    Server::new().run().await?;
+    tokio::signal::ctrl_c()
+        .await;
     Ok(())
 }

@@ -207,38 +207,51 @@ pub async fn start_https_server() -> Result<()> {
     server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
 
     let tls_acceptor = TlsAcceptor::from(Arc::new(server_config));
+    let (tx, rx) = oneshot::channel::<()>();
+
     tokio::spawn(async move {
+        let shutdown = Shutdown::new(async { rx.await.unwrap_or_default() });
+        let guard = shutdown.guard_weak();
+
         loop {
-            println!("accepting connection...");
-            let (tcp_stream, _remote_addr) = listener.accept().await.unwrap();
+            tokio::select! {
+                res = listener.accept() => {
+                    println!("accepting connection...");
+                    let (tcp_stream, _remote_addr) = res.unwrap();
 
-            let tls_acceptor = tls_acceptor.clone();
+                    let tls_acceptor = tls_acceptor.clone();
 
-            tokio::spawn(async move {
-                let tls_stream = match tls_acceptor.accept(tcp_stream).await {
-                    Ok(tls_stream) => tls_stream,
-                    Err(err) => {
-                        eprintln!("failed to perform tls handshake: {err:#}");
-                        return;
-                    }
-                };
+                            tokio::spawn(async move {
+                                let tls_stream = match tls_acceptor.accept(tcp_stream).await {
+                                    Ok(tls_stream) => tls_stream,
+                                    Err(err) => {
+                                        eprintln!("failed to perform tls handshake: {err:#}");
+                                        return;
+                                    }
+                                };
 
-                if let Err(err) = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
-                    .serve_connection_with_upgrades(
-                        TokioIo::new(tls_stream),
-                        service_fn(test_server),
-                    )
-                    .await
-                {
-                    if !err
-                        .to_string()
-                        .starts_with("error shutting down connection")
-                    {
-                        eprintln!("HTTPS connect error: {err}");
-                    }
+                                if let Err(err) = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
+                                    .serve_connection_with_upgrades(
+                                        TokioIo::new(tls_stream),
+                                        service_fn(test_server),
+                                    )
+                                    .await
+                                {
+                                    if !err
+                                        .to_string()
+                                        .starts_with("error shutting down connection")
+                                    {
+                                        eprintln!("HTTPS connect error: {err}");
+                                    }
+                                }
+                            });
                 }
-            });
+                _ = guard.cancelled() => {
+                    break;
+                }
+            }
         }
+        shutdown.shutdown().await;
     });
     Ok(())
 }

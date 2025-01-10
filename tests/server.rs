@@ -19,6 +19,8 @@ async fn test_http() -> Result<()> {
 
     let proxy_client = build_proxy_client("http://127.0.0.1:3000")?;
 
+    println!("server addr: {}", server_addr.port());
+
     let res = proxy_client
         .get(format!("http://localhost:{}/hello", server_addr.port()))
         .send()

@@ -28,12 +28,11 @@ pub async fn handle_service(
     let schedular = Schedular {};
     schedular.dispatch(req).await
 }
-pub struct Server {
-}
+pub struct Server {}
 
 impl Server {
     pub fn new() -> Self {
-        Self {  }
+        Self {}
     }
     pub async fn run(&self) -> Result<()> {
         let connection_count = Arc::new(AtomicUsize::new(0));
@@ -43,7 +42,7 @@ impl Server {
         // We create a TcpListener and bind it to 127.0.0.1:3000
         let listener = TcpListener::bind(addr).await?;
 
-        let handle = tokio::spawn(async move {
+        tokio::spawn(async move {
             // We start a loop to continuously accept incoming connections
             loop {
                 let (stream, _) = listener.accept().await.unwrap();
@@ -72,7 +71,6 @@ impl Server {
                 });
             }
         });
-        handle.await;
         Ok(())
     }
 }
