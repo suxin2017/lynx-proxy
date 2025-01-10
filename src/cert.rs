@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use http::uri::Authority;
 use moka::future::Cache;
+use once_cell::sync::OnceCell;
 use rand::{rngs::OsRng, thread_rng, Rng};
 use rcgen::{
     BasicConstraints, Certificate, CertificateParams, DnType, ExtendedKeyUsagePurpose, Ia5String,
@@ -16,12 +17,7 @@ use tokio_rustls::rustls::{
 
 use std::sync::LazyLock;
 
-pub static CERT_MANAGER: LazyLock<CertificateAuthority> = LazyLock::new(|| {
-    let ca_cert_file = Path::new("ca.cert");
-    let private_key_file = Path::new("ca.key");
-
-    init_ca(ca_cert_file, private_key_file).unwrap()
-});
+pub static CERT_MANAGER: OnceCell<CertificateAuthority> = OnceCell::new();
 
 const TTL_SECS: i64 = 365 * 24 * 60 * 60;
 const CACHE_TTL: u64 = TTL_SECS as u64 / 2;
@@ -199,15 +195,3 @@ fn validity_period() -> (OffsetDateTime, OffsetDateTime) {
     (yesterday, tomorrow)
 }
 
-#[tokio::test]
-async fn ca_test() {
-    let authority = Authority::from_static("www.baidu.com");
-    // dbg!(&CERT_MANAGER.ca_data);
-    match CERT_MANAGER.gen_server_config(&authority).await {
-        Ok(server_config) => server_config,
-        Err(err) => {
-            eprintln!("Failed to build server config: {err}");
-            return;
-        }
-    };
-}

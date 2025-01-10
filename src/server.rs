@@ -16,6 +16,7 @@ use tokio::net::TcpListener;
 use tokio::net::TcpStream;
 use tracing::{debug, trace};
 
+use crate::cert::CertificateAuthority;
 use crate::schedular::Schedular;
 use crate::tunnel_proxy::TunnelProxy;
 use crate::utils::{empty, full};
@@ -27,15 +28,13 @@ pub async fn handle_service(
     let schedular = Schedular {};
     schedular.dispatch(req).await
 }
-pub struct Server {}
-
-#[derive(Debug)]
-enum ConnectCount {
-    Add,
-    Sub,
+pub struct Server {
 }
 
 impl Server {
+    pub fn new() -> Self {
+        Self {  }
+    }
     pub async fn run(&self) -> Result<()> {
         let connection_count = Arc::new(AtomicUsize::new(0));
         let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -54,8 +53,11 @@ impl Server {
                 // Use an adapter to access something implementing `tokio::io` traits as if they implement
                 // `hyper::rt` IO traits.
                 let io = TokioIo::new(stream);
-                trace!("current connect count: {}", connection_count.load(Ordering::SeqCst));
-           
+                trace!(
+                    "current connect count: {}",
+                    connection_count.load(Ordering::SeqCst)
+                );
+
                 // Spawn a tokio task to serve multiple connections concurrently
                 tokio::task::spawn(async move {
                     if let Err(err) =

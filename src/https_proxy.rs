@@ -49,8 +49,9 @@ impl HttpsProxy {
                         Ok(upgraded) => {
                             let upgraded = TokioIo::new(upgraded);
                             trace!("upgrade success");
+                            let ca_manager = CERT_MANAGER.get().expect("cert manager not found");
                             let server_config =
-                                match CERT_MANAGER.gen_server_config(&authority).await {
+                                match ca_manager.gen_server_config(&authority).await {
                                     Ok(server_config) => server_config,
                                     Err(err) => {
                                         eprintln!("Failed to build server config: {err}");

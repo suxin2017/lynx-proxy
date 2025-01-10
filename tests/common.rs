@@ -1,13 +1,14 @@
 use anyhow::{anyhow, Result};
+use async_compression::tokio::bufread::GzipEncoder;
 use bytes::{Bytes, BytesMut};
-use futures_util::SinkExt;
+use futures_util::{SinkExt, TryStreamExt};
 use http::{
     header::{CONTENT_ENCODING, CONTENT_TYPE},
     Method, StatusCode,
 };
-use http_body_util::{combinators::BoxBody, BodyExt, Full, StreamBody};
+use http_body_util::{combinators::BoxBody, BodyDataStream, BodyExt, Full, StreamBody};
 use hyper::{
-    body::{Frame, Incoming},
+    body::{Body, Frame, Incoming},
     service::service_fn,
     Request, Response,
 };
@@ -16,14 +17,30 @@ use hyper_util::{
     server::conn::auto,
 };
 use proxy_rust::server::Server;
-use tokio_stream::StreamExt;
+use reqwest::Certificate;
+use tokio_rustls::{
+    rustls::{
+        pki_types::{CertificateDer, PrivateKeyDer},
+        ServerConfig,
+    },
+    TlsAcceptor,
+};
+use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use tracing_subscriber::{
     filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer,
 };
 
-use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
-use tokio::time::timeout;
-use tokio::{net::TcpListener, sync::oneshot};
+use std::{
+    env,
+    fs::{self, File},
+    io::{self, Read},
+    net::SocketAddr,
+    path::PathBuf,
+    sync::{mpsc, Arc},
+    time::Duration,
+};
+use tokio::{net::TcpListener, sync::oneshot, time::interval};
+use tokio::{sync::broadcast, time::timeout};
 use tokio_graceful::Shutdown;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_util::io::ReaderStream;
@@ -60,18 +77,18 @@ async fn test_server(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, a
                 .map_err(|err| anyhow!("{err}"))
                 .boxed(),
         )),
-        // (&Method::GET, "/hello/gzip") => {
-        //     let stream_body = StreamBody::new(
-        //         ReaderStream::new(GzipEncoder::new(HELLO_WORLD.as_bytes()))
-        //             .map_ok(Frame::data)
-        //             .map_err(|err| anyhow!("{err}")),
-        //     );
-        //     let res = Response::builder()
-        //         .header(CONTENT_ENCODING, "gzip")
-        //         .status(StatusCode::OK)
-        //         .body(BoxBody::new(stream_body))?;
-        //     Ok(res)
-        // }
+        (&Method::GET, "/hello/gzip") => {
+            let stream_body = StreamBody::new(
+                ReaderStream::new(GzipEncoder::new(HELLO_WORLD.as_bytes()))
+                    .map_ok(Frame::data)
+                    .map_err(|err| anyhow!("{err}")),
+            );
+            let res = Response::builder()
+                .header(CONTENT_ENCODING, "gzip")
+                .status(StatusCode::OK)
+                .body(BoxBody::new(stream_body))?;
+            Ok(res)
+        }
         (&Method::POST, "/echo") => {
             let content_type = req.headers().get(CONTENT_TYPE).cloned();
             let bytes = req.collect().await?.to_bytes();
@@ -80,6 +97,33 @@ async fn test_server(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, a
             if let Some(content_type) = content_type {
                 res.headers_mut().insert(CONTENT_TYPE, content_type);
             }
+            Ok(res)
+        }
+        (&Method::POST, "/ping") => {
+            let (tx, mut rx1) = broadcast::channel(16);
+            tokio::spawn(async move {
+                let mut interval = interval(Duration::from_secs(1));
+                let mut count = 0;
+                loop {
+                    interval.tick().await;
+                    if tx.send("pong\n").is_err() {
+                        break;
+                    }
+                    if (count > 30) {
+                        break;
+                    }
+                    count += 1;
+                }
+            });
+            let stream = BroadcastStream::new(rx1);
+            let stream = stream
+                .map_ok(|data| Frame::data(Bytes::from(data)))
+                .map_err(|err| anyhow!(err));
+
+            let body = BodyExt::boxed(StreamBody::new(stream));
+
+            let res = Response::new(body);
+
             Ok(res)
         }
         _ => {
@@ -133,6 +177,84 @@ pub async fn start_http_server() -> Result<(SocketAddr, oneshot::Sender<()>)> {
     Ok((addr, tx))
 }
 
+pub async fn start_https_server() -> Result<()> {
+    let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 8900))).await?;
+    println!("start test server at 127.0.0.1:8900");
+    println!("accepting connection...");
+    // 获取当前工作目录
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+    println!("Current directory: {:?}", current_dir);
+    // Load public certificate.
+    let certs = load_certs(
+        current_dir
+            .join("tests/fixtures/localhost.crt")
+            .to_str()
+            .unwrap(),
+    )?;
+    println!("certs: {:?}", certs);
+    // Load private key.
+    let key = load_private_key(
+        current_dir
+            .join("tests/fixtures/localhost.key")
+            .to_str()
+            .unwrap(),
+    )?;
+    // Build TLS configuration.
+    let mut server_config = ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)
+        .map_err(|e| error(e.to_string()))?;
+    server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
+
+    let tls_acceptor = TlsAcceptor::from(Arc::new(server_config));
+    tokio::spawn(async move {
+        loop {
+            println!("accepting connection...");
+            let (tcp_stream, _remote_addr) = listener.accept().await.unwrap();
+
+            let tls_acceptor = tls_acceptor.clone();
+
+            tokio::spawn(async move {
+                let tls_stream = match tls_acceptor.accept(tcp_stream).await {
+                    Ok(tls_stream) => tls_stream,
+                    Err(err) => {
+                        eprintln!("failed to perform tls handshake: {err:#}");
+                        return;
+                    }
+                };
+
+                if let Err(err) = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
+                    .serve_connection_with_upgrades(
+                        TokioIo::new(tls_stream),
+                        service_fn(test_server),
+                    )
+                    .await
+                {
+                    if !err
+                        .to_string()
+                        .starts_with("error shutting down connection")
+                    {
+                        eprintln!("HTTPS connect error: {err}");
+                    }
+                }
+            });
+        }
+    });
+    Ok(())
+}
+
+#[tokio::test]
+async fn feature_test() {
+    match start_https_server().await {
+        Ok(_) => {
+            println!("ok");
+        }
+        Err(e) => {
+            println!("err: {:?}", e);
+        }
+    }
+}
+
 pub fn build_proxy_client(proxy: &str) -> Result<reqwest::Client> {
     let proxy = reqwest::Proxy::all(proxy)?;
 
@@ -156,4 +278,57 @@ pub fn init_tracing() {
     tracing_subscriber::registry()
         .with(fmt::layer().with_filter(my_filter))
         .init();
+}
+
+fn error(err: String) -> io::Error {
+    io::Error::new(io::ErrorKind::Other, err)
+}
+
+pub async fn build_proxy_https_client() {
+    // 获取当前工作目录
+    let current_dir = env::current_dir().expect("Failed to get current directory");
+
+    // Load public certificate.
+    let certs = current_dir.join("tests/fixtures/RootCA.pem");
+
+    let mut buf = Vec::new();
+    File::open(certs).unwrap().read_to_end(&mut buf).unwrap();
+    let cert = reqwest::Certificate::from_pem(&buf).unwrap();
+    let req = reqwest::Client::builder()
+        .use_rustls_tls()
+        .add_root_certificate(cert)
+        .no_brotli()
+        .no_deflate()
+        .no_gzip()
+        .build()
+        .unwrap();
+
+    let res = req
+        .get("https://localhost:8900/hello")
+        .send()
+        .await
+        .unwrap();
+    dbg!(res);
+}
+
+// Load public certificate from file.
+fn load_certs(filename: &str) -> io::Result<Vec<CertificateDer<'static>>> {
+    // Open certificate file.
+    let certfile = fs::File::open(filename)
+        .map_err(|e| error(format!("failed to open {}: {}", filename, e)))?;
+    let mut reader = io::BufReader::new(certfile);
+
+    // Load and return certificate.
+    rustls_pemfile::certs(&mut reader).collect()
+}
+
+// Load private key from file.
+fn load_private_key(filename: &str) -> io::Result<PrivateKeyDer<'static>> {
+    // Open keyfile.
+    let keyfile = fs::File::open(filename)
+        .map_err(|e| error(format!("failed to open {}: {}", filename, e)))?;
+    let mut reader = io::BufReader::new(keyfile);
+
+    // Load and return a single private key.
+    rustls_pemfile::private_key(&mut reader).map(|key| key.unwrap())
 }
