@@ -3,4 +3,11 @@
 
 # 功能
 
-支持隧道代理
+
+# 贡献
+
+环境建立
+
+```
+cargo install sea-orm-cli
+```

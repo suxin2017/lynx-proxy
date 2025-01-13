@@ -5,3 +5,4 @@ pub mod schedular;
 pub mod server;
 pub mod tunnel_proxy;
 pub mod utils;
+pub mod entity;
