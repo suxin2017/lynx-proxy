@@ -5,8 +5,8 @@ use anyhow::{Ok, Result};
 use bytes::Bytes;
 use futures_util::FutureExt;
 use http_body_util::{BodyDataStream, BodyExt, Full};
-use proxy_rust::cert::init_ca;
-use proxy_rust::{cert::CERT_MANAGER, server::Server};
+use proxy_server::cert::init_ca;
+use proxy_server::{cert::CERT_MANAGER, server::Server};
 use tracing_subscriber::{
     filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer,
 };
@@ -22,7 +22,7 @@ async fn main() -> Result<()> {
     let my_filter = FilterFn::new(|metadata| {
         // Only enable spans or events with the target "interesting_things"
         {
-            metadata.target().starts_with("proxy_rust")
+            metadata.target().starts_with("proxy")
         }
     });
     tracing_subscriber::registry()

@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{mpsc, Arc};
 
 use anyhow::Result;
+use http::StatusCode;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
@@ -14,20 +15,13 @@ use hyper::{upgrade, Method, Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use tokio::net::TcpListener;
 use tokio::net::TcpStream;
-use tracing::{debug, trace};
+use tracing::{debug, error, trace};
 
 use crate::cert::CertificateAuthority;
 use crate::schedular::Schedular;
 use crate::tunnel_proxy::TunnelProxy;
 use crate::utils::{empty, full};
 
-pub async fn handle_service(
-    req: Request<hyper::body::Incoming>,
-) -> Result<Response<BoxBody<Bytes, hyper::Error>>> {
-    trace!("Received request: {:?}", req);
-    let schedular = Schedular {};
-    schedular.dispatch(req).await
-}
 pub struct Server {}
 
 impl Server {
@@ -61,7 +55,22 @@ impl Server {
                 tokio::task::spawn(async move {
                     if let Err(err) =
                         hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
-                            .serve_connection_with_upgrades(io, service_fn(handle_service))
+                            .serve_connection_with_upgrades(
+                                io,
+                                service_fn(|req| async move {
+                                    let res = Schedular {}.dispatch(req).await;
+
+                                    match res {
+                                        Ok(res) => return Ok(res),
+                                        Err(e) => {
+                                            error!("here is a error {}", &e);
+                                            return Response::builder()
+                                                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                                                .body(full(format!("{}",e)));
+                                        }
+                                    }
+                                }),
+                            )
                             .await
                     {
                         eprintln!("Error serving connection: {:?}", err);

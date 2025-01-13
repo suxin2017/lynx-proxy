@@ -16,7 +16,7 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto,
 };
-use proxy_rust::server::Server;
+use proxy_server::server::Server;
 use reqwest::Certificate;
 use tokio_rustls::{
     rustls::{
@@ -70,6 +70,7 @@ async fn test_server(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, a
 
         return Ok(Response::from_parts(parts, body));
     }
+    dbg!(&req);
 
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/hello") => Ok(Response::new(
@@ -252,7 +253,7 @@ pub async fn start_https_server() -> Result<()> {
             }
         }
         shutdown.shutdown().await;
-    });
+    }).await;
     Ok(())
 }
 
@@ -285,7 +286,7 @@ pub fn init_tracing() {
     let my_filter = FilterFn::new(|metadata| {
         // Only enable spans or events with the target "interesting_things"
         {
-            metadata.target().starts_with("proxy_rust")
+            metadata.target().starts_with("proxy")
         }
     });
     tracing_subscriber::registry()
@@ -324,6 +325,10 @@ pub async fn build_proxy_https_client() {
     dbg!(res);
 }
 
+#[tokio::test]
+async fn feature() {
+    build_proxy_https_client().await
+}
 // Load public certificate from file.
 fn load_certs(filename: &str) -> io::Result<Vec<CertificateDer<'static>>> {
     // Open certificate file.

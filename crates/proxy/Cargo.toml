@@ -1,0 +1,61 @@
+[package]
+name = "proxy-server"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+sea-orm = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+hyper = { version = "1", features = ["full"] }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["full"] }
+hyper-tungstenite = "0.17.0"
+http = "1.0"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io-util", "compat"] }
+tokio-graceful = "0.2.2"
+tokio-rustls = { version = "0.26.0", default-features = false, features = [
+    "ring",
+    "tls12",
+    "logging",
+] }
+tokio-stream = { version = "0.1.14", default-features = false, features = [
+    "sync",
+] }
+tokio-tungstenite = { version = "0.26.1", features = [
+    "rustls",
+    "rustls-tls-webpki-roots",
+] }
+futures-util = "0.3.31"
+bytes = "1.9.0"
+reqwest = { version = "0.12.12", features = ["rustls-tls"] }
+hyper-rustls = { version = "0.27.3", default-features = false, features = [
+    "webpki-roots",
+    "webpki-tokio",
+    "ring",
+    "http1",
+    "http2",
+    "tls12",
+] }
+rustls-pemfile = "2.2.0"
+moka = { version = "0.12.10", features = ["future"] }
+rand = "0.8.5"
+rcgen = { version = "0.13.0", default-features = false, features = [
+    "x509-parser",
+    "pem",
+    "ring",
+] }
+time = "0.3.37"
+rsa = "0.9.7"
+once_cell = "1.20.2"
+async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }
+chrono = "0.4.39"
+
+[dev-dependencies]
+dotenv = "0.15.0"

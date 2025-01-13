@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 
 use anyhow::Result;
+use http::uri;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
@@ -33,5 +34,5 @@ pub fn is_http(uri: &http::Uri) -> bool {
 }
 
 pub fn is_https(uri: &http::Uri) -> bool {
-    uri.scheme_str().map(|s| s == "https").unwrap_or(false)
+    uri.port_u16().and_then(|p| Some(p == 443)).is_some()
 }

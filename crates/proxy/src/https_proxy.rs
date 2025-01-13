@@ -15,6 +15,7 @@ use hyper_rustls::HttpsConnectorBuilder;
 use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::Client;
 use hyper_util::rt::{TokioExecutor, TokioIo};
+use tokio::io::AsyncReadExt;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_rustls::TlsAcceptor;
 use tracing::{debug, info, trace};
@@ -25,8 +26,8 @@ use crate::utils::{empty, full, host_addr, is_http, is_https};
 pub struct HttpsProxy {}
 
 impl HttpsProxy {
-    pub async fn guard(&self, req: &Request<Incoming>) -> anyhow::Result<()> {
-        Ok(())
+    pub async fn guard(&self, req: &Request<Incoming>) -> bool {
+        return is_https(req.uri());
     }
     pub async fn proxy(
         &self,
@@ -48,16 +49,17 @@ impl HttpsProxy {
                     match hyper::upgrade::on(req).await {
                         Ok(upgraded) => {
                             let upgraded = TokioIo::new(upgraded);
+
                             trace!("upgrade success");
                             let ca_manager = CERT_MANAGER.get().expect("cert manager not found");
-                            let server_config =
-                                match ca_manager.gen_server_config(&authority).await {
-                                    Ok(server_config) => server_config,
-                                    Err(err) => {
-                                        eprintln!("Failed to build server config: {err}");
-                                        return;
-                                    }
-                                };
+                            let server_config = match ca_manager.gen_server_config(&authority).await
+                            {
+                                Ok(server_config) => server_config,
+                                Err(err) => {
+                                    eprintln!("Failed to build server config: {err}");
+                                    return;
+                                }
+                            };
 
                             trace!("build tls stream");
                             let stream =
@@ -69,6 +71,7 @@ impl HttpsProxy {
                                     }
                                 };
                             let service = service_fn(|req| async move {
+                                info!("proxying http request {:?}", req);
                                 let prosy_res = HttpsMiddleman {}.request(req).await;
                                 match prosy_res {
                                     Ok(origin_res) => {

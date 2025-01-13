@@ -19,7 +19,7 @@ use crate::https_proxy::{self, HttpsProxy};
 use crate::tunnel_proxy::TunnelProxy;
 use crate::utils::full;
 
-pub struct Schedular {}
+pub struct Schedular;
 
 impl Schedular {
     pub async fn dispatch(
@@ -28,20 +28,20 @@ impl Schedular {
     ) -> Result<Response<BoxBody<Bytes, hyper::Error>>> {
         trace!("dispatching request {:?}", req.uri());
         let http_proxy = HttpProxy {};
-        if http_proxy.guard(&req).await.is_ok() {
+        if http_proxy.guard(&req).await {
             trace!("proxying http request {:?}", req);
             return http_proxy.proxy(req).await;
         };
 
         let https_proxy = HttpsProxy {};
 
-        if https_proxy.guard(&req).await.is_ok() {
+        if https_proxy.guard(&req).await {
             trace!("proxying https request {:?}", req);
             return https_proxy.proxy(req).await;
         };
 
         let tunnel_proxy = TunnelProxy {};
-        if tunnel_proxy.guard(&req).await.is_ok() {
+        if tunnel_proxy.guard(&req).await {
             trace!("proxying tunnel request {:?}", req);
             return tunnel_proxy.proxy(req).await;
         };
@@ -49,7 +49,7 @@ impl Schedular {
         Ok(Response::builder()
             .status(status::StatusCode::NOT_FOUND)
             .body(full(Bytes::from(
-                "The service is not supported by proxy servers",
+                "The service does not support the current protocol",
             )))
             .unwrap())
     }
