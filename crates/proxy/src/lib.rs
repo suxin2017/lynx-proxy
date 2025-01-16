@@ -1,8 +1,9 @@
 pub mod cert;
+pub mod entities;
+pub mod plugins;
 pub mod proxy;
 pub mod schedular;
+pub mod self_service;
 pub mod server;
 pub mod tunnel_proxy;
 pub mod utils;
-pub mod entities;
-pub mod plugins;

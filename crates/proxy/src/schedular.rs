@@ -19,6 +19,7 @@ use tracing::trace;
 use crate::proxy::http_proxy::HttpProxy;
 use crate::proxy::https_proxy::HttpsProxy;
 use crate::proxy::websocket_proxy::WebsocketProxy;
+use crate::self_service::match_self_service;
 use crate::tunnel_proxy::TunnelProxy;
 use crate::utils::{empty, full, is_http, is_https};
 

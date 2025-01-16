@@ -19,6 +19,7 @@ use tracing::{debug, error, trace};
 
 use crate::cert::CertificateAuthority;
 use crate::schedular::Schedular;
+use crate::self_service::{handle_self_service, match_self_service};
 use crate::tunnel_proxy::TunnelProxy;
 use crate::utils::{empty, full};
 
@@ -42,7 +43,7 @@ impl Server {
         tokio::spawn(async move {
             // We start a loop to continuously accept incoming connections
             loop {
-                let (stream, _) = listener.accept().await.unwrap();
+                let (stream, client_addr) = listener.accept().await.unwrap();
                 let connection_count = Arc::clone(&connection_count);
                 connection_count.fetch_add(1, Ordering::SeqCst);
                 trace!("Accepted connection");
@@ -60,16 +61,20 @@ impl Server {
                         hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                             .serve_connection_with_upgrades(
                                 io,
-                                service_fn(|req| async move {
+                                service_fn(|req: Request<Incoming>| async move {
+                                    if match_self_service(&req) {
+                                        return handle_self_service(req).await;
+                                    }
                                     let res = Schedular {}.dispatch(req).await;
 
                                     match res {
                                         Ok(res) => return Ok(res),
                                         Err(e) => {
                                             error!("here is a error {}", &e);
-                                            return Response::builder()
+                                            let res=  Response::builder()
                                                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                                                 .body(full(format!("{}", e)));
+                                            return Ok(res?);
                                         }
                                     }
                                 }),

@@ -64,3 +64,56 @@ enum Rule {
     CreatedAt,
     UpdatedAt,
 }
+
+#[derive(DeriveIden)]
+enum Session {
+    Table,
+    Id,
+}
+
+#[derive(DeriveIden)]
+enum Stream {
+    Table,
+    Id,
+    RequestId,
+    ResponseId,
+}
+
+
+#[derive(DeriveIden)]
+enum Request {
+    Table,
+    Id,
+    Uri,
+    Method,
+    HttpVersion,
+    StatusCode,
+    StatusMessage,
+    ClientIp,
+    ClientPort,
+    ServerIP,
+    ServerPort,
+    BodyId,
+}
+
+#[derive(DeriveIden)]
+enum Raw {
+    Table,
+    Id,
+    Path,
+}
+
+#[derive(DeriveIden)]
+enum Body {
+    Id,
+    Raw
+}
+
+
+#[derive(DeriveIden)]
+enum Session {
+    Table,
+    Id,
+    RequestId,
+    ResponseId,
+}
