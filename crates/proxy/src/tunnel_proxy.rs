@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use std::net::SocketAddr;
 
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{Error, Result};
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
@@ -24,23 +24,28 @@ impl TunnelProxy {
     pub async fn proxy(
         &self,
         req: Request<Incoming>,
-    ) -> Result<Response<BoxBody<Bytes, hyper::Error>>> {
+    ) -> anyhow::Result<Response<BoxBody<Bytes, Error>>> {
         // Extract the host and port from the request URI
         if Method::CONNECT == req.method() {
             if let Some(addr) = host_addr(req.uri()) {
                 tokio::task::spawn(async move {
-                    let upgraded = hyper::upgrade::on(req).await.map_err(|e| anyhow!(e))?;
-                    TunnelProxy::tunnel(upgraded, addr)
-                        .await
-                        .map_err(|e| anyhow!(e))?;
-                    return Ok(());
+                    match hyper::upgrade::on(req).await {
+                        Ok(upgraded) => {
+                            if let Err(e) = TunnelProxy::tunnel(upgraded, addr).await {
+                                error!("server io error: {}", e)
+                            };
+                        }
+                        Err(e) => {
+                            error!("upgrade error: {:?}", e)
+                        }
+                    }
                 });
             }
         }
 
         Ok(Response::new(empty()))
     }
-    pub async fn tunnel(upgraded: Upgraded, addr: String) -> Result<()> {
+    pub async fn tunnel(upgraded: Upgraded, addr: String) -> std::io::Result<()> {
         let mut server = TcpStream::connect(addr).await?;
         let mut upgraded = TokioIo::new(upgraded);
         // Proxying data

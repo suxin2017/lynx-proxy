@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use std::net::SocketAddr;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 use futures_util::{FutureExt, StreamExt};
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
@@ -26,10 +26,7 @@ impl HttpProxy {
     pub async fn guard(&self, req: &Request<Incoming>) -> bool {
         return is_http(req.uri());
     }
-    pub async fn proxy(
-        &self,
-        req: Request<Incoming>,
-    ) -> Result<Response<BoxBody<Bytes, hyper::Error>>> {
+    pub async fn proxy(&self, req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
         info!("proxying http request {:?}", req);
 
         let proxy_res = HttpRequestPlugin {}.request(req).await?;
@@ -37,8 +34,11 @@ impl HttpProxy {
         trace!("origin response: {:?}", proxy_res);
 
         let (parts, body) = proxy_res.into_parts();
+        let body = body
+            .map_err(|e| anyhow!(e).context("http proxy body box error"))
+            .boxed();
 
-        let proxy_req = Response::from_parts(parts, body.boxed());
+        let proxy_req = Response::from_parts(parts, body);
 
         return Ok(proxy_req);
     }

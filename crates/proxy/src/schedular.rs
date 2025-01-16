@@ -1,8 +1,9 @@
 use std::convert::Infallible;
 use std::net::SocketAddr;
 
-use anyhow::Result;
-use http::status;
+use anyhow::{Error, Result};
+use http::header::CONNECTION;
+use http::{status, StatusCode};
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
@@ -11,13 +12,15 @@ use hyper::service::service_fn;
 use hyper::upgrade::Upgraded;
 use hyper::{upgrade, Method, Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
+use tokio::io::AsyncReadExt;
 use tokio::net::{TcpListener, TcpStream};
 use tracing::trace;
 
-use crate::http_proxy::HttpProxy;
-use crate::https_proxy::{self, HttpsProxy};
+use crate::proxy::http_proxy::HttpProxy;
+use crate::proxy::https_proxy::HttpsProxy;
+use crate::proxy::websocket_proxy::WebsocketProxy;
 use crate::tunnel_proxy::TunnelProxy;
-use crate::utils::full;
+use crate::utils::{empty, full, is_http, is_https};
 
 pub struct Schedular;
 
@@ -25,26 +28,22 @@ impl Schedular {
     pub async fn dispatch(
         &self,
         req: Request<hyper::body::Incoming>,
-    ) -> Result<Response<BoxBody<Bytes, hyper::Error>>> {
-        trace!("dispatching request {:?}", req.uri());
-        let http_proxy = HttpProxy {};
-        if http_proxy.guard(&req).await {
+    ) -> Result<Response<BoxBody<Bytes, Error>>> {
+        let is_websocket = hyper_tungstenite::is_upgrade_request(&req);
+        if is_websocket {
+            return WebsocketProxy {}.proxy(req).await;
+        }
+
+        if is_http(&req.uri()) {
             trace!("proxying http request {:?}", req);
-            return http_proxy.proxy(req).await;
-        };
+            return HttpProxy {}.proxy(req).await;
+        }
 
-        let https_proxy = HttpsProxy {};
+        if req.method() == Method::CONNECT {
+            return HttpsProxy {}.proxy(req).await;
+        }
 
-        if https_proxy.guard(&req).await {
-            trace!("proxying https request {:?}", req);
-            return https_proxy.proxy(req).await;
-        };
-
-        let tunnel_proxy = TunnelProxy {};
-        if tunnel_proxy.guard(&req).await {
-            trace!("proxying tunnel request {:?}", req);
-            return tunnel_proxy.proxy(req).await;
-        };
+        // TunnelProxy {}.proxy(req).await;
 
         Ok(Response::builder()
             .status(status::StatusCode::NOT_FOUND)

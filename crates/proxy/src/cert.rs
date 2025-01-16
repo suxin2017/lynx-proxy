@@ -30,6 +30,7 @@ pub fn init_ca<T: AsRef<Path>>(
     let ca_cert_file = ca_cert_file.as_ref();
     let private_key_file = private_key_file.as_ref();
     let (private_key, ca_cert, ca_data) = if !ca_cert_file.exists() {
+        println!("ca from create");
         let private_key = gen_private_key().with_context(|| "Failed to generate private key")?;
         let ca_cert =
             gen_ca_cert(&private_key).with_context(|| "Failed to generate CA certificate")?;
@@ -48,6 +49,7 @@ pub fn init_ca<T: AsRef<Path>>(
         let ca_data = ca_cert.pem();
         (private_key, ca_cert, ca_data)
     } else {
+        println!("ca from file");
         let private_key_err = || {
             format!(
                 "Failed to read private key at '{}'",
@@ -88,7 +90,7 @@ pub fn init_ca<T: AsRef<Path>>(
 pub struct CertificateAuthority {
     private_key: KeyPair,
     private_key_der: PrivateKeyDer<'static>,
-    ca_cert: Certificate,
+    pub ca_cert: Certificate,
     ca_data: String,
     cache: Cache<Authority, Arc<ServerConfig>>,
 }
@@ -149,6 +151,7 @@ impl CertificateAuthority {
         params
             .subject_alt_names
             .push(SanType::DnsName(Ia5String::try_from(authority.host())?));
+        params.subject_alt_names.push(SanType::IpAddress("127.0.0.1".parse().unwrap()));
 
         let cert = params.signed_by(&self.private_key, &self.ca_cert, &self.private_key)?;
         let cert_der = cert.der().clone();
@@ -173,7 +176,6 @@ fn gen_ca_cert(key: &KeyPair) -> Result<Certificate> {
         .push(ExtendedKeyUsagePurpose::ServerAuth);
     params.key_usages.push(KeyUsagePurpose::KeyCertSign);
     params.key_usages.push(KeyUsagePurpose::CrlSign);
-
     let ca_cert = params.self_signed(key)?;
 
     Ok(ca_cert)
@@ -194,4 +196,3 @@ fn validity_period() -> (OffsetDateTime, OffsetDateTime) {
     let tomorrow = OffsetDateTime::now_utc().checked_add(day).unwrap();
     (yesterday, tomorrow)
 }
-

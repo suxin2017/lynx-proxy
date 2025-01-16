@@ -22,19 +22,22 @@ use crate::schedular::Schedular;
 use crate::tunnel_proxy::TunnelProxy;
 use crate::utils::{empty, full};
 
-pub struct Server {}
+pub struct Server {
+    pub addr: SocketAddr,
+}
 
 impl Server {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            addr: SocketAddr::from(([127, 0, 0, 1], 3000)),
+        }
     }
     pub async fn run(&self) -> Result<()> {
         let connection_count = Arc::new(AtomicUsize::new(0));
-        let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
         println!("start server at 127.0.0.0.1:3000");
 
         // We create a TcpListener and bind it to 127.0.0.1:3000
-        let listener = TcpListener::bind(addr).await?;
+        let listener = TcpListener::bind(self.addr).await?;
 
         tokio::spawn(async move {
             // We start a loop to continuously accept incoming connections
@@ -66,7 +69,7 @@ impl Server {
                                             error!("here is a error {}", &e);
                                             return Response::builder()
                                                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                                                .body(full(format!("{}",e)));
+                                                .body(full(format!("{}", e)));
                                         }
                                     }
                                 }),

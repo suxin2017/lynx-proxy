@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use std::net::SocketAddr;
 
-use anyhow::Result;
+use anyhow::{anyhow, Error, Result};
 use http::uri;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
@@ -17,15 +17,15 @@ pub fn host_addr(uri: &http::Uri) -> Option<String> {
     uri.authority().map(|auth| auth.to_string())
 }
 
-pub fn empty() -> BoxBody<Bytes, hyper::Error> {
+pub fn empty() -> BoxBody<Bytes, Error> {
     Empty::<Bytes>::new()
-        .map_err(|never| match never {})
+        .map_err(|never| anyhow!(never))
         .boxed()
 }
 
-pub fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, hyper::Error> {
+pub fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, Error> {
     Full::new(chunk.into())
-        .map_err(|never| match never {})
+        .map_err(|never| anyhow!(never))
         .boxed()
 }
 
@@ -34,5 +34,5 @@ pub fn is_http(uri: &http::Uri) -> bool {
 }
 
 pub fn is_https(uri: &http::Uri) -> bool {
-    uri.port_u16().and_then(|p| Some(p == 443)).is_some()
+    matches!(uri.port_u16(), Some(443))
 }

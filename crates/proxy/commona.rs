@@ -136,46 +136,26 @@ async fn test_server(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, a
 }
 
 pub async fn start_proxy() -> Result<()> {
-    Server {}.run().await?;
+    // Server {}.run().await?;
     Ok(())
 }
 
-pub async fn start_http_server() -> Result<(SocketAddr, oneshot::Sender<()>)> {
+pub async fn start_http_server() -> Result<SocketAddr> {
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).await?;
     let addr = listener.local_addr()?;
-    let (tx, rx) = oneshot::channel();
     println!("start test server at 127.0.0.1:0");
 
     tokio::spawn(async move {
-        let server = auto::Builder::new(TokioExecutor::new());
-        let shutdown = Shutdown::new(async { rx.await.unwrap_or_default() });
-        let guard = shutdown.guard_weak();
-
         loop {
-            tokio::select! {
-                res = listener.accept() => {
-                    let Ok((tcp, _)) = res else {
-                        continue;
-                    };
+            // let (tcp, _) = listener.accept().await?;
 
-                    let server = server.clone();
-
-                    shutdown.spawn_task(async move {
-                        let _ = server
-                            .serve_connection_with_upgrades(TokioIo::new(tcp), service_fn(test_server))
-                            .await;
-                    });
-                }
-                _ = guard.cancelled() => {
-                    break;
-                }
-            }
+            // let _ = auto::Builder::new(TokioExecutor::new())
+            //     .serve_connection_with_upgrades(TokioIo::new(tcp), service_fn(test_server))
+            //     .await;
         }
-
-        shutdown.shutdown().await;
     });
 
-    Ok((addr, tx))
+    Ok(addr)
 }
 
 pub async fn start_https_server() -> Result<()> {

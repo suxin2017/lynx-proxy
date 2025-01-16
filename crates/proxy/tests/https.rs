@@ -1,28 +1,55 @@
+use std::{fs, io::Read, net::SocketAddr, path::Path, slice::Chunks};
+
 use bytes::Bytes;
 use common::{
-    build_proxy_client::{build_http_client, build_http_proxy_client},
+    build_proxy_client::{
+        build_http_client, build_http_proxy_client, build_https_client, build_https_proxy_client,
+    },
+    constant::{PROXY_ROOT_DIR, TEST_LOCALHOST_CERT, TEST_ROOT_CA_CERT},
+    start_http_server::start_https_server,
     test_server::{ECHO_PATH, GZIP_PATH, HELLO_PATH, PING_PATH},
     tracing_config::init_tracing,
 };
-use futures_util::{join, SinkExt, TryStreamExt};
+use futures_util::join;
 use http::header::CONTENT_TYPE;
-use proxy_server::server::Server;
+use proxy_server::{
+    cert::{init_ca, CERT_MANAGER},
+    server::Server,
+};
 use reqwest::Client;
-use reqwest_websocket::{Message, RequestBuilderExt};
-use std::{clone, fmt::format, net::SocketAddr, slice::Chunks};
+use tracing_subscriber::fmt::format;
 pub mod common;
 
 use crate::common::start_http_server::start_http_server;
 
 async fn init_test_server() -> (SocketAddr, Client, Client) {
-    let addr: std::net::SocketAddr = start_http_server().await.unwrap();
+    let ca_cert_file = &PROXY_ROOT_DIR.join("ca.cert");
+    let private_key_file = &PROXY_ROOT_DIR.join("ca.key");
+    dbg!(private_key_file);
+    let ca_manager = init_ca(ca_cert_file, private_key_file).unwrap();
+    CERT_MANAGER.set(ca_manager);
+
+    let addr: std::net::SocketAddr = start_https_server().await.unwrap();
     let proxy_server = Server::new();
     proxy_server.run().await.unwrap();
     let proxy_addr = format!("http://{}", proxy_server.addr);
 
-    let direct_request_client = build_http_client();
+    let direct_request_client = build_https_client(TEST_ROOT_CA_CERT.clone());
 
-    let proxy_request_client = build_http_proxy_client(&proxy_addr);
+    let proxy_ca_cert =
+        reqwest::Certificate::from_pem(CERT_MANAGER.get().unwrap().ca_cert.pem().as_bytes())
+            .unwrap();
+    let proxy = reqwest::Proxy::all(proxy_addr).unwrap();
+
+    let proxy_request_client = reqwest::Client::builder()
+        .no_brotli()
+        .no_deflate()
+        .no_gzip()
+        .use_rustls_tls()
+        .add_root_certificate(proxy_ca_cert)
+        .proxy(proxy)
+        .build()
+        .unwrap();
 
     return (addr, direct_request_client, proxy_request_client);
 }
@@ -32,12 +59,12 @@ async fn hello_test() {
     init_tracing();
     let (addr, direct_request_client, proxy_request_client) = init_test_server().await;
     let direct_res = direct_request_client
-        .get(format!("http://{addr}{HELLO_PATH}"))
+        .get(format!("https://{addr}{HELLO_PATH}"))
         .send()
         .await
         .unwrap();
     let proxy_server_res = proxy_request_client
-        .get(format!("http://{addr}{HELLO_PATH}"))
+        .get(format!("https://{addr}{HELLO_PATH}"))
         .send()
         .await
         .unwrap();
@@ -53,12 +80,12 @@ async fn gzip_test() {
     let (addr, direct_request_client, proxy_request_client) = init_test_server().await;
 
     let direct_res = direct_request_client
-        .get(format!("http://{addr}{GZIP_PATH}"))
+        .get(format!("https://{addr}{GZIP_PATH}"))
         .send()
         .await
         .unwrap();
     let proxy_server_res = proxy_request_client
-        .get(format!("http://{addr}{GZIP_PATH}"))
+        .get(format!("https://{addr}{GZIP_PATH}"))
         .send()
         .await
         .unwrap();
@@ -75,13 +102,13 @@ async fn echo_test() {
     let (addr, direct_request_client, proxy_request_client) = init_test_server().await;
 
     let direct_res = direct_request_client
-        .get(format!("http://{addr}{}", ECHO_PATH))
+        .get(format!("https://{addr}{}", ECHO_PATH))
         .header(CONTENT_TYPE, "application/json")
         .send()
         .await
         .unwrap();
     let proxy_server_res = proxy_request_client
-        .get(format!("http://{addr}{}", ECHO_PATH))
+        .get(format!("https://{addr}{}", ECHO_PATH))
         .header(CONTENT_TYPE, "application/json")
         .send()
         .await
@@ -96,13 +123,13 @@ async fn ping_pong_test() {
     let (addr, direct_request_client, proxy_request_client) = init_test_server().await;
 
     let direct_res = direct_request_client
-        .post(format!("http://{addr}{}", PING_PATH))
+        .post(format!("https://{addr}{}", PING_PATH))
         .send()
         .await
         .unwrap();
 
     let proxy_server_res = proxy_request_client
-        .post(format!("http://{addr}{}", PING_PATH))
+        .post(format!("https://{addr}{}", PING_PATH))
         .send()
         .await
         .unwrap();
@@ -112,37 +139,3 @@ async fn ping_pong_test() {
         proxy_server_res.bytes().await.unwrap()
     );
 }
-
-// #[tokio::test]
-// async fn ws_test() {
-//     init_tracing();
-//     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-//     let proxy_server = Server::new();
-//     proxy_server.run().await.unwrap();
-//     let proxy = reqwest::Proxy::all(format!("http://{}", proxy_server.addr)).unwrap();
-//     let mut client = reqwest::Client::builder()
-//         .proxy(proxy)
-//         .no_brotli()
-//         .no_deflate()
-//         .no_gzip()
-//         .build()
-//         .unwrap();
-//     let response = client
-//         .get(format!("ws://{}", addr))
-//         .upgrade()
-//         .send()
-//         .await
-//         .unwrap();
-//     // Turns the response into a WebSocket stream.
-//     let mut websocket = response.into_websocket().await.unwrap();
-
-//     // The WebSocket implements `Sink<Message>`.
-//     websocket.send(Message::Text("Hello, World".into())).await;
-//     // The WebSocket is also a `TryStream` over `Message`s.
-//     while let Some(message) = websocket.try_next().await.unwrap() {
-//         if let Message::Text(text) = message {
-//             println!("received: {text}")
-//         }
-//     }
-//     tokio::signal::ctrl_c().await;
-// }
