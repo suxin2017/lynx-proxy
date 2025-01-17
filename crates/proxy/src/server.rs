@@ -25,6 +25,9 @@ pub struct Server {
     pub access_addr_list: Vec<SocketAddr>,
 }
 
+
+
+
 impl Server {
     pub fn new(port: u16, context: ServerContext) -> Self {
         let mut access_addr_list = vec![];
@@ -35,17 +38,19 @@ impl Server {
         Self {
             port,
             context,
-            local_addr: SocketAddr::from(([172, 16, 104, 136], port)),
+            local_addr: SocketAddr::from(([127,0,0,1], port)),
             access_addr_list,
         }
     }
 
-    pub async fn listener_bind(&self, listener: TcpListener) {
+    async fn test_lister(&self,addr: SocketAddr) -> SocketAddr{
+        let listener = TcpListener::bind(addr).await.unwrap();
+        let addr = listener.local_addr().unwrap();
         tokio::spawn(async move {
             loop {
                 let (stream, client_addr) = listener.accept().await.unwrap();
                 let io = TokioIo::new(stream);
-
+    
                 // Spawn a tokio task to serve multiple connections concurrently
                 tokio::task::spawn(async move {
                     if let Err(err) =
@@ -57,7 +62,7 @@ impl Server {
                                         return handle_self_service(req).await;
                                     }
                                     let res = Schedular {}.dispatch(req).await;
-
+    
                                     match res {
                                         Ok(res) => Ok(res),
                                         Err(e) => {
@@ -77,29 +82,25 @@ impl Server {
                 });
             }
         });
+        addr
     }
-    pub async fn run(&self) -> Result<()> {
-        info!("start server at {}", self.local_addr);
+
+    pub async fn run(&mut self) -> Result<()> {
+        let addrs = self.access_addr_list
+        .iter()
+        .map(|addr| format!("  http://{}\n", addr))
+        .collect::<Vec<String>>()
+        .join("");
+        info!("start server at {}", addrs);
         println!(
             "Available on: \n{}",
-            self.access_addr_list
-                .iter()
-                .map(|addr| format!("  http://{}\n", addr))
-                .collect::<Vec<String>>()
-                .join("")
+            addrs
         );
-
-        for addr in &self.access_addr_list {
-            let listener = TcpListener::bind(addr).await;
-            match listener {
-                Ok(listener) => {
-                    self.listener_bind(listener).await;
-                }
-                Err(e) => {
-                    error!("error bind listener: {}", e);
-                }
-            };
-        }
+    
+        // for addr in self.access_addr_list.iter() {
+          self.local_addr =  self.test_lister(self.local_addr).await;
+        // }
         Ok(())
     }
 }
+

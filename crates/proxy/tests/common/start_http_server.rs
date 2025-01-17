@@ -21,7 +21,7 @@ use crate::common::{
 };
 
 pub async fn start_http_server() -> Result<SocketAddr> {
-    let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 54259))).await?;
+    let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).await?;
     let addr = listener.local_addr()?;
     println!("start test http server at {}", addr);
 

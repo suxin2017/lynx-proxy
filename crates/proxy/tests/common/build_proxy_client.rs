@@ -9,10 +9,8 @@ pub fn build_request_client(
     is_https: bool,
     ca_cert: Option<Certificate>,
 ) -> Result<reqwest::Client> {
-    let mut client = reqwest::Client::builder()
-        .no_brotli()
-        .no_deflate()
-        .no_gzip();
+    let mut client = reqwest::Client::builder();
+       
     if let Some(proxy_server_addr) = proxy_server_addr {
         let proxy = reqwest::Proxy::all(proxy_server_addr).unwrap();
         client = client.proxy(proxy);

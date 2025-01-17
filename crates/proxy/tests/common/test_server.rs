@@ -3,7 +3,7 @@ use async_compression::tokio::bufread::GzipEncoder;
 use bytes::Bytes;
 use futures_util::{SinkExt, TryStreamExt};
 use http::{
-    header::{CONTENT_ENCODING, CONTENT_TYPE},
+    header::{CONNECTION, CONTENT_ENCODING, CONTENT_TYPE},
     Method, StatusCode,
 };
 use http_body_util::{combinators::BoxBody, BodyExt, Full, StreamBody};
@@ -69,7 +69,7 @@ pub async fn test_server(
             );
             let res = Response::builder()
                 .header(CONTENT_ENCODING, "gzip")
-                .status(StatusCode::OK)
+               .status(StatusCode::OK)
                 .body(BoxBody::new(stream_body))?;
             Ok(res)
         }

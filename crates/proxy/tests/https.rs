@@ -26,7 +26,7 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
     CERT_MANAGER.set(ca_manager);
 
     let addr: std::net::SocketAddr = start_https_server().await.unwrap();
-    let proxy_server = Server::new(3000,server_context);
+    let mut proxy_server = Server::new(3000,server_context);
     proxy_server.run().await.unwrap();
     let proxy_addr = format!("http://{}", proxy_server.local_addr);
 

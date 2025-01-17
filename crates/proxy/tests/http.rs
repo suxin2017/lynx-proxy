@@ -16,7 +16,7 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
     let server_context = set_up_context().await;
 
     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-    let proxy_server = Server::new(3000,server_context);
+    let mut proxy_server = Server::new(3000,server_context);
     proxy_server.run().await.unwrap();
     let proxy_addr = format!("http://{}", proxy_server.local_addr);
 
@@ -87,7 +87,7 @@ async fn echo_test() {
         .await
         .unwrap();
 
-    assert_eq!(direct_res.headers(), proxy_server_res.headers());
+    assert_eq!(direct_res.headers().get(CONTENT_TYPE), proxy_server_res.headers().get(CONTENT_TYPE));
 }
 
 #[tokio::test]

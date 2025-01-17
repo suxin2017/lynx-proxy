@@ -40,7 +40,6 @@ impl HttpProxy {
             while let Some(frame) =body.frame().await  {
                 if let Ok(frame) = &frame {
                     dbg!(frame);
-                    let data = frame.data_ref();
 
                 }
                 let _ = tx.send(frame).await;
@@ -48,7 +47,6 @@ impl HttpProxy {
         });
 
         let proxy_req = Response::from_parts(parts, stream);
-
         Ok(proxy_req)
     }
 }

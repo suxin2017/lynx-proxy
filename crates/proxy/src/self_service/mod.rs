@@ -15,7 +15,7 @@ pub fn match_self_service(req: &Request<Incoming>) -> bool {
 pub async fn handle_self_service(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    if req.uri().path() == "/hello" {
+    if req.uri().path() == format!("{}{}", SELF_SERVICE_PATH_PREFIX, "/hello") {
         return Ok(Response::new(full(Bytes::from("Hello, World!"))));
     }
     let res = Response::builder()
