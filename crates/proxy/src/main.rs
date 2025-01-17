@@ -1,11 +1,8 @@
-use std::net::SocketAddr;
-use std::{convert::Infallible, path::Path};
+use std::path::Path;
 
 use anyhow::{Ok, Result};
-use bytes::Bytes;
-use futures_util::FutureExt;
-use http_body_util::{BodyDataStream, BodyExt, Full};
 use proxy_server::cert::init_ca;
+use proxy_server::server_context::set_up_context;
 use proxy_server::{cert::CERT_MANAGER, server::Server};
 use tracing_subscriber::{
     filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer,
@@ -28,9 +25,9 @@ async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(fmt::layer().with_filter(my_filter))
         .init();
+    let server_context = set_up_context().await;
 
-    Server::new().run().await?;
-    tokio::signal::ctrl_c()
-        .await;
+    Server::new(3000,server_context).run().await?;
+    let _ = tokio::signal::ctrl_c().await;
     Ok(())
 }

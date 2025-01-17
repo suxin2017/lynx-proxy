@@ -1,33 +1,19 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
 
-use anyhow::{anyhow, Error, Result};
-use futures_util::{future, FutureExt, StreamExt, TryStreamExt};
+use anyhow::Error;
+use futures_util::{FutureExt, StreamExt};
 use http::StatusCode;
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyDataStream, BodyExt, Empty, Full};
-use hyper::body::{self, Body, Bytes, Incoming};
-use hyper::server::conn::http1;
+use http_body_util::BodyExt;
+use hyper::body::{Bytes, Incoming};
 use hyper::service::service_fn;
-use hyper::upgrade::Upgraded;
-use hyper::{upgrade, Method, Request, Response};
-use hyper_rustls::HttpsConnectorBuilder;
-use hyper_util::client::legacy::connect::HttpConnector;
-use hyper_util::client::legacy::Client;
+use hyper::{Method, Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
-use rcgen::Certificate;
-use rustls_pemfile::{certs, pkcs8_private_keys};
-use tokio::fs::File;
-use tokio::io::{AsyncReadExt, BufReader};
-use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::oneshot;
 use tokio_rustls::TlsAcceptor;
-use tokio_util::io::ReaderStream;
-use tracing::{debug, info, trace};
+use tracing::{info, trace};
 
 use crate::cert::CERT_MANAGER;
 use crate::plugins::http_request_plugin::HttpRequestPlugin;
-use crate::utils::{empty, full, host_addr, is_http, is_https};
+use crate::utils::empty;
 
 pub struct HttpsProxy {}
 
@@ -51,7 +37,6 @@ impl HttpsProxy {
                 match hyper::upgrade::on(req).await {
                     Ok(upgraded) => {
                         let upgraded = TokioIo::new(upgraded);
-
                         trace!("upgrade success");
                         let ca_manager = CERT_MANAGER.get().expect("cert manager not found");
                         let server_config = match ca_manager.gen_server_config(&authority).await {
@@ -84,12 +69,12 @@ impl HttpsProxy {
 
                                     trace!("proxy response: {:?}", proxy_res);
 
-                                    return Ok(proxy_res);
+                                    Ok(proxy_res)
                                 }
 
                                 Err(e) => {
                                     info!("proxy error: {:?}", e);
-                                    return Err(e);
+                                    Err(e)
                                 }
                             }
                         });
@@ -112,6 +97,6 @@ impl HttpsProxy {
                 }
             });
         }
-        return Ok(Response::new(empty()));
+        Ok(Response::new(empty()))
     }
 }

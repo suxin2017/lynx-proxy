@@ -110,10 +110,10 @@ enum Body {
 }
 
 
-#[derive(DeriveIden)]
-enum Session {
-    Table,
-    Id,
-    RequestId,
-    ResponseId,
-}
+// #[derive(DeriveIden)]
+// enum Session {
+//     Table,
+//     Id,
+//     RequestId,
+//     ResponseId,
+// }

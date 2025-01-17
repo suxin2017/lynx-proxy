@@ -1,27 +1,15 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
 
 use anyhow::{Error, Result};
-use http::header::CONNECTION;
-use http::{status, StatusCode};
+use http::status;
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty, Full};
-use hyper::body::{Bytes, Incoming};
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::upgrade::Upgraded;
-use hyper::{upgrade, Method, Request, Response};
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use tokio::io::AsyncReadExt;
-use tokio::net::{TcpListener, TcpStream};
+use hyper::body::Bytes;
+use hyper::{Method, Request, Response};
 use tracing::trace;
 
 use crate::proxy::http_proxy::HttpProxy;
 use crate::proxy::https_proxy::HttpsProxy;
 use crate::proxy::websocket_proxy::WebsocketProxy;
-use crate::self_service::match_self_service;
-use crate::tunnel_proxy::TunnelProxy;
-use crate::utils::{empty, full, is_http, is_https};
+use crate::utils::{full, is_http};
 
 pub struct Schedular;
 
@@ -35,7 +23,7 @@ impl Schedular {
             return WebsocketProxy {}.proxy(req).await;
         }
 
-        if is_http(&req.uri()) {
+        if is_http(req.uri()) {
             trace!("proxying http request {:?}", req);
             return HttpProxy {}.proxy(req).await;
         }

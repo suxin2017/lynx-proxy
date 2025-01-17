@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::{self, Read},
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::LazyLock,
 };
 

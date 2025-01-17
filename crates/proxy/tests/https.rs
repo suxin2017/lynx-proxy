@@ -1,28 +1,24 @@
-use std::{fs, io::Read, net::SocketAddr, path::Path, slice::Chunks};
+use std::{io::Read, net::SocketAddr};
 
-use bytes::Bytes;
 use common::{
-    build_proxy_client::{
-        build_http_client, build_http_proxy_client, build_https_client, build_https_proxy_client,
-    },
-    constant::{PROXY_ROOT_DIR, TEST_LOCALHOST_CERT, TEST_ROOT_CA_CERT},
+    build_proxy_client::build_https_client,
+    constant::{PROXY_ROOT_DIR, TEST_ROOT_CA_CERT},
     start_http_server::start_https_server,
     test_server::{ECHO_PATH, GZIP_PATH, HELLO_PATH, PING_PATH},
     tracing_config::init_tracing,
 };
-use futures_util::join;
 use http::header::CONTENT_TYPE;
 use proxy_server::{
     cert::{init_ca, CERT_MANAGER},
-    server::Server,
+    server::Server, server_context::set_up_context,
 };
 use reqwest::Client;
-use tracing_subscriber::fmt::format;
 pub mod common;
 
-use crate::common::start_http_server::start_http_server;
 
 async fn init_test_server() -> (SocketAddr, Client, Client) {
+    let server_context = set_up_context().await;
+
     let ca_cert_file = &PROXY_ROOT_DIR.join("ca.cert");
     let private_key_file = &PROXY_ROOT_DIR.join("ca.key");
     dbg!(private_key_file);
@@ -30,9 +26,9 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
     CERT_MANAGER.set(ca_manager);
 
     let addr: std::net::SocketAddr = start_https_server().await.unwrap();
-    let proxy_server = Server::new();
+    let proxy_server = Server::new(3000,server_context);
     proxy_server.run().await.unwrap();
-    let proxy_addr = format!("http://{}", proxy_server.addr);
+    let proxy_addr = format!("http://{}", proxy_server.local_addr);
 
     let direct_request_client = build_https_client(TEST_ROOT_CA_CERT.clone());
 
@@ -51,7 +47,7 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
         .build()
         .unwrap();
 
-    return (addr, direct_request_client, proxy_request_client);
+    (addr, direct_request_client, proxy_request_client)
 }
 
 #[tokio::test]

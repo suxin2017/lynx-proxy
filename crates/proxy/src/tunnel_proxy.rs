@@ -1,16 +1,11 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
 
-use anyhow::{Error, Result};
+use anyhow::Error;
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::{Bytes, Incoming};
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
 use hyper::upgrade::Upgraded;
-use hyper::{upgrade, Method, Request, Response};
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use tokio::net::{TcpListener, TcpStream};
+use hyper::{Method, Request, Response};
+use hyper_util::rt::TokioIo;
+use tokio::net::TcpStream;
 use tracing::error;
 
 use crate::utils::{empty, host_addr};

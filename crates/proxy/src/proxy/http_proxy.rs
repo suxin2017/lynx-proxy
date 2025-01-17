@@ -1,24 +1,16 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
 
 use anyhow::{anyhow, Error, Result};
 use futures_util::{FutureExt, StreamExt};
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty, Full};
-use hyper::body::{self, Bytes, Incoming};
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::upgrade::Upgraded;
-use hyper::{upgrade, Method, Request, Response};
-use hyper_rustls::HttpsConnectorBuilder;
-use hyper_util::client::legacy::connect::HttpConnector;
-use hyper_util::client::legacy::Client;
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use tokio::net::{TcpListener, TcpStream};
+use http_body_util::{BodyExt, StreamBody};
+use hyper::body::{Bytes, Incoming};
+use hyper::{Request, Response};
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
 use tracing::{info, trace};
 
 use crate::plugins::http_request_plugin::HttpRequestPlugin;
-use crate::utils::{empty, host_addr, is_http, is_https};
+use crate::utils::is_http;
 
 pub struct HttpProxy {}
 
@@ -34,12 +26,29 @@ impl HttpProxy {
         trace!("origin response: {:?}", proxy_res);
 
         let (parts, body) = proxy_res.into_parts();
-        let body = body
+        let mut body = body
             .map_err(|e| anyhow!(e).context("http proxy body box error"))
             .boxed();
 
-        let proxy_req = Response::from_parts(parts, body);
+        let (tx, rx) = mpsc::channel(1024);
 
-        return Ok(proxy_req);
+        let rec_stream = ReceiverStream::new(rx);
+        // let rs = rec_stream.;
+        let stream: BoxBody<Bytes, Error> = BodyExt::boxed(StreamBody::new(rec_stream));
+
+        tokio::task::spawn(async move {
+            while let Some(frame) =body.frame().await  {
+                if let Ok(frame) = &frame {
+                    dbg!(frame);
+                    let data = frame.data_ref();
+
+                }
+                let _ = tx.send(frame).await;
+            }
+        });
+
+        let proxy_req = Response::from_parts(parts, stream);
+
+        Ok(proxy_req)
     }
 }

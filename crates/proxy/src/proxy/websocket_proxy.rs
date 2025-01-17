@@ -1,30 +1,13 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
 
 use anyhow::{anyhow, Error, Result};
 use futures_util::{FutureExt, SinkExt, StreamExt};
-use http::StatusCode;
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty, Full};
-use hyper::body::{self, Bytes, Incoming};
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::upgrade::Upgraded;
-use hyper::{upgrade, Method, Request, Response};
-use hyper_rustls::HttpsConnectorBuilder;
+use http_body_util::BodyExt;
+use hyper::body::{Bytes, Incoming};
+use hyper::{Request, Response};
 use hyper_tungstenite::HyperWebsocket;
-use hyper_util::client::legacy::connect::HttpConnector;
-use hyper_util::client::legacy::Client;
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use tokio::io::AsyncReadExt;
-use tokio::net::{TcpListener, TcpStream};
-use tokio_rustls::TlsAcceptor;
 use tokio_tungstenite::tungstenite::Message;
-use tracing::{debug, info, trace};
 
-use crate::cert::CERT_MANAGER;
-use crate::plugins::http_request_plugin::HttpRequestPlugin;
-use crate::utils::{empty, full, host_addr, is_http, is_https};
 
 pub struct WebsocketProxy {}
 
@@ -46,7 +29,7 @@ impl WebsocketProxy {
 
         let body = body.boxed().map_err(|e| anyhow!(e)).boxed();
 
-        return Ok(Response::from_parts(parts, body));
+        Ok(Response::from_parts(parts, body))
     }
 }
 

@@ -1,59 +1,50 @@
-use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
+use derive_builder::Builder;
 use http::StatusCode;
-use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty, Full};
-use hyper::body::{Bytes, Incoming};
-use hyper::server::conn::http1;
+use hyper::body::Incoming;
 use hyper::service::service_fn;
-use hyper::upgrade::Upgraded;
-use hyper::{upgrade, Method, Request, Response};
+use hyper::{Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
+use local_ip_address::local_ip;
 use tokio::net::TcpListener;
-use tokio::net::TcpStream;
-use tracing::{debug, error, trace};
+use tracing::{error, info, trace};
 
-use crate::cert::CertificateAuthority;
 use crate::schedular::Schedular;
 use crate::self_service::{handle_self_service, match_self_service};
-use crate::tunnel_proxy::TunnelProxy;
-use crate::utils::{empty, full};
+use crate::server_context::ServerContext;
+use crate::utils::full;
 
 pub struct Server {
-    pub addr: SocketAddr,
+    pub port: u16,
+    pub context: ServerContext,
+    pub local_addr: SocketAddr,
+    pub access_addr_list: Vec<SocketAddr>,
 }
 
 impl Server {
-    pub fn new() -> Self {
+    pub fn new(port: u16, context: ServerContext) -> Self {
+        let mut access_addr_list = vec![];
+        access_addr_list.push(SocketAddr::from(([127, 0, 0, 1], port)));
+        if let Ok(access_addr) = local_ip() {
+            access_addr_list.push(SocketAddr::new(access_addr, port));
+        }
         Self {
-            addr: SocketAddr::from(([127, 0, 0, 1], 3000)),
+            port,
+            context,
+            local_addr: SocketAddr::from(([172, 16, 104, 136], port)),
+            access_addr_list,
         }
     }
-    pub async fn run(&self) -> Result<()> {
-        let connection_count = Arc::new(AtomicUsize::new(0));
-        println!("start server at 127.0.0.0.1:3000");
 
-        // We create a TcpListener and bind it to 127.0.0.1:3000
-        let listener = TcpListener::bind(self.addr).await?;
-
+    pub async fn listener_bind(&self, listener: TcpListener) {
         tokio::spawn(async move {
-            // We start a loop to continuously accept incoming connections
             loop {
                 let (stream, client_addr) = listener.accept().await.unwrap();
-                let connection_count = Arc::clone(&connection_count);
-                connection_count.fetch_add(1, Ordering::SeqCst);
-                trace!("Accepted connection");
-                // Use an adapter to access something implementing `tokio::io` traits as if they implement
-                // `hyper::rt` IO traits.
                 let io = TokioIo::new(stream);
-                trace!(
-                    "current connect count: {}",
-                    connection_count.load(Ordering::SeqCst)
-                );
 
                 // Spawn a tokio task to serve multiple connections concurrently
                 tokio::task::spawn(async move {
@@ -68,13 +59,13 @@ impl Server {
                                     let res = Schedular {}.dispatch(req).await;
 
                                     match res {
-                                        Ok(res) => return Ok(res),
+                                        Ok(res) => Ok(res),
                                         Err(e) => {
-                                            error!("here is a error {}", &e);
-                                            let res=  Response::builder()
+                                            error!("Server error: {}", &e);
+                                            let res = Response::builder()
                                                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                                                 .body(full(format!("{}", e)));
-                                            return Ok(res?);
+                                            Ok(res?)
                                         }
                                     }
                                 }),
@@ -83,11 +74,32 @@ impl Server {
                     {
                         eprintln!("Error serving connection: {:?}", err);
                     }
-                    // Decrease the connection count when the connection is closed
-                    connection_count.fetch_sub(1, Ordering::SeqCst);
                 });
             }
         });
+    }
+    pub async fn run(&self) -> Result<()> {
+        info!("start server at {}", self.local_addr);
+        println!(
+            "Available on: \n{}",
+            self.access_addr_list
+                .iter()
+                .map(|addr| format!("  http://{}\n", addr))
+                .collect::<Vec<String>>()
+                .join("")
+        );
+
+        for addr in &self.access_addr_list {
+            let listener = TcpListener::bind(addr).await;
+            match listener {
+                Ok(listener) => {
+                    self.listener_bind(listener).await;
+                }
+                Err(e) => {
+                    error!("error bind listener: {}", e);
+                }
+            };
+        }
         Ok(())
     }
 }

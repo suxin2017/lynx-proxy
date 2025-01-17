@@ -15,13 +15,21 @@ use tokio_rustls::rustls::{
     ServerConfig,
 };
 
-use std::sync::LazyLock;
+
+use crate::config::AppConfig;
 
 pub static CERT_MANAGER: OnceCell<CertificateAuthority> = OnceCell::new();
 
 const TTL_SECS: i64 = 365 * 24 * 60 * 60;
 const CACHE_TTL: u64 = TTL_SECS as u64 / 2;
 const NOT_BEFORE_OFFSET: i64 = 60;
+
+pub fn set_up_ca_manager(app_config: &AppConfig) -> CertificateAuthority {
+    let ca_cert_file = app_config.get_root_ca_path();
+    let private_key_file = app_config.get_root_ca_key();
+    
+    init_ca(ca_cert_file, private_key_file).expect("Failed to init CA")
+}
 
 pub fn init_ca<T: AsRef<Path>>(
     ca_cert_file: T,
@@ -151,7 +159,9 @@ impl CertificateAuthority {
         params
             .subject_alt_names
             .push(SanType::DnsName(Ia5String::try_from(authority.host())?));
-        params.subject_alt_names.push(SanType::IpAddress("127.0.0.1".parse().unwrap()));
+        params
+            .subject_alt_names
+            .push(SanType::IpAddress("127.0.0.1".parse().unwrap()));
 
         let cert = params.signed_by(&self.private_key, &self.ca_cert, &self.private_key)?;
         let cert_der = cert.der().clone();

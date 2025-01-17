@@ -1,30 +1,19 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::{fs, io};
 
 use anyhow::{anyhow, Result};
-use futures_util::io::empty;
-use futures_util::{FutureExt, StreamExt};
+use futures_util::StreamExt;
 use http::header::{CONNECTION, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
-use http::HeaderName;
-use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, Empty, Full};
-use hyper::body::{Bytes, Incoming};
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::upgrade::Upgraded;
-use hyper::{upgrade, Method, Request, Response};
+use http_body_util::BodyExt;
+use hyper::body::Incoming;
+use hyper::{Request, Response};
 use hyper_rustls::{ConfigBuilderExt, HttpsConnectorBuilder};
 use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::Client;
-use hyper_util::rt::{TokioExecutor, TokioIo};
-use tokio::net::{TcpListener, TcpStream};
+use hyper_util::rt::TokioExecutor;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
-use tracing::info;
 
-use crate::utils::is_https;
 
 pub struct HttpRequestPlugin;
 
@@ -57,8 +46,7 @@ impl HttpRequestPlugin {
             let connect = if matches!(
                 proxy_req
                     .uri()
-                    .authority()
-                    .and_then(|authority| Some(authority.host() == "127.0.0.1")),
+                    .authority().map(|authority| authority.host() == "127.0.0.1"),
                 Some(true)
             ) {
                 let mut ca_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -96,7 +84,7 @@ impl HttpRequestPlugin {
                 .await
         };
 
-        return proxy_res.map_err(|e| anyhow!(e));
+        proxy_res.map_err(|e| anyhow!(e))
     }
 }
 
