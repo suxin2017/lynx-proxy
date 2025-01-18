@@ -7,9 +7,9 @@ use crate::{
 };
 
 pub struct ServerContext {
-    db: DatabaseConnection,
-    ca_manager: CertificateAuthority,
-    app_config: AppConfig,
+    pub db: DatabaseConnection,
+    pub ca_manager: CertificateAuthority,
+    pub app_config: AppConfig,
 }
 
 pub async fn set_up_context() -> ServerContext {

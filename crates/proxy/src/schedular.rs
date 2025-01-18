@@ -1,4 +1,6 @@
 
+use std::sync::Arc;
+
 use anyhow::{Error, Result};
 use http::status;
 use http_body_util::combinators::BoxBody;
@@ -9,6 +11,7 @@ use tracing::trace;
 use crate::proxy::http_proxy::HttpProxy;
 use crate::proxy::https_proxy::HttpsProxy;
 use crate::proxy::websocket_proxy::WebsocketProxy;
+use crate::server_context::ServerContext;
 use crate::utils::{full, is_http};
 
 pub struct Schedular;
@@ -16,8 +19,10 @@ pub struct Schedular;
 impl Schedular {
     pub async fn dispatch(
         &self,
+        ctx: Arc<ServerContext>,
         req: Request<hyper::body::Incoming>,
     ) -> Result<Response<BoxBody<Bytes, Error>>> {
+        
         let is_websocket = hyper_tungstenite::is_upgrade_request(&req);
         if is_websocket {
             return WebsocketProxy {}.proxy(req).await;

@@ -20,7 +20,7 @@ use crate::utils::full;
 
 pub struct Server {
     pub port: u16,
-    pub context: ServerContext,
+    pub context: Arc<ServerContext>,
     pub local_addr: SocketAddr,
     pub access_addr_list: Vec<SocketAddr>,
 }
@@ -37,7 +37,7 @@ impl Server {
         }
         Self {
             port,
-            context,
+            context:Arc::new(context),
             local_addr: SocketAddr::from(([127,0,0,1], port)),
             access_addr_list,
         }
@@ -46,10 +46,13 @@ impl Server {
     async fn test_lister(&self,addr: SocketAddr) -> SocketAddr{
         let listener = TcpListener::bind(addr).await.unwrap();
         let addr = listener.local_addr().unwrap();
+        let context = Arc::clone(&self.context);
+
         tokio::spawn(async move {
             loop {
                 let (stream, client_addr) = listener.accept().await.unwrap();
                 let io = TokioIo::new(stream);
+                let context = Arc::clone(&context);
     
                 // Spawn a tokio task to serve multiple connections concurrently
                 tokio::task::spawn(async move {
@@ -57,11 +60,14 @@ impl Server {
                         hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                             .serve_connection_with_upgrades(
                                 io,
-                                service_fn(|req: Request<Incoming>| async move {
+                                service_fn(move |req: Request<Incoming>| {
+                                    let context = Arc::clone(&context);
+                                    async move {
+
                                     if match_self_service(&req) {
-                                        return handle_self_service(req).await;
+                                        return handle_self_service(context,req).await;
                                     }
-                                    let res = Schedular {}.dispatch(req).await;
+                                    let res = Schedular {}.dispatch(context,req).await;
     
                                     match res {
                                         Ok(res) => Ok(res),
@@ -73,7 +79,8 @@ impl Server {
                                             Ok(res?)
                                         }
                                     }
-                                }),
+                                }
+                }),
                             )
                             .await
                     {

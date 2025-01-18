@@ -5,8 +5,13 @@ use common::{
 };
 use futures_util::SinkExt;
 use http::header::CONTENT_TYPE;
-use proxy_server::{server::Server, server_context::set_up_context};
+use proxy_server::{
+    self_service::{RULE_GROUP_ADD, RULE_GROUP_DELETE},
+    server::Server,
+    server_context::set_up_context,
+};
 use reqwest::Client;
+use serde_json::json;
 use std::net::SocketAddr;
 pub mod common;
 
@@ -27,9 +32,26 @@ async fn test_hello() {
     let (addr, client) = init_test_server().await;
 
     let res = client
-        .get(format!("http://127.0.0.1:3000/__self_service_path__/hello"))
+        .get(format!("http://{addr}/__self_service_path__/hello"))
         .send()
         .await
         .unwrap();
-    dbg!(res);
+
+    assert_eq!(res.text().await.unwrap(), "Hello, World!");
+}
+
+#[tokio::test]
+async fn test_rule_group() {
+    init_tracing();
+    let (addr, client) = init_test_server().await;
+
+    let res = client
+        .post(&format!("http://127.0.0.1:3000{}", RULE_GROUP_ADD))
+        .json(&json!({}))
+        .send()
+        .await
+        .unwrap();
+    dbg!(&res);
+    // dbg!(&res.text().await.unwrap());
+    dbg!(&res.json::<serde_json::Value>().await.unwrap());
 }
