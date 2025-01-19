@@ -3,8 +3,9 @@
 use async_trait::async_trait;
 use chrono::Local;
 use sea_orm::{entity::prelude::*, ActiveValue};
+use serde::Serialize;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize)]
 #[sea_orm(table_name = "rule_group")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -35,6 +36,7 @@ impl ActiveModelBehavior for ActiveModel {
     {
         if insert {
             self.created_at = ActiveValue::Set(Local::now().timestamp_millis() as u32);
+            self.updated_at = ActiveValue::Set(Local::now().timestamp_millis() as u32);
         } else {
             self.updated_at = ActiveValue::Set(Local::now().timestamp_millis() as u32);
         }

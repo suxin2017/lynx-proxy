@@ -11,7 +11,7 @@ use proxy_server::{
     server_context::set_up_context,
 };
 use reqwest::Client;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::net::SocketAddr;
 pub mod common;
 
@@ -41,17 +41,73 @@ async fn test_hello() {
 }
 
 #[tokio::test]
-async fn test_rule_group() {
+async fn test_add_rule_group() {
     init_tracing();
     let (addr, client) = init_test_server().await;
 
     let res = client
-        .post(&format!("http://127.0.0.1:3000{}", RULE_GROUP_ADD))
-        .json(&json!({}))
+        .post(&format!("http://{addr}{}", RULE_GROUP_ADD))
+        .json(&json!({
+            "name": "test",
+
+        }))
         .send()
         .await
         .unwrap();
-    dbg!(&res);
-    // dbg!(&res.text().await.unwrap());
-    dbg!(&res.json::<serde_json::Value>().await.unwrap());
+    let binding = res.json::<Value>().await.unwrap();
+    let code = binding.get("code").unwrap();
+
+    assert_eq!(code, &json!("Ok"));
+}
+
+#[tokio::test]
+async fn test_delete_unfound_rule_group() {
+    init_tracing();
+    let (addr, client) = init_test_server().await;
+
+    let res = client
+        .post(&format!("http://{addr}{}", RULE_GROUP_DELETE))
+        .json(&json!({
+            "id": 9999999,
+        }))
+        .send()
+        .await
+        .unwrap();
+
+    let res_json = res.json::<Value>().await.unwrap();
+    let code = res_json.get("code").unwrap();
+    assert_eq!(code, &json!("OperationError"));
+}
+
+#[tokio::test]
+async fn test_delete_rule_group() {
+    init_tracing();
+    let (addr, client) = init_test_server().await;
+
+    let res = client
+        .post(&format!("http://{addr}{}", RULE_GROUP_ADD))
+        .json(&json!({
+            "name": "test",
+        }))
+        .send()
+        .await
+        .unwrap();
+    let binding = res.json::<Value>().await.unwrap();
+    let code = binding.get("code").unwrap();
+
+    let data = binding.get("data").unwrap();
+    let id = data.get("id").unwrap();
+
+    let res = client
+        .post(&format!("http://{addr}{}", RULE_GROUP_DELETE))
+        .json(&json!({
+            "id": id,
+        }))
+        .send()
+        .await
+        .unwrap();
+    let binding = res.json::<Value>().await.unwrap();
+    let code = binding.get("code").unwrap();
+    assert_eq!(code, &json!("Ok"));
+    tokio::signal::ctrl_c().await.unwrap();
 }

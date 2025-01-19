@@ -33,6 +33,22 @@ impl MigrationTrait for Migration {
                     .to_owned(),
             )
             .await?;
+        let _ = manager
+            .create_table(
+                Table::create()
+                    .table(AppConfig::Table)
+                    .if_not_exists()
+                    .col(pk_auto(AppConfig::Id))
+                    .col(boolean(AppConfig::CaptureHttps))
+                    .to_owned(),
+            )
+            .await?;
+        let insert = Query::insert()
+            .into_table(AppConfig::Table)
+            .columns([AppConfig::CaptureHttps])
+            .values_panic([false.into()])
+            .to_owned();
+        let _ = manager.exec_stmt(insert).await?;
 
         Ok(())
     }
@@ -42,6 +58,13 @@ impl MigrationTrait for Migration {
             .drop_table(Table::drop().table(Rule::Table).to_owned())
             .await
     }
+}
+
+#[derive(DeriveIden)]
+enum AppConfig {
+    Table,
+    Id,
+    CaptureHttps,
 }
 
 #[derive(DeriveIden)]
@@ -79,7 +102,6 @@ enum Stream {
     ResponseId,
 }
 
-
 #[derive(DeriveIden)]
 enum Request {
     Table,
@@ -106,9 +128,8 @@ enum Raw {
 #[derive(DeriveIden)]
 enum Body {
     Id,
-    Raw
+    Raw,
 }
-
 
 // #[derive(DeriveIden)]
 // enum Session {

@@ -1,3 +1,4 @@
+use core::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -42,7 +43,42 @@ pub struct ResponsBox<T> {
 pub enum ResponseCode {
     Ok,
     ValidateError,
+    OperationError,
     InternalServerError,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct ValidateError {
+    message: String,
+}
+
+impl ValidateError {
+    pub fn new(message: String) -> Self {
+        ValidateError { message }
+    }
+}
+
+impl fmt::Display for ValidateError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ValidateError: {}", self.message)
+    }
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct OperationError {
+    message: String,
+}
+
+impl OperationError {
+    pub fn new(message: String) -> Self {
+        OperationError { message }
+    }
+}
+
+impl fmt::Display for OperationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Operation: {}", self.message)
+    }
 }
 
 pub fn ok<T>(data: T) -> ResponsBox<T> {
@@ -61,10 +97,30 @@ pub fn internal_server_error(message: String) -> ResponsBox<Option<()>> {
     }
 }
 
+pub fn operation_error(message: String) -> ResponsBox<Option<()>> {
+    ResponsBox {
+        code: ResponseCode::OperationError,
+        message: Some(message),
+        data: None,
+    }
+}
+
 pub fn validate_error<T>(message: String) -> ResponsBox<T> {
     ResponsBox {
         code: ResponseCode::ValidateError,
         message: Some(message),
         data: None,
     }
+}
+
+pub fn response_ok<T>(data: T) -> Result<Response<BoxBody<Bytes, Error>>>
+where
+    T: serde::Serialize,
+{
+    let res = ok(data);
+    let json_str = serde_json::to_string(&res)?;
+
+    Ok(Response::builder()
+        .header(CONTENT_TYPE, "application/json")
+        .body(full(Bytes::from(json_str)))?)
 }

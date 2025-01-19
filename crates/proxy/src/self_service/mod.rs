@@ -11,9 +11,11 @@ use http_body_util::BodyExt;
 use hyper::body::{self, Incoming};
 use hyper::{Request, Response};
 use sea_orm::{ActiveModelBehavior, ActiveValue, DatabaseConnection, EntityTrait};
-use serde_json::error;
+use tokio::sync::broadcast;
 use tracing::error;
-use utils::internal_server_error;
+use utils::{
+    internal_server_error, operation_error, validate_error, OperationError, ValidateError,
+};
 
 use crate::entities::prelude::Rule;
 use crate::entities::rule;
@@ -39,9 +41,17 @@ pub fn match_self_service(req: &Request<Incoming>) -> bool {
 type Body = BoxBody<Bytes, Error>;
 
 pub async fn handle_self_service(
+    proxy_receivers: Arc<broadcast::Receiver<String>>,
     ctx: Arc<ServerContext>,
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
+    tokio::spawn(async move {
+        let mut rc = proxy_receivers.resubscribe();
+        loop {
+            let data = rc.recv().await;
+            dbg!(&data);
+        }
+    });
     let method = req.method();
     let path = req.uri().path();
 
@@ -52,6 +62,16 @@ pub async fn handle_self_service(
         (&method::Method::POST, RULE_GROUP_ADD) => {
             api::rule_group_api::handle_rule_group_add(ctx, req).await
         }
+        (&method::Method::POST, RULE_GROUP_UPDATE) => {
+            api::rule_group_api::handle_rule_group_update(ctx, req).await
+        }
+        (&method::Method::POST, RULE_GROUP_DELETE) => {
+            api::rule_group_api::handle_rule_group_delete(ctx, req).await
+        }
+        (&method::Method::POST, RULE_GROUP_LIST) => {
+            api::rule_group_api::handle_rule_group_find(ctx, req).await
+        }
+
         _ => {
             let res = Response::builder()
                 .status(http::status::StatusCode::NOT_FOUND)
@@ -64,8 +84,20 @@ pub async fn handle_self_service(
     match res {
         Ok(res) => Ok(res),
         Err(err) => {
-            error!("Server error: {:?}", err);
-            let res = internal_server_error(err.to_string());
+            let res = if matches!(err.downcast_ref::<ValidateError>(), Some(_)) {
+                let err_string = err.to_string();
+                let first_error_messge = err_string.split("\n").next().unwrap_or_default();
+                let first_error_messge = first_error_messge.split(": ").last().unwrap_or_default();
+                dbg!(&first_error_messge);
+                validate_error(first_error_messge.to_string())
+            } else if matches!(err.downcast_ref::<OperationError>(), Some(_)) {
+                operation_error(err.to_string())
+            } else {
+                internal_server_error(err.to_string())
+            };
+
+            dbg!(&res);
+
             let json_str = serde_json::to_string(&res)
                 .map_err(|e| anyhow!(e).context("response box to json error"))?;
 

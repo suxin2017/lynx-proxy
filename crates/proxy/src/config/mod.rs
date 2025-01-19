@@ -27,12 +27,11 @@ impl AppConfig {
 pub static APP_CONFIG: OnceCell<AppConfig> = OnceCell::new();
 
 pub fn init_config() -> AppConfig {
-    #[cfg(test)]
+    // #[cfg(not(test))]
+    // let default_asserts_root_dir = dirs::home_dir()
+    //     .expect("can not get home dir")
+    //     .join(format!(".config/{}", env!("CARGO_PKG_NAME")));
     let default_asserts_root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asserts");
-    #[cfg(not(test))]
-    let default_asserts_root_dir = dirs::home_dir()
-        .expect("can not get home dir")
-        .join(format!(".config/{}", env!("CARGO_PKG_NAME")));
 
     let default_ca_root_dir = default_asserts_root_dir.join("ca");
     let default_raw_root_dir = default_asserts_root_dir.join("raw");
@@ -59,8 +58,9 @@ pub fn set_up_config_dir() -> AppConfig {
 }
 
 pub fn create_dir_if_not_exists(dir: &PathBuf) {
-    if !fs::exists(dir).unwrap_or_else(|_| panic!("can't check existence of {}",
-        &dir.to_string_lossy())) {
+    if !fs::exists(dir)
+        .unwrap_or_else(|_| panic!("can't check existence of {}", &dir.to_string_lossy()))
+    {
         fs::create_dir(dir).unwrap_or_else(|_| panic!("can't create {}", &dir.to_string_lossy()));
         debug!("create dir {}", &dir.to_string_lossy());
     }
