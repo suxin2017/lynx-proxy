@@ -14,7 +14,7 @@ pub struct TunnelProxy {}
 
 impl TunnelProxy {
     pub async fn guard(&self, req: &Request<Incoming>) -> bool {
-        return Method::CONNECT != req.method();
+        Method::CONNECT != req.method()
     }
     pub async fn proxy(
         &self,

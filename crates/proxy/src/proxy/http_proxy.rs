@@ -1,52 +1,36 @@
 
-use anyhow::{anyhow, Error, Result};
-use futures_util::{FutureExt, StreamExt};
+use anyhow::{Error, Result};
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
 use tracing::{info, trace};
 
-use crate::plugins::http_request_plugin::HttpRequestPlugin;
-use crate::utils::is_http;
+use crate::plugins::http_request_plugin::{self, build_proxy_response};
+use crate::proxy_log::message::{Message};
+use crate::proxy_log::request_record::RequestRecord;
+use crate::proxy_log::try_send_message;
+use crate::schedular::get_req_trace_id;
 
-pub struct HttpProxy {}
+pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
+    info!("proxying http request {:?}", req);
+    let mut request_record = RequestRecord::from(&req);
 
-impl HttpProxy {
-    pub async fn guard(&self, req: &Request<Incoming>) -> bool {
-        return is_http(req.uri());
-    }
-    pub async fn proxy(&self, req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-        info!("proxying http request {:?}", req);
+    let trace_id = get_req_trace_id(&req);
 
-        let proxy_res = HttpRequestPlugin {}.request(req).await?;
+    match http_request_plugin::request(req).await {
+        Ok(proxy_res) => {
+            trace!("origin response: {:?}", proxy_res);
+            request_record.end = Some(chrono::Utc::now().timestamp_millis());
+            request_record.code = Some(proxy_res.status().as_u16());
 
-        trace!("origin response: {:?}", proxy_res);
+            try_send_message(Message::Add(request_record));
+            build_proxy_response(trace_id, proxy_res).await
+        }
+        Err(e) => {
+            request_record.end = Some(chrono::Utc::now().timestamp_millis());
+            try_send_message(Message::Add(request_record));
 
-        let (parts, body) = proxy_res.into_parts();
-        let mut body = body
-            .map_err(|e| anyhow!(e).context("http proxy body box error"))
-            .boxed();
-
-        let (tx, rx) = mpsc::channel(1024);
-
-        let rec_stream = ReceiverStream::new(rx);
-        // let rs = rec_stream.;
-        let stream: BoxBody<Bytes, Error> = BodyExt::boxed(StreamBody::new(rec_stream));
-
-        tokio::task::spawn(async move {
-            while let Some(frame) =body.frame().await  {
-                if let Ok(frame) = &frame {
-                    dbg!(frame);
-
-                }
-                let _ = tx.send(frame).await;
-            }
-        });
-
-        let proxy_req = Response::from_parts(parts, stream);
-        Ok(proxy_req)
+            Err(e)
+        }
     }
 }

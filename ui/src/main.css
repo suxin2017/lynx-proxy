@@ -1,0 +1,4 @@
+@layer tailwind-base, antd;
+
+@tailwind components;
+@tailwind utilities;

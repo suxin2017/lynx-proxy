@@ -1,3 +1,7 @@
 target
 sql.db
 crates/proxy/asserts
+# Local
+.DS_Store
+*.local
+*.log*

@@ -1,46 +1,37 @@
-use std::{io::Read, net::SocketAddr};
+use std::net::SocketAddr;
 
 use common::{
     build_proxy_client::build_https_client,
-    constant::{PROXY_ROOT_DIR, TEST_ROOT_CA_CERT},
+    constant::TEST_ROOT_CA_CERT,
     start_http_server::start_https_server,
     test_server::{ECHO_PATH, GZIP_PATH, HELLO_PATH, PING_PATH},
     tracing_config::init_tracing,
 };
 use http::header::CONTENT_TYPE;
 use proxy_server::{
-    cert::{init_ca, CERT_MANAGER},
-    server::Server, server_context::set_up_context,
+    server::Server,
+    server_context::{set_up_context, CA_MANAGER},
 };
 use reqwest::Client;
 pub mod common;
 
-
 async fn init_test_server() -> (SocketAddr, Client, Client) {
-    let server_context = set_up_context().await;
-
-    let ca_cert_file = &PROXY_ROOT_DIR.join("ca.cert");
-    let private_key_file = &PROXY_ROOT_DIR.join("ca.key");
-    dbg!(private_key_file);
-    let ca_manager = init_ca(ca_cert_file, private_key_file).unwrap();
-    CERT_MANAGER.set(ca_manager);
+    set_up_context().await;
 
     let addr: std::net::SocketAddr = start_https_server().await.unwrap();
-    let mut proxy_server = Server::new(3000,server_context);
+    let mut proxy_server = Server::new(3000);
     proxy_server.run().await.unwrap();
-    let proxy_addr = format!("http://{}", proxy_server.local_addr);
+    let proxy_addr = format!("http://{}", proxy_server.access_addr_list.first().unwrap());
 
     let direct_request_client = build_https_client(TEST_ROOT_CA_CERT.clone());
 
     let proxy_ca_cert =
-        reqwest::Certificate::from_pem(CERT_MANAGER.get().unwrap().ca_cert.pem().as_bytes())
-            .unwrap();
+        reqwest::Certificate::from_pem(CA_MANAGER.get().unwrap().ca_cert.pem().as_bytes()).unwrap();
     let proxy = reqwest::Proxy::all(proxy_addr).unwrap();
 
     let proxy_request_client = reqwest::Client::builder()
         .no_brotli()
         .no_deflate()
-        .no_gzip()
         .use_rustls_tls()
         .add_root_certificate(proxy_ca_cert)
         .proxy(proxy)

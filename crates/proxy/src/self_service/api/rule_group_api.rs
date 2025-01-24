@@ -1,28 +1,17 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
-
-use crate::entities::prelude::Rule;
-use crate::entities::{rule, rule_group};
+use crate::entities::rule_group;
 use crate::self_service::api::schemas::{
     RULE_GROUP_DELETE_PARAMS_SCHEMA, RULE_GROUP_UPDATE_PARAMS_SCHEMA,
 };
-use crate::self_service::utils::{
-    get_body_json, ok, response_ok, validate_error, OperationError, ValidateError,
-};
-use crate::server_context::ServerContext;
+use crate::self_service::utils::{get_body_json, response_ok, OperationError, ValidateError};
+use crate::server_context::DB;
 use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
-use bytes::{Buf, Bytes};
+use bytes::Bytes;
 use http::header::CONTENT_TYPE;
-use http::method;
 use http_body_util::combinators::BoxBody;
-use http_body_util::BodyExt;
-use hyper::body::{self, Incoming};
+use hyper::body::Incoming;
 use hyper::{Request, Response};
-use sea_orm::{
-    ActiveModelBehavior, ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue};
 use serde::{Deserialize, Serialize};
 
 use super::schemas::RULE_GROUP_ADD_PARAMS_SCHEMA;
@@ -34,9 +23,9 @@ struct RuleGroupAddParams {
 }
 
 pub async fn handle_rule_group_add(
-    ctx: Arc<ServerContext>,
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
+    let db = DB.get().unwrap();
     let group_add_params: serde_json::Value = get_body_json(req.into_body()).await?;
     jsonschema::validate(&RULE_GROUP_ADD_PARAMS_SCHEMA, &group_add_params)
         .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
@@ -47,8 +36,8 @@ pub async fn handle_rule_group_add(
         description: ActiveValue::set(group_add_params.description),
         ..Default::default()
     };
-    let res = active_model.insert(&ctx.db).await?;
-    return response_ok(res);
+    let res = active_model.insert(db).await?;
+    response_ok(res)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -59,7 +48,6 @@ struct RuleGroupUpdateParams {
 }
 
 pub async fn handle_rule_group_update(
-    ctx: Arc<ServerContext>,
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
     let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
@@ -73,7 +61,7 @@ pub async fn handle_rule_group_update(
         description: ActiveValue::set(body_params.description),
         ..Default::default()
     };
-    let res = active_model.update(&ctx.db).await?;
+    let res = active_model.update(DB.get().unwrap()).await?;
     dbg!(&res);
 
     Ok(Response::builder()
@@ -87,7 +75,6 @@ struct RuleGroupDeleteParams {
 }
 
 pub async fn handle_rule_group_delete(
-    ctx: Arc<ServerContext>,
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
     let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
@@ -99,7 +86,7 @@ pub async fn handle_rule_group_delete(
         id: ActiveValue::set(body_params.id),
         ..Default::default()
     };
-    let res = active_model.delete(&ctx.db).await?;
+    let res = active_model.delete(DB.get().unwrap()).await?;
 
     if res.rows_affected == 0 {
         return Err(anyhow!(OperationError::new(
@@ -107,7 +94,7 @@ pub async fn handle_rule_group_delete(
         )));
     }
 
-    return response_ok::<Option<()>>(None);
+    response_ok::<Option<()>>(None)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -117,7 +104,6 @@ struct RuleGroupFindParams {
 }
 
 pub async fn handle_rule_group_find(
-    ctx: Arc<ServerContext>,
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
     let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
@@ -130,7 +116,7 @@ pub async fn handle_rule_group_find(
         description: ActiveValue::set(body_params.description),
         ..Default::default()
     };
-    let res = active_model.insert(&ctx.db).await?;
+    let res = active_model.insert(DB.get().unwrap()).await?;
     dbg!(&res);
 
     Ok(Response::builder()

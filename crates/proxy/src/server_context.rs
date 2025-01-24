@@ -1,3 +1,4 @@
+use once_cell::sync::OnceCell;
 use sea_orm::DatabaseConnection;
 
 use crate::{
@@ -6,21 +7,15 @@ use crate::{
     entities::set_up_db,
 };
 
-pub struct ServerContext {
-    pub db: DatabaseConnection,
-    pub ca_manager: CertificateAuthority,
-    pub app_config: AppConfig,
-}
+pub static APP_CONFIG: OnceCell<AppConfig> = OnceCell::new();
+pub static CA_MANAGER: OnceCell<CertificateAuthority> = OnceCell::new();
+pub static DB: OnceCell<DatabaseConnection> = OnceCell::new();
 
-pub async fn set_up_context() -> ServerContext {
+// Set up the context for the server
+pub async fn set_up_context() {
     let app_config = set_up_config_dir();
-    let ca_manager = set_up_ca_manager(&app_config);
+    CA_MANAGER.get_or_init(|| set_up_ca_manager(&app_config));
     let db = set_up_db(&app_config).await;
-
-    
-    ServerContext {
-        db,
-        ca_manager,
-        app_config,
-    }
+    DB.get_or_init(|| db);
+    APP_CONFIG.get_or_init(|| app_config.clone());
 }

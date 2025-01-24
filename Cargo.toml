@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/migration", "crates/proxy"]
+members = ["crates/proxy"]
 resolver = "2"
 
 [workspace.package]
@@ -16,6 +16,7 @@ sea-orm = { version = "1.1.0", features = [
     "with-uuid",
     "debug-print",
 ] }
+tokio = { version = "1.10.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 anyhow = "1.0.95"

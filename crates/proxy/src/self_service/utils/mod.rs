@@ -1,21 +1,13 @@
 use core::fmt;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
 
 use anyhow::{anyhow, Error, Result};
 use bytes::{Buf, Bytes};
 use http::header::CONTENT_TYPE;
-use http::method;
 use http_body_util::combinators::BoxBody;
 use http_body_util::BodyExt;
-use hyper::body::{self, Incoming};
-use hyper::{Request, Response};
-use sea_orm::{ActiveModelBehavior, ActiveValue, DatabaseConnection, EntityTrait};
+use hyper::body::Incoming;
+use hyper::Response;
 
-use crate::entities::prelude::Rule;
-use crate::entities::rule;
-use crate::server_context::ServerContext;
 use crate::utils::full;
 
 pub async fn get_body_json<Value>(body: Incoming) -> Result<Value>

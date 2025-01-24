@@ -4,21 +4,38 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     server::conn::auto,
 };
-use tokio_rustls::{
-    rustls::ServerConfig,
-    TlsAcceptor,
-};
+use tokio_rustls::{rustls::ServerConfig, TlsAcceptor};
 
-use std::{
-    net::SocketAddr,
-    sync::Arc,
-};
+use std::{net::SocketAddr, sync::Arc};
 use tokio::net::TcpListener;
 
 use crate::common::{
     constant::{TEST_LOCALHOST_CERT, TEST_LOCALHOST_KEY},
     test_server::test_server,
 };
+
+pub async fn start_http_server_with_port(port: u16) -> Result<SocketAddr> {
+    let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], port))).await?;
+    let addr = listener.local_addr()?;
+    println!("start test http server at {}", addr);
+
+    tokio::spawn(async move {
+        loop {
+            let (tcp, _) = listener.accept().await.unwrap();
+
+            tokio::task::spawn(async move {
+                println!("connect is comme");
+                let _ = auto::Builder::new(TokioExecutor::new())
+                    .serve_connection_with_upgrades(TokioIo::new(tcp), service_fn(test_server))
+                    .await;
+
+                println!("end session");
+            });
+        }
+    });
+
+    Ok(addr)
+}
 
 pub async fn start_http_server() -> Result<SocketAddr> {
     let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).await?;
@@ -86,7 +103,6 @@ pub async fn start_https_server() -> Result<SocketAddr> {
                         eprintln!("HTTPS connect error: {err}");
                     }
                 };
-
             });
         }
     });

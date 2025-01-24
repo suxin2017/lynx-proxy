@@ -12,12 +12,12 @@ sea-orm = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
+tokio = { workspace = true }
 hyper = { version = "1", features = ["full"] }
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
 hyper-tungstenite = "0.17.0"
 http = "1.0"
-tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io-util", "compat"] }
 tokio-graceful = "0.2.2"
 tokio-rustls = { version = "0.26.0", default-features = false, features = [
@@ -58,10 +58,14 @@ chrono = "0.4.39"
 derive_builder = "0.20.2"
 dirs = "6.0.0"
 local-ip-address = "0.6.3"
-migration = { path = "../migration" }
 serde_json = "1.0.135"
 serde = "1.0.217"
 jsonschema = { version = "0.28.1", default-features = false }
+nanoid = "0.4.0"
+sea-orm-migration = { version = "1.1.0", features = [
+    "sqlx-sqlite",
+    "runtime-tokio-rustls",
+] }
 
 [dev-dependencies]
 dotenv = "0.15.0"
@@ -69,5 +73,13 @@ reqwest = { version = "0.12.12", features = [
     "rustls-tls-manual-roots",
     "gzip",
     "json",
+    "stream",
 ] }
 reqwest-websocket = "0.4.4"
+
+
+
+
+[features]
+default = ["test"]
+test = []

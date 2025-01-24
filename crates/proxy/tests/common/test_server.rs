@@ -3,7 +3,7 @@ use async_compression::tokio::bufread::GzipEncoder;
 use bytes::Bytes;
 use futures_util::{SinkExt, TryStreamExt};
 use http::{
-    header::{CONNECTION, CONTENT_ENCODING, CONTENT_TYPE},
+    header::{CONTENT_ENCODING, CONTENT_TYPE},
     Method, StatusCode,
 };
 use http_body_util::{combinators::BoxBody, BodyExt, Full, StreamBody};
@@ -11,12 +11,12 @@ use hyper::{
     body::{Frame, Incoming},
     Request, Response,
 };
+use once_cell::sync::Lazy;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
-use tracing_subscriber::Layer;
 
-use std::time::Duration;
-use tokio::time::interval;
+use std::{sync::Arc, time::Duration};
 use tokio::sync::broadcast;
+use tokio::time::interval;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_util::io::ReaderStream;
 
@@ -27,7 +27,29 @@ pub const HELLO_PATH: &str = "/hello";
 pub const GZIP_PATH: &str = "/gzip";
 pub const ECHO_PATH: &str = "/echo";
 pub const PING_PATH: &str = "/ping";
+pub const PUSH_MSG_PATH: &str = "/push_msg";
 
+pub static BOARD_CAST: Lazy<Arc<broadcast::Sender<String>>> = Lazy::new(|| {
+    let (tx, _) = broadcast::channel(1);
+    let tx = Arc::new(tx);
+    let tx1 = Arc::clone(&tx);
+    tokio::spawn(async move {
+        println!("start push msg");
+        let mut interval = interval(Duration::from_millis(1000));
+        loop {
+            interval.tick().await;
+            println!("send msg");
+            println!("当前订阅者数量: {}", tx1.receiver_count());
+            match tx1.send("push msg\n".to_string()) {
+                Ok(_) => {}
+                Err(e) => {
+                    dbg!(e);
+                }
+            }
+        }
+    });
+    tx
+});
 
 pub async fn test_server(
     req: Request<Incoming>,
@@ -69,7 +91,7 @@ pub async fn test_server(
             );
             let res = Response::builder()
                 .header(CONTENT_ENCODING, "gzip")
-               .status(StatusCode::OK)
+                .status(StatusCode::OK)
                 .body(BoxBody::new(stream_body))?;
             Ok(res)
         }
@@ -83,22 +105,46 @@ pub async fn test_server(
             }
             Ok(res)
         }
+        (&Method::POST, "/push_msg") => {
+            let tx = Arc::clone(&BOARD_CAST);
+            let rx = tx.subscribe();
+            let stream = BroadcastStream::new(rx);
+            let stream = stream
+                .map_ok(|data| Frame::data(Bytes::from(data)))
+                .map_err(|err| anyhow!(err));
+
+            let body = BodyExt::boxed(StreamBody::new(stream));
+            let res = Response::new(body);
+            Ok(res)
+        }
         (&Method::POST, "/ping") => {
+            let mut req_data_stream = req.into_body().into_data_stream();
             let (tx, rx1) = broadcast::channel(16);
             tokio::spawn(async move {
-                let mut interval = interval(Duration::from_millis(200));
-                let mut count = 0;
                 loop {
-                    interval.tick().await;
-                    if tx.send("pong\n").is_err() {
-                        break;
+                    let data = req_data_stream.next().await;
+                    match data {
+                        Some(Ok(data)) => {
+                            let msg = String::from_utf8(data.to_vec()).unwrap();
+                            println!("msg: {:?}", msg);
+                            if msg == "ping\n" {
+                                match tx.send("pong\n") {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        dbg!(e);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        _ => {
+                            break;
+                        }
                     }
-                    if count > 5 {
-                        break;
-                    }
-                    count += 1;
                 }
+                println!("connect is end")
             });
+
             let stream = BroadcastStream::new(rx1);
             let stream = stream
                 .map_ok(|data| Frame::data(Bytes::from(data)))

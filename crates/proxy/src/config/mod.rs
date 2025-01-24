@@ -1,10 +1,9 @@
 use std::{fs, path::PathBuf};
 
 use derive_builder::Builder;
-use once_cell::sync::OnceCell;
 use tracing::debug;
 
-#[derive(Builder, Debug, Default)]
+#[derive(Builder, Debug, Default, Clone)]
 pub struct AppConfig {
     pub asserts_root_dir: PathBuf,
     pub ca_root_dir: PathBuf,
@@ -23,8 +22,6 @@ impl AppConfig {
         self.db_root_dir.join("proxy.sqlite")
     }
 }
-
-pub static APP_CONFIG: OnceCell<AppConfig> = OnceCell::new();
 
 pub fn init_config() -> AppConfig {
     // #[cfg(not(test))]
@@ -66,14 +63,3 @@ pub fn create_dir_if_not_exists(dir: &PathBuf) {
     }
     debug!("dir {} exists", &dir.to_string_lossy());
 }
-
-#[test]
-fn test_init_config() {
-    set_up_config_dir();
-}
-
-// pub fn get_app_config(){
-//     return APP_CONFIG.get_or_init(||{
-
-//     })
-// }

@@ -1,6 +1,6 @@
+use std::sync::Arc;
 
 use anyhow::Error;
-use futures_util::{FutureExt, StreamExt};
 use http::StatusCode;
 use http_body_util::combinators::BoxBody;
 use http_body_util::BodyExt;
@@ -8,11 +8,12 @@ use hyper::body::{Bytes, Incoming};
 use hyper::service::service_fn;
 use hyper::{Method, Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
+use nanoid::nanoid;
 use tokio_rustls::TlsAcceptor;
 use tracing::{info, trace};
 
-use crate::cert::CERT_MANAGER;
-use crate::plugins::http_request_plugin::HttpRequestPlugin;
+use crate::plugins::http_request_plugin::request;
+use crate::server_context::CA_MANAGER;
 use crate::utils::empty;
 
 pub struct HttpsProxy {}
@@ -38,7 +39,7 @@ impl HttpsProxy {
                     Ok(upgraded) => {
                         let upgraded = TokioIo::new(upgraded);
                         trace!("upgrade success");
-                        let ca_manager = CERT_MANAGER.get().expect("cert manager not found");
+                        let ca_manager = CA_MANAGER.get().expect("cert manager not found");
                         let server_config = match ca_manager.gen_server_config(&authority).await {
                             Ok(server_config) => server_config,
                             Err(err) => {
@@ -56,10 +57,12 @@ impl HttpsProxy {
                                 return;
                             }
                         };
-                        let service = service_fn(|req| async move {
+                        let service = service_fn(|mut req| async move {
                             info!("proxying http request {:?}", req);
 
-                            let prosy_res = HttpRequestPlugin {}.request(req).await;
+                            req.extensions_mut().insert(Arc::new(nanoid!()));
+
+                            let prosy_res = request(req).await;
                             match prosy_res {
                                 Ok(origin_res) => {
                                     let proxy_res = {

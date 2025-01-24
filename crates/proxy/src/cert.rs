@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use http::uri::Authority;
 use moka::future::Cache;
-use once_cell::sync::OnceCell;
 use rand::{rngs::OsRng, thread_rng, Rng};
 use rcgen::{
     BasicConstraints, Certificate, CertificateParams, DnType, ExtendedKeyUsagePurpose, Ia5String,
@@ -17,8 +16,6 @@ use tokio_rustls::rustls::{
 
 
 use crate::config::AppConfig;
-
-pub static CERT_MANAGER: OnceCell<CertificateAuthority> = OnceCell::new();
 
 const TTL_SECS: i64 = 365 * 24 * 60 * 60;
 const CACHE_TTL: u64 = TTL_SECS as u64 / 2;
