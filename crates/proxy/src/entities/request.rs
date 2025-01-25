@@ -2,9 +2,9 @@
 
 use derive_builder::Builder;
 use sea_orm::entity::prelude::*;
+use serde::{Deserialize, Serialize};
 
-
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Builder)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Builder, Serialize, Deserialize)]
 #[sea_orm(table_name = "request")]
 // #[builder(pattern = "owned")]
 pub struct Model {
@@ -15,7 +15,7 @@ pub struct Model {
     pub method: String,
     pub schema: String,
     pub version: String,
-    pub status_code: i32,
+    pub status_code: u16,
     pub header: Json,
 }
 

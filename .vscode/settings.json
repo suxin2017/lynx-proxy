@@ -1,0 +1,10 @@
+{
+    "eslint.timeBudget.onFixes": {
+        "warn": 3000,
+        "error": 6000
+    },
+    "editor.codeActionsOnSave": {
+        "source.removeUnusedImports": "explicit",
+        "source.fixAll.eslint": "explicit"
+    }
+}

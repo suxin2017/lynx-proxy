@@ -4,7 +4,7 @@ import 'react18-json-view/src/style.css';
 
 interface IJsonPreviewProps { }
 
-export const JsonPreview: React.FC<IJsonPreviewProps> = (props) => {
+export const JsonPreview: React.FC<IJsonPreviewProps> = (_props) => {
   return (
     <div>
       <ReactJson className="text-sm" src={{ a: 123 }} />

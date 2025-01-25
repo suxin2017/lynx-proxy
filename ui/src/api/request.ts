@@ -1,6 +1,8 @@
 import { message } from 'antd';
+import { RequestModel } from './models';
+import { useQuery } from '@tanstack/react-query';
 
-export function fetchRequest(cb: (data: any) => void) {
+export function fetchRequest(cb: (data: { add: RequestModel }) => void) {
   const controller = new AbortController();
   const signal = controller.signal;
   fetch('/__self_service_path__/request_log', { signal }).then(
@@ -28,3 +30,20 @@ export function fetchRequest(cb: (data: any) => void) {
   );
   return controller;
 }
+
+export function fetchRequestBody(params: { url: string }) {
+  return fetch(
+    `/__self_service_path__/request_body?${new URLSearchParams(params)}`,
+  );
+}
+
+export const useGetRequestBodyQuery = (params: { uri?: string }) => {
+  return useQuery({
+    queryKey: ['/__self_service_path__/request_body', params],
+    queryFn: () =>
+      fetch(
+        `/__self_service_path__/request_body?${new URLSearchParams(params)}`,
+      ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
+    enabled: !!params.uri,
+  });
+};

@@ -20,7 +20,7 @@ const initialItems = [
 export const Detail: React.FC<IDetailProps> = (_props) => {
   return (
     <div className="bg-white px-2 flex-1 h-full">
-      <Tabs animated className="h-full  flex-1 [&_.ant-tabs-content]:h-full [&_.ant-tabs-tabpane]:h-full" defaultActiveKey="2" tabBarStyle={{ margin: 0 }} items={initialItems} >
+      <Tabs animated className="h-full  flex-1 [&_.ant-tabs-content]:h-full [&_.ant-tabs-tabpane]:h-full" defaultActiveKey="1" tabBarStyle={{ margin: 0 }} items={initialItems} >
       </Tabs>
     </div>
   );

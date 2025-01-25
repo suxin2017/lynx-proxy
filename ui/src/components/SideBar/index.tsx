@@ -1,14 +1,13 @@
 import {
   ControlOutlined,
   FieldTimeOutlined,
-  HomeOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { useNavigate, useRouter } from '@tanstack/react-router';
-import { Button, Layout, Menu, Space } from 'antd';
+import { useNavigate } from '@tanstack/react-router';
+import { Button, Layout, Space } from 'antd';
 import React from 'react';
 
-export const SideBar: React.FC = (props) => {
+export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
 
   return (

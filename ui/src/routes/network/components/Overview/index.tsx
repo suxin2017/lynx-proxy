@@ -1,38 +1,38 @@
-import { Descriptions } from 'antd';
-import React from 'react';
+import { Descriptions, Empty } from 'antd';
+import React, { useMemo } from 'react';
+import { RootState } from '../store';
+import { useSelector } from 'react-redux';
+import { keys, map } from 'lodash';
 
 interface IOverviewProps {}
 
 export const Overview: React.FC<IOverviewProps> = (_props) => {
-  const items: DescriptionsProps['items'] = [
-    {
-      key: '1',
-      label: 'UserName',
-      children: <p>Zhou Maomao</p>,
-    },
-    {
-      key: '2',
-      label: 'Telephone',
-      children: <p>1810000000</p>,
-    },
-    {
-      key: '3',
-      label: 'Live',
-      children: <p>Hangzhou, Zhejiang</p>,
-    },
-    {
-      key: '4',
-      label: 'Remark',
-      children: <p>empty</p>,
-    },
-    {
-      key: '5',
-      label: 'Address',
-      children: (
-        <p>No. 18, Wantang Road, Xihu District, Hangzhou, Zhejiang, China</p>
-      ),
-    },
-  ];
+  const selectRequest = useSelector(
+    (state: RootState) => state.requestTable.selectRequest,
+  );
+  const descriptionItems = useMemo(() => {
+    if (selectRequest?.header) {
+      return map(keys(selectRequest.header), (key) => {
+        return {
+          key,
+          label: key,
+          children: <p>{selectRequest.header[key]}</p>,
+        };
+      });
+    }
+  }, [selectRequest?.header]);
 
-  return <Descriptions bordered size="small" column={1} items={items} />;
+  if (!descriptionItems) {
+    return <Empty />;
+  }
+
+  return (
+    <Descriptions
+      labelStyle={{ width: 120, textAlign: 'right' }}
+      bordered
+      size="small"
+      column={1}
+      items={descriptionItems}
+    />
+  );
 };
