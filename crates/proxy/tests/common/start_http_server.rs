@@ -22,14 +22,10 @@ pub async fn start_http_server_with_port(port: u16) -> Result<SocketAddr> {
     tokio::spawn(async move {
         loop {
             let (tcp, _) = listener.accept().await.unwrap();
-
             tokio::task::spawn(async move {
-                println!("connect is comme");
                 let _ = auto::Builder::new(TokioExecutor::new())
                     .serve_connection_with_upgrades(TokioIo::new(tcp), service_fn(test_server))
                     .await;
-
-                println!("end session");
             });
         }
     });
@@ -47,12 +43,9 @@ pub async fn start_http_server() -> Result<SocketAddr> {
             let (tcp, _) = listener.accept().await.unwrap();
 
             tokio::task::spawn(async move {
-                println!("connect is comme");
                 let _ = auto::Builder::new(TokioExecutor::new())
                     .serve_connection_with_upgrades(TokioIo::new(tcp), service_fn(test_server))
                     .await;
-
-                println!("end session");
             });
         }
     });

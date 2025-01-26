@@ -2,46 +2,64 @@ use anyhow::{Error, Result};
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
-use tracing::{info, trace};
+use sea_orm::{ActiveModelTrait, IntoActiveModel, Set};
+use tracing::{error, info, trace};
 
-use crate::entities::request;
+use crate::entities::request::{self, ActiveModel};
+use crate::entities::response;
 use crate::plugins::http_request_plugin::{self, build_proxy_response};
 use crate::proxy_log::message::Message;
-use crate::proxy_log::request_record::RequestRecord;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
+use crate::server_context::DB;
 
 pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
     info!("proxying http request {:?}", req);
     let trace_id = get_req_trace_id(&req);
-    let mut request_model_builder = request::ModelBuilder::default();
-    request_model_builder
-        .uri(req.uri().to_string())
-        .trace_id(trace_id.to_string())
-        .method(req.method().to_string())
-        .schema(req.uri().scheme_str().unwrap_or("").to_string())
-        .version(format!("{:?}", req.version()))
-        .header(
-            req.headers()
-                .iter()
-                .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
-                .collect(),
-        );
+    let mut request_active_model = request::ActiveModel {
+        trace_id: Set(trace_id.to_string()),
+        uri: Set(req.uri().to_string()),
+        method: Set(req.method().to_string()),
+        schema: Set(req.uri().scheme_str().unwrap_or("").to_string()),
+        version: Set(format!("{:?}", req.version())),
+        header: Set(req
+            .headers()
+            .iter()
+            .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
+            .collect()),
+        ..Default::default()
+    };
 
     match http_request_plugin::request(req).await {
         Ok(proxy_res) => {
             trace!("origin response: {:?}", proxy_res);
-            request_model_builder.status_code(proxy_res.status().as_u16());
-            if let Ok(request_record) = request_model_builder.build() {
-                try_send_message(Message::add(request_record));
-            }
+            request_active_model.set(
+                request::Column::StatusCode,
+                proxy_res.status().as_u16().into(),
+            );
+
+            let record = request_active_model.insert(DB.get().unwrap()).await?;
+            let request_id = record.id;
+            try_send_message(Message::add(record));
+
+            let response = response::ActiveModel {
+                request_id: Set(request_id),
+                trace_id: Set(trace_id.to_string()),
+                header: Set(proxy_res
+                    .headers()
+                    .iter()
+                    .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
+                    .collect()),
+                ..Default::default()
+            };
+
+            response.insert(DB.get().unwrap()).await?;
 
             build_proxy_response(trace_id, proxy_res).await
         }
         Err(e) => {
-            if let Ok(request_record) = request_model_builder.build() {
-                try_send_message(Message::add(request_record));
-            }
+            let record = request_active_model.insert(DB.get().unwrap()).await?;
+            try_send_message(Message::add(record));
             Err(e)
         }
     }

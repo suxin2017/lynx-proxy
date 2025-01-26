@@ -6,7 +6,6 @@ use common::{
 };
 use proxy_server::{server::Server, server_context::set_up_context};
 
-
 #[tokio::test]
 #[ignore]
 async fn start_test_server() {
@@ -24,11 +23,12 @@ async fn start_test_server() {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
         loop {
             interval.tick().await;
-            client
+            let data = client
                 .get(format!("http://{addr}{}", HELLO_PATH))
                 .send()
                 .await
                 .unwrap();
+            data.text().await.unwrap();
         }
     });
 

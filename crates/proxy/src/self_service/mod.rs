@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
+use crate::entities::{request, response};
 use crate::proxy_log::PROXY_BOARD_CAST;
+use crate::server_context::{APP_CONFIG, DB};
 use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
@@ -9,10 +13,14 @@ use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Frame, Incoming};
 use hyper::{Request, Response};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use tokio::fs::File;
 use tokio_stream::wrappers::BroadcastStream;
+use tokio_util::io::ReaderStream;
 use tracing::{debug, error};
 use utils::{
-    internal_server_error, operation_error, validate_error, OperationError, ValidateError,
+    internal_server_error, operation_error, response_ok, validate_error, OperationError,
+    ValidateError,
 };
 
 pub mod api;
@@ -28,7 +36,9 @@ pub const RULE_GROUP_DELETE: &str = "/__self_service_path__/rule_group/delete";
 pub const RULE_GROUP_LIST: &str = "/__self_service_path__/rule_group/list";
 
 pub const REQUEST_LOG: &str = "/__self_service_path__/request_log";
-
+pub const REQUEST_BODY: &str = "/__self_service_path__/request_body";
+pub const RESPONSE: &str = "/__self_service_path__/response";
+pub const RESPONSE_BODY: &str = "/__self_service_path__/response_body";
 pub fn match_self_service(req: &Request<Incoming>) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
 }
@@ -105,6 +115,124 @@ pub async fn handle_self_service(
             }
 
             return Ok(res);
+        }
+        (&method::Method::GET, RESPONSE) => {
+            let params: HashMap<String, String> = req
+                .uri()
+                .query()
+                .map(|v| {
+                    url::form_urlencoded::parse(v.as_bytes())
+                        .into_owned()
+                        .collect()
+                })
+                .unwrap_or_else(HashMap::new);
+            let request_id = params.get("requestId");
+            if request_id.is_none() {
+                return Err(anyhow!(ValidateError::new(
+                    "requestId is required".to_string()
+                )));
+            }
+
+            let response = response::Entity::find()
+                .filter(response::Column::RequestId.eq(request_id.unwrap()))
+                .one(DB.get().unwrap())
+                .await?;
+            if response.is_none() {
+                return Err(anyhow!(OperationError::new(
+                    "response not found".to_string()
+                )));
+            }
+            let response = response.unwrap();
+            return response_ok(response);
+        }
+        (&method::Method::GET, RESPONSE_BODY) => {
+            let params: HashMap<String, String> = req
+                .uri()
+                .query()
+                .map(|v| {
+                    url::form_urlencoded::parse(v.as_bytes())
+                        .into_owned()
+                        .collect()
+                })
+                .unwrap_or_else(HashMap::new);
+            let request_id = params.get("requestId");
+            if request_id.is_none() {
+                return Err(anyhow!(ValidateError::new(
+                    "requestId is required".to_string()
+                )));
+            }
+
+            let response = response::Entity::find()
+                .filter(response::Column::RequestId.eq(request_id.unwrap()))
+                .one(DB.get().unwrap())
+                .await?;
+            if response.is_none() {
+                return Err(anyhow!(OperationError::new(
+                    "response not found".to_string()
+                )));
+            }
+            let response = response.unwrap();
+
+            let assert_root = &APP_CONFIG.get().unwrap().raw_root_dir;
+            let filename = assert_root.join(format!("{}/res", response.trace_id));
+            debug!("response body file: {:?}", filename);
+            let file = File::open(filename).await;
+            if file.is_err() {
+                eprintln!("ERROR: Unable to open file.");
+            }
+            let file = file?;
+            let reader_stream = ReaderStream::new(file);
+            let stream_body = StreamBody::new(
+                reader_stream
+                    .map_ok(Frame::data)
+                    .map_err(|e| anyhow!(e).context("response body stream error")),
+            );
+            let boxed_body = BodyExt::boxed(stream_body);
+            return Ok(Response::new(boxed_body));
+        }
+        (&method::Method::GET, REQUEST_BODY) => {
+            let params: HashMap<String, String> = req
+                .uri()
+                .query()
+                .map(|v| {
+                    url::form_urlencoded::parse(v.as_bytes())
+                        .into_owned()
+                        .collect()
+                })
+                .unwrap_or_else(HashMap::new);
+            let id = params.get("id");
+            if id.is_none() {
+                return Err(anyhow!(ValidateError::new(
+                    "requestId is required".to_string()
+                )));
+            }
+            let id = id.unwrap().parse::<i32>().map_err(|e| anyhow!(e))?;
+
+            let request = request::Entity::find_by_id(id)
+                .one(DB.get().unwrap())
+                .await?;
+            if request.is_none() {
+                return Err(anyhow!(OperationError::new(
+                    "response not found".to_string()
+                )));
+            }
+            let request = request.unwrap();
+
+            let assert_root = &APP_CONFIG.get().unwrap().raw_root_dir;
+            let filename = assert_root.join(format!("{}/req", request.trace_id));
+            let file = File::open(filename).await;
+            if file.is_err() {
+                eprintln!("ERROR: Unable to open file.");
+            }
+            let file = file?;
+            let reader_stream = ReaderStream::new(file);
+            let stream_body = StreamBody::new(
+                reader_stream
+                    .map_ok(Frame::data)
+                    .map_err(|e| anyhow!(e).context("response body stream error")),
+            );
+            let boxed_body = BodyExt::boxed(stream_body);
+            return Ok(Response::new(boxed_body));
         }
 
         _ => {

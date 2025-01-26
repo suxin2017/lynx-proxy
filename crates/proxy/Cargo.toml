@@ -66,6 +66,7 @@ sea-orm-migration = { version = "1.1.0", features = [
     "sqlx-sqlite",
     "runtime-tokio-rustls",
 ] }
+url = "2.5.4"
 
 [dev-dependencies]
 dotenv = "0.15.0"

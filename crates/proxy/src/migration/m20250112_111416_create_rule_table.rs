@@ -62,11 +62,6 @@ impl MigrationTrait for Migration {
                     .col(string(Request::Schema))
                     .col(string(Request::Version))
                     .col(integer(Request::StatusCode))
-                    .col(string(Request::StatusMessage))
-                    .col(string(Request::ClientIp))
-                    .col(integer(Request::ClientPort))
-                    .col(string_null(Request::ServerIP))
-                    .col(integer_null(Request::ServerPort))
                     .col(json(Request::Header))
                     .to_owned(),
             )
@@ -86,6 +81,7 @@ impl MigrationTrait for Migration {
                     .table(Response::Table)
                     .if_not_exists()
                     .col(pk_auto(Response::Id))
+                    .col(string(Response::TraceId))
                     .col(json(Response::Header))
                     .col(integer(Response::RequestId))
                     .to_owned(),
@@ -95,11 +91,10 @@ impl MigrationTrait for Migration {
         Ok(())
     }
 
-    async fn down(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
-        // manager
-        //     .drop_table(Table::drop().table(Rule::Table).to_owned())
-        //     .await
-        unimplemented!()
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .drop_table(Table::drop().table(Request::Table).to_owned())
+            .await
     }
 }
 
@@ -155,4 +150,5 @@ enum Response {
     Id,
     Header,
     RequestId,
+    TraceId
 }

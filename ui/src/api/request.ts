@@ -38,25 +38,28 @@ export function fetchRequestBody(params: { url: string }) {
   );
 }
 
-export const useGetRequestBodyQuery = (params: { uri?: string }) => {
+export const useGetRequestBodyQuery = (params: {
+  id: number;
+  uri?: string;
+}) => {
   return useQuery({
     queryKey: ['/__self_service_path__/request_body', params],
     queryFn: () =>
       fetch(
         `/__self_service_path__/request_body?${queryString.stringify(params)}`,
       ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
-    enabled: !!params.uri,
+    enabled: !!params.uri && !!params.id,
   });
 };
 
-export const useGetResponseQuery = (params: { requireId?: number }) => {
+export const useGetResponseQuery = (params: { requestId?: number }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/response', params],
     queryFn: () =>
       fetch(
         `/__self_service_path__/response?${queryString.stringify(params)}`,
       ).then((res) => res.json()),
-    enabled: !!params.requireId,
+    enabled: !!params.requestId,
   });
 };
 
@@ -70,6 +73,5 @@ export const useGetResponseBodyQuery = (params: {
       fetch(
         `/__self_service_path__/response_body?${queryString.stringify(params)}`,
       ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
-    enabled: !!params.uri,
   });
 };

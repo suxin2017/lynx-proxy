@@ -11,6 +11,7 @@ export const Request: React.FC<IContentsProps> = (_props) => {
   const selectRequest = useSelectRequest();
   const { data, isLoading } = useGetRequestBodyQuery({
     uri: selectRequest?.uri,
+    id: selectRequest?.id,
   });
 
   const headers = get(selectRequest, 'header', {});
