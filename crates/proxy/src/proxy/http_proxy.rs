@@ -2,10 +2,10 @@ use anyhow::{Error, Result};
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
-use sea_orm::{ActiveModelTrait, IntoActiveModel, Set};
-use tracing::{error, info, trace};
+use sea_orm::{ActiveModelTrait, Set};
+use tracing::{info, trace};
 
-use crate::entities::request::{self, ActiveModel};
+use crate::entities::request::{self};
 use crate::entities::response;
 use crate::plugins::http_request_plugin::{self, build_proxy_response};
 use crate::proxy_log::message::Message;

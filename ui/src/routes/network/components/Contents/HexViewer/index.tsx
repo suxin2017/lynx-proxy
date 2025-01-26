@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { List, AutoSizer } from 'react-virtualized';
 
 interface HexViewerProps {
   arrayBuffer?: ArrayBuffer;
@@ -44,7 +45,7 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
   const renderHeader = () => {
     const headers = Array.from({ length: 16 }, (_, i) => formatHex(i));
     return (
-      <div className="flex items-center border-b border-gray-300 text-gray-600 font-bold text-sm">
+      <div className="flex items-center border-b border-gray-300 text-gray-600 font-bold">
         <span className="w-[8ch] text-right mr-4"></span>
         {headers.map((header, idx) => (
           <span key={idx} className="w-6 text-center">
@@ -56,68 +57,79 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
     );
   };
 
-  const renderRows = () => {
-    const rows = [];
-    for (let i = 0; i < data.length; i += 16) {
-      const offset = i.toString(16).padStart(8, '0').toUpperCase();
-      const hexBytes = Array.from(data.slice(i, i + 16));
+  const renderRow = ({
+    index,
+    key,
+    style,
+  }: {
+    index: number;
+    key: string;
+    style: React.CSSProperties;
+  }) => {
+    const offset = (index * 16).toString(16).padStart(8, '0').toUpperCase();
+    const hexBytes = Array.from(data!.slice(index * 16, index * 16 + 16));
 
-      rows.push(
-        <div key={i} className="flex items-center text-sm">
-          <span className="w-[8ch] text-right text-gray-500 mr-4">
-            {offset}
-          </span>
+    return (
+      <div key={key} style={style} className="flex items-center">
+        <span className="w-[8ch] text-right text-gray-500 mr-4 select-none">{offset}</span>
+        {hexBytes.map((byte, idx) => {
+          const globalIndex = index * 16 + idx;
+          return (
+            <span
+              key={idx}
+              className={`w-6 text-center cursor-pointer `}
+              onMouseDown={() => startSelection(globalIndex)}
+              onMouseEnter={() => updateSelection(globalIndex)}
+            >
+              {formatHex(byte)}
+            </span>
+          );
+        })}
+        {hexBytes.length < 16 &&
+          Array.from({ length: 16 - hexBytes.length }).map((_, idx) => (
+            <span key={idx} className="w-6"></span>
+          ))}
+        <span className="flex-1 pl-4 text-gray-700">
           {hexBytes.map((byte, idx) => {
-            const globalIndex = i + idx;
+            const globalIndex = index * 16 + idx;
             const selected = isSelected(globalIndex);
             return (
               <span
                 key={idx}
-                className={`w-6 text-center cursor-pointer ${
-                  selected ? 'bg-blue-200' : 'text-gray-800'
-                }`}
+                className={`cursor-pointer ${selected ? 'bg-blue-200' : ''}`}
                 onMouseDown={() => startSelection(globalIndex)}
                 onMouseEnter={() => updateSelection(globalIndex)}
               >
-                {formatHex(byte)}
+                {formatAscii(byte)}
               </span>
             );
           })}
-          {hexBytes.length < 16 &&
-            Array.from({ length: 16 - hexBytes.length }).map((_, idx) => (
-              <span key={idx} className="w-6"></span>
-            ))}
-          <span className="flex-1 pl-4 text-gray-700">
-            {hexBytes.map((byte, idx) => {
-              const globalIndex = i + idx;
-              const selected = isSelected(globalIndex);
-              return (
-                <span
-                  key={idx}
-                  className={`cursor-pointer ${selected ? 'bg-blue-200' : ''}`}
-                  onMouseDown={() => startSelection(globalIndex)}
-                  onMouseEnter={() => updateSelection(globalIndex)}
-                >
-                  {formatAscii(byte)}
-                </span>
-              );
-            })}
-          </span>
-        </div>,
-      );
-    }
-    return rows;
+        </span>
+      </div>
+    );
   };
 
   if (!data) return null;
 
   return (
     <div
-      className="border border-gray-300 rounded p-1 font-mono text-xs select-none"
+      className="border border-gray-300 rounded p-1 font-mono text-xs flex h-full flex-col"
       onMouseUp={endSelection} // Finish selection
     >
       {renderHeader()}
-      {renderRows()}
+      <div className="flex-1">
+        <AutoSizer>
+          {({ height, width }) => (
+            <List
+              height={height}
+              width={width}
+              rowCount={Math.ceil(data.length / 16)}
+              rowHeight={24}
+              rowRenderer={renderRow}
+            />
+          )}
+        </AutoSizer>
+      </div>
     </div>
   );
 };

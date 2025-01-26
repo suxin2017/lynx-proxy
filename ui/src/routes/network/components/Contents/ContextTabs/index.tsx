@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Tabs } from 'antd';
+import { Spin, Tabs } from 'antd';
 import HexViewer from '@/routes/network/components/Contents/HexViewer';
 import { JsonPreview } from '@/routes/network/components/Contents/JsonPreview';
 import { Headers } from '@/routes/network/components/Contents/Headers';
@@ -12,6 +12,7 @@ interface IContentsProps {
   contentType?: string;
   body?: ArrayBuffer;
   headers?: Record<string, string>;
+  isLoading?: boolean;
 }
 
 export const ContextTabs: React.FC<IContentsProps> = ({
@@ -19,6 +20,7 @@ export const ContextTabs: React.FC<IContentsProps> = ({
   body,
   contentType,
   headers,
+  isLoading,
 }) => {
   const items = useMemo(() => {
     const contextTypeJson = !!contentType?.includes('application/json');
@@ -52,8 +54,15 @@ export const ContextTabs: React.FC<IContentsProps> = ({
 
   return (
     <Tabs
-      tabBarExtraContent={{ left: <span className="p-2">{title}</span> }}
-      className="h-full"
+      tabBarExtraContent={{
+        left: <span className="p-2">{title}</span>,
+        right: (
+          <span className="p-2">
+            <Spin size="small" spinning={isLoading} />
+          </span>
+        ),
+      }}
+      className="h-full [&_.ant-tabs-content]:h-full [&_.ant-tabs-tabpane]:h-full [&_.ant-tabs-content]:overflow-auto"
       defaultActiveKey="0"
       size="small"
       type="card"

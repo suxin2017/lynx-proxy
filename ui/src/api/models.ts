@@ -1,4 +1,4 @@
-export interface RequestModel {
+export interface IRequestModel {
   id: number;
   uri: string;
   traceId: string;
@@ -6,6 +6,27 @@ export interface RequestModel {
   schema: string;
   version: string;
   statusCode: number;
-  header: Record<string, string>; // Assuming Json is a generic JSON object
+  header: Record<string, string>;
 }
-  
+
+export interface IResponseModel {
+  id: number;
+  requestId: number;
+  traceId: string;
+  header: Record<string, string>;
+}
+
+export interface IResponseBoxView extends IResponseBox<IResponseModel> {}
+
+export enum ResponseCodeEnum {
+  Ok = 'Ok',
+  ValidateError = 'ValidateError',
+  OperationError = 'OperationError',
+  InternalServerError = 'InternalServerError',
+}
+
+export interface IResponseBox<T> {
+  code: ResponseCodeEnum;
+  message?: string;
+  data?: T;
+}

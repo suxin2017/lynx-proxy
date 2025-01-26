@@ -25,7 +25,7 @@ where
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct ResponsBox<T> {
+pub struct ResponseBox<T> {
     pub code: ResponseCode,
     pub message: Option<String>,
     pub data: Option<T>,
@@ -73,32 +73,32 @@ impl fmt::Display for OperationError {
     }
 }
 
-pub fn ok<T>(data: T) -> ResponsBox<T> {
-    ResponsBox {
+pub fn ok<T>(data: T) -> ResponseBox<T> {
+    ResponseBox {
         code: ResponseCode::Ok,
         message: None,
         data: Some(data),
     }
 }
 
-pub fn internal_server_error(message: String) -> ResponsBox<Option<()>> {
-    ResponsBox {
+pub fn internal_server_error(message: String) -> ResponseBox<Option<()>> {
+    ResponseBox {
         code: ResponseCode::InternalServerError,
         message: Some(message),
         data: None,
     }
 }
 
-pub fn operation_error(message: String) -> ResponsBox<Option<()>> {
-    ResponsBox {
+pub fn operation_error(message: String) -> ResponseBox<Option<()>> {
+    ResponseBox {
         code: ResponseCode::OperationError,
         message: Some(message),
         data: None,
     }
 }
 
-pub fn validate_error<T>(message: String) -> ResponsBox<T> {
-    ResponsBox {
+pub fn validate_error<T>(message: String) -> ResponseBox<T> {
+    ResponseBox {
         code: ResponseCode::ValidateError,
         message: Some(message),
         data: None,

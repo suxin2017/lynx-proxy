@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { requestTreeReducer } from './requestTreeStore';
 import { requestTableReducer } from './requestTableStore';
+import { selectRequestReducer } from './selectRequestStore';
 
 export const store = configureStore({
   reducer: {
     requestTable: requestTableReducer,
     requestTree: requestTreeReducer,
+    selectRequest: selectRequestReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }),

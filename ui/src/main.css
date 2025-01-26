@@ -1,8 +1,14 @@
 @layer tailwind-base, antd;
 
 @layer tailwind-base {
-    @tailwind base;
+  @tailwind base;
 }
 
 @tailwind components;
 @tailwind utilities;
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}

@@ -1,49 +1,71 @@
-import { RequestModel } from '@/api/models';
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { IRequestModel } from '@/api/models';
+import { createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit';
 
-interface RequestTreeNode {
-  id: number;
-  record: RequestModel;
-  children: Map<string, RequestTreeNode>;
+export interface IRequestTreeNode {
+  key: string;
+  title: string;
+  record?: IRequestModel;
+  children: IRequestTreeNode[];
 }
 
-type RequestTree = Map<string, RequestTreeNode>;
+export type IRequestTree = IRequestTreeNode[];
 
 export interface RequestTreeState {
-  requestTree: RequestTree;
-  selectTreeNode: RequestTreeNode | null;
+  requestTree: IRequestTree;
+  nodeMap: Record<string, IRequestTreeNode>;
 }
 const initialState: RequestTreeState = {
-  requestTree: new Map(),
-  selectTreeNode: null,
+  requestTree: [],
+  nodeMap: {},
 };
 
 const requestTreeSlice = createSlice({
   name: 'requestTree',
   initialState,
   reducers: {
-    handleSelect: (state, action: PayloadAction<RequestTreeNode>) => {
-      state.selectTreeNode = action.payload;
-    },
-    appendTreeNode: (state, action: PayloadAction<RequestModel>) => {
+    appendTreeNode: (state, action: PayloadAction<IRequestModel>) => {
       const { uri } = action.payload;
-      const parts = uri.split('/');
+      const schemaIndex = uri.indexOf('://');
+      const schema = uri.slice(0, schemaIndex + 3);
+      const parts = uri
+        .slice(schemaIndex + 3)
+        .split('/')
+        .map((part, index) => (index === 0 ? schema + part : part));
+
       let currentNode = state.requestTree;
+      let currentPath = '';
       for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
-        if (!currentNode.has(part)) {
-          currentNode.set(part, {
-            id: i,
+        currentPath += `/${part}`;
+        const isEndNode = i === parts.length - 1;
+        if (isEndNode) {
+          const newNode: IRequestTreeNode = {
+            key: nanoid(),
+            title: part,
             record: action.payload,
-            children: new Map(),
-          });
+            children: [],
+          };
+          currentNode.push(newNode);
+        } else {
+          const node = currentNode.find((n) => n.key === currentPath);
+          if (!node) {
+            const newNode: IRequestTreeNode = {
+              key: currentPath,
+              title: part,
+              record: undefined,
+              children: [],
+            };
+            currentNode.push(newNode);
+            currentNode = newNode.children;
+          } else {
+            currentNode = node?.children || [];
+          }
         }
-        currentNode = currentNode.get(part)!.children;
       }
     },
   },
 });
 
-export const { handleSelect, appendTreeNode } = requestTreeSlice.actions;
+export const { appendTreeNode } = requestTreeSlice.actions;
 
 export const requestTreeReducer = requestTreeSlice.reducer;

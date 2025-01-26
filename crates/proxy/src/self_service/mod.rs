@@ -125,7 +125,7 @@ pub async fn handle_self_service(
                         .into_owned()
                         .collect()
                 })
-                .unwrap_or_else(HashMap::new);
+                .unwrap_or_default();
             let request_id = params.get("requestId");
             if request_id.is_none() {
                 return Err(anyhow!(ValidateError::new(
@@ -154,7 +154,7 @@ pub async fn handle_self_service(
                         .into_owned()
                         .collect()
                 })
-                .unwrap_or_else(HashMap::new);
+                .unwrap_or_default();
             let request_id = params.get("requestId");
             if request_id.is_none() {
                 return Err(anyhow!(ValidateError::new(
@@ -188,7 +188,12 @@ pub async fn handle_self_service(
                     .map_err(|e| anyhow!(e).context("response body stream error")),
             );
             let boxed_body = BodyExt::boxed(stream_body);
-            return Ok(Response::new(boxed_body));
+            return Ok(Response::builder()
+                .header(
+                    CONTENT_TYPE,
+                    HeaderValue::from_static("application/octet-stream"),
+                )
+                .body(boxed_body)?);
         }
         (&method::Method::GET, REQUEST_BODY) => {
             let params: HashMap<String, String> = req
@@ -199,7 +204,7 @@ pub async fn handle_self_service(
                         .into_owned()
                         .collect()
                 })
-                .unwrap_or_else(HashMap::new);
+                .unwrap_or_default();
             let id = params.get("id");
             if id.is_none() {
                 return Err(anyhow!(ValidateError::new(
@@ -232,7 +237,12 @@ pub async fn handle_self_service(
                     .map_err(|e| anyhow!(e).context("response body stream error")),
             );
             let boxed_body = BodyExt::boxed(stream_body);
-            return Ok(Response::new(boxed_body));
+            return Ok(Response::builder()
+                .header(
+                    CONTENT_TYPE,
+                    HeaderValue::from_static("application/octet-stream"),
+                )
+                .body(boxed_body)?);
         }
 
         _ => {

@@ -136,11 +136,6 @@ enum Request {
     Schema,
     Version,
     StatusCode,
-    StatusMessage,
-    ClientIp,
-    ClientPort,
-    ServerIP,
-    ServerPort,
     Header,
 }
 
@@ -150,5 +145,5 @@ enum Response {
     Id,
     Header,
     RequestId,
-    TraceId
+    TraceId,
 }

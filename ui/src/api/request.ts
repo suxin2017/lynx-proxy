@@ -1,9 +1,9 @@
 import { message } from 'antd';
-import { RequestModel } from './models';
+import { IRequestModel, IResponseBoxView } from './models';
 import { useQuery } from '@tanstack/react-query';
 import queryString from 'query-string';
 
-export function fetchRequest(cb: (data: { add: RequestModel }) => void) {
+export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
   const controller = new AbortController();
   const signal = controller.signal;
   fetch('/__self_service_path__/request_log', { signal }).then(
@@ -32,23 +32,14 @@ export function fetchRequest(cb: (data: { add: RequestModel }) => void) {
   return controller;
 }
 
-export function fetchRequestBody(params: { url: string }) {
-  return fetch(
-    `/__self_service_path__/request_body?${new URLSearchParams(params)}`,
-  );
-}
-
-export const useGetRequestBodyQuery = (params: {
-  id: number;
-  uri?: string;
-}) => {
+export const useGetRequestBodyQuery = (params: { id?: number }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/request_body', params],
     queryFn: () =>
       fetch(
         `/__self_service_path__/request_body?${queryString.stringify(params)}`,
       ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
-    enabled: !!params.uri && !!params.id,
+    enabled: !!params.id,
   });
 };
 
@@ -58,14 +49,13 @@ export const useGetResponseQuery = (params: { requestId?: number }) => {
     queryFn: () =>
       fetch(
         `/__self_service_path__/response?${queryString.stringify(params)}`,
-      ).then((res) => res.json()),
+      ).then((res) => res.json() as Promise<IResponseBoxView>),
     enabled: !!params.requestId,
   });
 };
 
 export const useGetResponseBodyQuery = (params: {
-  requireId?: number;
-  uri?: string;
+  requestId?: number;
 }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/response_body', params],
