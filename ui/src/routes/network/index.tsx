@@ -33,15 +33,15 @@ function InnerComponent() {
   return (
     <div className="flex-1 flex flex-col h-full ">
       {state === 'Sequence' && (
-        <>
+        <div className="flex-1 flex flex-col h-full animate-fade-in">
           <ShowTypeSegmented />
           <div className="flex-1">
             <Sequence />
           </div>
-        </>
+        </div>
       )}
       {state === 'Structure' && (
-        <div className="flex-1">
+        <div className="flex-1 animate-fade-in">
           <Structure />
         </div>
       )}
