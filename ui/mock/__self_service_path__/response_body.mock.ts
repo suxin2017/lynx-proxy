@@ -2,6 +2,6 @@ import { defineMock } from 'rspack-plugin-mock/helper';
 import { mockBodyHandle } from './utils/mockBodyHandle';
 
 export default defineMock({
-  url: '/__self_service_path__/request_body',
+  url: '/__self_service_path__/response_body',
   response: mockBodyHandle,
 });

@@ -25,6 +25,7 @@
     "lodash": "^4.17.21",
     "pretty-bytes": "^6.1.1",
     "pretty-time": "^1.1.0",
+    "query-string": "^9.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-redux": "^9.2.0",

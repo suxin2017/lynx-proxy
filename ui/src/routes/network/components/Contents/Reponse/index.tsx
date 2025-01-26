@@ -1,19 +1,35 @@
 import React from 'react';
-import { Tabs } from 'antd';
-import { JsonPreview } from '@/routes/network/components/Contents/JsonPreview';
-import { Headers } from '@/routes/network/components/Contents/Headers';
+import { Spin } from 'antd';
+import { useSelectRequest } from '../../store/requestTableStore';
+import {
+    useGetResponseBodyQuery,
+    useGetResponseQuery
+} from '@/api/request';
+import { ContextTabs } from '../ContextTabs';
+import { get } from 'lodash';
 
-interface IContentsProps { }
-const sampleData = new TextEncoder().encode(
-    'This is a sample string to demonstrate a hex viewer.'
-);
+interface IContentsProps {}
+
 export const Response: React.FC<IContentsProps> = (_props) => {
-    return (
-        <Tabs tabBarExtraContent={{ left: <span className="p-2">Response</span> }} defaultActiveKey="0" size="small" type="card" items={[
-            { key: '0', label: "Headers", children: <Headers /> },
-            // { key: '1', label: 'Hex', children: <HexViewer data={sampleData} /> },
-            { key: '2', label: 'Json', children: <JsonPreview /> },
-        ]} />
+  const selectRequest = useSelectRequest();
+  const { data: responseData, isLoading: responseDataLoading } =
+    useGetResponseQuery({
+      requireId: selectRequest?.id,
+    });
+  const { data: body, isLoading: bodyDataLoading } = useGetResponseBodyQuery({
+    uri: responseData?.uri,
+  });
+  const headers = get(responseData, 'header', {});
+  const contentType = get(headers, 'Content-Type', '');
 
-    );
+  return (
+    <Spin spinning={responseDataLoading || bodyDataLoading}>
+      <ContextTabs
+        title={'Request'}
+        headers={headers}
+        contentType={contentType}
+        body={body}
+      />
+    </Spin>
+  );
 };

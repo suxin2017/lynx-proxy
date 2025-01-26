@@ -2,19 +2,12 @@ import React from 'react';
 import { Splitter } from 'antd';
 import { Request } from './Request';
 import { Response } from './Reponse';
-import { useGetRequestBodyQuery } from '@/api/request';
-import { useSelectRequest } from '../store/requestTableStore';
 
 interface IContentsProps {}
 
 export const Contents: React.FC<IContentsProps> = (_props) => {
   const [sizes, setSizes] = React.useState<(number | string)[]>(['50%', '50%']);
 
-  const selectRequest = useSelectRequest();
-  const { data, isLoading } = useGetRequestBodyQuery({
-    uri: selectRequest?.uri,
-  });
-  console.log(data, isLoading, 'data');
   return (
     <Splitter
       className="h-full"

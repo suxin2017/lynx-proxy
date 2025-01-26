@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Button, Table } from 'antd';
+import { Table } from 'antd';
 import type { TableProps } from 'antd';
 import { fetchRequest } from '../../../../api/request';
 import dayjs from 'dayjs';
@@ -37,11 +37,9 @@ export const RequestTable: React.FC = () => {
     (state: RootState) => state.requestTable.selectRequest,
   );
   const dispatch = useDispatch();
-  
+
   useEffect(() => {
     const controller = fetchRequest((data) => {
-      // add(data.)
-      // console.log(data);
       dispatch(appendRequest(data.add));
     });
     return () => {
@@ -50,7 +48,6 @@ export const RequestTable: React.FC = () => {
   }, [dispatch]);
   return (
     <div className="flex-1 bg-white">
-      <Button onClick={() => {}}>change randomw</Button>
       <Table<RequestModel>
         columns={columns}
         size="small"

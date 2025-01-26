@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 interface HexViewerProps {
-  data: Uint8Array;
+  arrayBuffer?: ArrayBuffer;
 }
 
-const HexViewer: React.FC<HexViewerProps> = ({ data }) => {
+const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
+  const data = useMemo(() => {
+    if (!arrayBuffer) return null;
+    return new Uint8Array(arrayBuffer);
+  }, [arrayBuffer]);
   const [selection, setSelection] = useState<[number, number] | null>(null); // [start, end]
   const [isSelecting, setIsSelecting] = useState(false);
 
@@ -54,8 +58,6 @@ const HexViewer: React.FC<HexViewerProps> = ({ data }) => {
 
   const renderRows = () => {
     const rows = [];
-    data = new Uint8Array(data);
-    
     for (let i = 0; i < data.length; i += 16) {
       const offset = i.toString(16).padStart(8, '0').toUpperCase();
       const hexBytes = Array.from(data.slice(i, i + 16));
@@ -107,7 +109,6 @@ const HexViewer: React.FC<HexViewerProps> = ({ data }) => {
     return rows;
   };
 
-  console.log(data, 'data========');
   if (!data) return null;
 
   return (

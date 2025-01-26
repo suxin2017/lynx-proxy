@@ -1,38 +1,31 @@
-import { Descriptions, DescriptionsProps } from 'antd';
-import React from 'react';
+import { Descriptions } from 'antd';
+import { keys, map } from 'lodash';
+import React, { useMemo } from 'react';
 
-interface IOverviewProps {}
+interface IOverviewProps {
+  data?: Record<string, string>;
+}
 
-export const Headers: React.FC<IOverviewProps> = (_props) => {
-  const items: DescriptionsProps['items'] = [
-    {
-      key: '1',
-      label: 'UserName',
-      children: <p>Zhou Maomao</p>,
-    },
-    {
-      key: '2',
-      label: 'Telephone',
-      children: <p>1810000000</p>,
-    },
-    {
-      key: '3',
-      label: 'Live',
-      children: <p>Hangzhou, Zhejiang</p>,
-    },
-    {
-      key: '4',
-      label: 'Remark',
-      children: <p>empty</p>,
-    },
-    {
-      key: '5',
-      label: 'Address',
-      children: (
-        <p>No. 18, Wantang Road, Xihu District, Hangzhou, Zhejiang, China</p>
-      ),
-    },
-  ];
+export const Headers: React.FC<IOverviewProps> = ({ data }) => {
+  const items = useMemo(() => {
+    if (data) {
+      return map(keys(data), (key) => {
+        return {
+          key,
+          label: key,
+          children: <p>{data[key]}</p>,
+        };
+      });
+    }
+  }, [data]);
 
-  return <Descriptions bordered size="small" column={1} items={items} />;
+  return (
+    <Descriptions
+      bordered
+      size="small"
+      labelStyle={{ width: 200 }}
+      column={1}
+      items={items}
+    />
+  );
 };

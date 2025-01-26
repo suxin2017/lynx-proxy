@@ -1,6 +1,7 @@
 import { message } from 'antd';
 import { RequestModel } from './models';
 import { useQuery } from '@tanstack/react-query';
+import queryString from 'query-string';
 
 export function fetchRequest(cb: (data: { add: RequestModel }) => void) {
   const controller = new AbortController();
@@ -42,7 +43,32 @@ export const useGetRequestBodyQuery = (params: { uri?: string }) => {
     queryKey: ['/__self_service_path__/request_body', params],
     queryFn: () =>
       fetch(
-        `/__self_service_path__/request_body?${new URLSearchParams(params)}`,
+        `/__self_service_path__/request_body?${queryString.stringify(params)}`,
+      ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
+    enabled: !!params.uri,
+  });
+};
+
+export const useGetResponseQuery = (params: { requireId?: number }) => {
+  return useQuery({
+    queryKey: ['/__self_service_path__/response', params],
+    queryFn: () =>
+      fetch(
+        `/__self_service_path__/response?${queryString.stringify(params)}`,
+      ).then((res) => res.json()),
+    enabled: !!params.requireId,
+  });
+};
+
+export const useGetResponseBodyQuery = (params: {
+  requireId?: number;
+  uri?: string;
+}) => {
+  return useQuery({
+    queryKey: ['/__self_service_path__/response_body', params],
+    queryFn: () =>
+      fetch(
+        `/__self_service_path__/response_body?${queryString.stringify(params)}`,
       ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
     enabled: !!params.uri,
   });

@@ -17,7 +17,6 @@ const requestTableSlice = createSlice({
   initialState,
   reducers: {
     handleSelect: (state, action) => {
-      console.log(action, 'action');
       if (state.selectRequest?.id === action.payload.id) {
         state.selectRequest = null;
         return;

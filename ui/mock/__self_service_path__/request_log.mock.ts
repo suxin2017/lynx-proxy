@@ -1,5 +1,5 @@
 import { defineMock } from 'rspack-plugin-mock/helper';
-import Mock from 'mockjs';
+import { mockData } from './utils/mockData';
 
 export default defineMock({
   url: '/__self_service_path__/request_log',
@@ -12,20 +12,8 @@ export default defineMock({
         clearInterval(timer);
         return;
       }
-      const mockData = Mock.mock({
-        id: '@increment',
-        uri: '@pick(["http","https"])://@domain()/@word()/@word()/@pick(["formData","json","file","png"])',
-        traceId: '@guid',
-        method: '@pick(["GET", "POST", "PUT", "DELETE"])',
-        schema: '@pick(["http", "https"])',
-        version: '@pick(["HTTP/1.1", "HTTP/2"])',
-        statusCode: '@integer(200, 500)',
-        header: {
-          'Content-Type': '@pick(["application/json", "multipart/form-data"])',
-          'User-Agent': '@string("upper", 5, 10)',
-        },
-      });
-      res.write(Buffer.from(JSON.stringify({ add: mockData })));
+      const data = mockData();
+      res.write(Buffer.from(JSON.stringify({ add: data })));
     }, 1000);
   },
 });
