@@ -5,3 +5,5 @@ crates/proxy/asserts
 .DS_Store
 *.local
 *.log*
+.idea
+.vscode
