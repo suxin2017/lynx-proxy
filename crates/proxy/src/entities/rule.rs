@@ -2,14 +2,14 @@
 use async_trait::async_trait;
 use chrono::Local;
 use sea_orm::{entity::prelude::*, ActiveValue};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "rule")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub r#match: String,
-    pub target_uri: String,
+    pub name: String,
     pub rule_group_id: i32,
     pub created_at: u32,
     pub updated_at: u32,
@@ -23,11 +23,19 @@ pub enum Relation {
         to = "super::rule_group::Column::Id"
     )]
     RuleGroup,
+    #[sea_orm(has_many = "super::rule_content::Entity")]
+    RuleContent,
 }
 
 impl Related<super::rule_group::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::RuleGroup.def()
+    }
+}
+
+impl Related<super::rule_content::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::RuleContent.def()
     }
 }
 
@@ -39,6 +47,7 @@ impl ActiveModelBehavior for ActiveModel {
     {
         if insert {
             self.created_at = ActiveValue::Set(Local::now().timestamp_millis() as u32);
+            self.updated_at = ActiveValue::Set(Local::now().timestamp_millis() as u32);
         } else {
             self.updated_at = ActiveValue::Set(Local::now().timestamp_millis() as u32);
         }

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::config::UI_ASSERT_DIR;
 use crate::entities::{request, response};
 use crate::proxy_log::PROXY_BOARD_CAST;
 use crate::server_context::{APP_CONFIG, DB};
@@ -19,12 +20,11 @@ use tokio_stream::wrappers::BroadcastStream;
 use tokio_util::io::ReaderStream;
 use tracing::{debug, error};
 use utils::{
-    internal_server_error, operation_error, response_ok, validate_error, OperationError,
+    internal_server_error, not_found, operation_error, response_ok, validate_error, OperationError,
     ValidateError,
 };
 
 pub mod api;
-pub mod rule_group;
 pub mod utils;
 
 const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
@@ -34,6 +34,10 @@ pub const RULE_GROUP_ADD: &str = "/__self_service_path__/rule_group/add";
 pub const RULE_GROUP_UPDATE: &str = "/__self_service_path__/rule_group/update";
 pub const RULE_GROUP_DELETE: &str = "/__self_service_path__/rule_group/delete";
 pub const RULE_GROUP_LIST: &str = "/__self_service_path__/rule_group/list";
+pub const RULE_ADD: &str = "/__self_service_path__/rule/add";
+pub const RULE_UPDATE: &str = "/__self_service_path__/rule/update";
+pub const RULE_DELETE: &str = "/__self_service_path__/rule/delete";
+pub const RULE_DETAIL: &str = "/__self_service_path__/rule";
 
 pub const REQUEST_LOG: &str = "/__self_service_path__/request_log";
 pub const REQUEST_BODY: &str = "/__self_service_path__/request_body";
@@ -54,6 +58,9 @@ pub async fn handle_self_service(
         (&method::Method::GET, HELLO_PATH) => {
             return Ok(Response::new(full(Bytes::from("Hello, World!"))));
         }
+        (&method::Method::GET, RULE_GROUP_LIST) => {
+            api::rule_group_api::handle_rule_group_find(req).await
+        }
         (&method::Method::POST, RULE_GROUP_ADD) => {
             api::rule_group_api::handle_rule_group_add(req).await
         }
@@ -63,9 +70,10 @@ pub async fn handle_self_service(
         (&method::Method::POST, RULE_GROUP_DELETE) => {
             api::rule_group_api::handle_rule_group_delete(req).await
         }
-        (&method::Method::POST, RULE_GROUP_LIST) => {
-            api::rule_group_api::handle_rule_group_find(req).await
-        }
+        (&method::Method::GET, RULE_DETAIL) => api::rule_api::handle_rule_detail(req).await,
+        (&method::Method::POST, RULE_ADD) => api::rule_api::handle_rule_add(req).await,
+        (&method::Method::POST, RULE_UPDATE) => api::rule_api::handle_rule_update(req).await,
+        (&method::Method::POST, RULE_DELETE) => api::rule_api::handle_rule_delete(req).await,
         (&method::Method::GET, REQUEST_LOG) => {
             let rx = PROXY_BOARD_CAST.subscribe();
             let rx_stream = BroadcastStream::new(rx)
@@ -244,6 +252,40 @@ pub async fn handle_self_service(
                 )
                 .body(boxed_body)?);
         }
+        (&method::Method::GET, path) if path.starts_with(SELF_SERVICE_PATH_PREFIX) => {
+            let mut static_path = &path[SELF_SERVICE_PATH_PREFIX.len()..];
+            if static_path.starts_with("/") {
+                static_path = &static_path[1..];
+            }
+
+            if matches!(static_path, "/" | "") {
+                static_path = "index.html";
+            }
+
+            println!("static path {}", &static_path);
+
+            let static_file = UI_ASSERT_DIR.get_file(static_path);
+            let mime_type = mime_guess::from_path(&static_path);
+            let content_type = mime_type
+                .first()
+                .and_then(|mime| {
+                    let mime_str = mime.to_string();
+                    HeaderValue::from_str(&mime_str).ok()
+                })
+                .unwrap_or_else(|| HeaderValue::from_static("text/html"));
+
+            let static_file = static_file.ok_or_else(|| anyhow!("not found"))?;
+
+            let bytes = Bytes::from_static(static_file.contents());
+
+            let body = BoxBody::boxed(full(bytes));
+
+            let res = Response::builder()
+                .header(CONTENT_TYPE, content_type)
+                .body(body)
+                .unwrap();
+            return Ok(res);
+        }
 
         _ => {
             let res = Response::builder()
@@ -268,8 +310,6 @@ pub async fn handle_self_service(
             } else {
                 internal_server_error(err.to_string())
             };
-
-            dbg!(&res);
 
             let json_str = serde_json::to_string(&res)
                 .map_err(|e| anyhow!(e).context("response box to json error"))?;

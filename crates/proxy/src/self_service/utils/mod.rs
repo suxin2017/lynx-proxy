@@ -1,4 +1,5 @@
 use core::fmt;
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Error, Result};
 use bytes::{Buf, Bytes};
@@ -22,6 +23,18 @@ where
     let json_value: Value = serde_json::from_reader(aggregate.reader())
         .map_err(|e| anyhow!(e).context("parse request body json error"))?;
     Ok(json_value)
+}
+
+pub fn get_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
+    let params: HashMap<String, String> = uri
+        .query()
+        .map(|v| {
+            url::form_urlencoded::parse(v.as_bytes())
+                .into_owned()
+                .collect()
+        })
+        .unwrap_or_default();
+    return params;
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -115,4 +128,11 @@ where
     Ok(Response::builder()
         .header(CONTENT_TYPE, "application/json")
         .body(full(Bytes::from(json_str)))?)
+}
+
+pub fn not_found() -> Response<BoxBody<Bytes, Error>> {
+    return Response::builder()
+        .status(http::status::StatusCode::NOT_FOUND)
+        .body(full(Bytes::from("Not Found")))
+        .unwrap();
 }

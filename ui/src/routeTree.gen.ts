@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 import { Route as SettingIndexImport } from './routes/setting/index'
+import { Route as RuleManagerIndexImport } from './routes/ruleManager/index'
 import { Route as NetworkIndexImport } from './routes/network/index'
 import { Route as HomeIndexImport } from './routes/home/index'
 
@@ -34,6 +35,12 @@ const IndexRoute = IndexImport.update({
 const SettingIndexRoute = SettingIndexImport.update({
   id: '/setting/',
   path: '/setting/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const RuleManagerIndexRoute = RuleManagerIndexImport.update({
+  id: '/ruleManager/',
+  path: '/ruleManager/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -81,6 +88,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NetworkIndexImport
       parentRoute: typeof rootRoute
     }
+    '/ruleManager/': {
+      id: '/ruleManager/'
+      path: '/ruleManager'
+      fullPath: '/ruleManager'
+      preLoaderRoute: typeof RuleManagerIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/setting/': {
       id: '/setting/'
       path: '/setting'
@@ -98,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/home': typeof HomeIndexRoute
   '/network': typeof NetworkIndexRoute
+  '/ruleManager': typeof RuleManagerIndexRoute
   '/setting': typeof SettingIndexRoute
 }
 
@@ -106,6 +121,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/home': typeof HomeIndexRoute
   '/network': typeof NetworkIndexRoute
+  '/ruleManager': typeof RuleManagerIndexRoute
   '/setting': typeof SettingIndexRoute
 }
 
@@ -115,15 +131,23 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/home/': typeof HomeIndexRoute
   '/network/': typeof NetworkIndexRoute
+  '/ruleManager/': typeof RuleManagerIndexRoute
   '/setting/': typeof SettingIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/home' | '/network' | '/setting'
+  fullPaths: '/' | '/about' | '/home' | '/network' | '/ruleManager' | '/setting'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/home' | '/network' | '/setting'
-  id: '__root__' | '/' | '/about' | '/home/' | '/network/' | '/setting/'
+  to: '/' | '/about' | '/home' | '/network' | '/ruleManager' | '/setting'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/home/'
+    | '/network/'
+    | '/ruleManager/'
+    | '/setting/'
   fileRoutesById: FileRoutesById
 }
 
@@ -132,6 +156,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   HomeIndexRoute: typeof HomeIndexRoute
   NetworkIndexRoute: typeof NetworkIndexRoute
+  RuleManagerIndexRoute: typeof RuleManagerIndexRoute
   SettingIndexRoute: typeof SettingIndexRoute
 }
 
@@ -140,6 +165,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   HomeIndexRoute: HomeIndexRoute,
   NetworkIndexRoute: NetworkIndexRoute,
+  RuleManagerIndexRoute: RuleManagerIndexRoute,
   SettingIndexRoute: SettingIndexRoute,
 }
 
@@ -157,6 +183,7 @@ export const routeTree = rootRoute
         "/about",
         "/home/",
         "/network/",
+        "/ruleManager/",
         "/setting/"
       ]
     },
@@ -171,6 +198,9 @@ export const routeTree = rootRoute
     },
     "/network/": {
       "filePath": "network/index.tsx"
+    },
+    "/ruleManager/": {
+      "filePath": "ruleManager/index.tsx"
     },
     "/setting/": {
       "filePath": "setting/index.tsx"

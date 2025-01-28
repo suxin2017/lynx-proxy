@@ -25,6 +25,7 @@
     "dayjs": "^1.11.13",
     "immer": "^10.1.1",
     "lodash": "^4.17.21",
+    "monaco-editor": "^0.52.2",
     "pretty-bytes": "^6.1.1",
     "pretty-time": "^1.1.0",
     "query-string": "^9.1.1",

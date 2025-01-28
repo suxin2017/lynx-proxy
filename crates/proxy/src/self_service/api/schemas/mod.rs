@@ -49,7 +49,52 @@ pub static RULE_GROUP_DELETE_PARAMS_SCHEMA: Lazy<Value> = Lazy::new(|| {
 
 pub static RULE_GROUP_FIND_PARAMS_SCHEMA: Lazy<Value> = Lazy::new(|| {
     json!({
-        "title": "RuleGroupAddParams",
+        "title": "RuleGroupFindParams",
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "number",
+            },
+        },
+        "required": ["id"]
+    })
+});
+
+pub static RULE_ADD_PARAMS_SCHEMA: Lazy<Value> = Lazy::new(|| {
+    json!({
+        "title": "RuleAddParams",
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+            },
+            "ruleGroupId": {
+                "type": "number",
+            }
+        },
+        "required": ["name","ruleGroupId"]
+    })
+});
+
+pub static RULE_UPDATE_PARAMS_SCHEMA: Lazy<Value> = Lazy::new(|| {
+    json!({
+        "title": "RuleUpdateParams",
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+            },
+            "id": {
+                "type": "number",
+            }
+        },
+        "required": ["name","id"]
+    })
+});
+
+pub static RULE_DELETE_PARAMS_SCHEMA: Lazy<Value> = Lazy::new(|| {
+    json!({
+        "title": "RuleDeleteParams",
         "type": "object",
         "properties": {
             "id": {

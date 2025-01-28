@@ -1,8 +1,10 @@
-use crate::entities::rule_group;
+use crate::entities::{rule, rule_group};
 use crate::self_service::api::schemas::{
     RULE_GROUP_DELETE_PARAMS_SCHEMA, RULE_GROUP_UPDATE_PARAMS_SCHEMA,
 };
-use crate::self_service::utils::{get_body_json, response_ok, OperationError, ValidateError};
+use crate::self_service::utils::{
+    get_body_json, get_query_params, response_ok, OperationError, ValidateError,
+};
 use crate::server_context::DB;
 use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
@@ -11,8 +13,11 @@ use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
-use sea_orm::{ActiveModelTrait, ActiveValue};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, ColumnTrait, Condition, EntityTrait, ModelTrait, QueryFilter,
+};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use super::schemas::RULE_GROUP_ADD_PARAMS_SCHEMA;
 
@@ -104,22 +109,45 @@ struct RuleGroupFindParams {
 }
 
 pub async fn handle_rule_group_find(
-    req: Request<Incoming>,
+    _req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&RULE_GROUP_UPDATE_PARAMS_SCHEMA, &body_json)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let body_params: RuleGroupUpdateParams = serde_json::from_value(body_json)?;
+    let res = rule_group::Entity::find()
+        .find_with_related(rule::Entity)
+        .all(DB.get().unwrap())
+        .await
+        .map_err(|e| anyhow!(e).context("get rule group tree error"))?;
 
-    let active_model = rule_group::ActiveModel {
-        name: ActiveValue::set(body_params.name),
-        description: ActiveValue::set(body_params.description),
-        ..Default::default()
-    };
-    let res = active_model.insert(DB.get().unwrap()).await?;
-    dbg!(&res);
+    let tree = vec_to_json_tree(res);
+    return response_ok(tree);
+}
 
-    Ok(Response::builder()
-        .header(CONTENT_TYPE, "application/json")
-        .body(full(Bytes::from("{}")))?)
+fn vec_to_json_tree(rule_groups: Vec<(rule_group::Model, Vec<rule::Model>)>) -> serde_json::Value {
+    let tree: Vec<serde_json::Value> = rule_groups
+        .into_iter()
+        .enumerate()
+        .map(|(i, (parent, children))| {
+            let children_json: Vec<serde_json::Value> = children
+                .into_iter()
+                .enumerate()
+                .map(|(j, child)| {
+                    json!({
+                        "title": child.name,
+                        "key": format!("{}-{}", parent.id, child.id),
+                        "children": [],
+                        "record": serde_json::to_value(child).unwrap(),
+                        "isLeaf": true
+                    })
+                })
+                .collect();
+
+            json!({
+                "title": parent.name,
+                "key": format!("{}", parent.id),
+                "record": serde_json::to_value(parent).unwrap(),
+                "children": children_json
+            })
+        })
+        .collect();
+
+    json!(tree)
 }

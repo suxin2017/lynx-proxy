@@ -5,6 +5,9 @@ import { pluginMockServer } from 'rspack-plugin-mock/rsbuild';
 
 export default defineConfig({
   plugins: [pluginReact(), pluginMockServer(/* pluginOptions */)],
+  output: {
+    assetPrefix: "/__self_service_path__/",
+  },
   server: {
     port: 8080,
     proxy: {

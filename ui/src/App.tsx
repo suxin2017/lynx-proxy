@@ -1,5 +1,6 @@
 import './main.css';
 import {
+  createHashHistory,
   createRouter,
   RouterProvider
 } from '@tanstack/react-router';
@@ -8,11 +9,12 @@ import { routeTree } from './routeTree.gen';
 import { ConfigProvider, theme } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+const hashHistory = createHashHistory();
 // Set up a Router instance
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
-  // history: hashHistory,
+  history: hashHistory,
 });
 
 // Register things for typesafety

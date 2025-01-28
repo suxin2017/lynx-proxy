@@ -63,9 +63,10 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
 
   return (
     <Descriptions
-      labelStyle={{ width: 120, textAlign: 'right' }}
+      styles={{ label: { width: 120, textAlign: 'right' } }}
       bordered
-      size="small"
+      className="[&_p]:m-0"
+      size="middle"
       column={1}
       items={descriptionItems}
     />

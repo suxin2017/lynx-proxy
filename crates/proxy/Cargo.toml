@@ -67,6 +67,8 @@ sea-orm-migration = { version = "1.1.0", features = [
     "runtime-tokio-rustls",
 ] }
 url = "2.5.4"
+include_dir = "0.7.4"
+mime_guess = "=2.0.5"
 
 [dev-dependencies]
 dotenv = "0.15.0"

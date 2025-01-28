@@ -11,6 +11,7 @@ pub mod app_config;
 pub mod request;
 pub mod response;
 pub mod rule;
+pub mod rule_content;
 pub mod rule_group;
 
 pub async fn set_up_db(config: &AppConfig) -> DatabaseConnection {
@@ -22,7 +23,7 @@ pub async fn set_up_db(config: &AppConfig) -> DatabaseConnection {
         .await
         .expect("Failed to connect to db");
     #[cfg(feature = "test")]
-    let _ = Migrator::refresh(&db).await;
+    let _ = Migrator::fresh(&db).await;
 
     db
 }

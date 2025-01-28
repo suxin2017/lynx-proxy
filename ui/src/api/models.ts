@@ -1,3 +1,17 @@
+export enum ResponseCodeEnum {
+  Ok = 'Ok',
+  ValidateError = 'ValidateError',
+  OperationError = 'OperationError',
+  InternalServerError = 'InternalServerError',
+}
+
+export interface IResponseBox<T> {
+  code: ResponseCodeEnum;
+  message?: string;
+  data?: T;
+}
+export interface IResponseBoxView extends IResponseBox<IResponseModel> {}
+
 export interface IRequestModel {
   id: number;
   uri: string;
@@ -16,17 +30,34 @@ export interface IResponseModel {
   header: Record<string, string>;
 }
 
-export interface IResponseBoxView extends IResponseBox<IResponseModel> {}
-
-export enum ResponseCodeEnum {
-  Ok = 'Ok',
-  ValidateError = 'ValidateError',
-  OperationError = 'OperationError',
-  InternalServerError = 'InternalServerError',
+export interface IRuleGroupModel {
+  id: number;
+  name: string;
+  description: string;
 }
 
-export interface IResponseBox<T> {
-  code: ResponseCodeEnum;
-  message?: string;
-  data?: T;
+export interface IRuleModel {
+  id: number;
+  ruleGroupId: number;
+  name: string;
+  description: string;
 }
+export interface IRuleContentModel {
+  id: number;
+  content: number;
+}
+export interface IRuleTreeNode {
+  key: string;
+  title: string;
+  children: [];
+  record: IRuleModel;
+}
+
+export interface IRuleTree {
+  key: string;
+  title: string;
+  children: IRuleTreeNode[];
+  record: IRuleGroupModel;
+}
+export interface IRuleGroupTreeResponse extends IResponseBox<IRuleTree[]> {}
+export interface IRuleContentResponse extends IResponseBox<IRuleContentModel> {}

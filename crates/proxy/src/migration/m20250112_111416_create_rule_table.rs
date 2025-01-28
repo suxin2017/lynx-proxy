@@ -1,4 +1,9 @@
+use sea_orm::{ActiveModelTrait, ActiveValue};
 use sea_orm_migration::{prelude::*, schema::*};
+
+use serde_json::json;
+
+use crate::entities::{rule, rule_content, rule_group};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -6,33 +11,43 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // let _ = manager
-        //     .create_table(
-        //         Table::create()
-        //             .table(RuleGroup::Table)
-        //             .if_not_exists()
-        //             .col(pk_auto(RuleGroup::Id))
-        //             .col(string(RuleGroup::Name))
-        //             .col(string_null(RuleGroup::Description))
-        //             .col(unsigned(RuleGroup::CreatedAt))
-        //             .col(unsigned(RuleGroup::UpdatedAt))
-        //             .to_owned(),
-        //     )
-        //     .await?;
-        // let _ = manager
-        //     .create_table(
-        //         Table::create()
-        //             .table(Rule::Table)
-        //             .if_not_exists()
-        //             .col(pk_auto(Rule::Id))
-        //             .col(string(Rule::Match))
-        //             .col(string(Rule::TargetUri))
-        //             .col(integer(Rule::RuleGroupId))
-        //             .col(unsigned(Rule::CreatedAt))
-        //             .col(unsigned(Rule::UpdatedAt))
-        //             .to_owned(),
-        //     )
-        //     .await?;
+        let _ = manager
+            .create_table(
+                Table::create()
+                    .table(RuleGroup::Table)
+                    .if_not_exists()
+                    .col(pk_auto(RuleGroup::Id))
+                    .col(string(RuleGroup::Name))
+                    .col(string_null(RuleGroup::Description))
+                    .col(unsigned(RuleGroup::CreatedAt))
+                    .col(unsigned(RuleGroup::UpdatedAt))
+                    .to_owned(),
+            )
+            .await?;
+        let _ = manager
+            .create_table(
+                Table::create()
+                    .table(Rule::Table)
+                    .if_not_exists()
+                    .col(pk_auto(Rule::Id))
+                    .col(string(Rule::Name))
+                    .col(integer(Rule::RuleGroupId))
+                    .col(unsigned(Rule::CreatedAt))
+                    .col(unsigned(Rule::UpdatedAt))
+                    .to_owned(),
+            )
+            .await?;
+        let _ = manager
+            .create_table(
+                Table::create()
+                    .table(RuleContent::Table)
+                    .if_not_exists()
+                    .col(pk_auto(RuleContent::Id))
+                    .col(integer(RuleContent::RuleId))
+                    .col(json(RuleContent::Content))
+                    .to_owned(),
+            )
+            .await?;
         let _ = manager
             .create_table(
                 Table::create()
@@ -88,13 +103,60 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        let connect = manager.get_connection();
+
+        let rule_group = rule_group::ActiveModel {
+            name: ActiveValue::set("default".to_owned()),
+            description: ActiveValue::set(None),
+            ..Default::default()
+        }
+        .insert(connect)
+        .await?;
+
+        println!("rule_group: {:?}", rule_group);
+
+        let rule = rule::ActiveModel {
+            name: ActiveValue::set("default_rule".to_owned()),
+            rule_group_id: ActiveValue::set(rule_group.id),
+            ..Default::default()
+        }
+        .insert(connect)
+        .await?;
+
+        println!("rule: {:?}", rule);
+
+        let rule_content = rule_content::ActiveModel {
+            rule_id: ActiveValue::set(rule.id),
+            content: ActiveValue::set(json!({
+                "demo": "demo"
+            })),
+            ..Default::default()
+        }
+        .insert(connect)
+        .await?;
+
+        println!("rule_content: {:?}", rule_content);
+
         Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .drop_table(Table::drop().table(Request::Table).to_owned())
-            .await
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Response::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(RuleGroup::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(Rule::Table).to_owned())
+            .await?;
+        manager
+            .drop_table(Table::drop().table(RuleContent::Table).to_owned())
+            .await?;
+        Ok(())
     }
 }
 
@@ -105,26 +167,33 @@ enum AppConfig {
     CaptureHttps,
 }
 
-// #[derive(DeriveIden)]
-// enum RuleGroup {
-//     Table,
-//     Id,
-//     Name,
-//     Description,
-//     CreatedAt,
-//     UpdatedAt,
-// }
+#[derive(DeriveIden)]
+enum RuleGroup {
+    Table,
+    Id,
+    Name,
+    Description,
+    CreatedAt,
+    UpdatedAt,
+}
 
-// #[derive(DeriveIden)]
-// enum Rule {
-//     Table,
-//     Id,
-//     RuleGroupId,
-//     Match,
-//     TargetUri,
-//     CreatedAt,
-//     UpdatedAt,
-// }
+#[derive(DeriveIden)]
+enum Rule {
+    Table,
+    Id,
+    Name,
+    RuleGroupId,
+    CreatedAt,
+    UpdatedAt,
+}
+
+#[derive(DeriveIden)]
+enum RuleContent {
+    Table,
+    Id,
+    RuleId,
+    Content,
+}
 
 #[derive(DeriveIden)]
 enum Request {

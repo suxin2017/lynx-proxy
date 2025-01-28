@@ -3,6 +3,11 @@ use std::{fs, path::PathBuf};
 use derive_builder::Builder;
 use tracing::debug;
 
+use include_dir::{include_dir, Dir};
+
+pub static UI_ASSERT_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/ui_assert");
+
+
 #[derive(Builder, Debug, Default, Clone)]
 pub struct AppConfig {
     pub asserts_root_dir: PathBuf,
@@ -63,3 +68,4 @@ pub fn create_dir_if_not_exists(dir: &PathBuf) {
     }
     debug!("dir {} exists", &dir.to_string_lossy());
 }
+

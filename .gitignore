@@ -7,3 +7,4 @@ crates/proxy/asserts
 *.log*
 .idea
 .vscode
+ui_assert

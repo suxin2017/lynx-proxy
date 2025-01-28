@@ -23,7 +23,8 @@ export const Headers: React.FC<IOverviewProps> = ({ data }) => {
     <Descriptions
       bordered
       size="small"
-      labelStyle={{ width: 200 }}
+      className="[&_p]:m-0"
+      styles={{ label: { width: 200 } }}
       column={1}
       items={items}
     />

@@ -1,7 +1,6 @@
 import {
   ControlOutlined,
-  FieldTimeOutlined,
-  SettingOutlined,
+  GlobalOutlined
 } from '@ant-design/icons';
 import { useNavigate } from '@tanstack/react-router';
 import { Button, Layout, Space } from 'antd';
@@ -22,19 +21,20 @@ export const SideBar: React.FC = (_props) => {
             });
           }}
           icon={
-            <FieldTimeOutlined
+            <GlobalOutlined
               style={{
                 fontSize: '20px',
               }}
             />
           }
+          title="Network"
         ></Button>
         <Button
           type="text"
           className="flex items-center justify-items-center w-full"
           onClick={() => {
             navigate({
-              to: '/about',
+              to: '/ruleManager',
             });
           }}
           icon={
@@ -44,22 +44,7 @@ export const SideBar: React.FC = (_props) => {
               }}
             />
           }
-        />
-        <Button
-          type="text"
-          className="flex items-center justify-items-center w-full"
-          onClick={() => {
-            navigate({
-              to: '/setting',
-            });
-          }}
-          icon={
-            <SettingOutlined
-              style={{
-                fontSize: '20px',
-              }}
-            />
-          }
+          title="Rule Config"
         />
       </Space>
     </Layout.Sider>
