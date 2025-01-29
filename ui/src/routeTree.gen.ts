@@ -17,6 +17,7 @@ import { Route as SettingIndexImport } from './routes/setting/index'
 import { Route as RuleManagerIndexImport } from './routes/ruleManager/index'
 import { Route as NetworkIndexImport } from './routes/network/index'
 import { Route as HomeIndexImport } from './routes/home/index'
+import { Route as CertificatesIndexImport } from './routes/certificates/index'
 
 // Create/Update Routes
 
@@ -56,6 +57,12 @@ const HomeIndexRoute = HomeIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const CertificatesIndexRoute = CertificatesIndexImport.update({
+  id: '/certificates/',
+  path: '/certificates/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -72,6 +79,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutImport
+      parentRoute: typeof rootRoute
+    }
+    '/certificates/': {
+      id: '/certificates/'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof CertificatesIndexImport
       parentRoute: typeof rootRoute
     }
     '/home/': {
@@ -110,6 +124,7 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/certificates': typeof CertificatesIndexRoute
   '/home': typeof HomeIndexRoute
   '/network': typeof NetworkIndexRoute
   '/ruleManager': typeof RuleManagerIndexRoute
@@ -119,6 +134,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/certificates': typeof CertificatesIndexRoute
   '/home': typeof HomeIndexRoute
   '/network': typeof NetworkIndexRoute
   '/ruleManager': typeof RuleManagerIndexRoute
@@ -129,6 +145,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/certificates/': typeof CertificatesIndexRoute
   '/home/': typeof HomeIndexRoute
   '/network/': typeof NetworkIndexRoute
   '/ruleManager/': typeof RuleManagerIndexRoute
@@ -137,13 +154,28 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/home' | '/network' | '/ruleManager' | '/setting'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/certificates'
+    | '/home'
+    | '/network'
+    | '/ruleManager'
+    | '/setting'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/home' | '/network' | '/ruleManager' | '/setting'
+  to:
+    | '/'
+    | '/about'
+    | '/certificates'
+    | '/home'
+    | '/network'
+    | '/ruleManager'
+    | '/setting'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/certificates/'
     | '/home/'
     | '/network/'
     | '/ruleManager/'
@@ -154,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  CertificatesIndexRoute: typeof CertificatesIndexRoute
   HomeIndexRoute: typeof HomeIndexRoute
   NetworkIndexRoute: typeof NetworkIndexRoute
   RuleManagerIndexRoute: typeof RuleManagerIndexRoute
@@ -163,6 +196,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  CertificatesIndexRoute: CertificatesIndexRoute,
   HomeIndexRoute: HomeIndexRoute,
   NetworkIndexRoute: NetworkIndexRoute,
   RuleManagerIndexRoute: RuleManagerIndexRoute,
@@ -181,6 +215,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/about",
+        "/certificates/",
         "/home/",
         "/network/",
         "/ruleManager/",
@@ -192,6 +227,9 @@ export const routeTree = rootRoute
     },
     "/about": {
       "filePath": "about.tsx"
+    },
+    "/certificates/": {
+      "filePath": "certificates/index.tsx"
     },
     "/home/": {
       "filePath": "home/index.tsx"

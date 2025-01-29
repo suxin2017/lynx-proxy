@@ -4,6 +4,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[sea_orm(table_name = "response")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -11,6 +12,7 @@ pub struct Model {
     pub header: Json,
     pub request_id: i32,
     pub trace_id: String,
+    pub header_size: u32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

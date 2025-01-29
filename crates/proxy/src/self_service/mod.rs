@@ -43,6 +43,10 @@ pub const REQUEST_LOG: &str = "/__self_service_path__/request_log";
 pub const REQUEST_BODY: &str = "/__self_service_path__/request_body";
 pub const RESPONSE: &str = "/__self_service_path__/response";
 pub const RESPONSE_BODY: &str = "/__self_service_path__/response_body";
+
+pub const APP_CONFIG_RECORD_STATUS: &str = "/__self_service_path__/app_config/record_status";
+pub const APP_CONFIG_PATH: &str = "/__self_service_path__/app_config";
+
 pub fn match_self_service(req: &Request<Incoming>) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
 }
@@ -74,6 +78,12 @@ pub async fn handle_self_service(
         (&method::Method::POST, RULE_ADD) => api::rule_api::handle_rule_add(req).await,
         (&method::Method::POST, RULE_UPDATE) => api::rule_api::handle_rule_update(req).await,
         (&method::Method::POST, RULE_DELETE) => api::rule_api::handle_rule_delete(req).await,
+        (&method::Method::POST, APP_CONFIG_RECORD_STATUS) => {
+            api::app_config_api::handle_recording_status(req).await
+        }
+        (&method::Method::GET, APP_CONFIG_PATH) => {
+            api::app_config_api::handle_app_config(req).await
+        }
         (&method::Method::GET, REQUEST_LOG) => {
             let rx = PROXY_BOARD_CAST.subscribe();
             let rx_stream = BroadcastStream::new(rx)

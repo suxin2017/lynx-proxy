@@ -104,3 +104,17 @@ pub static RULE_DELETE_PARAMS_SCHEMA: Lazy<Value> = Lazy::new(|| {
         "required": ["id"]
     })
 });
+
+pub static CHANGE_RECORDING_STATUS_PARAM_SCHEMA: Lazy<Value> = Lazy::new(|| {
+    json!({
+        "title": "changeRecordingStatusParams",
+        "type": "object",
+        "properties": {
+            "status": {
+                "type": "string",
+            },
+        },
+        "required": ["status"]
+    })
+});
+

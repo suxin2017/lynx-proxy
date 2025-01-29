@@ -89,12 +89,7 @@ pub async fn start_https_server() -> Result<SocketAddr> {
                     )
                     .await
                 {
-                    if !err
-                        .to_string()
-                        .starts_with("error shutting down connection")
-                    {
-                        eprintln!("HTTPS connect error: {err}");
-                    }
+                    eprintln!("Test mode HTTPS connect error: {err:#}");
                 };
             });
         }

@@ -10,9 +10,10 @@ use hyper::{Method, Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use nanoid::nanoid;
 use tokio_rustls::TlsAcceptor;
-use tracing::{info, trace};
+use tracing::{error, info, trace};
 
 use crate::plugins::http_request_plugin::request;
+use crate::proxy::http_proxy::proxy_http_request;
 use crate::server_context::CA_MANAGER;
 use crate::utils::empty;
 
@@ -62,36 +63,22 @@ impl HttpsProxy {
 
                             req.extensions_mut().insert(Arc::new(nanoid!()));
 
-                            let prosy_res = request(req).await;
-                            match prosy_res {
-                                Ok(origin_res) => {
-                                    let proxy_res = {
-                                        let (parts, body) = origin_res.into_parts();
-                                        Response::from_parts(parts, body.boxed())
-                                    };
+                            let res = proxy_http_request(req).await;
 
-                                    trace!("proxy response: {:?}", proxy_res);
-
-                                    Ok(proxy_res)
+                            return match res {
+                                Ok(res) => Ok::<_, hyper::Error>(res),
+                                Err(err) => {
+                                    error!("proxy http request error: {}", err.to_string());
+                                    Ok(Response::new(empty()))
                                 }
-
-                                Err(e) => {
-                                    info!("proxy error: {:?}", e);
-                                    Err(e)
-                                }
-                            }
+                            };
                         });
                         if let Err(err) =
                             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                                 .serve_connection_with_upgrades(TokioIo::new(stream), service)
                                 .await
                         {
-                            if !err
-                                .to_string()
-                                .starts_with("error shutting down connection")
-                            {
-                                eprintln!("HTTPS connect error: {err}");
-                            }
+                            error!("HTTPS proxy connect error: {}", err.to_string());
                         }
                     }
                     Err(e) => {

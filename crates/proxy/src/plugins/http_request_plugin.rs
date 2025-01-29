@@ -4,7 +4,7 @@ use std::{fs, io};
 
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
-use http::header::{CONNECTION, HOST, PROXY_AUTHORIZATION};
+use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
@@ -16,7 +16,7 @@ use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioExecutor;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
-use tokio_rustls::rustls::{ClientConfig, RootCertStore};
+use tokio_rustls::rustls::{ClientConfig, ContentType, RootCertStore};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::error;
 
@@ -62,7 +62,7 @@ pub async fn build_proxy_request(
 
     for (key, value) in parts.headers.into_iter() {
         if let Some(key) = key {
-            if matches!(&key, &HOST | &CONNECTION | &PROXY_AUTHORIZATION) {
+            if matches!(&key, &HOST | &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH) {
                 continue;
             }
             builder = builder.header(key, value);
@@ -111,8 +111,9 @@ pub async fn build_proxy_response(
 pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
     let client_builder = Client::builder(TokioExecutor::new());
     let proxy_req = build_proxy_request(req).await?;
-
     let proxy_res = if proxy_req.uri().scheme() == Some(&Scheme::HTTPS) {
+        println!("fetching {:?}", proxy_req);
+
         #[cfg(feature = "test")]
         let connect = get_test_root_ca();
 

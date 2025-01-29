@@ -59,5 +59,16 @@ export interface IRuleTree {
   children: IRuleTreeNode[];
   record: IRuleGroupModel;
 }
+export interface IAppConfigModel {
+  id: number;
+  recordingStatus: RecordStatusEnum;
+  captureHttps: boolean;
+}
 export interface IRuleGroupTreeResponse extends IResponseBox<IRuleTree[]> {}
 export interface IRuleContentResponse extends IResponseBox<IRuleContentModel> {}
+export interface IAppConfigResponse extends IResponseBox<IAppConfigModel> {}
+
+export enum RecordStatusEnum {
+  StartRecording= "StartRecording",
+  PauseRecording = "PauseRecording",
+}

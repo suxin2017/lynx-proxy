@@ -18,19 +18,19 @@ async fn start_test_server() {
     let proxy_addr = proxy_server.access_addr_list.first().unwrap().to_string();
 
     // internal send request
-    tokio::spawn(async move {
-        let client = build_http_proxy_client(&proxy_addr);
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
-        loop {
-            interval.tick().await;
-            let data = client
-                .get(format!("http://{addr}{}", HELLO_PATH))
-                .send()
-                .await
-                .unwrap();
-            data.text().await.unwrap();
-        }
-    });
+    // tokio::spawn(async move {
+    //     let client = build_http_proxy_client(&proxy_addr);
+    //     let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
+    //     loop {
+    //         interval.tick().await;
+    //         let data = client
+    //             .get(format!("http://{addr}{}", HELLO_PATH))
+    //             .send()
+    //             .await
+    //             .unwrap();
+    //         data.text().await.unwrap();
+    //     }
+    // });
 
     tokio::signal::ctrl_c().await.unwrap();
 }

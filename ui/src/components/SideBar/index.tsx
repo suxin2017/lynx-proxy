@@ -1,7 +1,4 @@
-import {
-  ControlOutlined,
-  GlobalOutlined
-} from '@ant-design/icons';
+import { RiEqualizer2Line, RiMedalLine, RiPlanetLine } from '@remixicon/react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button, Layout, Space } from 'antd';
 import React from 'react';
@@ -20,13 +17,7 @@ export const SideBar: React.FC = (_props) => {
               to: '/network',
             });
           }}
-          icon={
-            <GlobalOutlined
-              style={{
-                fontSize: '20px',
-              }}
-            />
-          }
+          icon={<RiPlanetLine size={20} />}
           title="Network"
         ></Button>
         <Button
@@ -37,14 +28,18 @@ export const SideBar: React.FC = (_props) => {
               to: '/ruleManager',
             });
           }}
-          icon={
-            <ControlOutlined
-              style={{
-                fontSize: '20px',
-              }}
-            />
-          }
+          icon={<RiEqualizer2Line size={20} />}
           title="Rule Config"
+        />
+        <Button
+          type="text"
+          className="flex items-center justify-items-center w-full"
+          onClick={() => {
+            navigate({
+              to: '/certificates',
+            });
+          }}
+          icon={<RiMedalLine size={20} />}
         />
       </Space>
     </Layout.Sider>

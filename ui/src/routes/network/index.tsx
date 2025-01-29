@@ -12,6 +12,7 @@ import {
   ShowTypeSegmentedStateContextProvider,
   useShowTypeSegmentedStateContext,
 } from './components/ShowTypeSegmented';
+import { RecordingStatusButton } from './components/RecordingStatusButton';
 export const Route = createFileRoute('/network/')({
   component: RouteComponent,
 });
@@ -31,10 +32,13 @@ function InnerComponent() {
     };
   }, [dispatch]);
   return (
-    <div className="flex-1 flex flex-col h-full ">
+    <div className="flex-1 flex flex-col h-full">
       {state === 'Sequence' && (
         <div className="flex-1 flex flex-col h-full animate-fade-in">
-          <ShowTypeSegmented />
+          <div className="flex items-center">
+            <ShowTypeSegmented />
+            <RecordingStatusButton />
+          </div>
           <div className="flex-1">
             <Sequence />
           </div>

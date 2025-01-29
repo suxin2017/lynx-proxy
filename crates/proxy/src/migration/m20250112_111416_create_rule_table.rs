@@ -1,9 +1,9 @@
-use sea_orm::{ActiveModelTrait, ActiveValue};
+use sea_orm::{ActiveModelTrait, ActiveValue, DeriveActiveEnum, EnumIter};
 use sea_orm_migration::{prelude::*, schema::*};
 
 use serde_json::json;
 
-use crate::entities::{rule, rule_content, rule_group};
+use crate::entities::{app_config::RecordingStatus, rule, rule_content, rule_group};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -55,13 +55,14 @@ impl MigrationTrait for Migration {
                     .if_not_exists()
                     .col(pk_auto(AppConfig::Id))
                     .col(boolean(AppConfig::CaptureHttps))
+                    .col(string(AppConfig::RecordingStatus))
                     .to_owned(),
             )
             .await?;
         let insert = Query::insert()
             .into_table(AppConfig::Table)
-            .columns([AppConfig::CaptureHttps])
-            .values_panic([true.into()])
+            .columns([AppConfig::CaptureHttps, AppConfig::RecordingStatus])
+            .values_panic([true.into(), RecordingStatus::StartRecording.into()])
             .to_owned();
         let _ = manager.exec_stmt(insert).await?;
 
@@ -78,6 +79,7 @@ impl MigrationTrait for Migration {
                     .col(string(Request::Version))
                     .col(integer(Request::StatusCode))
                     .col(json(Request::Header))
+                    .col(integer(Request::HeaderSize))
                     .to_owned(),
             )
             .await?;
@@ -99,6 +101,7 @@ impl MigrationTrait for Migration {
                     .col(string(Response::TraceId))
                     .col(json(Response::Header))
                     .col(integer(Response::RequestId))
+                    .col(integer(Response::HeaderSize))
                     .to_owned(),
             )
             .await?;
@@ -165,6 +168,7 @@ enum AppConfig {
     Table,
     Id,
     CaptureHttps,
+    RecordingStatus,
 }
 
 #[derive(DeriveIden)]
@@ -206,6 +210,7 @@ enum Request {
     Version,
     StatusCode,
     Header,
+    HeaderSize,
 }
 
 #[derive(DeriveIden)]
@@ -215,4 +220,5 @@ enum Response {
     Header,
     RequestId,
     TraceId,
+    HeaderSize,
 }

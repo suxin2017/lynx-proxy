@@ -51,7 +51,7 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
     }
     console.log(items, 'items');
     return items;
-  }, [selectRequest?.header, selectRequest?.method]);
+  }, [selectRequest?.header, selectRequest?.method, selectRequest?.statusCode, selectRequest?.uri, selectRequest?.version]);
 
   if (!descriptionItems) {
     return (
@@ -63,9 +63,9 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
 
   return (
     <Descriptions
-      styles={{ label: { width: 120, textAlign: 'right' } }}
+      styles={{ label: { width: 180, textAlign: 'right' } }}
       bordered
-      className="[&_p]:m-0"
+      className="[&_p]:m-0 h-full overflow-auto"
       size="middle"
       column={1}
       items={descriptionItems}
