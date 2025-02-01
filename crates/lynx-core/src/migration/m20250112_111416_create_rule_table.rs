@@ -1,4 +1,4 @@
-use sea_orm::{ActiveModelTrait, ActiveValue, DeriveActiveEnum, EnumIter};
+use sea_orm::{ActiveModelTrait, ActiveValue};
 use sea_orm_migration::{prelude::*, schema::*};
 
 use serde_json::json;

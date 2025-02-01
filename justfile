@@ -1,8 +1,9 @@
+
 setup-database:
     sea-orm-cli migrate refresh
 
 test:
-    cd crates/proxy 
+    cd crates/lynx-core 
     cargo test  -- --test-threads 1 --nocapture  
 
 lint: 
@@ -16,7 +17,7 @@ dev-ui:
 
 build-ui:
     cd ui && pnpm build
-    cp -r ui/dist/ crates/proxy/ui_assert
+    cp -r ui/dist/ crates/lynx-core/ui_assert
 
 build-server:
     cargo build --release

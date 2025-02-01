@@ -1,28 +1,25 @@
 use crate::entities::{rule, rule_content, rule_group};
-use crate::self_service::api::schemas::{
-    RULE_GROUP_DELETE_PARAMS_SCHEMA, RULE_GROUP_UPDATE_PARAMS_SCHEMA, RULE_UPDATE_PARAMS_SCHEMA,
-};
+use crate::self_service::api::schemas::RULE_UPDATE_PARAMS_SCHEMA;
 use crate::self_service::utils::{
     get_body_json, get_query_params, response_ok, OperationError, ValidateError,
 };
 use crate::server_context::DB;
-use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
-use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, Condition, EntityTrait, IntoActiveModel,
-    ModelTrait, QueryFilter,
+    ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, ModelTrait, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::{error, info};
 
-use super::schemas::{RULE_ADD_PARAMS_SCHEMA, RULE_DELETE_PARAMS_SCHEMA, RULE_GROUP_ADD_PARAMS_SCHEMA};
+use super::schemas::{RULE_ADD_PARAMS_SCHEMA, RULE_DELETE_PARAMS_SCHEMA};
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct RuleAddParams {
     rule_group_id: i32,
     name: String,
@@ -35,19 +32,30 @@ pub async fn handle_rule_add(req: Request<Incoming>) -> Result<Response<BoxBody<
         .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
     let add_params: RuleAddParams = serde_json::from_value(add_params)?;
 
+    let txn = db.begin().await?;
     let active_model = rule::ActiveModel {
         name: ActiveValue::set(add_params.name),
         rule_group_id: ActiveValue::set(add_params.rule_group_id),
         ..Default::default()
     };
-    let res = active_model.insert(db).await?;
+    let res = active_model.insert(&txn).await?;
+
+    let content_active_model = rule_content::ActiveModel {
+        content: ActiveValue::set(json!({})),
+        rule_id: ActiveValue::set(res.id),
+        ..Default::default()
+    };
+    content_active_model.insert(&txn).await?;
+    txn.commit().await?;
+
     response_ok(res)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct RuleUpdateParams {
     id: i32,
-    name: String,
+    name: Option<String>,
+    content: Option<serde_json::Value>,
 }
 
 pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
@@ -55,15 +63,32 @@ pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBo
     jsonschema::validate(&RULE_UPDATE_PARAMS_SCHEMA, &body_json)
         .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
     let body_params: RuleUpdateParams = serde_json::from_value(body_json)?;
+    info!("update rule: {:?}", body_params);
+    let db = DB.get().unwrap();
 
-    let active_model = rule::ActiveModel {
-        id: ActiveValue::set(body_params.id),
-        name: ActiveValue::set(body_params.name),
-        ..Default::default()
-    };
-    let res = active_model.update(DB.get().unwrap()).await?;
+    let rule = rule::Entity::find_by_id(body_params.id).one(db).await?;
 
-    return response_ok(res);
+    if let Some(mut rule) = rule {
+        if let Some(rule_content) = body_params.content {
+            let content = rule.find_related(rule_content::Entity).one(db).await?;
+            if let Some(content) = content {
+                let mut content_active = content.into_active_model();
+                content_active.content = ActiveValue::set(rule_content);
+                let res = content_active.update(db).await?;
+                info!("update content: {:?}", res);
+            }
+        }
+        if let Some(name) = body_params.name {
+            rule.name = name;
+        }
+        let active_model = rule.into_active_model();
+        let res = active_model.update(db).await?;
+        return response_ok(res);
+    } else {
+        return Err(anyhow!(OperationError::new(
+            "can not find the rule".to_string()
+        )));
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -77,15 +102,29 @@ pub async fn handle_rule_delete(req: Request<Incoming>) -> Result<Response<BoxBo
         .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
     let body_params: RuleDeleteParams = serde_json::from_value(body_json)?;
 
-    let active_model = rule_group::ActiveModel {
-        id: ActiveValue::set(body_params.id),
-        ..Default::default()
-    };
-    let res = active_model.delete(DB.get().unwrap()).await?;
+    let db = DB.get().unwrap();
+    let rule = rule::Entity::find_by_id(body_params.id)
+        .find_also_related(rule_content::Entity)
+        .one(DB.get().unwrap())
+        .await?;
 
-    if res.rows_affected == 0 {
+    if let Some(rule) = rule {
+        let txn = db.begin().await?;
+        rule.0.delete(&txn).await?;
+
+        if let Some(content) = rule.1 {
+            content.delete(&txn).await?;
+        }
+
+        if let Err(e) = txn.commit().await {
+            error!("commit error: {:?}", e);
+            return Err(anyhow!(OperationError::new(
+                "delete rule failed".to_string()
+            )));
+        }
+    } else {
         return Err(anyhow!(OperationError::new(
-            "can not find the rule group".to_string()
+            "can not find the rule".to_string()
         )));
     }
 

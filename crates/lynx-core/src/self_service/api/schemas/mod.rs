@@ -86,9 +86,12 @@ pub static RULE_UPDATE_PARAMS_SCHEMA: Lazy<Value> = Lazy::new(|| {
             },
             "id": {
                 "type": "number",
-            }
+            },
+            "content": {
+                "type": "object",
+            }   
         },
-        "required": ["name","id"]
+        "required": ["id"]
     })
 });
 

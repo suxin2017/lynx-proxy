@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anyhow::Error;
 use http::StatusCode;
 use http_body_util::combinators::BoxBody;
-use http_body_util::BodyExt;
 use hyper::body::{Bytes, Incoming};
 use hyper::service::service_fn;
 use hyper::{Method, Request, Response};
@@ -12,7 +11,6 @@ use nanoid::nanoid;
 use tokio_rustls::TlsAcceptor;
 use tracing::{error, info, trace};
 
-use crate::plugins::http_request_plugin::request;
 use crate::proxy::http_proxy::proxy_http_request;
 use crate::server_context::CA_MANAGER;
 use crate::utils::empty;

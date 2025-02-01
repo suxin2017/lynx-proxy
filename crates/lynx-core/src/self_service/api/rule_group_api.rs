@@ -2,9 +2,7 @@ use crate::entities::{rule, rule_group};
 use crate::self_service::api::schemas::{
     RULE_GROUP_DELETE_PARAMS_SCHEMA, RULE_GROUP_UPDATE_PARAMS_SCHEMA,
 };
-use crate::self_service::utils::{
-    get_body_json, get_query_params, response_ok, OperationError, ValidateError,
-};
+use crate::self_service::utils::{get_body_json, response_ok, OperationError, ValidateError};
 use crate::server_context::DB;
 use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
@@ -13,9 +11,7 @@ use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, Condition, EntityTrait, ModelTrait, QueryFilter,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -124,12 +120,10 @@ pub async fn handle_rule_group_find(
 fn vec_to_json_tree(rule_groups: Vec<(rule_group::Model, Vec<rule::Model>)>) -> serde_json::Value {
     let tree: Vec<serde_json::Value> = rule_groups
         .into_iter()
-        .enumerate()
-        .map(|(i, (parent, children))| {
+        .map(|(parent, children)| {
             let children_json: Vec<serde_json::Value> = children
                 .into_iter()
-                .enumerate()
-                .map(|(j, child)| {
+                .map(|child| {
                     json!({
                         "title": child.name,
                         "key": format!("{}-{}", parent.id, child.id),
