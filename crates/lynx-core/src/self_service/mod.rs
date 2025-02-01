@@ -20,7 +20,7 @@ use tokio_stream::wrappers::BroadcastStream;
 use tokio_util::io::ReaderStream;
 use tracing::{debug, error};
 use utils::{
-    internal_server_error, not_found, operation_error, response_ok, validate_error, OperationError,
+    internal_server_error, operation_error, response_ok, validate_error, OperationError,
     ValidateError,
 };
 

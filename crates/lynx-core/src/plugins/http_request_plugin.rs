@@ -14,18 +14,29 @@ use hyper_rustls::HttpsConnectorBuilder;
 use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioExecutor;
+use sea_orm::EntityTrait;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
-use tokio_rustls::rustls::{ClientConfig, ContentType, RootCertStore};
+use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::error;
 
+use crate::entities::rule_content;
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
 use crate::schedular::get_req_trace_id;
+use crate::server_context::DB;
 
 pub async fn build_proxy_request(
     req: Request<Incoming>,
 ) -> Result<Request<BoxBody<bytes::Bytes, anyhow::Error>>> {
+    let db = DB.get().unwrap();
+
+
+    let rules = rule_content::Entity::find().all(db).await?;
+
+    for rule in rules {
+        println!("rule: {:?}", rule);
+    }
     let trace_id = get_req_trace_id(&req);
 
     let (parts, body) = req.into_parts();
