@@ -1,13 +1,11 @@
-# rust_proxy
+# lynx proxy
 
-`rust_proxy` is a high-performance, flexible proxy tool built using the Rust programming language. It aims to provide efficient HTTP/HTTPS proxy services, supporting various features and configuration options suitable for different network environments and needs.
+`lynx proxy` is a high-performance, flexible proxy tool built using the Rust programming language. It aims to provide efficient HTTP/HTTPS proxy services, supporting various features and configuration options suitable for different network environments and needs.
 
 ## Features
 
 - **High Performance**: Leveraging Rust's performance and safety features.
 - **HTTP/HTTPS Support**: Proxy both HTTP and HTTPS traffic.
-- **Configurable**: Easily configurable to suit different use cases.
-- **Logging**: Detailed logging for monitoring and debugging.
 
 ## Installation
 

@@ -1,0 +1,13 @@
+[package]
+name = "lynx-cli"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+
+[dependencies]
+lynx-core = { path = "../lynx-core" }
+tracing-subscriber = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
