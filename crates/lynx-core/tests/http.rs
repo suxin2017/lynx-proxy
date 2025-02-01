@@ -7,7 +7,7 @@ use common::{
 };
 use futures_util::TryStreamExt;
 use http::header::CONTENT_TYPE;
-use proxy_server::{server::Server, server_context::set_up_context};
+use lynx_core::{server::Server, server_context::set_up_context};
 use reqwest::Client;
 use std::{net::SocketAddr, time::Duration};
 use tokio::{sync::broadcast, time::interval};
@@ -21,9 +21,9 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
     set_up_context().await;
 
     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-    let mut proxy_server = Server::new(3000);
-    proxy_server.run().await.unwrap();
-    let proxy_addr = format!("http://{}", proxy_server.access_addr_list.first().unwrap());
+    let mut lynx_core = Server::new(3000);
+    lynx_core.run().await.unwrap();
+    let proxy_addr = format!("http://{}", lynx_core.access_addr_list.first().unwrap());
 
     let direct_request_client = build_http_client();
 
@@ -40,14 +40,14 @@ async fn hello_test() {
         .send()
         .await
         .unwrap();
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .get(format!("http://{addr}{HELLO_PATH}"))
         .send()
         .await
         .unwrap();
     assert_eq!(
         direct_res.text().await.unwrap(),
-        proxy_server_res.text().await.unwrap()
+        lynx_core_res.text().await.unwrap()
     );
 }
 
@@ -60,7 +60,7 @@ async fn gzip_test() {
         .send()
         .await
         .unwrap();
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .get(format!("http://{addr}{GZIP_PATH}"))
         .send()
         .await
@@ -68,7 +68,7 @@ async fn gzip_test() {
 
     assert_eq!(
         direct_res.bytes().await.unwrap(),
-        proxy_server_res.bytes().await.unwrap()
+        lynx_core_res.bytes().await.unwrap()
     );
 }
 
@@ -82,7 +82,7 @@ async fn echo_test() {
         .send()
         .await
         .unwrap();
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .get(format!("http://{addr}{}", ECHO_PATH))
         .header(CONTENT_TYPE, "application/json")
         .send()
@@ -91,7 +91,7 @@ async fn echo_test() {
 
     assert_eq!(
         direct_res.headers().get(CONTENT_TYPE),
-        proxy_server_res.headers().get(CONTENT_TYPE)
+        lynx_core_res.headers().get(CONTENT_TYPE)
     );
 }
 
@@ -128,7 +128,7 @@ async fn ping_pong_test() {
     let stream = BroadcastStream::new(rx2);
     let stream = stream.map_ok(Bytes::from).map_err(|err| anyhow!(err));
     let body = reqwest::Body::wrap_stream(stream);
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .post(format!("http://{addr}{}", PING_PATH))
         .body(body)
         .send()
@@ -137,7 +137,7 @@ async fn ping_pong_test() {
 
     assert_eq!(
         direct_res.bytes().await.unwrap(),
-        proxy_server_res.bytes().await.unwrap()
+        lynx_core_res.bytes().await.unwrap()
     );
 }
 
@@ -168,9 +168,9 @@ async fn push_msg() {
 // async fn ws_test() {
 //
 //     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-//     let proxy_server = Server::new();
-//     proxy_server.run().await.unwrap();
-//     let proxy = reqwest::Proxy::all(format!("http://{}", proxy_server.addr)).unwrap();
+//     let lynx_core = Server::new();
+//     lynx_core.run().await.unwrap();
+//     let proxy = reqwest::Proxy::all(format!("http://{}", lynx_core.addr)).unwrap();
 //     let mut client = reqwest::Client::builder()
 //         .proxy(proxy)
 //         .no_brotli()

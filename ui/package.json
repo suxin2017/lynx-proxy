@@ -36,6 +36,7 @@
     "react-virtualized": "^9.22.6",
     "react18-json-view": "0.2.9-canary.9",
     "thememirror": "^2.0.1",
+    "use-immer": "^0.11.0",
     "zustand": "^5.0.3"
   },
   "devDependencies": {

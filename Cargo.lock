@@ -1704,6 +1704,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "lynx-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-compression",
+ "bytes",
+ "chrono",
+ "derive_builder",
+ "dirs",
+ "dotenv",
+ "futures-util",
+ "http",
+ "http-body-util",
+ "hyper",
+ "hyper-rustls",
+ "hyper-tungstenite",
+ "hyper-util",
+ "include_dir",
+ "jsonschema",
+ "local-ip-address",
+ "mime_guess",
+ "moka",
+ "nanoid",
+ "once_cell",
+ "rand",
+ "rcgen",
+ "reqwest",
+ "reqwest-websocket",
+ "rsa",
+ "rustls-pemfile",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "tokio-graceful",
+ "tokio-rustls",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+]
+
+[[package]]
+name = "lynx-proxy"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "lynx-core",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2251,53 +2309,6 @@ dependencies = [
  "syn 2.0.93",
  "version_check",
  "yansi",
-]
-
-[[package]]
-name = "proxy-server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-compression",
- "bytes",
- "chrono",
- "derive_builder",
- "dirs",
- "dotenv",
- "futures-util",
- "http",
- "http-body-util",
- "hyper",
- "hyper-rustls",
- "hyper-tungstenite",
- "hyper-util",
- "include_dir",
- "jsonschema",
- "local-ip-address",
- "mime_guess",
- "moka",
- "nanoid",
- "once_cell",
- "rand",
- "rcgen",
- "reqwest",
- "reqwest-websocket",
- "rsa",
- "rustls-pemfile",
- "sea-orm",
- "sea-orm-migration",
- "serde",
- "serde_json",
- "time",
- "tokio",
- "tokio-graceful",
- "tokio-rustls",
- "tokio-stream",
- "tokio-tungstenite",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
- "url",
 ]
 
 [[package]]

@@ -22,3 +22,38 @@ export const useGetRuleDetailQuery = (params: { id?: number }) => {
     enabled: !!params.id,
   });
 };
+
+export const useUpdateRuleGroupName = (params: { id?: number }) => {
+  return useQuery({
+    queryKey: ['/__self_service_path__/rule', params],
+    queryFn: () =>
+      fetch(
+        `/__self_service_path__/rule?${queryString.stringify(params)}`,
+      ).then((res) => res.json() as Promise<IRuleContentResponse>),
+    enabled: !!params.id,
+  });
+};
+
+export const useUpdateRuleName = (params: { id?: number }) => {
+  return useQuery({
+    queryKey: ['/__self_service_path__/rule', params],
+    queryFn: () =>
+      fetch(
+        `/__self_service_path__/rule?${queryString.stringify(params)}`,
+      ).then((res) => res.json() as Promise<IRuleContentResponse>),
+    enabled: !!params.id,
+  });
+};
+
+
+
+export const useAddRule = (params: { id?: number }) => {
+  return useQuery({
+    queryKey: ['/__self_service_path__/rule', params],
+    queryFn: () =>
+      fetch(
+        `/__self_service_path__/rule?${queryString.stringify(params)}`,
+      ).then((res) => res.json() as Promise<IRuleContentResponse>),
+    enabled: !!params.id,
+  });
+};

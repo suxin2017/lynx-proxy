@@ -1,6 +1,6 @@
 target
 sql.db
-crates/proxy/asserts
+asserts
 # Local
 .DS_Store
 *.local

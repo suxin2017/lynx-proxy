@@ -3,7 +3,7 @@ use common::{
     test_server::HELLO_PATH,
     tracing_config::init_tracing,
 };
-use proxy_server::{self_service::REQUEST_LOG, server::Server, server_context::set_up_context};
+use lynx_core::{self_service::REQUEST_LOG, server::Server, server_context::set_up_context};
 use reqwest::Client;
 use std::net::SocketAddr;
 pub mod common;
@@ -14,9 +14,9 @@ async fn init_test_server() -> (SocketAddr, SocketAddr, Client, Client) {
     set_up_context().await;
 
     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-    let mut proxy_server = Server::new(3000);
-    proxy_server.run().await.unwrap();
-    let proxy_addr = format!("http://{}", proxy_server.access_addr_list.first().unwrap());
+    let mut lynx_core = Server::new(3000);
+    lynx_core.run().await.unwrap();
+    let proxy_addr = format!("http://{}", lynx_core.access_addr_list.first().unwrap());
 
     let direct_request_client = build_http_client();
 
@@ -24,7 +24,7 @@ async fn init_test_server() -> (SocketAddr, SocketAddr, Client, Client) {
 
     (
         addr,
-        *proxy_server.access_addr_list.first().unwrap(),
+        *lynx_core.access_addr_list.first().unwrap(),
         direct_request_client,
         proxy_request_client,
     )
@@ -41,13 +41,13 @@ async fn request_test() {
         .await
         .unwrap();
 
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .get(format!("http://{addr}{HELLO_PATH}"))
         .send()
         .await
         .unwrap();
 
-    assert_eq!(proxy_server_res.text().await.unwrap(), "Hello, World!");
+    assert_eq!(lynx_core_res.text().await.unwrap(), "Hello, World!");
 
     let chunk = log.chunk().await.unwrap();
     assert!(chunk.is_some());

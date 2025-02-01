@@ -2,7 +2,7 @@ use common::{
     build_proxy_client::build_http_client,
     tracing_config::init_tracing,
 };
-use proxy_server::{
+use lynx_core::{
     self_service::{RULE_GROUP_ADD, RULE_GROUP_DELETE},
     server::Server,
     server_context::set_up_context,

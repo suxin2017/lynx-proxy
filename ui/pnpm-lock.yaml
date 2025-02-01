@@ -83,6 +83,9 @@ dependencies:
   thememirror:
     specifier: ^2.0.1
     version: 2.0.1(@codemirror/language@6.10.8)(@codemirror/state@6.5.1)(@codemirror/view@6.36.2)
+  use-immer:
+    specifier: ^0.11.0
+    version: 0.11.0(immer@10.1.1)(react@19.0.0)
   zustand:
     specifier: ^5.0.3
     version: 5.0.3(@types/react@19.0.7)(immer@10.1.1)(react@19.0.0)
@@ -4861,6 +4864,16 @@ packages:
     dependencies:
       punycode: 2.3.1
     dev: true
+
+  /use-immer@0.11.0(immer@10.1.1)(react@19.0.0):
+    resolution: {integrity: sha512-RNAqi3GqsWJ4bcCd4LMBgdzvPmTABam24DUaFiKfX9s3MSorNRz9RDZYJkllJoMHUxVLMDetwAuCDeyWNrp1yA==}
+    peerDependencies:
+      immer: '>=8.0.0'
+      react: ^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0
+    dependencies:
+      immer: 10.1.1
+      react: 19.0.0
+    dev: false
 
   /use-sync-external-store@1.4.0(react@19.0.0):
     resolution: {integrity: sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==}

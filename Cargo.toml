@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/proxy"]
+members = ["crates/lynx-core", "crates/lynx-proxy"]
 resolver = "2"
 
 [workspace.package]

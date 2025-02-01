@@ -24,7 +24,7 @@ export default defineMock({
             },
         }]
     }])
-    res.write(Buffer.from(JSON.stringify({ message: '', data, code: 'Ok' })));
+    res.write(JSON.stringify({ message: '', data, code: 'Ok' }));
     res.end();
   },
 });

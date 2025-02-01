@@ -51,11 +51,13 @@ export interface IRuleTreeNode {
   title: string;
   children: [];
   record: IRuleModel;
+  ifLeaf?: boolean;
 }
 
 export interface IRuleTree {
   key: string;
   title: string;
+  isLeaf?: boolean;
   children: IRuleTreeNode[];
   record: IRuleGroupModel;
 }

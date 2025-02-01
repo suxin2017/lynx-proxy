@@ -1,7 +1,7 @@
 
 use anyhow::{Ok, Result};
-use proxy_server::server::Server;
-use proxy_server::server_context::set_up_context;
+use lynx_core::server::Server;
+use lynx_core::server_context::set_up_context;
 use tracing_subscriber::{
     filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer,
 };

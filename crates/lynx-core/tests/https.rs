@@ -8,7 +8,7 @@ use common::{
     tracing_config::init_tracing,
 };
 use http::header::CONTENT_TYPE;
-use proxy_server::{
+use lynx_core::{
     server::Server,
     server_context::{set_up_context, CA_MANAGER},
 };
@@ -19,9 +19,9 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
     set_up_context().await;
 
     let addr: std::net::SocketAddr = start_https_server().await.unwrap();
-    let mut proxy_server = Server::new(3000);
-    proxy_server.run().await.unwrap();
-    let proxy_addr = format!("http://{}", proxy_server.access_addr_list.first().unwrap());
+    let mut lynx_core = Server::new(3000);
+    lynx_core.run().await.unwrap();
+    let proxy_addr = format!("http://{}", lynx_core.access_addr_list.first().unwrap());
 
     let direct_request_client = build_https_client(TEST_ROOT_CA_CERT.clone());
 
@@ -50,14 +50,14 @@ async fn hello_test() {
         .send()
         .await
         .unwrap();
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .get(format!("https://{addr}{HELLO_PATH}"))
         .send()
         .await
         .unwrap();
     assert_eq!(
         direct_res.text().await.unwrap(),
-        proxy_server_res.text().await.unwrap()
+        lynx_core_res.text().await.unwrap()
     );
 }
 
@@ -71,7 +71,7 @@ async fn gzip_test() {
         .send()
         .await
         .unwrap();
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .get(format!("https://{addr}{GZIP_PATH}"))
         .send()
         .await
@@ -79,7 +79,7 @@ async fn gzip_test() {
 
     assert_eq!(
         direct_res.bytes().await.unwrap(),
-        proxy_server_res.bytes().await.unwrap()
+        lynx_core_res.bytes().await.unwrap()
     );
 }
 
@@ -94,14 +94,14 @@ async fn echo_test() {
         .send()
         .await
         .unwrap();
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .get(format!("https://{addr}{}", ECHO_PATH))
         .header(CONTENT_TYPE, "application/json")
         .send()
         .await
         .unwrap();
 
-    assert_eq!(direct_res.headers(), proxy_server_res.headers());
+    assert_eq!(direct_res.headers(), lynx_core_res.headers());
 }
 
 #[tokio::test]
@@ -115,7 +115,7 @@ async fn ping_pong_test() {
         .await
         .unwrap();
 
-    let proxy_server_res = proxy_request_client
+    let lynx_core_res = proxy_request_client
         .post(format!("https://{addr}{}", PING_PATH))
         .send()
         .await
@@ -123,6 +123,6 @@ async fn ping_pong_test() {
 
     assert_eq!(
         direct_res.bytes().await.unwrap(),
-        proxy_server_res.bytes().await.unwrap()
+        lynx_core_res.bytes().await.unwrap()
     );
 }

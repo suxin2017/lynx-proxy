@@ -3,14 +3,14 @@ use reqwest::Certificate;
 
 
 pub fn build_request_client(
-    proxy_server_addr: Option<&str>,
+    lynx_core_addr: Option<&str>,
     is_https: bool,
     ca_cert: Option<Certificate>,
 ) -> Result<reqwest::Client> {
     let mut client = reqwest::Client::builder();
        
-    if let Some(proxy_server_addr) = proxy_server_addr {
-        let proxy = reqwest::Proxy::all(proxy_server_addr).unwrap();
+    if let Some(lynx_core_addr) = lynx_core_addr {
+        let proxy = reqwest::Proxy::all(lynx_core_addr).unwrap();
         client = client.proxy(proxy);
     }
     if is_https {
@@ -22,12 +22,12 @@ pub fn build_request_client(
     Ok(client.build()?)
 }
 
-pub fn build_http_proxy_client(proxy_server_addr: &str) -> reqwest::Client {
-    build_request_client(Some(proxy_server_addr), false, None).unwrap()
+pub fn build_http_proxy_client(lynx_core_addr: &str) -> reqwest::Client {
+    build_request_client(Some(lynx_core_addr), false, None).unwrap()
 }
 
-pub fn build_https_proxy_client(proxy_server_addr: &str) -> reqwest::Client {
-    build_request_client(Some(proxy_server_addr), true, None).unwrap()
+pub fn build_https_proxy_client(lynx_core_addr: &str) -> reqwest::Client {
+    build_request_client(Some(lynx_core_addr), true, None).unwrap()
 }
 
 pub fn build_http_client() -> reqwest::Client {
