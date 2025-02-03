@@ -4,6 +4,7 @@ version.workspace = true
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
+include = ["src", "Cargo.toml", "README.md"]
 
 [dependencies]
 lynx-core = { path = "../lynx-core" }
