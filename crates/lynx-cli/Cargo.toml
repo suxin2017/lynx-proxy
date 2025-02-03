@@ -4,10 +4,13 @@ version.workspace = true
 authors.workspace = true
 description.workspace = true
 edition.workspace = true
+license.workspace = true
 include = ["src", "Cargo.toml", "README.md"]
 
 [dependencies]
-lynx-core = { path = "../lynx-core", features = ["test"] }
+lynx-core = { version = "0.0.1-alpha.0", features = [
+    "test",
+], path = "../lynx-core" }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }

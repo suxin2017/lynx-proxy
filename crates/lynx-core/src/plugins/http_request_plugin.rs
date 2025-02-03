@@ -22,7 +22,6 @@ use tokio::sync::mpsc;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{error, warn};
-use url::Url;
 
 use crate::entities::rule_content::{self, parse_rule_content};
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
