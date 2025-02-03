@@ -1,7 +1,6 @@
-use crate::entities::{rule, rule_content, rule_group};
-use crate::self_service::api::schemas::RULE_UPDATE_PARAMS_SCHEMA;
+use crate::entities::{rule, rule_content};
 use crate::self_service::utils::{
-    get_body_json, get_query_params, response_ok, OperationError, ValidateError,
+    get_query_params, parse_body_params, response_ok, OperationError, ValidateError,
 };
 use crate::server_context::DB;
 use anyhow::{anyhow, Error, Result};
@@ -9,6 +8,7 @@ use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
+use schemars::{schema_for, JsonSchema};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, ModelTrait, TransactionTrait,
 };
@@ -16,9 +16,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{error, info};
 
-use super::schemas::{RULE_ADD_PARAMS_SCHEMA, RULE_DELETE_PARAMS_SCHEMA};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct RuleAddParams {
     rule_group_id: i32,
@@ -27,10 +26,8 @@ struct RuleAddParams {
 
 pub async fn handle_rule_add(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
     let db = DB.get().unwrap();
-    let add_params: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&RULE_ADD_PARAMS_SCHEMA, &add_params)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let add_params: RuleAddParams = serde_json::from_value(add_params)?;
+    let add_params: RuleAddParams =
+        parse_body_params(req.into_body(), schema_for!(RuleAddParams)).await?;
 
     let txn = db.begin().await?;
     let active_model = rule::ActiveModel {
@@ -51,7 +48,7 @@ pub async fn handle_rule_add(req: Request<Incoming>) -> Result<Response<BoxBody<
     response_ok(res)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct RuleUpdateParams {
     id: i32,
     name: Option<String>,
@@ -59,11 +56,9 @@ struct RuleUpdateParams {
 }
 
 pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&RULE_UPDATE_PARAMS_SCHEMA, &body_json)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let body_params: RuleUpdateParams = serde_json::from_value(body_json)?;
-    info!("update rule: {:?}", body_params);
+    let body_params: RuleUpdateParams =
+        parse_body_params(req.into_body(), schema_for!(RuleUpdateParams)).await?;
+
     let db = DB.get().unwrap();
 
     let rule = rule::Entity::find_by_id(body_params.id).one(db).await?;
@@ -91,16 +86,14 @@ pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBo
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct RuleDeleteParams {
     id: i32,
 }
 
 pub async fn handle_rule_delete(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&RULE_DELETE_PARAMS_SCHEMA, &body_json)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let body_params: RuleDeleteParams = serde_json::from_value(body_json)?;
+    let body_params: RuleDeleteParams =
+        parse_body_params(req.into_body(), schema_for!(RuleDeleteParams)).await?;
 
     let db = DB.get().unwrap();
     let rule = rule::Entity::find_by_id(body_params.id)

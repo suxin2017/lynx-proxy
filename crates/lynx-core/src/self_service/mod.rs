@@ -310,11 +310,9 @@ pub async fn handle_self_service(
         Ok(res) => Ok(res),
         Err(err) => {
             let res = if err.downcast_ref::<ValidateError>().is_some() {
-                let err_string = err.to_string();
-                let first_error_messge = err_string.split("\n").next().unwrap_or_default();
-                let first_error_messge = first_error_messge.split(": ").last().unwrap_or_default();
-                dbg!(&first_error_messge);
-                validate_error(first_error_messge.to_string())
+                let err_string = format!("{}", err);
+                dbg!(&err_string);
+                validate_error(err_string)
             } else if err.downcast_ref::<OperationError>().is_some() {
                 operation_error(err.to_string())
             } else {

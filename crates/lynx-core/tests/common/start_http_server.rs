@@ -24,7 +24,10 @@ pub async fn start_http_server_with_port(port: u16) -> Result<SocketAddr> {
             let (tcp, _) = listener.accept().await.unwrap();
             tokio::task::spawn(async move {
                 let _ = auto::Builder::new(TokioExecutor::new())
-                    .serve_connection_with_upgrades(TokioIo::new(tcp), service_fn(test_server))
+                    .serve_connection_with_upgrades(
+                        TokioIo::new(tcp),
+                        service_fn(|req| test_server(req, addr)),
+                    )
                     .await;
             });
         }
@@ -44,7 +47,10 @@ pub async fn start_http_server() -> Result<SocketAddr> {
 
             tokio::task::spawn(async move {
                 let _ = auto::Builder::new(TokioExecutor::new())
-                    .serve_connection_with_upgrades(TokioIo::new(tcp), service_fn(test_server))
+                    .serve_connection_with_upgrades(
+                        TokioIo::new(tcp),
+                        service_fn(|req| test_server(req, addr)),
+                    )
                     .await;
             });
         }
@@ -85,7 +91,7 @@ pub async fn start_https_server() -> Result<SocketAddr> {
                 if let Err(err) = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                     .serve_connection_with_upgrades(
                         TokioIo::new(tls_stream),
-                        service_fn(test_server),
+                        service_fn(|req| test_server(req, addr)),
                     )
                     .await
                 {

@@ -1,17 +1,17 @@
 use crate::entities::app_config::{self, RecordingStatus};
-use crate::self_service::utils::{get_body_json, response_ok, OperationError, ValidateError};
+use crate::self_service::utils::{parse_body_params, response_ok, OperationError};
 use crate::server_context::DB;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
+use schemars::{schema_for, JsonSchema};
 use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
 use serde::{Deserialize, Serialize};
 
-use super::schemas::CHANGE_RECORDING_STATUS_PARAM_SCHEMA;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct ChangeRecordingStatusParams {
     status: RecordingStatus,
 }
@@ -20,10 +20,8 @@ pub async fn handle_recording_status(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
     let db = DB.get().unwrap();
-    let add_params: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&CHANGE_RECORDING_STATUS_PARAM_SCHEMA, &add_params)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let add_params: ChangeRecordingStatusParams = serde_json::from_value(add_params)?;
+    let add_params: ChangeRecordingStatusParams =
+        parse_body_params(req.into_body(), schema_for!(ChangeRecordingStatusParams)).await?;
 
     let config = app_config::Entity::find().one(DB.get().unwrap()).await?;
 

@@ -69,6 +69,7 @@ sea-orm-migration = { version = "1.1.0", features = [
 url = "2.5.4"
 include_dir = "0.7.4"
 mime_guess = "=2.0.5"
+schemars = "0.8.21"
 
 [dev-dependencies]
 dotenv = "0.15.0"

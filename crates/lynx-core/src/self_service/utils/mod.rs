@@ -8,21 +8,31 @@ use http_body_util::combinators::BoxBody;
 use http_body_util::BodyExt;
 use hyper::body::Incoming;
 use hyper::Response;
+use schemars::schema::RootSchema;
 
 use crate::utils::full;
 
-pub async fn get_body_json<Value>(body: Incoming) -> Result<Value>
+pub async fn parse_body_params<Value>(body: Incoming, schema: RootSchema) -> Result<Value>
 where
     Value: serde::de::DeserializeOwned,
 {
     let body = body
         .collect()
         .await
-        .map_err(|e| anyhow!(e).context("collect body error"))?;
+        .map_err(|e| anyhow!(e).context("get body error"))?;
+
     let aggregate = body.aggregate();
-    let json_value: Value = serde_json::from_reader(aggregate.reader())
+
+    let json_value: serde_json::Value = serde_json::from_reader(aggregate.reader())
         .map_err(|e| anyhow!(e).context("parse request body json error"))?;
-    Ok(json_value)
+
+    let schema =
+        serde_json::to_value(&schema).map_err(|e| anyhow!(e).context("schema to json error"))?;
+
+    jsonschema::validate(&schema, &json_value)
+        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
+
+    Ok(serde_json::from_value::<Value>(json_value).map_err(|e| anyhow!(format!("{}", e)))?)
 }
 
 pub fn get_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
