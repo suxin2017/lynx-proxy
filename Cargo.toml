@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/lynx-core", "crates/lynx-proxy","crates/lynx-cli"]
+members = ["crates/lynx-core", "crates/lynx-proxy", "crates/lynx-cli"]
 resolver = "2"
 
 [workspace.package]
@@ -7,6 +7,7 @@ version = "0.0.1-alpha.0"
 authors = ["suxin2017"]
 description = "A proxy service"
 edition = "2021"
+license = "MIT"
 
 [workspace.dependencies]
 sea-orm = { version = "1.1.0", features = [
