@@ -1,8 +1,5 @@
 use crate::entities::{rule, rule_group};
-use crate::self_service::api::schemas::{
-    RULE_GROUP_DELETE_PARAMS_SCHEMA, RULE_GROUP_UPDATE_PARAMS_SCHEMA,
-};
-use crate::self_service::utils::{get_body_json, response_ok, OperationError, ValidateError};
+use crate::self_service::utils::{parse_body_params, response_ok, OperationError};
 use crate::server_context::DB;
 use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
@@ -11,13 +8,13 @@ use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
+use schemars::{schema_for, JsonSchema};
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::schemas::RULE_GROUP_ADD_PARAMS_SCHEMA;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct RuleGroupAddParams {
     name: String,
     description: Option<String>,
@@ -26,11 +23,10 @@ struct RuleGroupAddParams {
 pub async fn handle_rule_group_add(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
+    let group_add_params: RuleGroupAddParams =
+        parse_body_params(req.into_body(), schema_for!(RuleGroupAddParams)).await?;
+
     let db = DB.get().unwrap();
-    let group_add_params: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&RULE_GROUP_ADD_PARAMS_SCHEMA, &group_add_params)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let group_add_params: RuleGroupAddParams = serde_json::from_value(group_add_params)?;
 
     let active_model = rule_group::ActiveModel {
         name: ActiveValue::set(group_add_params.name),
@@ -41,7 +37,7 @@ pub async fn handle_rule_group_add(
     response_ok(res)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct RuleGroupUpdateParams {
     id: i32,
     name: String,
@@ -51,10 +47,8 @@ struct RuleGroupUpdateParams {
 pub async fn handle_rule_group_update(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&RULE_GROUP_UPDATE_PARAMS_SCHEMA, &body_json)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let body_params: RuleGroupUpdateParams = serde_json::from_value(body_json)?;
+    let body_params: RuleGroupUpdateParams =
+        parse_body_params(req.into_body(), schema_for!(RuleGroupUpdateParams)).await?;
 
     let active_model = rule_group::ActiveModel {
         id: ActiveValue::set(body_params.id),
@@ -70,7 +64,7 @@ pub async fn handle_rule_group_update(
         .body(full(Bytes::from("{}")))?)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct RuleGroupDeleteParams {
     id: i32,
 }
@@ -78,10 +72,8 @@ struct RuleGroupDeleteParams {
 pub async fn handle_rule_group_delete(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let body_json: serde_json::Value = get_body_json(req.into_body()).await?;
-    jsonschema::validate(&RULE_GROUP_DELETE_PARAMS_SCHEMA, &body_json)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-    let body_params: RuleGroupDeleteParams = serde_json::from_value(body_json)?;
+    let body_params: RuleGroupDeleteParams = 
+        parse_body_params(req.into_body(), schema_for!(RuleGroupDeleteParams)).await?;
 
     let active_model = rule_group::ActiveModel {
         id: ActiveValue::set(body_params.id),

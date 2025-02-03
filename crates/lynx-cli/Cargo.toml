@@ -6,8 +6,9 @@ description.workspace = true
 edition.workspace = true
 
 [dependencies]
-lynx-core = { path = "../lynx-core" }
+lynx-core = { path = "../lynx-core", features = ["test"] }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
+clap = { version = "4.5.27", features = ["derive"] }

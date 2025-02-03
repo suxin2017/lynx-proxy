@@ -5,7 +5,6 @@ use lynx_core::{
     server_context::set_up_context,
 };
 use reqwest::Client;
-use sea_orm_migration::schema::json;
 use serde_json::{json, Value};
 use std::net::SocketAddr;
 pub mod common;

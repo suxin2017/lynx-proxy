@@ -1,40 +1,41 @@
-use anyhow::anyhow;
-use bytes::Bytes;
 use common::{
     build_proxy_client::{build_http_client, build_http_proxy_client},
-    test_server::{ECHO_PATH, GZIP_PATH, HELLO_PATH, PING_PATH, PUSH_MSG_PATH},
+    test_server::HELLO_PATH,
     tracing_config::init_tracing,
 };
-use futures_util::TryStreamExt;
-use http::header::CONTENT_TYPE;
 use lynx_core::{
-    self_service::{RULE_ADD, RULE_DELETE, RULE_GROUP_ADD, RULE_GROUP_DELETE, RULE_UPDATE},
+    self_service::{RULE_ADD, RULE_DELETE, RULE_UPDATE},
     server::Server,
     server_context::set_up_context,
 };
 use reqwest::Client;
 use serde_json::{json, Value};
-use std::{net::SocketAddr, time::Duration};
-use tokio::{sync::broadcast, time::interval};
-use tokio_stream::wrappers::BroadcastStream;
+use std::net::SocketAddr;
 pub mod common;
 
 use crate::common::start_http_server::start_http_server;
 
-async fn init_test_server() -> (SocketAddr, Client, Client) {
+async fn init_test_server() -> (SocketAddr, SocketAddr, SocketAddr, Client, Client) {
     init_tracing();
     set_up_context().await;
 
-    let addr: std::net::SocketAddr = start_http_server().await.unwrap();
+    let match_addr: std::net::SocketAddr = start_http_server().await.unwrap();
+    let target_addr: std::net::SocketAddr = start_http_server().await.unwrap();
     let mut lynx_core = Server::new(3000);
     lynx_core.run().await.unwrap();
-    let proxy_addr = format!("http://{}", lynx_core.access_addr_list.first().unwrap());
+    let proxy_addr = lynx_core.access_addr_list.first().unwrap().clone();
 
     let direct_request_client = build_http_client();
 
-    let proxy_request_client = build_http_proxy_client(&proxy_addr);
+    let proxy_request_client = build_http_proxy_client(&format!("http://{}", proxy_addr));
 
-    (addr, direct_request_client, proxy_request_client)
+    (
+        proxy_addr,
+        match_addr,
+        target_addr,
+        direct_request_client,
+        proxy_request_client,
+    )
 }
 
 struct RuleContext {
@@ -42,9 +43,17 @@ struct RuleContext {
 }
 
 impl RuleContext {
-    async fn init(addr: &SocketAddr, client: &Client, rule: Value) -> RuleContext {
+    async fn init(
+        proxy_addr: &SocketAddr,
+        match_addr: &SocketAddr,
+        target_addr: &SocketAddr,
+        client: &Client,
+        rule: Value,
+    ) -> RuleContext {
+        let match_domain = format!("http://{}", match_addr);
+        let target_domain = format!("http://{}", target_addr);
         let res = client
-            .post(format!("http://{addr}{}", RULE_ADD))
+            .post(format!("{}{}", match_domain, RULE_ADD))
             .json(&json!({
                 "name": "test",
                 // default rule group id
@@ -61,12 +70,10 @@ impl RuleContext {
 
         // set match rule
         let res = client
-            .post(format!("http://{addr}{}", RULE_UPDATE))
+            .post(format!("http://{}{}", proxy_addr, RULE_UPDATE))
             .json(&json!({
                 "id": id,
-                "content": json!({
-                    "test": "test"
-                })
+                "content": rule
             }))
             .send()
             .await
@@ -94,23 +101,49 @@ impl RuleContext {
     }
 }
 
-
 #[tokio::test]
 async fn test_rule_proxy() {
-    let (addr, client, proxy_request_client) = init_test_server().await;
+    let (proxy_addr, match_addr, target_addr, client, proxy_request_client) =
+        init_test_server().await;
+
+    let match_domain = format!("http://{}", match_addr);
+    let target_domain = format!("http://{}", target_addr);
 
     let rule = json!({
-        "test": "test"
+        "match":{
+            "uri": match_domain
+        },
+        "target": {
+            "uri": target_domain
+        }
     });
 
-    let rule_context = RuleContext::init(&addr, &proxy_request_client, rule).await;
-    
+    let rule_context = RuleContext::init(
+        &proxy_addr,
+        &match_addr,
+        &target_addr,
+        &proxy_request_client,
+        rule,
+    )
+    .await;
+
     let lynx_core_res = proxy_request_client
-        .get(format!("http://{addr}{HELLO_PATH}"))
+        .get(format!("http://{match_addr}{HELLO_PATH}"))
         .send()
         .await
         .unwrap();
-    tokio::signal::ctrl_c().await.unwrap();
-    rule_context.destroy(&addr, &proxy_request_client).await;
+    let target_res = client
+        .get(format!("http://{target_addr}{HELLO_PATH}"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(lynx_core_res.headers(), target_res.headers());
+    assert_eq!(
+        lynx_core_res.text().await.unwrap(),
+        target_res.text().await.unwrap()
+    );
 
+    rule_context
+        .destroy(&proxy_addr, &proxy_request_client)
+        .await;
 }

@@ -4,7 +4,7 @@ use bytes::Bytes;
 use futures_util::{SinkExt, TryStreamExt};
 use http::{
     header::{CONTENT_ENCODING, CONTENT_TYPE},
-    Method, StatusCode,
+    HeaderValue, Method, StatusCode,
 };
 use http_body_util::{combinators::BoxBody, BodyExt, Full, StreamBody};
 use hyper::{
@@ -53,6 +53,7 @@ pub static BOARD_CAST: Lazy<Arc<broadcast::Sender<String>>> = Lazy::new(|| {
 
 pub async fn test_server(
     req: Request<Incoming>,
+    addr: std::net::SocketAddr,
 ) -> Result<Response<BoxBody<Bytes, anyhow::Error>>> {
     // websocket
     if hyper_tungstenite::is_upgrade_request(&req) {
@@ -78,11 +79,16 @@ pub async fn test_server(
     }
 
     match (req.method(), req.uri().path()) {
-        (&Method::GET, "/hello") => Ok(Response::new(
-            Full::new(Bytes::from(HELLO_WORLD))
-                .map_err(|err| anyhow!("{err}"))
-                .boxed(),
-        )),
+        (&Method::GET, "/hello") => {
+            let mut res = Response::new(
+                Full::new(Bytes::from(HELLO_WORLD))
+                    .map_err(|err| anyhow!("{err}"))
+                    .boxed(),
+            );
+            res.headers_mut()
+                .append("X-Host", HeaderValue::from_str(&addr.to_string())?);
+            Ok(res)
+        }
         (&Method::GET, "/gzip") => {
             let stream_body = StreamBody::new(
                 ReaderStream::new(GzipEncoder::new(HELLO_WORLD.as_bytes()))

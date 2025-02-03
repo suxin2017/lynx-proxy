@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::{fs, io};
 
@@ -6,6 +7,7 @@ use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
 use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
+use http::Uri;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::Incoming;
@@ -19,9 +21,10 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::error;
+use tracing::{error, warn};
+use url::Url;
 
-use crate::entities::rule_content;
+use crate::entities::rule_content::{self, parse_rule_content};
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
 use crate::schedular::get_req_trace_id;
 use crate::server_context::DB;
@@ -29,14 +32,6 @@ use crate::server_context::DB;
 pub async fn build_proxy_request(
     req: Request<Incoming>,
 ) -> Result<Request<BoxBody<bytes::Bytes, anyhow::Error>>> {
-    let db = DB.get().unwrap();
-
-
-    let rules = rule_content::Entity::find().all(db).await?;
-
-    for rule in rules {
-        println!("rule: {:?}", rule);
-    }
     let trace_id = get_req_trace_id(&req);
 
     let (parts, body) = req.into_parts();
@@ -67,13 +62,57 @@ pub async fn build_proxy_request(
         }
     });
 
-    let mut builder = hyper::Request::builder()
-        .uri(parts.uri)
-        .method(parts.method);
+    let req_url = url::Url::parse(&parts.uri.to_string().as_str()).unwrap();
+    let mut builder = hyper::Request::builder().method(parts.method);
+
+    let db = DB.get().unwrap();
+
+    let rules = rule_content::Entity::find().all(db).await?;
+
+    for rule in rules {
+        match parse_rule_content(rule.content) {
+            Ok(content) => {
+                let match_url = url::Url::parse(&content.r#match.uri);
+
+                match match_url {
+                    Ok(match_url) => {
+                        if req_url.host_str() == match_url.host_str() {
+                            println!("content: {:?}", content);
+                            // let uri_ref = builder.uri_ref();
+                            let new_uri_string =
+                                format!("{}{}", content.target.uri, req_url.path());
+
+                            println!("new uri: {:?}", &new_uri_string);
+
+                            let new_uri =  Uri::from_str(&new_uri_string)?;
+
+                            builder = builder.uri(new_uri);
+
+                            println!("match url: {:?}", match_url);
+                        }
+                    }
+                    Err(e) => {
+                        warn!("parse match url error: {}", e);
+                    }
+                }
+                println!("content: {:?}", content);
+            }
+            Err(e) => {
+                warn!("parse rule content error: {}", e);
+            }
+        }
+    }
+
+    if builder.uri_ref().is_none() {
+        builder = builder.uri(parts.uri);
+    }
 
     for (key, value) in parts.headers.into_iter() {
         if let Some(key) = key {
-            if matches!(&key, &HOST | &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH) {
+            if matches!(
+                &key,
+                &HOST | &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH
+            ) {
                 continue;
             }
             builder = builder.header(key, value);
