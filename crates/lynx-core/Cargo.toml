@@ -1,8 +1,10 @@
 [package]
 name = "lynx-core"
-version = "0.1.0"
-edition = "2021"
-publish = false
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+include = ["src", "Cargo.toml", "README.md"]
 
 [lib]
 path = "src/lib.rs"
@@ -80,8 +82,6 @@ reqwest = { version = "0.12.12", features = [
     "stream",
 ] }
 reqwest-websocket = "0.4.4"
-
-
 
 
 [features]
