@@ -1,8 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import * as monaco from 'monaco-editor';
-import { useGetRuleDetailQuery } from '@/api/rule';
+import {
+  useGetRuleDetailQuery,
+  useRuleContextSchema,
+  useUpdateRule,
+} from '@/api/rule';
 import { useSelectedRuleContext } from '../store';
-import { Empty } from 'antd';
+import { Button, Empty, message } from 'antd';
+import { RiSaveLine } from '@remixicon/react';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -24,68 +29,32 @@ self.MonacoEnvironment = {
 
 const modelUri = monaco.Uri.parse('file://ruleContent.json');
 
-monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-  schemaValidation: 'error',
-  validate: true,
-  schemas: [
-    {
-      uri: 'https://json-schema.org/draft/2020-12/schema',
-      fileMatch: [modelUri.toString()], // associate with our model
-      schema: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          match: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              uri: {
-                title: 'URI',
-                markdownDescription: `
-Match the corresponding request link with the uri
-
-Supports the following
-
-- Exact match: https://example.com
-- Wildcard match: https://example.com/*
-- Domain match: example.com`,
-                examples: [
-                  'https://example.com',
-                  'https://example.com/*',
-                  'example.com',
-                ],
-                type: 'string',
-              },
-            },
-            required: ['uri'],
-          },
-          target: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              uri: {
-                markdownDescription: `
-Forward to the specified uri
-
-For example
-- https://example.com`,
-                type: 'string',
-              },
-            },
-            required: ['uri'],
-          },
-        },
-        required: ['match', 'target'],
-      },
-    },
-  ],
-});
-
 interface IRuleEditorProps {}
 
 export const RuleEditor: React.FC<IRuleEditorProps> = (_props) => {
   const { selectedRule } = useSelectedRuleContext();
   const { data } = useGetRuleDetailQuery({ id: selectedRule?.id });
+
+  const { data: schemaData } = useRuleContextSchema();
+
+  useEffect(() => {
+    if (!schemaData) {
+      return;
+    }
+    monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+      schemaValidation: 'error',
+      validate: true,
+      schemas: [
+        {
+          fileMatch: [modelUri.toString()], // associate with our model
+          schema: schemaData.data,
+          uri: '/__self_service_path__/rule/context/schema',
+        },
+      ],
+    });
+  }, [schemaData]);
+
+  const { mutateAsync: updateRule } = useUpdateRule();
 
   const divEl = useRef<HTMLDivElement>(null);
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -103,6 +72,7 @@ export const RuleEditor: React.FC<IRuleEditorProps> = (_props) => {
 
   useEffect(() => {
     if (divEl.current) {
+      console.log('init');
       const model = monaco.editor.createModel('', 'json', modelUri);
       editor.current = monaco.editor.create(divEl.current, {
         model,
@@ -116,15 +86,55 @@ export const RuleEditor: React.FC<IRuleEditorProps> = (_props) => {
       editor.current?.dispose();
       editor.current = null;
     };
-  }, [selectedRule]);
+  }, []);
 
-  if (!selectedRule) {
-    return (
-      <div className="h-full flex justify-center items-center">
-        <Empty description={false} />
+  return (
+    <div className="h-full">
+      <div
+        className="flex justify-center items-center"
+        onClick={async () => {
+          const errorMarkers = monaco.editor
+            .getModelMarkers({ resource: modelUri })
+            .filter((marker) => {
+              return marker.severity === monaco.MarkerSeverity.Error;
+            });
+          if (errorMarkers.length > 0) {
+            message.error('Please fix the json error in the editor');
+            return;
+          }
+          const currentValue = editor.current?.getModel()?.getValue();
+
+          if (!currentValue) {
+            message.error('Please input the json content');
+            return;
+          }
+          try {
+            const matchRule = JSON.parse(currentValue);
+            await updateRule({
+              id: selectedRule.id,
+              content: matchRule ?? {},
+            });
+          } catch (e) {
+            console.error(e);
+            message.error('The json content is invalid');
+            return;
+          }
+        }}
+      >
+        <Button type="text" icon={<RiSaveLine size={14} />}>
+          Save
+        </Button>
       </div>
-    );
-  }
 
-  return <div className="h-full" ref={divEl}></div>;
+      {!selectedRule && (
+        <div className="h-full flex justify-center items-center">
+          <Empty description={false} />
+        </div>
+      )}
+      <div
+        className={`h-full ${!selectedRule ? 'hidden' : ''}`}
+        ref={divEl}
+      ></div>
+    </div>
+  );
 };
