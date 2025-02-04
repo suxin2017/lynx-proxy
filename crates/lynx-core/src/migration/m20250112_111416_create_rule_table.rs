@@ -77,7 +77,7 @@ impl MigrationTrait for Migration {
                     .col(string(Request::Method))
                     .col(string(Request::Schema))
                     .col(string(Request::Version))
-                    .col(integer(Request::StatusCode))
+                    .col(integer_null(Request::StatusCode))
                     .col(json(Request::Header))
                     .col(integer(Request::HeaderSize))
                     .to_owned(),
@@ -116,8 +116,6 @@ impl MigrationTrait for Migration {
         .insert(connect)
         .await?;
 
-        println!("rule_group: {:?}", rule_group);
-
         let rule = rule::ActiveModel {
             name: ActiveValue::set("default_rule".to_owned()),
             rule_group_id: ActiveValue::set(rule_group.id),
@@ -125,8 +123,6 @@ impl MigrationTrait for Migration {
         }
         .insert(connect)
         .await?;
-
-        println!("rule: {:?}", rule);
 
         let rule_content = rule_content::ActiveModel {
             rule_id: ActiveValue::set(rule.id),
@@ -137,8 +133,6 @@ impl MigrationTrait for Migration {
         }
         .insert(connect)
         .await?;
-
-        println!("rule_content: {:?}", rule_content);
 
         Ok(())
     }

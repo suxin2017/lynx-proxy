@@ -7,6 +7,7 @@ use rcgen::{
     IsCa, KeyPair, KeyUsagePurpose, SanType,
 };
 use rsa::{pkcs8::EncodePrivateKey, RsaPrivateKey};
+use tracing::trace;
 use std::{fs, io::Cursor, path::Path, sync::Arc};
 use time::{Duration, OffsetDateTime};
 use tokio_rustls::rustls::{
@@ -35,7 +36,7 @@ pub fn init_ca<T: AsRef<Path>>(
     let ca_cert_file = ca_cert_file.as_ref();
     let private_key_file = private_key_file.as_ref();
     let (private_key, ca_cert, ca_data) = if !ca_cert_file.exists() {
-        println!("ca from create");
+        trace!("create cert by generate");
         let private_key = gen_private_key().with_context(|| "Failed to generate private key")?;
         let ca_cert =
             gen_ca_cert(&private_key).with_context(|| "Failed to generate CA certificate")?;
@@ -54,7 +55,7 @@ pub fn init_ca<T: AsRef<Path>>(
         let ca_data = ca_cert.pem();
         (private_key, ca_cert, ca_data)
     } else {
-        println!("ca from file");
+        trace!("create cert by file");
         let private_key_err = || {
             format!(
                 "Failed to read private key at '{}'",

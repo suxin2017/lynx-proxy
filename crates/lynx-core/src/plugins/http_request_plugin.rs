@@ -21,7 +21,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{error, warn};
+use tracing::{error, trace, warn};
 
 use crate::entities::rule_content::{self, parse_rule_content};
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
@@ -68,14 +68,17 @@ pub async fn build_proxy_request(
 
     let rules = rule_content::Entity::find().all(db).await?;
 
+    let mut match_handled = false;
+
     for rule in rules {
+        trace!("current rule: {:?}", rule);
         match parse_rule_content(rule.content) {
             Ok(content) => {
                 let match_url = url::Url::parse(&content.r#match.uri);
-
                 match match_url {
                     Ok(match_url) => {
                         if req_url.host_str() == match_url.host_str() {
+                            match_handled = true;
                             println!("content: {:?}", content);
                             // let uri_ref = builder.uri_ref();
                             let new_uri_string =
@@ -83,7 +86,7 @@ pub async fn build_proxy_request(
 
                             println!("new uri: {:?}", &new_uri_string);
 
-                            let new_uri =  Uri::from_str(&new_uri_string)?;
+                            let new_uri = Uri::from_str(&new_uri_string)?;
 
                             builder = builder.uri(new_uri);
 
@@ -94,7 +97,6 @@ pub async fn build_proxy_request(
                         warn!("parse match url error: {}", e);
                     }
                 }
-                println!("content: {:?}", content);
             }
             Err(e) => {
                 warn!("parse rule content error: {}", e);
@@ -102,7 +104,7 @@ pub async fn build_proxy_request(
         }
     }
 
-    if builder.uri_ref().is_none() {
+    if !match_handled {
         builder = builder.uri(parts.uri);
     }
 
@@ -159,12 +161,13 @@ pub async fn build_proxy_response(
 
 pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
     let client_builder = Client::builder(TokioExecutor::new());
+    trace!("request: {:?}", req);
     let proxy_req = build_proxy_request(req).await?;
+    trace!("proxy request: {:?}", proxy_req);
     let proxy_res = if proxy_req.uri().scheme() == Some(&Scheme::HTTPS) {
-        println!("fetching {:?}", proxy_req);
-
+        trace!("fetch https request {}", proxy_req.uri());
         #[cfg(feature = "test")]
-        let connect = get_test_root_ca();
+        let connect = get_test_root_ca(proxy_req.uri().host());
 
         #[cfg(not(feature = "test"))]
         let connect = HttpsConnectorBuilder::new()
@@ -175,7 +178,7 @@ pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
 
         client_builder.build(connect).request(proxy_req).await
     } else {
-        println!("fetching {:?}", proxy_req);
+        trace!("http request");
         client_builder
             .build(HttpConnector::new())
             .request(proxy_req)
@@ -186,7 +189,30 @@ pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
 }
 
 #[cfg(feature = "test")]
-fn get_test_root_ca() -> hyper_rustls::HttpsConnector<HttpConnector> {
+fn get_test_root_ca(host: Option<&str>) -> hyper_rustls::HttpsConnector<HttpConnector> {
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+
+    fn is_localhost(host: Option<&str>) -> bool {
+        match host {
+            Some(host) => match host {
+                "localhost" => true,
+                _ => match host.parse::<IpAddr>() {
+                    Ok(IpAddr::V4(ip)) => ip == Ipv4Addr::LOCALHOST,
+                    Ok(IpAddr::V6(ip)) => ip == Ipv6Addr::LOCALHOST,
+                    _ => false,
+                },
+            },
+            None => false,
+        }
+    }
+
+    if !is_localhost(host) {
+        return HttpsConnectorBuilder::new()
+            .with_webpki_roots()
+            .https_only()
+            .enable_all_versions()
+            .build();
+    }
     let connect_builder = HttpsConnectorBuilder::new();
     let mut ca_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     ca_path.push("tests/fixtures/RootCA.crt");

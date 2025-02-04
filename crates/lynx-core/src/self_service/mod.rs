@@ -98,7 +98,7 @@ pub async fn handle_self_service(
                 .then(|result| async {
                     match result {
                         Ok(d) => match serde_json::to_string(&d) {
-                            Ok(json_str) => Ok(Frame::data(Bytes::from(json_str))),
+                            Ok(json_str) => Ok(Frame::data(Bytes::from(format!("{}\n", json_str)))),
                             Err(e) => {
                                 error!("serialization error: {:?}", e);
                                 Err(anyhow!(e))
@@ -120,7 +120,7 @@ pub async fn handle_self_service(
             let mut res = Response::new(body);
             res.headers_mut().insert(
                 CONTENT_TYPE,
-                HeaderValue::from_static("application/x-ndjson; charset=UTF-8"),
+                HeaderValue::from_static("application/octet-stream"),
             );
             res.headers_mut()
                 .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
