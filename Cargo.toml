@@ -8,6 +8,10 @@ authors = ["suxin2017"]
 description = "A proxy service"
 edition = "2021"
 license = "MIT"
+documentation = "https://github.com/suxin2017/lynx"
+homepage = "https://github.com/suxin2017/lynx"
+repository = "https://github.com/suxin2017/lynx"
+
 
 [workspace.dependencies]
 sea-orm = { version = "1.1.0", features = [

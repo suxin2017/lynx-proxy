@@ -5,6 +5,9 @@ authors.workspace = true
 description.workspace = true
 edition.workspace = true
 license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
 include = ["src", "Cargo.toml", "README.md"]
 
 [dependencies]
