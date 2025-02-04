@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Error};
@@ -35,4 +36,9 @@ pub fn get_current_timestamp_millis() -> u128 {
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
     since_the_epoch.as_millis()
+}
+
+pub async fn read_file(file_path: PathBuf) -> anyhow::Result<String> {
+    let content = tokio::fs::read_to_string(file_path).await?;
+    Ok(content)
 }

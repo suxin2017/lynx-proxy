@@ -2,6 +2,7 @@
 
 [English](README.md) | 简体中文
 
+[![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
 Lynx Proxy 是一款使用 Rust 编程语言构建的高性能、灵活的代理工具。它旨在提供高效的 HTTP/HTTPS 代理服务，支持多种功能和配置选项，适用于不同的网络环境和需求。

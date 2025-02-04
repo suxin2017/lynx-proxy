@@ -1,12 +1,9 @@
-use std::{fs, path::PathBuf};
+use std::{default, fs, path::PathBuf};
 
 use derive_builder::Builder;
 use tracing::debug;
 
 use include_dir::{include_dir, Dir};
-
-pub static UI_ASSERT_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/ui_assert");
-
 
 #[derive(Builder, Debug, Default, Clone)]
 pub struct AppConfig {
@@ -14,6 +11,7 @@ pub struct AppConfig {
     pub ca_root_dir: PathBuf,
     pub raw_root_dir: PathBuf,
     pub db_root_dir: PathBuf,
+    pub ui_root_dir: PathBuf,
 }
 
 impl AppConfig {
@@ -38,12 +36,14 @@ pub fn init_config() -> AppConfig {
     let default_ca_root_dir = default_asserts_root_dir.join("ca");
     let default_raw_root_dir = default_asserts_root_dir.join("raw");
     let default_db_root_dir = default_asserts_root_dir.join("db");
+    let default_ui_root_dir = default_asserts_root_dir.join("ui");
 
     let config = AppConfigBuilder::create_empty()
         .asserts_root_dir(default_asserts_root_dir)
         .ca_root_dir(default_ca_root_dir)
         .db_root_dir(default_db_root_dir)
         .raw_root_dir(default_raw_root_dir)
+        .ui_root_dir(default_ui_root_dir)
         .build()
         .expect("init asserts dir error");
 
