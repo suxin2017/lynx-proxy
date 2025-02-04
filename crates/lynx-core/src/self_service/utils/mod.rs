@@ -143,6 +143,7 @@ where
 pub fn not_found() -> Response<BoxBody<Bytes, Error>> {
     return Response::builder()
         .status(http::status::StatusCode::NOT_FOUND)
+        .header(CONTENT_TYPE, "text/plain")
         .body(full(Bytes::from("Not Found")))
         .unwrap();
 }

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Error, Result};
+use http::header::CONTENT_TYPE;
 use http::status;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Bytes;
@@ -57,6 +58,7 @@ pub async fn dispatch(
 
     Ok(Response::builder()
         .status(status::StatusCode::NOT_FOUND)
+        .header(CONTENT_TYPE, "text/plain")
         .body(full(Bytes::from(
             "The service does not support the current protocol",
         )))

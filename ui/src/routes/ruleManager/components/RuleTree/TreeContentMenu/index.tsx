@@ -18,27 +18,29 @@ export enum OperatorType {
 }
 
 export const useMenuItemMap = () => {
+  const { contextData: contentData } = useTreeContentMenuContext();
+
   const { openModal } = useSaveTreeNodeModalContext();
   return {
     [OperatorType.CreateGroup]: {
       label: 'Create Group',
       key: OperatorType.CreateGroup,
       onClick: () => {
-        openModal(OperatorType.CreateGroup);
+        openModal(OperatorType.CreateGroup, contentData);
       },
     },
     [OperatorType.CreateRule]: {
       label: 'Create Rule',
       key: OperatorType.CreateRule,
       onClick: () => {
-        openModal(OperatorType.CreateRule);
+        openModal(OperatorType.CreateRule, contentData);
       },
     },
     [OperatorType.EditRule]: {
       label: 'Edit Rule',
       key: OperatorType.EditRule,
       onClick: () => {
-        openModal(OperatorType.EditRule);
+        openModal(OperatorType.EditRule, contentData);
       },
     },
     // [OperatorType.MoveRule]: {
@@ -52,7 +54,7 @@ export const useMenuItemMap = () => {
       label: 'Delete Rule',
       key: OperatorType.DeleteRule,
       onClick: () => {
-        openModal(OperatorType.DeleteRule);
+        openModal(OperatorType.DeleteRule, contentData);
       },
     },
   };
@@ -61,7 +63,7 @@ export const useMenuItemMap = () => {
 export const TreeContentMenu: React.FC<ITreeContentMenuProps> = ({
   children,
 }) => {
-  const { open, contentData, position } = useTreeContentMenuContext();
+  const { open, contextData: contentData, position } = useTreeContentMenuContext();
   const menuItemMap = useMenuItemMap();
 
   const items = useMemo(() => {
@@ -75,6 +77,7 @@ export const TreeContentMenu: React.FC<ITreeContentMenuProps> = ({
         ];
       case ContextDataType.Rule:
         return [
+          menuItemMap[OperatorType.CreateRule],
           menuItemMap[OperatorType.EditRule],
           // menuItemMap[OperatorType.MoveRule],
           menuItemMap[OperatorType.DeleteRule],
@@ -125,7 +128,7 @@ export const [TreeContentMenuContextProvider, useTreeContentMenuContext] =
   constate(() => {
     const [state, setState] = useImmer({
       openMenu: false,
-      contentData: {} as IContentData,
+      contextData: {} as IContentData,
       position: { x: -100, y: -100 },
     });
 
@@ -135,7 +138,7 @@ export const [TreeContentMenuContextProvider, useTreeContentMenuContext] =
     ) => {
       setState((draft) => {
         draft.openMenu = true;
-        draft.contentData = data;
+        draft.contextData = data;
         draft.position = position;
       });
     };
@@ -143,9 +146,8 @@ export const [TreeContentMenuContextProvider, useTreeContentMenuContext] =
     const closeMenu = () => {
       setState((draft) => {
         draft.openMenu = false;
-        draft.contentData = {} as IContentData;
-        draft.x = -100;
-        draft.y = -100;
+        draft.contextData = {} as IContentData;
+        draft.position = { x: -100, y: -100 };
       });
     };
 
@@ -163,7 +165,7 @@ export const [TreeContentMenuContextProvider, useTreeContentMenuContext] =
 
       closeMenu,
       open: state.openMenu,
-      contentData: state.contentData,
+      contextData: state.contextData,
       position: state.position,
     };
   });

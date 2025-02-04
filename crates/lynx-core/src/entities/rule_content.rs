@@ -35,17 +35,20 @@ impl Related<super::rule::Entity> for Entity {
 impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct Match {
     pub uri: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct RuleContent {
     pub r#match: Match,
     pub target: Target,
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct Target {
     pub uri: String,
 }

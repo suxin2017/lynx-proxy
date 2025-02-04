@@ -2,7 +2,7 @@ import './main.css';
 import {
   createHashHistory,
   createRouter,
-  RouterProvider
+  RouterProvider,
 } from '@tanstack/react-router';
 import { StyleProvider } from '@ant-design/cssinjs';
 import { routeTree } from './routeTree.gen';
@@ -24,7 +24,13 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
 
 const App = () => {
   return (

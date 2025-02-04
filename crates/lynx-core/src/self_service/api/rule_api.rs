@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{error, info};
 
-
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct RuleAddParams {
@@ -63,26 +62,32 @@ pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBo
 
     let rule = rule::Entity::find_by_id(body_params.id).one(db).await?;
 
-    if let Some(mut rule) = rule {
+    if let Some(rule) = rule {
         if let Some(rule_content) = body_params.content {
             let content = rule.find_related(rule_content::Entity).one(db).await?;
             if let Some(content) = content {
                 let mut content_active = content.into_active_model();
                 content_active.content = ActiveValue::set(rule_content);
                 let res = content_active.update(db).await?;
-                info!("update content: {:?}", res);
+                return response_ok(res);
+            } else {
+                return Err(anyhow!(OperationError::new(
+                    "can not find the rule content".into()
+                )));
             }
         }
         if let Some(name) = body_params.name {
-            rule.name = name;
+            let mut rule = rule.into_active_model();
+            rule.name = ActiveValue::set(name);
+            let res = rule.update(db).await?;
+            return response_ok(res);
+        } else {
+            return Err(anyhow!(OperationError::new(
+                "name or content is required".into()
+            )));
         }
-        let active_model = rule.into_active_model();
-        let res = active_model.update(db).await?;
-        return response_ok(res);
     } else {
-        return Err(anyhow!(OperationError::new(
-            "can not find the rule".to_string()
-        )));
+        return Err(anyhow!(OperationError::new("can not find the rule".into())));
     }
 }
 

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::config::UI_ASSERT_DIR;
+use crate::entities::rule_content::RuleContent;
 use crate::entities::{request, response};
 use crate::proxy_log::PROXY_BOARD_CAST;
 use crate::server_context::{APP_CONFIG, DB};
@@ -14,6 +15,7 @@ use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Frame, Incoming};
 use hyper::{Request, Response};
+use schemars::schema_for;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use tokio::fs::File;
 use tokio_stream::wrappers::BroadcastStream;
@@ -38,6 +40,7 @@ pub const RULE_ADD: &str = "/__self_service_path__/rule/add";
 pub const RULE_UPDATE: &str = "/__self_service_path__/rule/update";
 pub const RULE_DELETE: &str = "/__self_service_path__/rule/delete";
 pub const RULE_DETAIL: &str = "/__self_service_path__/rule";
+pub const RULE_CONTEXT_SCHEMA: &str = "/__self_service_path__/rule/context/schema";
 
 pub const REQUEST_LOG: &str = "/__self_service_path__/request_log";
 pub const REQUEST_BODY: &str = "/__self_service_path__/request_body";
@@ -83,6 +86,11 @@ pub async fn handle_self_service(
         }
         (&method::Method::GET, APP_CONFIG_PATH) => {
             api::app_config_api::handle_app_config(req).await
+        }
+        (&method::Method::GET, RULE_CONTEXT_SCHEMA) => {
+            let schema = schema_for!(RuleContent);
+            let schema = serde_json::to_value(&schema).map_err(|e| anyhow!(e))?;
+            return response_ok(schema);
         }
         (&method::Method::GET, REQUEST_LOG) => {
             let rx = PROXY_BOARD_CAST.subscribe();
@@ -193,7 +201,6 @@ pub async fn handle_self_service(
 
             let assert_root = &APP_CONFIG.get().unwrap().raw_root_dir;
             let filename = assert_root.join(format!("{}/res", response.trace_id));
-            debug!("response body file: {:?}", filename);
             let file = File::open(filename).await;
             if file.is_err() {
                 eprintln!("ERROR: Unable to open file.");
@@ -284,7 +291,11 @@ pub async fn handle_self_service(
                 })
                 .unwrap_or_else(|| HeaderValue::from_static("text/html"));
 
-            let static_file = static_file.ok_or_else(|| anyhow!("not found"))?;
+            let static_file = static_file;
+            if static_file.is_none() {
+                return Err(anyhow!(OperationError::new("file not found".to_string())));
+            }
+            let static_file = static_file.unwrap();
 
             let bytes = Bytes::from_static(static_file.contents());
 
@@ -300,6 +311,7 @@ pub async fn handle_self_service(
         _ => {
             let res = Response::builder()
                 .status(http::status::StatusCode::NOT_FOUND)
+                .header(CONTENT_TYPE, "text/plain")
                 .body(full(Bytes::from("Not Found")))
                 .unwrap();
             return Ok(res);
@@ -311,7 +323,6 @@ pub async fn handle_self_service(
         Err(err) => {
             let res = if err.downcast_ref::<ValidateError>().is_some() {
                 let err_string = format!("{}", err);
-                dbg!(&err_string);
                 validate_error(err_string)
             } else if err.downcast_ref::<OperationError>().is_some() {
                 operation_error(err.to_string())
