@@ -2,6 +2,7 @@
 
 [English](README.md) | 简体中文
 
+[![Rust](https://github.com/suxin2017/lynx/actions/workflows/rust.yml/badge.svg)](https://github.com/suxin2017/lynx/actions/workflows/rust.yml)
 [![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
