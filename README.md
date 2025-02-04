@@ -1,59 +1,48 @@
-# lynx proxy
+# Lynx Proxy
 
-`lynx proxy` is a high-performance, flexible proxy tool built using the Rust programming language. It aims to provide efficient HTTP/HTTPS proxy services, supporting various features and configuration options suitable for different network environments and needs.
+[English](README.md) | Simplified Chinese
 
-## Features
+[![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
-- **High Performance**: Leveraging Rust's performance and safety features.
-- **HTTP/HTTPS Support**: Proxy both HTTP and HTTPS traffic.
+Lynx Proxy is a high-performance, flexible proxy built in the Rust programming language. It is designed to provide efficient HTTP/HTTPS proxy services, supporting a variety of features and configuration options that are suitable for different network environments and requirements.
 
-## Installation
+# Features
 
-To install the necessary dependencies and set up the environment, run the following command:
+- High performance: Leverage Rust's performance and safety features.
+- HTTP/HTTPS support: Proxy HTTP and HTTPS traffic.
 
-```sh
-cargo install sea-orm-cli
-```
+# Install
 
-## Usage
+git clone this project
+
+# Use
 
 To start the proxy server, use the following command:
 
-```sh
-cargo run --release
+```
+just start-test-server
 ```
 
-You can configure the proxy by editing the `config.toml` file. Here is an example configuration:
+# Contribute
 
-```toml
-[server]
-host = "127.0.0.1"
-port = 8080
+We welcome your contributions! Follow these steps to contribute:
 
-[logging]
-level = "info"
-file = "proxy.log"
-```
+- Fork the repository.
+- Create a new branch (git checkout -b feature-branch).
+- Make changes.
+- commit your changes (git commit -am 'Add new feature').
+- git push origin feature-branch.
+- Create a new Pull Request.
 
-## Contributing
+# Licensing
 
-We welcome contributions! Please follow these steps to contribute:
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for details.
 
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Make your changes.
-4. Commit your changes (`git commit -am 'Add new feature'`).
-5. Push to the branch (`git push origin feature-branch`).
-6. Create a new Pull Request.
+# Connect
 
-## License
+If you have any questions or feedback, please submit the issue on GitHub.
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+# Status
 
-## Contact
-
-For any questions or feedback, please open an issue on GitHub.
-
-## Status
-
-This project is currently a work in progress. New features and improvements are being added regularly. Stay tuned for updates!
+This project is currently still under development. We are adding new features and improvements regularly. Stay tuned for updates!
+ 
