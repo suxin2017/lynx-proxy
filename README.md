@@ -1,7 +1,8 @@
 # Lynx Proxy
 
-[English](README.md) | Simplified Chinese
+English | [简体中文](README.zh-CN.md)
 
+[![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
 Lynx Proxy is a high-performance, flexible proxy built in the Rust programming language. It is designed to provide efficient HTTP/HTTPS proxy services, supporting a variety of features and configuration options that are suitable for different network environments and requirements.

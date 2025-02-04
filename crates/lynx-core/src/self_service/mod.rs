@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::config::UI_ASSERT_DIR;
 use crate::entities::rule_content::RuleContent;
 use crate::entities::{request, response};
 use crate::proxy_log::PROXY_BOARD_CAST;
@@ -281,7 +280,9 @@ pub async fn handle_self_service(
 
             println!("static path {}", &static_path);
 
-            let static_file = UI_ASSERT_DIR.get_file(static_path);
+            let file_path = APP_CONFIG.get().unwrap().ui_root_dir.join(static_path);
+
+            let static_file = crate::utils::read_file(file_path).await;
             let mime_type = mime_guess::from_path(&static_path);
             let content_type = mime_type
                 .first()
@@ -292,12 +293,12 @@ pub async fn handle_self_service(
                 .unwrap_or_else(|| HeaderValue::from_static("text/html"));
 
             let static_file = static_file;
-            if static_file.is_none() {
+            if static_file.is_err() {
                 return Err(anyhow!(OperationError::new("file not found".to_string())));
             }
             let static_file = static_file.unwrap();
 
-            let bytes = Bytes::from_static(static_file.contents());
+            let bytes = Bytes::from(static_file);
 
             let body = BoxBody::boxed(full(bytes));
 
