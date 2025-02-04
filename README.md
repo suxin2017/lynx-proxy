@@ -16,7 +16,7 @@ Lynx Proxy is a high-performance, flexible proxy built in the Rust programming l
 
 git clone this project
 
-# Use
+# Usage
 
 To start the proxy server, use the following command:
 
