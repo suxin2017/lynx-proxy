@@ -87,7 +87,6 @@ impl Server {
             .map(|addr| format!("  http://{}\n", addr))
             .collect::<Vec<String>>()
             .join("");
-        info!("start server at {}", addrs);
         println!("Available on: \n{}", addrs);
         Ok(())
     }
