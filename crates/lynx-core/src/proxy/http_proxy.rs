@@ -48,7 +48,7 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
                 proxy_res.status().as_u16().into(),
             );
             let app_config = get_app_config().await;
-            debug!("recording status: {:?}", app_config.recording_status);  
+            trace!("recording status: {:?}", app_config.recording_status);
             if matches!(app_config.recording_status, RecordingStatus::StartRecording) {
                 let record = request_active_model.insert(DB.get().unwrap()).await?;
                 let request_id = record.id;
@@ -79,6 +79,7 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
             build_proxy_response(trace_id, proxy_res).await
         }
         Err(e) => {
+            trace!("proxy http request error: {:?}", e);
             let app_config = get_app_config().await;
 
             if matches!(app_config.recording_status, RecordingStatus::StartRecording) {

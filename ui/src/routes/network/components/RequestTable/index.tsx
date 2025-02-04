@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Table } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import { Button, Table } from 'antd';
 import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
@@ -38,7 +38,7 @@ const columns: ColumnsType<IRequestModel> = [
     title: 'Path',
     key: 'uri',
     dataIndex: 'uri',
-    ellipsis: { showTitle: true },
+    ellipsis: { showTitle: true, },
   },
 ];
 export const RequestTable: React.FC = () => {
@@ -50,12 +50,41 @@ export const RequestTable: React.FC = () => {
 
   const ref = useRef(null);
   const size = useSize(ref);
+  const tblRef: Parameters<typeof Table>[0]['ref'] = React.useRef(null);
+
+  const [autoScroll, setAutoScroll] = useState(true);
+
+  useEffect(() => {
+    if (autoScroll) {
+      tblRef.current?.scrollTo({
+        key: requestTable[requestTable.length - 1]?.id,
+      });
+    }
+  }, [autoScroll, requestTable]);
+
   return (
     <div
       className="flex-1 bg-white flex flex-col relative h-full overflow-hidden"
       ref={ref}
     >
+      {!autoScroll && (
+        <div className="absolute bottom-2 right-2 z-10">
+          <Button
+            size="small"
+            onClick={() => {
+              tblRef.current?.scrollTo({
+                index: requestTable.length - 1,
+              });
+              setAutoScroll(true);
+            }}
+          >
+            Back to bottom
+          </Button>
+        </div>
+      )}
+
       <Table<IRequestModel>
+        ref={tblRef}
         sticky
         className="flex-1"
         columns={columns}
@@ -72,6 +101,13 @@ export const RequestTable: React.FC = () => {
             dispatch(handleSelect(record));
           },
         })}
+        onScroll={(e) => {
+          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+          const isAtBottom = scrollHeight - scrollTop === clientHeight;
+          if (!isAtBottom && autoScroll) {
+            setAutoScroll(false);
+          }
+        }}
         virtual
         scroll={{ x: size?.width ?? 800, y: size?.height ?? 400 }}
         pagination={false}

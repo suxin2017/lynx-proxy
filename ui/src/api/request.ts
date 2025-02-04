@@ -20,8 +20,16 @@ export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
           break;
         }
         try {
-          const json = JSON.parse(new TextDecoder().decode(value));
-          cb(json);
+          const text = new TextDecoder().decode(value);
+          text.split('\n').forEach((line) => {
+            if (!line) {
+              return;
+            }
+            const json = JSON.parse(line);
+            console.log('json', json);
+            
+            cb(json);
+          });
         } catch (e) {
           message.error('JSON parse error in fetchRequest');
           console.error(e);
@@ -54,9 +62,7 @@ export const useGetResponseQuery = (params: { requestId?: number }) => {
   });
 };
 
-export const useGetResponseBodyQuery = (params: {
-  requestId?: number;
-}) => {
+export const useGetResponseBodyQuery = (params: { requestId?: number }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/response_body', params],
     queryFn: () =>

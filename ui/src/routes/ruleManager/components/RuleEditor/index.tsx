@@ -35,7 +35,7 @@ export const RuleEditor: React.FC<IRuleEditorProps> = (_props) => {
   const { selectedRule } = useSelectedRuleContext();
   const { data } = useGetRuleDetailQuery({ id: selectedRule?.id });
 
-  const { data: schemaData } = useRuleContextSchema();
+  const { data: schemaData, isFetching } = useRuleContextSchema();
 
   useEffect(() => {
     if (!schemaData) {
@@ -111,7 +111,7 @@ export const RuleEditor: React.FC<IRuleEditorProps> = (_props) => {
           try {
             const matchRule = JSON.parse(currentValue);
             await updateRule({
-              id: selectedRule.id,
+              id: selectedRule!.id,
               content: matchRule ?? {},
             });
           } catch (e) {
@@ -121,11 +121,14 @@ export const RuleEditor: React.FC<IRuleEditorProps> = (_props) => {
           }
         }}
       >
-        <Button type="text" icon={<RiSaveLine size={14} />}>
+        <Button
+          loading={isFetching}
+          type="text"
+          icon={<RiSaveLine size={14} />}
+        >
           Save
         </Button>
       </div>
-
       {!selectedRule && (
         <div className="h-full flex justify-center items-center">
           <Empty description={false} />
