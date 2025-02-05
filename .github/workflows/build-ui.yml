@@ -18,6 +18,15 @@ jobs:
           version: 8
           run_install: false
 
+       - name: Verify PNPM Cache Directory
+        run: |
+          if [ ! -d "$PNPM_CACHE_FOLDER/store/v3" ]; then
+            echo "PNPM cache directory does not exist, creating it."
+            mkdir -p "$PNPM_CACHE_FOLDER/store/v3"
+          else
+            echo "PNPM cache directory exists."
+          fi
+          
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
