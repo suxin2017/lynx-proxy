@@ -29,11 +29,14 @@ jobs:
       - name: Install Just
         uses: extractions/setup-just@v2
 
-      - name: Print ls
-        run: ls
+     - name: List files in the repository
+        run: |
+          ls -la ${{ github.workspace }}
 
       - name: Pnpm Install
         run: just setup-ui
+        working-directory: ${{ github.workspace }}
 
       - name: Pnpm Build
         run: just build-ui
+        working-directory: ${{ github.workspace }}
