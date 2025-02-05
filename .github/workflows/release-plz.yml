@@ -5,7 +5,6 @@ permissions:
   contents: write
 
 on: workflow_dispatch
-    
 
 jobs:
 
@@ -20,8 +19,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          
+      - name: "BuildUi"
+        uses: ./actions/build-ui
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:

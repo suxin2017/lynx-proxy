@@ -8,6 +8,9 @@ lint:
 fix:
     cargo fix --allow-dirty
 
+setup-ui:
+    cd crates/lynx-proxy && pnpm install
+
 dev-ui:
     cd crates/lynx-proxy && pnpm dev
 
