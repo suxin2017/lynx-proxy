@@ -1,0 +1,32 @@
+name: Build ui
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: pnpm/action-setup@v4
+      name: Install pnpm
+      with:
+        version: 8
+        run_install: false
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: "pnpm"
+        cache-dependency-path: crates/lynx-proxy/pnpm-lock.yaml
+
+    - name: Install Just
+      uses: extractions/setup-just@v2
+
+    - name: Pnpm Install
+      run: just setup-ui
+      shell: bash
+
+    - name: Pnpm Build
+      run: just build-ui
+      shell: bash
