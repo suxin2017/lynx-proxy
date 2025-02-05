@@ -1,5 +1,8 @@
 name: Build ui
 
+on:
+  workflow_call:
+  
 jobs:
   # Release unpublished packages.
   build-ui:
@@ -8,10 +11,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         name: Install pnpm
