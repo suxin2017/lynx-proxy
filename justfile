@@ -9,11 +9,12 @@ fix:
     cargo fix --allow-dirty
 
 dev-ui:
-    cd ui && pnpm dev
+    cd crates/lynx-proxy && pnpm dev
 
 build-ui:
-    cd ui && pnpm build
-    cp -r ui/dist/ crates/lynx-core/ui_assert
+    cd crates/lynx-proxy && pnpm build
+    rm -rf crates/lynx-cli/asserts
+    cp -r crates/lynx-proxy/dist/ crates/lynx-cli/asserts
 
 build-server:
     cargo build --release

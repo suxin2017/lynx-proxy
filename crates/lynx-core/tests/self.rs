@@ -10,7 +10,7 @@ use std::net::SocketAddr;
 pub mod common;
 
 async fn init_test_server() -> (SocketAddr, Client) {
-    set_up_context().await;
+    set_up_context(None).await;
 
     let mut server = Server::new(3000);
     server.run().await.unwrap();

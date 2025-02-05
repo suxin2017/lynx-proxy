@@ -11,7 +11,7 @@ pub mod common;
 use crate::common::start_http_server::start_http_server;
 
 async fn init_test_server() -> (SocketAddr, SocketAddr, Client, Client) {
-    set_up_context().await;
+    set_up_context(None).await;
 
     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
     let mut lynx_core = Server::new(3000);

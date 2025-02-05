@@ -11,7 +11,7 @@ use lynx_core::{server::Server, server_context::set_up_context};
 async fn start_test_server() {
     init_tracing();
     let addr: std::net::SocketAddr = start_http_server_with_port(3002).await.unwrap();
-    set_up_context().await;
+    set_up_context(None).await;
 
     let mut lynx_core = Server::new(3000);
     lynx_core.run().await.unwrap();

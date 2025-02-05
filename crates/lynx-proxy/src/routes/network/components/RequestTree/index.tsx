@@ -51,7 +51,7 @@ export const RequestTree: React.FC = () => {
           return (
             <Space>
               <span>{<Icon type="icon-network" />}</span>
-              <span className="inline-block" title={node.title}>
+              <span className="inline-block whitespace-nowrap" title={node.title}>
                 {node.title}
               </span>
             </Space>

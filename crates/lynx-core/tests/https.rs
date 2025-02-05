@@ -16,7 +16,7 @@ use reqwest::Client;
 pub mod common;
 
 async fn init_test_server() -> (SocketAddr, Client, Client) {
-    set_up_context().await;
+    set_up_context(None).await;
 
     let addr: std::net::SocketAddr = start_https_server().await.unwrap();
     let mut lynx_core = Server::new(3000);
