@@ -14,13 +14,16 @@ jobs:
     permissions:
       contents: write
     steps:
-
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         name: Install pnpm
         with:
           version: 8
           run_install: false
-      
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
