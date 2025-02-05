@@ -23,12 +23,13 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
+          cache-dependency-path: './crates/lynx-proxy/pnpm.lock.yaml'
 
       - name: Install Just
         uses: extractions/setup-just@v2
 
       - name: Pnpm Install
         run: just setup-ui
-        
+
       - name: Pnpm Build
         run: just build-ui
