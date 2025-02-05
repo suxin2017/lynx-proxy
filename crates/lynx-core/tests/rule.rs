@@ -17,7 +17,7 @@ use crate::common::start_http_server::start_http_server;
 
 async fn init_test_server() -> (SocketAddr, SocketAddr, SocketAddr, Client, Client) {
     init_tracing();
-    set_up_context().await;
+    set_up_context(None).await;
 
     let match_addr: std::net::SocketAddr = start_http_server().await.unwrap();
     let target_addr: std::net::SocketAddr = start_http_server().await.unwrap();

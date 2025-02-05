@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use once_cell::sync::OnceCell;
 use sea_orm::DatabaseConnection;
 
@@ -12,8 +14,8 @@ pub static CA_MANAGER: OnceCell<CertificateAuthority> = OnceCell::new();
 pub static DB: OnceCell<DatabaseConnection> = OnceCell::new();
 
 // Set up the context for the server
-pub async fn set_up_context() {
-    let app_config = set_up_config_dir();
+pub async fn set_up_context(ui_assert_dir: Option<PathBuf>) {
+    let app_config = set_up_config_dir(ui_assert_dir);
     CA_MANAGER.get_or_init(|| set_up_ca_manager(&app_config));
     let db = set_up_db(&app_config).await;
     DB.get_or_init(|| db);
