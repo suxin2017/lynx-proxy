@@ -2,7 +2,10 @@ name: Build ui
 
 on:
   workflow_call:
-  
+
+env:
+  PNPM_CACHE_FOLDER: .cache/pnpm
+
 jobs:
   # Release unpublished packages.
   build-ui:
@@ -17,6 +20,9 @@ jobs:
         with:
           version: 8
           run_install: false
+      
+      - name: Setup pnpm config
+        run: pnpm config set store-dir "$PNPM_CACHE_FOLDER"
 
       - name: Verify PNPM Cache Directory
         run: |
