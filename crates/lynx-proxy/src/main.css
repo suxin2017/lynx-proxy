@@ -1,0 +1,30 @@
+@layer tailwind-base, antd;
+
+/* @layer tailwind-base {
+  @tailwind base;
+} */
+
+@tailwind components;
+@tailwind utilities;
+
+#root {
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  height: 100vh;
+  min-height: 600px;
+  min-width: 800px;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+
+
+.ant-table-tbody-virtual-scrollbar,.ant-tree-list-scrollbar{
+  width: 4px !important;
+}
+
