@@ -27,6 +27,8 @@ jobs:
       - name: Install Just
         uses: extractions/setup-just@v2
 
-      - name: Build Ui
+      - name: Pnpm Install
         run: just setup-ui
+        
+      - name: Pnpm Build
         run: just build-ui
