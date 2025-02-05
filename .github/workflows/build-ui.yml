@@ -29,6 +29,9 @@ jobs:
       - name: Install Just
         uses: extractions/setup-just@v2
 
+      - name: Print ls
+        run: ls
+
       - name: Pnpm Install
         run: just setup-ui
 
