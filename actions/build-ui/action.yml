@@ -25,12 +25,8 @@ runs:
 
     - name: Pnpm Install
       run: just setup-ui
+      shell: bash
 
     - name: Pnpm Build
       run: just build-ui
-
-    - name: Upload static directory
-      uses: actions/upload-artifact@v2
-      with:
-        name: web-ui
-        path: crates/asserts
+      shell: bash
