@@ -25,7 +25,6 @@ pub fn get_req_trace_id(req: &Request<hyper::body::Incoming>) -> Arc<String> {
         .expect("trace id not found")
 }
 
-#[tracing::instrument]
 pub async fn dispatch(
     mut req: Request<hyper::body::Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {

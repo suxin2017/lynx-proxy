@@ -109,6 +109,9 @@ pub async fn test_server(
             if let Some(content_type) = content_type {
                 res.headers_mut().insert(CONTENT_TYPE, content_type);
             }
+            res.headers_mut()
+                .insert("X-Host", HeaderValue::from_str(&addr.to_string())?);
+
             Ok(res)
         }
         (&Method::POST, "/push_msg") => {

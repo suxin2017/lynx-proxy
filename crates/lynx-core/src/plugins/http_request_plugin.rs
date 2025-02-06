@@ -5,6 +5,7 @@ use std::{fs, io};
 
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
+use glob_match::glob_match;
 use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http::Uri;
@@ -74,27 +75,36 @@ pub async fn build_proxy_request(
         trace!("current rule: {:?}", rule);
         match parse_rule_content(rule.content) {
             Ok(content) => {
-                let match_url = url::Url::parse(&content.r#match.uri);
-                match match_url {
-                    Ok(match_url) => {
-                        if req_url.host_str() == match_url.host_str() {
-                            match_handled = true;
-                            println!("content: {:?}", content);
-                            // let uri_ref = builder.uri_ref();
-                            let new_uri_string =
-                                format!("{}{}", content.target.uri, req_url.path());
+                let capture_glob_pattern_str = content.capture.uri;
+                let is_match = glob_match(&capture_glob_pattern_str, req_url.as_str());
+                trace!("is match: {}", is_match);
+                trace!("capture_glob_pattern_str: {}", capture_glob_pattern_str);
+                trace!("req_url: {}", req_url.as_str());
+                if is_match {
+                    match_handled = true;
+                    let pass_proxy_uri = url::Url::parse(&content.handler.proxy_pass);
 
-                            println!("new uri: {:?}", &new_uri_string);
+                    match pass_proxy_uri {
+                        Ok(pass_proxy_uri) => {
+                            let host = pass_proxy_uri.host_str();
+                            let port = pass_proxy_uri.port();
 
-                            let new_uri = Uri::from_str(&new_uri_string)?;
+                            let mut new_uri = req_url.clone();
+                            let _ = new_uri.set_scheme(pass_proxy_uri.scheme());
+                            let _ = new_uri.set_host(host);
+                            let _ = new_uri.set_port(port);
 
-                            builder = builder.uri(new_uri);
+                            trace!("new url: {:?}", new_uri);
 
-                            println!("match url: {:?}", match_url);
+                            if let Ok(new_uri) = Uri::from_str(new_uri.as_str()) {
+                                builder = builder.uri(new_uri);
+                            } else {
+                                warn!("parse pass proxy uri error: {}", new_uri.as_str());
+                            }
                         }
-                    }
-                    Err(e) => {
-                        warn!("parse match url error: {}", e);
+                        Err(e) => {
+                            warn!("parse pass proxy uri error: {}", e);
+                        }
                     }
                 }
             }
