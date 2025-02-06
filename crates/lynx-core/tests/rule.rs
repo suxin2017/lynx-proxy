@@ -1,8 +1,9 @@
 use common::{
     build_proxy_client::{build_http_client, build_http_proxy_client},
-    test_server::HELLO_PATH,
+    test_server::{ECHO_PATH, HELLO_PATH},
     tracing_config::init_tracing,
 };
+use http::header::CONTENT_TYPE;
 use lynx_core::{
     self_service::{RULE_ADD, RULE_DELETE, RULE_UPDATE},
     server::Server,
@@ -110,11 +111,11 @@ async fn test_rule_proxy() {
     let target_domain = format!("http://{}", target_addr);
 
     let rule = json!({
-        "match":{
-            "uri": match_domain
+        "capture":{
+            "uri": format!("{}/**", match_domain)
         },
-        "target": {
-            "uri": target_domain
+        "handler": {
+            "proxyPass": target_domain
         }
     });
 
@@ -127,11 +128,13 @@ async fn test_rule_proxy() {
     )
     .await;
 
+    // proxy request
     let lynx_core_res = proxy_request_client
         .get(format!("http://{match_addr}{HELLO_PATH}"))
         .send()
         .await
         .unwrap();
+    // direct request
     let target_res = client
         .get(format!("http://{target_addr}{HELLO_PATH}"))
         .send()
@@ -143,6 +146,79 @@ async fn test_rule_proxy() {
         target_res.text().await.unwrap()
     );
 
+    rule_context
+        .destroy(&proxy_addr, &proxy_request_client)
+        .await;
+}
+
+#[test]
+fn global_ignore_match() {
+    let pattern = "!http://example.com/abc**";
+    let result = glob_match::glob_match(&pattern, "http://example.com/!abc");
+    println!("{:?}", result);
+}
+
+#[tokio::test]
+async fn test_rule_ignore_proxy() {
+    let (proxy_addr, match_addr, target_addr, client, proxy_request_client) =
+        init_test_server().await;
+
+    let match_domain = format!("http://{}", match_addr);
+    let target_domain = format!("http://{}", target_addr);
+
+    let rule = json!({
+        "capture":{
+            // ignore hello path
+            "uri": format!("!{}{}**", match_domain,HELLO_PATH)
+        },
+        "handler": {
+            "proxyPass": target_domain
+        }
+    });
+
+    let rule_context = RuleContext::init(
+        &proxy_addr,
+        &match_addr,
+        &target_addr,
+        &proxy_request_client,
+        rule,
+    )
+    .await;
+
+    // proxy request
+    let lynx_core_res = proxy_request_client
+        .get(format!("http://{match_addr}{HELLO_PATH}?a=123"))
+        .send()
+        .await
+        .unwrap();
+    // direct request
+    let target_res = client
+        .get(format!("http://{target_addr}{HELLO_PATH}?a=123"))
+        .send()
+        .await
+        .unwrap();
+
+    assert_ne!(lynx_core_res.headers(), target_res.headers());
+
+    let lynx_core_res = proxy_request_client
+        .post(format!("http://{match_addr}{}", ECHO_PATH))
+        .header(CONTENT_TYPE, "application/json")
+        .send()
+        .await
+        .unwrap();
+    println!("{:?}", lynx_core_res.headers());
+    let target_res = client
+        .post(format!("http://{target_addr}{}", ECHO_PATH))
+        .header(CONTENT_TYPE, "application/json")
+        .send()
+        .await
+        .unwrap();
+    println!("{:?}", target_res.headers());
+    assert_eq!(lynx_core_res.headers(), target_res.headers());
+    assert_eq!(
+        lynx_core_res.text().await.unwrap(),
+        target_res.text().await.unwrap()
+    );
     rule_context
         .destroy(&proxy_addr, &proxy_request_client)
         .await;
