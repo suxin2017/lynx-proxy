@@ -7,7 +7,7 @@ import { useSelectRequest } from '../../store/selectRequestStore';
 interface IContentsProps {}
 
 export const Response: React.FC<IContentsProps> = (_props) => {
-  const selectRequest = useSelectRequest();
+  const { selectRequest } = useSelectRequest();
   const { data: res, isLoading: responseDataLoading } = useGetResponseQuery({
     requestId: selectRequest?.id,
   });

@@ -4,10 +4,10 @@ import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import { IRequestModel } from '@/api/models';
-import { RootState } from '../store';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useSize } from 'ahooks';
-import { handleSelect, useSelectRequest } from '../store/selectRequestStore';
+import { useSelectRequest } from '../store/selectRequestStore';
+import { RootState } from '@/store';
 
 dayjs.extend(duration);
 
@@ -45,8 +45,7 @@ export const RequestTable: React.FC = () => {
   const requestTable = useSelector(
     (state: RootState) => state.requestTable.requests,
   );
-  const selectRow = useSelectRequest();
-  const dispatch = useDispatch();
+  const { selectRequest, setSelectRequest } = useSelectRequest();
 
   const ref = useRef(null);
   const size = useSize(ref);
@@ -91,14 +90,14 @@ export const RequestTable: React.FC = () => {
         rowKey="id"
         size="small"
         rowClassName={(record) => {
-          if (selectRow?.id === record.id) {
+          if (selectRequest?.id === record.id) {
             return 'cursor-pointer ant-table-row-selected';
           }
           return 'cursor-pointer';
         }}
         onRow={(record) => ({
           onClick: () => {
-            dispatch(handleSelect(record));
+            setSelectRequest(record);
           },
         })}
         onScroll={(e) => {
