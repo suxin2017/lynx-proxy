@@ -14,10 +14,15 @@ pub static PROXY_BOARD_CAST: Lazy<Arc<broadcast::Sender<message::Message>>> = La
     Arc::new(tx)
 });
 
+pub fn has_receiver() -> bool {
+    let tx = Arc::clone(&PROXY_BOARD_CAST);
+    tx.receiver_count() > 0
+}
+
 pub fn try_send_message(msg: message::Message) {
     let tx = Arc::clone(&PROXY_BOARD_CAST);
     debug!("current receiver count: {}", tx.receiver_count());
-    if tx.receiver_count() == 0 {
+    if !has_receiver() {
         debug!("no receiver, skip send message");
         return;
     }
