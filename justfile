@@ -14,6 +14,9 @@ setup-ui:
 dev-ui:
     cd crates/lynx-proxy && pnpm dev
 
+dev-mock-ui:
+    cd crates/lynx-proxy && pnpm dev:mock
+
 build-ui:
     cd crates/lynx-proxy && pnpm build
     rm -rf crates/lynx-cli/asserts

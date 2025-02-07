@@ -1,9 +1,12 @@
 use anyhow::{anyhow, Result};
 use tokio::fs::File;
+use tracing::{info, trace};
 
 use std::fmt;
 
 use crate::server_context::APP_CONFIG;
+
+use super::has_receiver;
 
 enum BodyType {
     Request,
@@ -34,9 +37,19 @@ async fn body_file(trace_id: &String, body_type: BodyType) -> Result<File> {
 }
 
 pub async fn req_body_file(trace_id: &String) -> Result<File> {
-    body_file(trace_id, BodyType::Request).await
+    if has_receiver() {
+        body_file(trace_id, BodyType::Request).await
+    } else {
+        trace!("no receiver, skip write request body");
+        Err(anyhow!("no receiver, skip write request body"))
+    }
 }
 
 pub async fn res_body_file(trace_id: &String) -> Result<File> {
-    body_file(trace_id, BodyType::Response).await
+    if has_receiver() {
+        body_file(trace_id, BodyType::Response).await
+    } else {
+        trace!("no receiver, skip write response body");
+        Err(anyhow!("no receiver, skip write response body"))
+    }
 }
