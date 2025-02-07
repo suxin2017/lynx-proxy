@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Result;
 use http::StatusCode;
@@ -7,9 +7,9 @@ use hyper::body::Incoming;
 use hyper::service::service_fn;
 use hyper::{Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
-use local_ip_address::local_ip;
+use local_ip_address::{list_afinet_netifas, local_ip};
 use tokio::net::TcpListener;
-use tracing::{error, info, warn};
+use tracing::{error, info, trace, warn};
 
 use crate::schedular::dispatch;
 use crate::utils::full;
@@ -60,13 +60,41 @@ async fn test_lister(addr: SocketAddr) -> SocketAddr {
     addr
 }
 
-impl Server {
-    pub fn new(port: u16) -> Self {
-        let mut access_addr_list = vec![];
-        access_addr_list.push(SocketAddr::from(([127, 0, 0, 1], port)));
-        if let Ok(access_addr) = local_ip() {
-            access_addr_list.push(SocketAddr::new(access_addr, port));
+#[derive(Debug)]
+pub struct ServerConfig {
+    pub port: u16,
+    pub only_localhost: bool,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            port: 3000,
+            only_localhost: false,
         }
+    }
+}
+
+impl Server {
+    pub fn new(config: ServerConfig) -> Self {
+        let ServerConfig {
+            port,
+            only_localhost,
+        } = config;
+        let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
+
+        let access_addr_list: Vec<SocketAddr> = network_interfaces
+            .into_iter()
+            .filter(|x| {
+                if only_localhost {
+                    x.1.is_ipv4() && x.1.is_loopback()
+                } else {
+                    x.1.is_ipv4()
+                }
+            })
+            .map(|x| x.1)
+            .map(|ip| SocketAddr::new(ip, port))
+            .collect();
 
         Self {
             port,
@@ -78,17 +106,10 @@ impl Server {
         let mut new_addrs = Vec::new();
         for addr in self.access_addr_list.iter() {
             let addr = test_lister(*addr).await;
+            trace!("Server started on: http://{}", addr);
             new_addrs.push(addr);
         }
         self.access_addr_list = new_addrs;
-        let addrs = self
-            .access_addr_list
-            .iter()
-            .map(|addr| format!("  http://{}\n", addr))
-            .collect::<Vec<String>>()
-            .join("");
-        info!("start server at {}", addrs);
-        println!("Available on: \n{}", addrs);
         Ok(())
     }
 }

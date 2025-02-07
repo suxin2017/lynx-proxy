@@ -12,7 +12,7 @@ pub mod common;
 async fn init_test_server() -> (SocketAddr, Client) {
     set_up_context(None).await;
 
-    let mut server = Server::new(3000);
+    let mut server = Server::new(Default::default());
     server.run().await.unwrap();
     let client = build_http_client();
     (*server.access_addr_list.first().unwrap(), client)
