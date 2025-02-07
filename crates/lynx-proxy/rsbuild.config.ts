@@ -4,14 +4,12 @@ import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
 import { pluginMockServer } from 'rspack-plugin-mock/rsbuild';
 
 export default defineConfig({
-  plugins: [pluginReact(), 
-    pluginMockServer(/* pluginOptions */)
-  ],
+  plugins: [pluginReact(), pluginMockServer(/* pluginOptions */)],
   output: {
-    assetPrefix: "/__self_service_path__/",
+    assetPrefix: '/__self_service_path__/',
   },
-  html:{
-    title:"Lynx Proxy",
+  html: {
+    title: 'Lynx Proxy',
   },
   server: {
     port: 8080,
@@ -38,6 +36,14 @@ export default defineConfig({
   tools: {
     rspack: {
       plugins: [TanStackRouterRspack()],
+      module: {
+        rules: [
+          {
+            test: /\.md$/,
+            type: 'asset/source',
+          },
+        ],
+      },
     },
   },
 });
