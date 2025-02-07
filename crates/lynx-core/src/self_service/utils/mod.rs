@@ -35,7 +35,7 @@ where
     Ok(serde_json::from_value::<Value>(json_value).map_err(|e| anyhow!(format!("{}", e)))?)
 }
 
-pub fn get_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
+pub fn parse_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
     let params: HashMap<String, String> = uri
         .query()
         .map(|v| {

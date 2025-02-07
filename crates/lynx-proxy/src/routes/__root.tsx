@@ -11,7 +11,7 @@ function RootComponent() {
       <div className="flex">
         <SideBar />
       </div>
-      <div className="flex flex-1 py-2">
+      <div className="flex flex-1 p-2">
         <Outlet />
       </div>
     </div>
