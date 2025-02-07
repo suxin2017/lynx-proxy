@@ -8,7 +8,7 @@ use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
 use futures_util::{StreamExt, TryStreamExt};
-use http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use http::header::{CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_TYPE};
 use http::{method, HeaderValue};
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
@@ -21,8 +21,8 @@ use tokio_stream::wrappers::BroadcastStream;
 use tokio_util::io::ReaderStream;
 use tracing::{debug, error};
 use utils::{
-    internal_server_error, operation_error, response_ok, validate_error, OperationError,
-    ValidateError,
+    internal_server_error, operation_error, parse_query_params, response_ok, validate_error,
+    OperationError, ValidateError,
 };
 
 pub mod api;
@@ -48,6 +48,8 @@ pub const RESPONSE_BODY: &str = "/__self_service_path__/response_body";
 
 pub const APP_CONFIG_RECORD_STATUS: &str = "/__self_service_path__/app_config/record_status";
 pub const APP_CONFIG_PATH: &str = "/__self_service_path__/app_config";
+
+pub const CERTIFICATE_PATH: &str = "/__self_service_path__/certificate";
 
 pub fn match_self_service(req: &Request<Incoming>) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
@@ -268,6 +270,41 @@ pub async fn handle_self_service(
                 )
                 .body(boxed_body)?);
         }
+        (&method::Method::GET, CERTIFICATE_PATH) => {
+            let query_params = parse_query_params(req.uri());
+            let ca_path = APP_CONFIG.get().unwrap().get_root_ca_path();
+
+            let ca_content = tokio::fs::read(ca_path).await?;
+
+            let ca_type = query_params
+                .get("type")
+                .map(|s| s.as_str())
+                .unwrap_or("pem");
+
+            let res = Response::builder();
+
+            let res = match ca_type {
+                "pem" => res.header(CONTENT_TYPE, "application/x-pem-file"),
+                "crt" => res.header(CONTENT_TYPE, "application/x-x509-ca-cert"),
+                _ => res.header(CONTENT_TYPE, "application/octet-stream"),
+            };
+
+            let res = match ca_type {
+                "pem" => res.header(
+                    CONTENT_DISPOSITION,
+                    "attachment; filename=\"lynx-proxy.pem\"",
+                ),
+                "crt" => res.header(
+                    CONTENT_DISPOSITION,
+                    "attachment; filename=\"lynx-proxy.crt\"",
+                ),
+                _ => unreachable!(),
+            };
+            let res = res.body(full(ca_content))?;
+
+            return Ok(res);
+        }
+
         (&method::Method::GET, path) if path.starts_with(SELF_SERVICE_PATH_PREFIX) => {
             let mut static_path = &path[SELF_SERVICE_PATH_PREFIX.len()..];
             if static_path.starts_with("/") {
@@ -302,7 +339,7 @@ pub async fn handle_self_service(
 
             let body = BoxBody::boxed(full(bytes));
 
-            let res = Response::builder()
+            let res: Response<BoxBody<Bytes, Error>> = Response::builder()
                 .header(CONTENT_TYPE, content_type)
                 .body(body)
                 .unwrap();

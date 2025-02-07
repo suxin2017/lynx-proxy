@@ -1,13 +1,13 @@
-import { RiEqualizer2Line, RiPlanetLine } from '@remixicon/react';
+import { RiEqualizer2Line, RiMedalLine, RiPlanetLine } from '@remixicon/react';
 import { useNavigate } from '@tanstack/react-router';
-import { Button, Layout, Space } from 'antd';
+import { Button, Space } from 'antd';
 import React from 'react';
 
 export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
 
   return (
-    <Layout.Sider theme="light" width={48} className="pt-4">
+    <div className="pt-4 w-11 flex justify-center">
       <Space direction="vertical" className="w-full">
         <Button
           type="text"
@@ -17,7 +17,7 @@ export const SideBar: React.FC = (_props) => {
               to: '/network',
             });
           }}
-          icon={<RiPlanetLine size={20} />}
+          icon={<RiPlanetLine size={24} />}
           title="Network"
         ></Button>
         <Button
@@ -28,10 +28,10 @@ export const SideBar: React.FC = (_props) => {
               to: '/ruleManager',
             });
           }}
-          icon={<RiEqualizer2Line size={20} />}
+          icon={<RiEqualizer2Line size={24} />}
           title="Rule Config"
         />
-        {/* <Button
+        <Button
           type="text"
           className="flex items-center justify-items-center w-full"
           onClick={() => {
@@ -39,9 +39,9 @@ export const SideBar: React.FC = (_props) => {
               to: '/certificates',
             });
           }}
-          icon={<RiMedalLine size={20} />}
-        /> */}
+          icon={<RiMedalLine size={24} />}
+        />
       </Space>
-    </Layout.Sider>
+    </div>
   );
 };

@@ -1,6 +1,6 @@
 use crate::entities::{rule, rule_content};
 use crate::self_service::utils::{
-    get_query_params, parse_body_params, response_ok, OperationError, ValidateError,
+    parse_query_params, parse_body_params, response_ok, OperationError, ValidateError,
 };
 use crate::server_context::DB;
 use anyhow::{anyhow, Error, Result};
@@ -130,7 +130,7 @@ pub async fn handle_rule_delete(req: Request<Incoming>) -> Result<Response<BoxBo
 }
 
 pub async fn handle_rule_detail(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let query_params = get_query_params(req.uri());
+    let query_params = parse_query_params(req.uri());
     let id = query_params
         .get("id")
         .ok_or_else(|| anyhow!(ValidateError::new("name is required".to_string())))?;

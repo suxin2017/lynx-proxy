@@ -44,7 +44,7 @@ const App = () => {
             algorithm: [theme.compactAlgorithm],
           }}
         >
-          <RouterProvider router={router} />{' '}
+          <RouterProvider router={router} />
         </ConfigProvider>
       </StyleProvider>
     </QueryClientProvider>
