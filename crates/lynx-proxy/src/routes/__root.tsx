@@ -1,11 +1,14 @@
 import { SideBar } from '@/components/SideBar';
+import { store, useUpdateRequestLog } from '@/store';
 import { Outlet, createRootRoute } from '@tanstack/react-router';
+import { Provider } from 'react-redux';
 
 export const Route = createRootRoute({
   component: RootComponent,
 });
 
-function RootComponent() {
+function InnerRouteComponent() {
+  useUpdateRequestLog();
   return (
     <div className="flex h-screen flex-1">
       <div className="flex">
@@ -15,5 +18,13 @@ function RootComponent() {
         <Outlet />
       </div>
     </div>
+  );
+}
+
+function RootComponent() {
+  return (
+    <Provider store={store}>
+      <InnerRouteComponent />
+    </Provider>
   );
 }

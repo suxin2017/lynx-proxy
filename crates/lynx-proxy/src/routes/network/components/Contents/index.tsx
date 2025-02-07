@@ -8,7 +8,7 @@ interface IContentsProps {}
 
 export const Contents: React.FC<IContentsProps> = (_props) => {
   const [sizes, setSizes] = React.useState<(number | string)[]>(['50%', '50%']);
-  const selectRequest = useSelectRequest();
+  const { selectRequest } = useSelectRequest();
   if (!selectRequest) {
     return (
       <div className="h-full flex justify-center items-center">

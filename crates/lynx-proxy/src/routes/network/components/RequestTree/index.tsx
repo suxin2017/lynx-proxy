@@ -1,23 +1,22 @@
 import React, { useRef, useState } from 'react';
 import { Space, Tree } from 'antd';
-import { RootState } from '../store';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useSize } from 'ahooks';
 import { Icon } from '@/components/Icon';
-import { handleSelect } from '../store/selectRequestStore';
-import { IRequestTreeNode } from '../store/requestTreeStore';
+import { useSelectRequest } from '../store/selectRequestStore';
+import { RootState } from '@/store';
+import { IRequestTreeNode } from '@/store/requestTreeStore';
 
 export const RequestTree: React.FC = () => {
   const treeData = useSelector(
     (state: RootState) => state.requestTree.requestTree,
   );
-  const dispatch = useDispatch();
 
   const ref = useRef(null);
   const size = useSize(ref);
 
   const [expandedKeys, setExpandKeys] = useState<string[]>([]);
-
+  const { setSelectRequest } = useSelectRequest();
   return (
     <div
       ref={ref}
@@ -34,7 +33,7 @@ export const RequestTree: React.FC = () => {
         onSelect={(_selectedKeys, info) => {
           console.log(_selectedKeys, '_selectedKeys');
           if (info.node.record) {
-            dispatch(handleSelect(info.node.record));
+            setSelectRequest(info.node.record);
           }
         }}
         onExpand={(keys, info) => {
@@ -51,7 +50,10 @@ export const RequestTree: React.FC = () => {
           return (
             <Space>
               <span>{<Icon type="icon-network" />}</span>
-              <span className="inline-block whitespace-nowrap" title={node.title}>
+              <span
+                className="inline-block whitespace-nowrap"
+                title={node.title}
+              >
                 {node.title}
               </span>
             </Space>

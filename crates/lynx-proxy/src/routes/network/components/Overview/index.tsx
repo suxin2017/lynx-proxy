@@ -6,7 +6,7 @@ import { useSelectRequest } from '../store/selectRequestStore';
 interface IOverviewProps {}
 
 export const Overview: React.FC<IOverviewProps> = (_props) => {
-  const selectRequest = useSelectRequest();
+  const {selectRequest} = useSelectRequest();
   const descriptionItems = useMemo(() => {
     const items = [];
     if (selectRequest?.uri) {
