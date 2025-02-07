@@ -26,6 +26,7 @@ use tracing::{error, trace, warn};
 
 use crate::entities::rule_content::{self, parse_rule_content};
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
+use crate::proxy_log::has_receiver;
 use crate::schedular::get_req_trace_id;
 use crate::server_context::DB;
 
@@ -48,9 +49,9 @@ pub async fn build_proxy_request(
         let mut req_body_file = req_body_file(&trace_id).await;
 
         while let Some(frame) = body.frame().await {
-            if let Ok(frame) = &frame {
-                if let Some(data) = frame.data_ref() {
-                    if let Ok(file) = &mut req_body_file {
+            if let Ok(file) = &mut req_body_file {
+                if let Ok(frame) = &frame {
+                    if let Some(data) = frame.data_ref() {
                         let res = file.write_all(data).await;
                         if let Err(e) = res {
                             error!("write file res: {:?}", e);
@@ -153,9 +154,9 @@ pub async fn build_proxy_response(
         let mut res_body_file = res_body_file(&trace_id).await;
 
         while let Some(frame) = body.frame().await {
-            if let Ok(frame) = &frame {
-                if let Some(data) = frame.data_ref() {
-                    if let Ok(file) = &mut res_body_file {
+            if let Ok(file) = &mut res_body_file {
+                if let Ok(frame) = &frame {
+                    if let Some(data) = frame.data_ref() {
                         let res = file.write_all(data).await;
                         if let Err(e) = res {
                             error!("write file res: {:?}", e);

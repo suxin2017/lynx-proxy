@@ -5,6 +5,7 @@
   "scripts": {
     "build": "rsbuild build",
     "dev": "rsbuild dev --open",
+    "dev:mock": "MOCK=true rsbuild dev --open",
     "format": "prettier --write .",
     "lint": "eslint .",
     "preview": "rsbuild preview"
