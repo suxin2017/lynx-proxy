@@ -13,7 +13,7 @@ async fn start_test_server() {
     let addr: std::net::SocketAddr = start_http_server_with_port(3002).await.unwrap();
     set_up_context(None).await;
 
-    let mut lynx_core = Server::new(3000);
+    let mut lynx_core = Server::new(Default::default());
     lynx_core.run().await.unwrap();
     let proxy_addr = lynx_core.access_addr_list.first().unwrap().to_string();
 
