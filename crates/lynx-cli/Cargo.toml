@@ -11,9 +11,12 @@ repository.workspace = true
 include = ["src", "Cargo.toml", "README.md", "asserts"]
 
 [dependencies]
-lynx-core = { version = "0.0.2-alpha.1", features = ["test"], path = "../lynx-core" }
+lynx-core = { version = "0.0.2-alpha.1", features = [
+    "test",
+], path = "../lynx-core" }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 clap = { version = "4.5.27", features = ["derive"] }
+console = { version = "0.15.10", features = ["windows-console-colors"] }

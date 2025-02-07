@@ -21,7 +21,7 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
     set_up_context(None).await;
 
     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-    let mut lynx_core = Server::new(3000);
+    let mut lynx_core = Server::new(Default::default());
     lynx_core.run().await.unwrap();
     let proxy_addr = format!("http://{}", lynx_core.access_addr_list.first().unwrap());
 

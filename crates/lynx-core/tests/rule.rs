@@ -22,7 +22,7 @@ async fn init_test_server() -> (SocketAddr, SocketAddr, SocketAddr, Client, Clie
 
     let match_addr: std::net::SocketAddr = start_http_server().await.unwrap();
     let target_addr: std::net::SocketAddr = start_http_server().await.unwrap();
-    let mut lynx_core = Server::new(3000);
+    let mut lynx_core = Server::new(Default::default());
     lynx_core.run().await.unwrap();
     let proxy_addr = lynx_core.access_addr_list.first().unwrap().clone();
 
