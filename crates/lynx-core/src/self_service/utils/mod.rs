@@ -10,7 +10,7 @@ use hyper::body::Incoming;
 use hyper::Response;
 use schemars::schema::RootSchema;
 
-use crate::utils::full;
+use crate::utils::{empty, full};
 
 pub async fn parse_body_params<Value>(body: Incoming, schema: RootSchema) -> Result<Value>
 where
@@ -143,7 +143,6 @@ where
 pub fn not_found() -> Response<BoxBody<Bytes, Error>> {
     return Response::builder()
         .status(http::status::StatusCode::NOT_FOUND)
-        .header(CONTENT_TYPE, "text/plain")
-        .body(full(Bytes::from("Not Found")))
+        .body(empty())
         .unwrap();
 }

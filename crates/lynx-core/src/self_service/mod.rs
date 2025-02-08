@@ -15,14 +15,15 @@ use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Frame, Incoming};
 use hyper::{Request, Response};
 use schemars::schema_for;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
 use tokio::fs::File;
-use tokio_stream::wrappers::BroadcastStream;
+use tokio_stream::wrappers::{BroadcastStream, ReadDirStream};
 use tokio_util::io::ReaderStream;
-use tracing::{debug, error};
+use tracing::{debug, error, trace};
+use tracing_subscriber::fmt::format;
 use utils::{
-    internal_server_error, operation_error, parse_query_params, response_ok, validate_error,
-    OperationError, ValidateError,
+    internal_server_error, not_found, operation_error, parse_query_params, response_ok,
+    validate_error, OperationError, ValidateError,
 };
 
 pub mod api;
@@ -35,14 +36,17 @@ pub const RULE_GROUP_ADD: &str = "/__self_service_path__/rule_group/add";
 pub const RULE_GROUP_UPDATE: &str = "/__self_service_path__/rule_group/update";
 pub const RULE_GROUP_DELETE: &str = "/__self_service_path__/rule_group/delete";
 pub const RULE_GROUP_LIST: &str = "/__self_service_path__/rule_group/list";
+
 pub const RULE_ADD: &str = "/__self_service_path__/rule/add";
 pub const RULE_UPDATE: &str = "/__self_service_path__/rule/update";
 pub const RULE_DELETE: &str = "/__self_service_path__/rule/delete";
 pub const RULE_DETAIL: &str = "/__self_service_path__/rule";
 pub const RULE_CONTEXT_SCHEMA: &str = "/__self_service_path__/rule/context/schema";
 
+pub const REQUEST_CLEAR: &str = "/__self_service_path__/request/clear";
 pub const REQUEST_LOG: &str = "/__self_service_path__/request_log";
 pub const REQUEST_BODY: &str = "/__self_service_path__/request_body";
+
 pub const RESPONSE: &str = "/__self_service_path__/response";
 pub const RESPONSE_BODY: &str = "/__self_service_path__/response_body";
 
@@ -55,14 +59,15 @@ pub fn match_self_service(req: &Request<Incoming>) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
 }
 
-pub async fn handle_self_service(
+pub async fn self_service_router(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
     let method = req.method();
     let path = req.uri().path();
-    debug!("handle_self_service: method: {:?}, path: {}", method, path);
 
-    let res = match (method, path) {
+    trace!("self_service_router: method: {:?}, path: {}", method, path);
+
+    match (method, path) {
         (&method::Method::GET, HELLO_PATH) => {
             return Ok(Response::new(full(Bytes::from("Hello, World!"))));
         }
@@ -142,6 +147,30 @@ pub async fn handle_self_service(
             }
 
             return Ok(res);
+        }
+        (&method::Method::POST, REQUEST_CLEAR) => {
+            trace!("clear request and response data");
+            let db = DB.get().unwrap();
+            request::Entity::delete_many().exec(db).await?;
+            response::Entity::delete_many().exec(db).await?;
+
+            trace!("clear raw data");
+            let raw_root_dir = &APP_CONFIG.get().unwrap().raw_root_dir;
+            trace!("clear raw data: {}", raw_root_dir.display());
+            let entries = tokio::fs::read_dir(raw_root_dir)
+                .await
+                .map_err(|e| anyhow!(e).context(format!("clear raw data error")))?;
+
+            let read_dir_stream = ReadDirStream::new(entries);
+            read_dir_stream
+                .for_each(|entry| async {
+                    if let Ok(path) = entry {
+                        let p = path.path();
+                        tokio::fs::remove_dir_all(p).await.unwrap();
+                    }
+                })
+                .await;
+            return response_ok::<Option<()>>(None);
         }
         (&method::Method::GET, RESPONSE) => {
             let params: HashMap<String, String> = req
@@ -304,8 +333,12 @@ pub async fn handle_self_service(
 
             return Ok(res);
         }
-
-        (&method::Method::GET, path) if path.starts_with(SELF_SERVICE_PATH_PREFIX) => {
+        (&method::Method::GET, path)
+            if path == SELF_SERVICE_PATH_PREFIX
+                || path == &format!("{}/", SELF_SERVICE_PATH_PREFIX)
+                || path == &format!("{}/index.html", SELF_SERVICE_PATH_PREFIX)
+                || path == &format!("{}/static", SELF_SERVICE_PATH_PREFIX) =>
+        {
             let mut static_path = &path[SELF_SERVICE_PATH_PREFIX.len()..];
             if static_path.starts_with("/") {
                 static_path = &static_path[1..];
@@ -331,7 +364,7 @@ pub async fn handle_self_service(
 
             let static_file = static_file;
             if static_file.is_err() {
-                return Err(anyhow!(OperationError::new("file not found".to_string())));
+                return Ok(not_found());
             }
             let static_file = static_file.unwrap();
 
@@ -347,14 +380,15 @@ pub async fn handle_self_service(
         }
 
         _ => {
-            let res = Response::builder()
-                .status(http::status::StatusCode::NOT_FOUND)
-                .header(CONTENT_TYPE, "text/plain")
-                .body(full(Bytes::from("Not Found")))
-                .unwrap();
-            return Ok(res);
+            return Ok(not_found());
         }
-    };
+    }
+}
+
+pub async fn handle_self_service(
+    req: Request<Incoming>,
+) -> Result<Response<BoxBody<Bytes, Error>>> {
+    let res = self_service_router(req).await;
 
     match res {
         Ok(res) => Ok(res),
