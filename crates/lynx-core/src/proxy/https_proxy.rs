@@ -67,7 +67,7 @@ pub async fn https_proxy(
                             .serve_connection_with_upgrades(TokioIo::new(stream), service)
                             .await
                     {
-                        error!("HTTPS proxy connect error: {}", err.to_string());
+                        error!("HTTPS proxy connect error: {:?}", err);
                     }
                 }
                 Err(e) => {
