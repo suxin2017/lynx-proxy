@@ -1,0 +1,63 @@
+version: "3"
+
+tasks:
+  dev:
+    desc: Run development server
+    deps: [dev-ui, start-test-server]
+  test:
+    desc: Run tests
+    dir: crates/lynx-core
+    cmds:
+      - cargo test -- --test-threads 1 --nocapture
+
+  lint:
+    desc: Run clippy linter
+    cmds:
+      - cargo clippy --all-targets --all-features -- -D warnings
+
+  fix:
+    desc: Run cargo fix
+    cmds:
+      - cargo fix --allow-dirty
+
+  setup-ui:
+    desc: Setup UI dependencies
+    dir: crates/lynx-proxy
+    cmds:
+      - pnpm install
+
+  dev-ui:
+    desc: Run UI in development mode
+    dir: crates/lynx-proxy
+    cmds:
+      - pnpm dev
+
+  dev-mock-ui:
+    desc: Run UI in mock development mode
+    cmds:
+      - cd crates/lynx-proxy
+      - pnpm dev:mock
+
+  build-ui:
+    desc: Build UI
+    cmds:
+      - cd crates/lynx-proxy && pnpm build
+      - rm -rf crates/lynx-cli/asserts
+      - cp -r crates/lynx-proxy/dist/ crates/lynx-cli/asserts
+
+  build-server:
+    desc: Build server
+    cmds:
+      - cargo build --release
+
+  build:
+    desc: Build UI and server
+    cmds:
+      - task: build-ui
+      - task: build-server
+
+  start-test-server:
+    desc: Start test server
+    dir: crates/lynx-core
+    cmds:
+      - cargo test --package lynx-core --test start_test_server --features test -- start_test_server --exact --nocapture --ignored
