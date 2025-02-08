@@ -7,7 +7,7 @@ export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
 
   return (
-    <div className="pt-4 w-11 flex justify-center">
+    <div className="pt-4 w-11 flex justify-center shadow-sm shadow-slate-400">
       <Space direction="vertical" className="w-full">
         <Button
           type="text"

@@ -8,7 +8,7 @@ import queryString from 'query-string';
 export const useGetRuleTreeQuery = () => {
   return useQuery({
     queryKey: ['/__self_service_path__/rule_group/list'],
-    queryFn: () =>
+    queryFn: async () =>
       fetch(`/__self_service_path__/rule_group/list`).then(
         (res) => res.json() as Promise<IRuleGroupTreeResponse>,
       ),
@@ -18,7 +18,7 @@ export const useGetRuleTreeQuery = () => {
 export const useGetRuleDetailQuery = (params: { id?: number }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/rule', params],
-    queryFn: () =>
+    queryFn: async () =>
       fetch(
         `/__self_service_path__/rule?${queryString.stringify(params)}`,
       ).then((res) => res.json() as Promise<IRuleContentResponse>),
@@ -29,7 +29,7 @@ export const useGetRuleDetailQuery = (params: { id?: number }) => {
 export const useAddRuleGroup = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (params: { name: string }) =>
+    mutationFn: async (params: { name: string }) =>
       fetch(`/__self_service_path__/rule_group/add`, {
         method: 'POST',
         body: JSON.stringify(params),

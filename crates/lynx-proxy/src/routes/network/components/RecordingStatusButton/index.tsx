@@ -13,11 +13,11 @@ export const RecordingStatusButton: React.FC<
   const changeRecordStatus = useChangeRecordStatus();
 
   const recordingStatus = appConfigData?.data?.recordingStatus;
-  console.log('recordingStatus',appConfigData, recordingStatus);
   return (
     <div>
       <Button
         type="text"
+        size='small'
         onClick={() => {
           if (recordingStatus === RecordStatusEnum.StartRecording) {
             changeRecordStatus.mutateAsync({
@@ -31,7 +31,7 @@ export const RecordingStatusButton: React.FC<
         }}
         icon={
           <RiRecordCircleFill
-            size={18}
+            size={16}
             color={
               recordingStatus === RecordStatusEnum.StartRecording
                 ? 'red'
@@ -44,7 +44,11 @@ export const RecordingStatusButton: React.FC<
             ? 'Stop Recording'
             : 'Start Recording'
         }
-      />
+      >
+        {recordingStatus === RecordStatusEnum.StartRecording
+          ? 'Recording'
+          : 'Paused'}
+      </Button>
     </div>
   );
 };

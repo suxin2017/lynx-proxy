@@ -9,7 +9,7 @@ export const useChangeRecordStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ status }: { status: RecordStatusEnum }) =>
+    mutationFn: async ({ status }: { status: RecordStatusEnum }) =>
       fetch(`/__self_service_path__/app_config/record_status`, {
         method: 'POST',
         body: JSON.stringify({ status }),
@@ -25,7 +25,7 @@ export const useChangeRecordStatus = () => {
 export const useGetAppConfig = () => {
   return useQuery({
     queryKey: ['/__self_service_path__/app_config'],
-    queryFn: () =>
+    queryFn: async () =>
       fetch(`/__self_service_path__/app_config`).then(
         (res) => res.json() as Promise<IAppConfigResponse>,
       ),

@@ -1,6 +1,6 @@
 import { message } from 'antd';
 import { IRequestModel, IResponseBoxView } from './models';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import queryString from 'query-string';
 
 export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
@@ -27,7 +27,7 @@ export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
             }
             const json = JSON.parse(line);
             console.log('json', json);
-            
+
             cb(json);
           });
         } catch (e) {
@@ -43,7 +43,7 @@ export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
 export const useGetRequestBodyQuery = (params: { id?: number }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/request_body', params],
-    queryFn: () =>
+    queryFn: async () =>
       fetch(
         `/__self_service_path__/request_body?${queryString.stringify(params)}`,
       ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
@@ -54,7 +54,7 @@ export const useGetRequestBodyQuery = (params: { id?: number }) => {
 export const useGetResponseQuery = (params: { requestId?: number }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/response', params],
-    queryFn: () =>
+    queryFn: async () =>
       fetch(
         `/__self_service_path__/response?${queryString.stringify(params)}`,
       ).then((res) => res.json() as Promise<IResponseBoxView>),
@@ -65,9 +65,18 @@ export const useGetResponseQuery = (params: { requestId?: number }) => {
 export const useGetResponseBodyQuery = (params: { requestId?: number }) => {
   return useQuery({
     queryKey: ['/__self_service_path__/response_body', params],
-    queryFn: () =>
+    queryFn: async () =>
       fetch(
         `/__self_service_path__/response_body?${queryString.stringify(params)}`,
       ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
+  });
+};
+
+export const useClearRequestLog = () => {
+  return useMutation({
+    mutationFn: async () =>
+      fetch(`/__self_service_path__/request/clear`, {
+        method: 'POST',
+      }).then((res) => res.json()),
   });
 };
