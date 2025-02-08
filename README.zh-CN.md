@@ -14,25 +14,30 @@ Lynx Proxy 是一款使用 Rust 编程语言构建的高性能、灵活的代理
 
 # 安装
 
-克隆这个项目
+TODO
 
 # 使用
 
-要启动代理服务器，请使用以下命令：
-
-```
-just build-ui
-just start-test-server 
-```
+TODO
 
 # 贡献
 
 我们欢迎您的贡献！请按照以下步骤进行贡献：
 
-- 安装必须依赖
-    just
+
 - 叉取（Fork）仓库。
 - 创建一个新分支（git checkout -b feature-branch）。
+- 安装必须依赖
+  - 安装 [taskfile](https://taskfile.dev/)
+  - 
+    安装ui相关依赖
+    ```bash
+    task setup-ui
+    ```
+  - 启动服务
+     ```bash
+    task dev
+    ```
 - 进行修改。
 - 提交您的更改（git commit -am 'Add new feature'）。
 - 将更改推送到分支（git push origin feature-branch）。
