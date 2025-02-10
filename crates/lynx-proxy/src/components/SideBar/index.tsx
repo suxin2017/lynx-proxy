@@ -1,4 +1,9 @@
-import { RiEqualizer2Line, RiMedalLine, RiPlanetLine } from '@remixicon/react';
+import {
+  RiEqualizer2Line,
+  RiMedalLine,
+  RiPlanetLine,
+  RiSettings2Line,
+} from '@remixicon/react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button, Space } from 'antd';
 import React from 'react';
@@ -40,6 +45,16 @@ export const SideBar: React.FC = (_props) => {
             });
           }}
           icon={<RiMedalLine size={24} />}
+        />
+        <Button
+          type="text"
+          className="flex items-center justify-items-center w-full"
+          onClick={() => {
+            navigate({
+              to: '/setting',
+            });
+          }}
+          icon={<RiSettings2Line size={24} />}
         />
       </Space>
     </div>
