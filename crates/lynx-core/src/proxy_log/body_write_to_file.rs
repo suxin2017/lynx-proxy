@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use tokio::fs::File;
-use tracing::{info, trace};
+use tracing::trace;
 
 use std::fmt;
 

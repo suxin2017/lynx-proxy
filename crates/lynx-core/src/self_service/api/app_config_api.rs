@@ -10,7 +10,6 @@ use schemars::{schema_for, JsonSchema};
 use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct ChangeRecordingStatusParams {
     status: RecordingStatus,

@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  IAppConfigModel,
   IAppConfigResponse,
   IRuleGroupTreeResponse as IRuleGroupTreeResponse,
   RecordStatusEnum,
 } from './models';
+import { message } from 'antd';
 
 export const useChangeRecordStatus = () => {
   const queryClient = useQueryClient();
@@ -29,5 +31,20 @@ export const useGetAppConfig = () => {
       fetch(`/__self_service_path__/app_config`).then(
         (res) => res.json() as Promise<IAppConfigResponse>,
       ),
+  });
+};
+
+export const useSaveSSLConfig = () => {
+  return useMutation({
+    mutationFn: async (
+      config: IAppConfigModel['sslConfig'] & { captureSSL: boolean },
+    ) =>
+      fetch(`/__self_service_path__/ssl_config/save`, {
+        method: 'POST',
+        body: JSON.stringify(config),
+      }).then((res) => res.json()),
+    onSuccess: () => {
+      message.success('Save successfully');
+    },
   });
 };

@@ -1,29 +1,17 @@
-use std::collections::HashMap;
-
 use crate::entities::rule_content::RuleContent;
-use crate::entities::{request, response};
-use crate::proxy_log::PROXY_BOARD_CAST;
-use crate::server_context::{APP_CONFIG, DB};
 use crate::utils::full;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
-use futures_util::{StreamExt, TryStreamExt};
-use http::header::{CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_TYPE};
-use http::{method, HeaderValue};
+use http::header::CONTENT_TYPE;
+use http::method;
 use http_body_util::combinators::BoxBody;
-use http_body_util::{BodyExt, StreamBody};
-use hyper::body::{Frame, Incoming};
+use hyper::body::Incoming;
 use hyper::{Request, Response};
 use schemars::schema_for;
-use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
-use tokio::fs::File;
-use tokio_stream::wrappers::{BroadcastStream, ReadDirStream};
-use tokio_util::io::ReaderStream;
-use tracing::{debug, error, trace};
-use tracing_subscriber::fmt::format;
+use tracing::{error, trace};
 use utils::{
-    internal_server_error, not_found, operation_error, parse_query_params, response_ok,
-    validate_error, OperationError, ValidateError,
+    internal_server_error, not_found, operation_error, response_ok, validate_error, OperationError,
+    ValidateError,
 };
 
 pub mod api;
@@ -55,6 +43,12 @@ pub const APP_CONFIG_PATH: &str = "/__self_service_path__/app_config";
 
 pub const CERTIFICATE_PATH: &str = "/__self_service_path__/certificate";
 
+pub const SSL_CONFIG_SAVE: &str = "/__self_service_path__/ssl_config/save";
+
+pub const ASSERT_DIT: &str = "/__self_service_path__/static";
+pub const ASSERT_INDEX: &str = "/__self_service_path__/index.html";
+pub const ASSERT_ROOT: &str = "/__self_service_path__";
+
 pub fn match_self_service(req: &Request<Incoming>) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
 }
@@ -68,9 +62,7 @@ pub async fn self_service_router(
     trace!("self_service_router: method: {:?}, path: {}", method, path);
 
     match (method, path) {
-        (&method::Method::GET, HELLO_PATH) => {
-            return Ok(Response::new(full(Bytes::from("Hello, World!"))));
-        }
+        (&method::Method::GET, HELLO_PATH) => Ok(Response::new(full(Bytes::from("Hello, World!")))),
         (&method::Method::GET, RULE_GROUP_LIST) => {
             api::rule_group_api::handle_rule_group_find(req).await
         }
@@ -83,10 +75,12 @@ pub async fn self_service_router(
         (&method::Method::POST, RULE_GROUP_DELETE) => {
             api::rule_group_api::handle_rule_group_delete(req).await
         }
+
         (&method::Method::GET, RULE_DETAIL) => api::rule_api::handle_rule_detail(req).await,
         (&method::Method::POST, RULE_ADD) => api::rule_api::handle_rule_add(req).await,
         (&method::Method::POST, RULE_UPDATE) => api::rule_api::handle_rule_update(req).await,
         (&method::Method::POST, RULE_DELETE) => api::rule_api::handle_rule_delete(req).await,
+
         (&method::Method::POST, APP_CONFIG_RECORD_STATUS) => {
             api::app_config_api::handle_recording_status(req).await
         }
@@ -96,292 +90,36 @@ pub async fn self_service_router(
         (&method::Method::GET, RULE_CONTEXT_SCHEMA) => {
             let schema = schema_for!(RuleContent);
             let schema = serde_json::to_value(&schema).map_err(|e| anyhow!(e))?;
-            return response_ok(schema);
+            response_ok(schema)
         }
-        (&method::Method::GET, REQUEST_LOG) => {
-            let rx = PROXY_BOARD_CAST.subscribe();
-            let rx_stream = BroadcastStream::new(rx)
-                .then(|result| async {
-                    match result {
-                        Ok(d) => match serde_json::to_string(&d) {
-                            Ok(json_str) => Ok(Frame::data(Bytes::from(format!("{}\n", json_str)))),
-                            Err(e) => {
-                                error!("serialization error: {:?}", e);
-                                Err(anyhow!(e))
-                            }
-                        },
-                        Err(e) => {
-                            error!("broadcast stream error: {:?}", e);
-                            Err(anyhow!(e))
-                        }
-                    }
-                })
-                .map_err(|e| {
-                    error!("broadcast stream error: {:?}", e);
-                    anyhow!(e)
-                });
 
-            let body = BodyExt::boxed(StreamBody::new(rx_stream));
+        (&method::Method::GET, REQUEST_LOG) => api::request::handle_request_log().await,
+        (&method::Method::POST, REQUEST_CLEAR) => api::request::handle_request_clear().await,
+        (&method::Method::GET, REQUEST_BODY) => self::api::request::handle_request_body(req).await,
 
-            let mut res = Response::new(body);
-            res.headers_mut().insert(
-                CONTENT_TYPE,
-                HeaderValue::from_static("application/octet-stream"),
-            );
-            res.headers_mut()
-                .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
-
-            // set cors headers when development
-            #[cfg(feature = "test")]
-            {
-                res.headers_mut()
-                    .insert("Access-Control-Allow-Origin", HeaderValue::from_static("*"));
-                res.headers_mut().insert(
-                    "Access-Control-Allow-Methods",
-                    HeaderValue::from_static("GET, POST, OPTIONS"),
-                );
-                res.headers_mut().insert(
-                    "Access-Control-Allow-Headers",
-                    HeaderValue::from_static("Content-Type"),
-                );
-            }
-
-            return Ok(res);
-        }
-        (&method::Method::POST, REQUEST_CLEAR) => {
-            trace!("clear request and response data");
-            let db = DB.get().unwrap();
-            request::Entity::delete_many().exec(db).await?;
-            response::Entity::delete_many().exec(db).await?;
-
-            trace!("clear raw data");
-            let raw_root_dir = &APP_CONFIG.get().unwrap().raw_root_dir;
-            trace!("clear raw data: {}", raw_root_dir.display());
-            let entries = tokio::fs::read_dir(raw_root_dir)
-                .await
-                .map_err(|e| anyhow!(e).context(format!("clear raw data error")))?;
-
-            let read_dir_stream = ReadDirStream::new(entries);
-            read_dir_stream
-                .for_each(|entry| async {
-                    if let Ok(path) = entry {
-                        let p = path.path();
-                        tokio::fs::remove_dir_all(p).await.unwrap();
-                    }
-                })
-                .await;
-            return response_ok::<Option<()>>(None);
-        }
-        (&method::Method::GET, RESPONSE) => {
-            let params: HashMap<String, String> = req
-                .uri()
-                .query()
-                .map(|v| {
-                    url::form_urlencoded::parse(v.as_bytes())
-                        .into_owned()
-                        .collect()
-                })
-                .unwrap_or_default();
-            let request_id = params.get("requestId");
-            if request_id.is_none() {
-                return Err(anyhow!(ValidateError::new(
-                    "requestId is required".to_string()
-                )));
-            }
-
-            let response = response::Entity::find()
-                .filter(response::Column::RequestId.eq(request_id.unwrap()))
-                .one(DB.get().unwrap())
-                .await?;
-            if response.is_none() {
-                return Err(anyhow!(OperationError::new(
-                    "response not found".to_string()
-                )));
-            }
-            let response = response.unwrap();
-            return response_ok(response);
-        }
+        (&method::Method::GET, RESPONSE) => self::api::response::handle_response(req).await,
         (&method::Method::GET, RESPONSE_BODY) => {
-            let params: HashMap<String, String> = req
-                .uri()
-                .query()
-                .map(|v| {
-                    url::form_urlencoded::parse(v.as_bytes())
-                        .into_owned()
-                        .collect()
-                })
-                .unwrap_or_default();
-            let request_id = params.get("requestId");
-            if request_id.is_none() {
-                return Err(anyhow!(ValidateError::new(
-                    "requestId is required".to_string()
-                )));
-            }
-
-            let response = response::Entity::find()
-                .filter(response::Column::RequestId.eq(request_id.unwrap()))
-                .one(DB.get().unwrap())
-                .await?;
-            if response.is_none() {
-                return Err(anyhow!(OperationError::new(
-                    "response not found".to_string()
-                )));
-            }
-            let response = response.unwrap();
-
-            let assert_root = &APP_CONFIG.get().unwrap().raw_root_dir;
-            let filename = assert_root.join(format!("{}/res", response.trace_id));
-            let file = File::open(filename).await;
-            if file.is_err() {
-                eprintln!("ERROR: Unable to open file.");
-            }
-            let file = file?;
-            let reader_stream = ReaderStream::new(file);
-            let stream_body = StreamBody::new(
-                reader_stream
-                    .map_ok(Frame::data)
-                    .map_err(|e| anyhow!(e).context("response body stream error")),
-            );
-            let boxed_body = BodyExt::boxed(stream_body);
-            return Ok(Response::builder()
-                .header(
-                    CONTENT_TYPE,
-                    HeaderValue::from_static("application/octet-stream"),
-                )
-                .body(boxed_body)?);
+            self::api::response::handle_response_body(req).await
         }
-        (&method::Method::GET, REQUEST_BODY) => {
-            let params: HashMap<String, String> = req
-                .uri()
-                .query()
-                .map(|v| {
-                    url::form_urlencoded::parse(v.as_bytes())
-                        .into_owned()
-                        .collect()
-                })
-                .unwrap_or_default();
-            let id = params.get("id");
-            if id.is_none() {
-                return Err(anyhow!(ValidateError::new(
-                    "requestId is required".to_string()
-                )));
-            }
-            let id = id.unwrap().parse::<i32>().map_err(|e| anyhow!(e))?;
 
-            let request = request::Entity::find_by_id(id)
-                .one(DB.get().unwrap())
-                .await?;
-            if request.is_none() {
-                return Err(anyhow!(OperationError::new(
-                    "response not found".to_string()
-                )));
-            }
-            let request = request.unwrap();
-
-            let assert_root = &APP_CONFIG.get().unwrap().raw_root_dir;
-            let filename = assert_root.join(format!("{}/req", request.trace_id));
-            let file = File::open(filename).await;
-            if file.is_err() {
-                eprintln!("ERROR: Unable to open file.");
-            }
-            let file = file?;
-            let reader_stream = ReaderStream::new(file);
-            let stream_body = StreamBody::new(
-                reader_stream
-                    .map_ok(Frame::data)
-                    .map_err(|e| anyhow!(e).context("response body stream error")),
-            );
-            let boxed_body = BodyExt::boxed(stream_body);
-            return Ok(Response::builder()
-                .header(
-                    CONTENT_TYPE,
-                    HeaderValue::from_static("application/octet-stream"),
-                )
-                .body(boxed_body)?);
+        (&method::Method::POST, SSL_CONFIG_SAVE) => {
+            self::api::ssl_config::handle_save_ssl_config(req).await
         }
+
         (&method::Method::GET, CERTIFICATE_PATH) => {
-            let query_params = parse_query_params(req.uri());
-            let ca_path = APP_CONFIG.get().unwrap().get_root_ca_path();
-
-            let ca_content = tokio::fs::read(ca_path).await?;
-
-            let ca_type = query_params
-                .get("type")
-                .map(|s| s.as_str())
-                .unwrap_or("pem");
-
-            let res = Response::builder();
-
-            let res = match ca_type {
-                "pem" => res.header(CONTENT_TYPE, "application/x-pem-file"),
-                "crt" => res.header(CONTENT_TYPE, "application/x-x509-ca-cert"),
-                _ => res.header(CONTENT_TYPE, "application/octet-stream"),
-            };
-
-            let res = match ca_type {
-                "pem" => res.header(
-                    CONTENT_DISPOSITION,
-                    "attachment; filename=\"lynx-proxy.pem\"",
-                ),
-                "crt" => res.header(
-                    CONTENT_DISPOSITION,
-                    "attachment; filename=\"lynx-proxy.crt\"",
-                ),
-                _ => unreachable!(),
-            };
-            let res = res.body(full(ca_content))?;
-
-            return Ok(res);
+            self::api::certificate::handle_certificate(req).await
         }
+
         (&method::Method::GET, path)
             if path == SELF_SERVICE_PATH_PREFIX
-                || path == &format!("{}/", SELF_SERVICE_PATH_PREFIX)
-                || path == &format!("{}/index.html", SELF_SERVICE_PATH_PREFIX)
-                || path == &format!("{}/static", SELF_SERVICE_PATH_PREFIX) =>
+                || path == ASSERT_DIT
+                || path == ASSERT_INDEX
+                || path == ASSERT_ROOT =>
         {
-            let mut static_path = &path[SELF_SERVICE_PATH_PREFIX.len()..];
-            if static_path.starts_with("/") {
-                static_path = &static_path[1..];
-            }
-
-            if matches!(static_path, "/" | "") {
-                static_path = "index.html";
-            }
-
-            println!("static path {}", &static_path);
-
-            let file_path = APP_CONFIG.get().unwrap().ui_root_dir.join(static_path);
-
-            let static_file = crate::utils::read_file(file_path).await;
-            let mime_type = mime_guess::from_path(&static_path);
-            let content_type = mime_type
-                .first()
-                .and_then(|mime| {
-                    let mime_str = mime.to_string();
-                    HeaderValue::from_str(&mime_str).ok()
-                })
-                .unwrap_or_else(|| HeaderValue::from_static("text/html"));
-
-            let static_file = static_file;
-            if static_file.is_err() {
-                return Ok(not_found());
-            }
-            let static_file = static_file.unwrap();
-
-            let bytes = Bytes::from(static_file);
-
-            let body = BoxBody::boxed(full(bytes));
-
-            let res: Response<BoxBody<Bytes, Error>> = Response::builder()
-                .header(CONTENT_TYPE, content_type)
-                .body(body)
-                .unwrap();
-            return Ok(res);
+            self::api::asserts::handle_ui_assert(req).await
         }
 
-        _ => {
-            return Ok(not_found());
-        }
+        _ => Ok(not_found()),
     }
 }
 
@@ -393,6 +131,8 @@ pub async fn handle_self_service(
     match res {
         Ok(res) => Ok(res),
         Err(err) => {
+            error!("self_service error: {:?}", err);
+
             let res = if err.downcast_ref::<ValidateError>().is_some() {
                 let err_string = format!("{}", err);
                 validate_error(err_string)

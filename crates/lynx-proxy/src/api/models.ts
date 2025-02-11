@@ -61,16 +61,30 @@ export interface IRuleTree {
   children: IRuleTreeNode[];
   record: IRuleGroupModel;
 }
-export interface IAppConfigModel {
+
+export interface ISSLConfigModel {
+  includeDomains: Array<{
+    host: string;
+    port: number;
+    switch: boolean;
+  }>;
+  excludeDomains: Array<{
+    host: string;
+    port: number;
+    switch: boolean;
+  }>;
+}
+export interface IAppConfigModel  {
   id: number;
   recordingStatus: RecordStatusEnum;
-  captureHttps: boolean;
+  captureSSL: boolean;
+  sslConfig: ISSLConfigModel;
 }
 export interface IRuleGroupTreeResponse extends IResponseBox<IRuleTree[]> {}
 export interface IRuleContentResponse extends IResponseBox<IRuleContentModel> {}
 export interface IAppConfigResponse extends IResponseBox<IAppConfigModel> {}
 
 export enum RecordStatusEnum {
-  StartRecording= "StartRecording",
-  PauseRecording = "PauseRecording",
+  StartRecording = 'StartRecording',
+  PauseRecording = 'PauseRecording',
 }

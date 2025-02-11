@@ -2,7 +2,6 @@ use std::net::SocketAddr;
 
 use common::{
     build_proxy_client::build_https_client,
-    constant::TEST_ROOT_CA_CERT,
     start_http_server::start_https_server,
     test_server::{ECHO_PATH, GZIP_PATH, HELLO_PATH, PING_PATH},
     tracing_config::init_tracing,
@@ -23,7 +22,7 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
     lynx_core.run().await.unwrap();
     let proxy_addr = format!("http://{}", lynx_core.access_addr_list.first().unwrap());
 
-    let direct_request_client = build_https_client(TEST_ROOT_CA_CERT.clone());
+    let direct_request_client = build_https_client();
 
     let proxy_ca_cert =
         reqwest::Certificate::from_pem(CA_MANAGER.get().unwrap().ca_cert.pem().as_bytes()).unwrap();

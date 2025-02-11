@@ -54,13 +54,13 @@ pub async fn https_proxy(
                         info!("proxying http request {:?}", req);
                         req.extensions_mut().insert(Arc::new(nanoid!()));
                         let res = proxy_http_request(req).await;
-                        return match res {
+                        match res {
                             Ok(res) => Ok::<_, hyper::Error>(res),
                             Err(err) => {
                                 error!("proxy http request error: {}", err.to_string());
                                 Ok(Response::new(empty()))
                             }
-                        };
+                        }
                     });
                     if let Err(err) =
                         hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())

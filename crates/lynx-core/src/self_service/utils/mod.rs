@@ -32,7 +32,7 @@ where
     jsonschema::validate(&schema, &json_value)
         .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
 
-    Ok(serde_json::from_value::<Value>(json_value).map_err(|e| anyhow!(format!("{}", e)))?)
+    serde_json::from_value::<Value>(json_value).map_err(|e| anyhow!(format!("{}", e)))
 }
 
 pub fn parse_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
@@ -44,7 +44,7 @@ pub fn parse_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
                 .collect()
         })
         .unwrap_or_default();
-    return params;
+    params
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -141,8 +141,8 @@ where
 }
 
 pub fn not_found() -> Response<BoxBody<Bytes, Error>> {
-    return Response::builder()
+    Response::builder()
         .status(http::status::StatusCode::NOT_FOUND)
         .body(empty())
-        .unwrap();
+        .unwrap()
 }
