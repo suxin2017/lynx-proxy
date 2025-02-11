@@ -1,62 +1,55 @@
 import {
-  RiEqualizer2Line,
-  RiMedalLine,
-  RiPlanetLine,
-  RiSettings2Line,
+  RiEqualizer2Fill,
+  RiMedalFill,
+  RiPlanetFill,
+  RiSettings2Fill,
 } from '@remixicon/react';
 import { useNavigate } from '@tanstack/react-router';
-import { Button, Space } from 'antd';
+import { Button } from 'antd';
 import React from 'react';
+
+const menuConfig = [
+  {
+    key: 'network',
+    title: 'Network',
+    icon: <RiPlanetFill className="text-slate-600" size={24} />,
+  },
+  {
+    key: 'ruleManager',
+    title: 'Rule Config',
+    icon: <RiEqualizer2Fill className="text-slate-600" size={24} />,
+  },
+  {
+    key: 'certificates',
+    title: 'Certificates',
+    icon: <RiMedalFill className="text-slate-600" size={24} />,
+  },
+  {
+    key: 'setting',
+    title: 'Setting',
+    icon: <RiSettings2Fill className="text-slate-600" size={24} />,
+  },
+];
 
 export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
 
   return (
-    <div className="pt-4 w-11 flex justify-center shadow-sm shadow-slate-400">
-      <Space direction="vertical" className="w-full">
+    <div className="flex w-14 flex-col justify-center shadow-sm shadow-slate-400">
+      {menuConfig.map((item) => (
         <Button
+          key={item.key}
           type="text"
-          className="flex items-center justify-items-center w-full"
+          className="flex h-14 w-full items-center justify-items-center self-end"
           onClick={() => {
             navigate({
-              to: '/network',
+              to: `/${item.key}`,
             });
           }}
-          icon={<RiPlanetLine size={24} />}
-          title="Network"
-        ></Button>
-        <Button
-          type="text"
-          className="flex items-center justify-items-center w-full"
-          onClick={() => {
-            navigate({
-              to: '/ruleManager',
-            });
-          }}
-          icon={<RiEqualizer2Line size={24} />}
-          title="Rule Config"
+          icon={item.icon}
+          title={item.title}
         />
-        <Button
-          type="text"
-          className="flex items-center justify-items-center w-full"
-          onClick={() => {
-            navigate({
-              to: '/certificates',
-            });
-          }}
-          icon={<RiMedalLine size={24} />}
-        />
-        <Button
-          type="text"
-          className="flex items-center justify-items-center w-full"
-          onClick={() => {
-            navigate({
-              to: '/setting',
-            });
-          }}
-          icon={<RiSettings2Line size={24} />}
-        />
-      </Space>
+      ))}
     </div>
   );
 };

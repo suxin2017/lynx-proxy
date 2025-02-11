@@ -3,11 +3,9 @@ import react from '@vitejs/plugin-react-swc';
 import { resolve } from 'path';
 import markdownRawPlugin from 'vite-raw-plugin';
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite';
-import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [
-    tailwindcss(),
     TanStackRouterVite({ autoCodeSplitting: true }),
     react(),
     markdownRawPlugin({

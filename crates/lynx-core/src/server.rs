@@ -1,4 +1,4 @@
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 
 use anyhow::Result;
 use http::StatusCode;
@@ -7,9 +7,9 @@ use hyper::body::Incoming;
 use hyper::service::service_fn;
 use hyper::{Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
-use local_ip_address::{list_afinet_netifas, local_ip};
+use local_ip_address::list_afinet_netifas;
 use tokio::net::TcpListener;
-use tracing::{error, info, trace, warn};
+use tracing::{error, trace, warn};
 
 use crate::schedular::dispatch;
 use crate::utils::full;

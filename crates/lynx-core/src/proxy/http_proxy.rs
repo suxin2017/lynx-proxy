@@ -3,7 +3,7 @@ use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
 use sea_orm::{ActiveModelTrait, Set};
-use tracing::{debug, info, trace};
+use tracing::{info, trace};
 
 use crate::entities::app_config::{get_app_config, RecordingStatus};
 use crate::entities::request::{self};
@@ -35,8 +35,8 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
         method: Set(req.method().to_string()),
         schema: Set(req.uri().scheme_str().unwrap_or("").to_string()),
         version: Set(format!("{:?}", req.version())),
-        header: Set(headers),
-        header_size: Set(header_size as u32),
+        header: Set(Some(headers)),
+        header_size: Set(Some(header_size as u32)),
         ..Default::default()
     };
 

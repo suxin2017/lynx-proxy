@@ -1,6 +1,6 @@
 use crate::entities::{rule, rule_content};
 use crate::self_service::utils::{
-    parse_query_params, parse_body_params, response_ok, OperationError, ValidateError,
+    parse_body_params, parse_query_params, response_ok, OperationError, ValidateError,
 };
 use crate::server_context::DB;
 use anyhow::{anyhow, Error, Result};
@@ -14,7 +14,7 @@ use sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{error, info};
+use tracing::error;
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -80,14 +80,14 @@ pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBo
             let mut rule = rule.into_active_model();
             rule.name = ActiveValue::set(name);
             let res = rule.update(db).await?;
-            return response_ok(res);
+            response_ok(res)
         } else {
-            return Err(anyhow!(OperationError::new(
+            Err(anyhow!(OperationError::new(
                 "name or content is required".into()
-            )));
+            )))
         }
     } else {
-        return Err(anyhow!(OperationError::new("can not find the rule".into())));
+        Err(anyhow!(OperationError::new("can not find the rule".into())))
     }
 }
 
@@ -149,7 +149,7 @@ pub async fn handle_rule_detail(req: Request<Incoming>) -> Result<Response<BoxBo
         .await?;
 
     if let Some(content) = content {
-        return response_ok(content);
+        response_ok(content)
     } else {
         let rule_content = rule_content::ActiveModel {
             rule_id: ActiveValue::set(rule.id),
@@ -158,6 +158,6 @@ pub async fn handle_rule_detail(req: Request<Incoming>) -> Result<Response<BoxBo
         }
         .insert(DB.get().unwrap())
         .await?;
-        return response_ok(rule_content);
+        response_ok(rule_content)
     }
 }

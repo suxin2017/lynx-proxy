@@ -13,7 +13,6 @@ use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct RuleGroupAddParams {
     name: String,
@@ -72,7 +71,7 @@ struct RuleGroupDeleteParams {
 pub async fn handle_rule_group_delete(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let body_params: RuleGroupDeleteParams = 
+    let body_params: RuleGroupDeleteParams =
         parse_body_params(req.into_body(), schema_for!(RuleGroupDeleteParams)).await?;
 
     let active_model = rule_group::ActiveModel {
@@ -106,7 +105,7 @@ pub async fn handle_rule_group_find(
         .map_err(|e| anyhow!(e).context("get rule group tree error"))?;
 
     let tree = vec_to_json_tree(res);
-    return response_ok(tree);
+    response_ok(tree)
 }
 
 fn vec_to_json_tree(rule_groups: Vec<(rule_group::Model, Vec<rule::Model>)>) -> serde_json::Value {

@@ -1,9 +1,8 @@
-use std::{default, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use derive_builder::Builder;
 use tracing::debug;
 
-use include_dir::{include_dir, Dir};
 
 #[derive(Builder, Debug, Default, Clone)]
 pub struct AppConfig {
@@ -68,3 +67,6 @@ pub fn create_dir_if_not_exists(dir: &PathBuf) {
     }
     debug!("dir {} exists", &dir.to_string_lossy());
 }
+
+pub const REQ_DIR: &str = "req";
+pub const RES_DIR: &str = "res";
