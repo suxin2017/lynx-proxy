@@ -9,10 +9,7 @@ use lynx_core::server::{Server, ServerConfig};
 use lynx_core::server_context::set_up_context;
 use tracing::{info, Level};
 use tracing_subscriber::filter;
-use tracing_subscriber::registry::LookupSpan;
-use tracing_subscriber::{
-    filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer,
-};
+use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

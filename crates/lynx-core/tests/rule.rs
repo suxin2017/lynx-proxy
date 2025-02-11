@@ -24,7 +24,7 @@ async fn init_test_server() -> (SocketAddr, SocketAddr, SocketAddr, Client, Clie
     let target_addr: std::net::SocketAddr = start_http_server().await.unwrap();
     let mut lynx_core = Server::new(Default::default());
     lynx_core.run().await.unwrap();
-    let proxy_addr = lynx_core.access_addr_list.first().unwrap().clone();
+    let proxy_addr = *lynx_core.access_addr_list.first().unwrap();
 
     let direct_request_client = build_http_client();
 
@@ -52,7 +52,7 @@ impl RuleContext {
         rule: Value,
     ) -> RuleContext {
         let match_domain = format!("http://{}", match_addr);
-        let target_domain = format!("http://{}", target_addr);
+        let _target_domain = format!("http://{}", target_addr);
         let res = client
             .post(format!("{}{}", match_domain, RULE_ADD))
             .json(&json!({
@@ -154,7 +154,7 @@ async fn test_rule_proxy() {
 #[test]
 fn global_ignore_match() {
     let pattern = "!http://example.com/abc**";
-    let result = glob_match::glob_match(&pattern, "http://example.com/!abc");
+    let result = glob_match::glob_match(pattern, "http://example.com/!abc");
     println!("{:?}", result);
 }
 

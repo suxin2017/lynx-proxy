@@ -54,14 +54,30 @@ impl MigrationTrait for Migration {
                     .table(AppConfig::Table)
                     .if_not_exists()
                     .col(pk_auto(AppConfig::Id))
-                    .col(boolean(AppConfig::CaptureHttps))
+                    .col(boolean(AppConfig::CaptureSSL))
                     .col(string(AppConfig::RecordingStatus))
+                    .col(json_null(AppConfig::SSLConfig))
                     .to_owned(),
             )
             .await?;
+
+        let _ = manager
+            .create_table(
+                Table::create()
+                    .table(SSLConfig::Table)
+                    .if_not_exists()
+                    .col(pk_auto(SSLConfig::Id))
+                    .col(string(SSLConfig::Kind))
+                    .col(boolean(SSLConfig::Switch))
+                    .col(string(SSLConfig::Domain))
+                    .col(integer_null(SSLConfig::Port))
+                    .to_owned(),
+            )
+            .await?;
+
         let insert = Query::insert()
             .into_table(AppConfig::Table)
-            .columns([AppConfig::CaptureHttps, AppConfig::RecordingStatus])
+            .columns([AppConfig::CaptureSSL, AppConfig::RecordingStatus])
             .values_panic([true.into(), RecordingStatus::StartRecording.into()])
             .to_owned();
         let _ = manager.exec_stmt(insert).await?;
@@ -78,8 +94,8 @@ impl MigrationTrait for Migration {
                     .col(string(Request::Schema))
                     .col(string(Request::Version))
                     .col(integer_null(Request::StatusCode))
-                    .col(json(Request::Header))
-                    .col(integer(Request::HeaderSize))
+                    .col(json_null(Request::Header))
+                    .col(integer_null(Request::HeaderSize))
                     .to_owned(),
             )
             .await?;
@@ -124,7 +140,7 @@ impl MigrationTrait for Migration {
         .insert(connect)
         .await?;
 
-        let rule_content = rule_content::ActiveModel {
+        let _ = rule_content::ActiveModel {
             rule_id: ActiveValue::set(rule.id),
             content: ActiveValue::set(json!({
                 "demo": "demo"
@@ -161,8 +177,19 @@ impl MigrationTrait for Migration {
 enum AppConfig {
     Table,
     Id,
-    CaptureHttps,
     RecordingStatus,
+    CaptureSSL,
+    SSLConfig,
+}
+
+#[derive(DeriveIden)]
+enum SSLConfig {
+    Table,
+    Id,
+    Kind,
+    Switch,
+    Domain,
+    Port,
 }
 
 #[derive(DeriveIden)]
@@ -176,6 +203,7 @@ enum RuleGroup {
 }
 
 #[derive(DeriveIden)]
+#[allow(clippy::enum_variant_names)]
 enum Rule {
     Table,
     Id,

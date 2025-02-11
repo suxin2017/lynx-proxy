@@ -26,7 +26,6 @@ use tracing::{error, trace, warn};
 
 use crate::entities::rule_content::{self, parse_rule_content};
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
-use crate::proxy_log::has_receiver;
 use crate::schedular::get_req_trace_id;
 use crate::server_context::DB;
 
@@ -63,7 +62,7 @@ pub async fn build_proxy_request(
         }
     });
 
-    let req_url = url::Url::parse(&parts.uri.to_string().as_str()).unwrap();
+    let req_url = url::Url::parse(parts.uri.to_string().as_str()).unwrap();
     let mut builder = hyper::Request::builder().method(parts.method);
 
     let db = DB.get().unwrap();

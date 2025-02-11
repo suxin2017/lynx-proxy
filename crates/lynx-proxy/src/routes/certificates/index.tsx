@@ -7,7 +7,7 @@ export const Route = createFileRoute('/certificates/')({
 
 function RouteComponent() {
   return (
-    <div className="flex-1 flex flex-col items-center">
+    <div className="flex-1 flex flex-col items-center animate-fade-in">
       <div>
         <CertificateInstallDoc />
       </div>

@@ -16,9 +16,11 @@ pub struct Model {
     pub schema: String,
     pub version: String,
     pub status_code: u16,
-    pub header: Json,
-    pub header_size: u32,
+    pub header: Option<Json>,
+    pub header_size: Option<u32>,
 }
+
+
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {

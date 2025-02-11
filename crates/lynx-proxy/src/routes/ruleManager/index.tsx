@@ -11,7 +11,7 @@ export const Route = createFileRoute('/ruleManager/')({
 function RouteComponent() {
   return (
     <SelectedRuleProvider>
-      <Splitter>
+      <Splitter className="animate-fade-in">
         <Splitter.Panel defaultSize={200} min={80}>
           <RuleTree />
         </Splitter.Panel>
