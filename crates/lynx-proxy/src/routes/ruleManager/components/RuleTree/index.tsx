@@ -75,7 +75,7 @@ export const RuleTree: React.FC<IRuleTreeProps> = (props) => {
   return (
     <SaveTreeNodeModalContextProvider>
       <TreeContentMenuContextProvider>
-        <InnerRullTree {...props} />
+        <InnerRullTree {...props} />;
         <SaveTreeNodeModal />
       </TreeContentMenuContextProvider>
     </SaveTreeNodeModalContextProvider>

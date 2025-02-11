@@ -8,21 +8,22 @@ import {
 import { useSelectedRuleContext } from '../store';
 import { Button, Empty, message } from 'antd';
 import { RiSaveLine } from '@remixicon/react';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 self.MonacoEnvironment = {
   getWorker: function (_moduleId, label) {
     if (label === 'json') {
-      return new jsonWorker();
+      return new Worker(
+        new URL(
+          'monaco-editor/esm/vs/language/json/json.worker',
+          import.meta.url,
+        ),
+      );
     }
-    return new editorWorker();
+    return new Worker(
+      new URL('monaco-editor/esm/vs/editor/editor.worker', import.meta.url),
+    );
   },
 };
 
