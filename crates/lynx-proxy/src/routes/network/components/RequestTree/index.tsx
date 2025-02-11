@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Space, Tree } from 'antd';
 import { useSelector } from 'react-redux';
 import { useSize } from 'ahooks';
+import { Icon } from '@/components/Icon';
 import { useSelectRequest } from '../store/selectRequestStore';
 import { RootState } from '@/store';
 import { IRequestTreeNode } from '@/store/requestTreeStore';
@@ -48,6 +49,7 @@ export const RequestTree: React.FC = () => {
         titleRender={(node) => {
           return (
             <Space>
+              <span>{<Icon type="icon-network" />}</span>
               <span
                 className="inline-block whitespace-nowrap"
                 title={node.title}
