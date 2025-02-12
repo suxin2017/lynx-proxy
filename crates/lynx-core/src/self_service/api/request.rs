@@ -53,21 +53,6 @@ pub async fn handle_request_log() -> Result<Response<BoxBody<Bytes, Error>>> {
     res.headers_mut()
         .insert(CACHE_CONTROL, HeaderValue::from_static("no-cache"));
 
-    // set cors headers when development
-    #[cfg(feature = "test")]
-    {
-        res.headers_mut()
-            .insert("Access-Control-Allow-Origin", HeaderValue::from_static("*"));
-        res.headers_mut().insert(
-            "Access-Control-Allow-Methods",
-            HeaderValue::from_static("GET, POST, OPTIONS"),
-        );
-        res.headers_mut().insert(
-            "Access-Control-Allow-Headers",
-            HeaderValue::from_static("Content-Type"),
-        );
-    }
-
     Ok(res)
 }
 

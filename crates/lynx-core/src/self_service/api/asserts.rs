@@ -22,8 +22,6 @@ pub async fn handle_ui_assert(req: Request<Incoming>) -> Result<Response<BoxBody
         static_path = "index.html";
     }
 
-    println!("static path {}", &static_path);
-
     let file_path = APP_CONFIG.get().unwrap().ui_root_dir.join(static_path);
 
     let static_file = crate::utils::read_file(file_path).await;

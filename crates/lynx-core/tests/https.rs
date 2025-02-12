@@ -1,21 +1,18 @@
 use std::net::SocketAddr;
 
 use common::{
-    build_proxy_client::build_https_client,
+    build_proxy_client::{build_https_client, build_https_proxy_client},
     start_http_server::start_https_server,
     test_server::{ECHO_PATH, GZIP_PATH, HELLO_PATH, PING_PATH},
     tracing_config::init_tracing,
 };
 use http::header::CONTENT_TYPE;
-use lynx_core::{
-    server::Server,
-    server_context::{set_up_context, CA_MANAGER},
-};
+use lynx_core::{server::Server, server_context::set_up_context};
 use reqwest::Client;
 pub mod common;
 
 async fn init_test_server() -> (SocketAddr, Client, Client) {
-    set_up_context(None).await;
+    set_up_context(Default::default()).await;
 
     let addr: std::net::SocketAddr = start_https_server().await.unwrap();
     let mut lynx_core = Server::new(Default::default());
@@ -24,19 +21,7 @@ async fn init_test_server() -> (SocketAddr, Client, Client) {
 
     let direct_request_client = build_https_client();
 
-    let proxy_ca_cert =
-        reqwest::Certificate::from_pem(CA_MANAGER.get().unwrap().ca_cert.pem().as_bytes()).unwrap();
-    let proxy = reqwest::Proxy::all(proxy_addr).unwrap();
-
-    let proxy_request_client = reqwest::Client::builder()
-        .no_brotli()
-        .no_deflate()
-        .use_rustls_tls()
-        .add_root_certificate(proxy_ca_cert)
-        .proxy(proxy)
-        .build()
-        .unwrap();
-
+    let proxy_request_client = build_https_proxy_client(&proxy_addr);
     (addr, direct_request_client, proxy_request_client)
 }
 

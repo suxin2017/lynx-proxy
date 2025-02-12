@@ -20,7 +20,6 @@ use hyper_util::rt::TokioExecutor;
 use sea_orm::EntityTrait;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
-use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{error, trace, warn};
 

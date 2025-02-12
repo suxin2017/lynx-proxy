@@ -18,7 +18,7 @@ use crate::common::start_http_server::start_http_server;
 
 async fn init_test_server() -> (SocketAddr, Client, Client) {
     init_tracing();
-    set_up_context(None).await;
+    set_up_context(Default::default()).await;
 
     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
     let mut lynx_core = Server::new(Default::default());
