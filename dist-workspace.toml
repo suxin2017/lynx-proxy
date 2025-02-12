@@ -10,7 +10,7 @@ ci = "github"
 # The installers to generate for each app
 installers = ["shell"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu"]
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
 # Whether to install an updater program
@@ -22,4 +22,3 @@ pr-run-mode = "upload"
 
 [dist.github-custom-runners]
 x86_64-unknown-linux-gnu = "ubuntu-22.04"
-x86_64-unknown-linux-musl = "ubuntu-22.04"
