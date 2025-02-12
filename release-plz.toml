@@ -1,3 +1,4 @@
 [workspace]
 publish_allow_dirty = true
 allow_dirty = true
+git_tag_name = "v{{ version }}"
