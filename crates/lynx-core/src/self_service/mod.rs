@@ -17,7 +17,7 @@ use utils::{
 pub mod api;
 pub mod utils;
 
-const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
+pub const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
 
 pub const HELLO_PATH: &str = "/__self_service_path__/hello";
 pub const RULE_GROUP_ADD: &str = "/__self_service_path__/rule_group/add";
@@ -112,7 +112,7 @@ pub async fn self_service_router(
 
         (&method::Method::GET, path)
             if path == SELF_SERVICE_PATH_PREFIX
-                || path == ASSERT_DIT
+                || path.starts_with(ASSERT_DIT)
                 || path == ASSERT_INDEX
                 || path == ASSERT_ROOT =>
         {
