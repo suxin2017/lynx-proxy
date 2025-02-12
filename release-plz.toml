@@ -13,9 +13,6 @@ git_tag_enable = true
 # disable GitHub releases
 git_release_enable = false
 
-# labels for the release PR
-pr_labels = ["release"]
-
 # disallow updating repositories with uncommitted changes
 allow_dirty = true
 
