@@ -2727,7 +2727,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-cli"
-version = "0.0.3"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2741,7 +2741,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-core"
-version = "0.0.3"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -2790,7 +2790,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-proxy"
-version = "0.0.3"
+version = "0.0.2"
 dependencies = [
  "log",
  "serde",
