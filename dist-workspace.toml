@@ -10,15 +10,14 @@ ci = "github"
 # The installers to generate for each app
 installers = ["shell"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-apple-darwin"]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-unknown-linux-musl"]
 # Path that installers should place binaries in
 install-path = "CARGO_HOME"
 # Whether to install an updater program
 install-updater = true
-
+# Skip checking whether the specified configuration files are up to date
 allow-dirty = ["ci", "msi"]
-
-# Publish jobs to run in CI
+# Which actions to run on pull requests
 pr-run-mode = "upload"
 
 [dist.github-custom-runners]
