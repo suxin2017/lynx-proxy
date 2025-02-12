@@ -18,7 +18,7 @@ pub mod common;
 
 async fn init_test_server() -> (SocketAddr, SocketAddr, Client, Client) {
     init_tracing();
-    set_up_context(None).await;
+    set_up_context(Default::default()).await;
 
     let target_addr: std::net::SocketAddr = start_https_server().await.unwrap();
     let mut lynx_core = Server::new(Default::default());

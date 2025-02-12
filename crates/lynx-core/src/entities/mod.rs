@@ -22,8 +22,12 @@ pub async fn set_up_db(config: &AppConfig) -> DatabaseConnection {
     let db = Database::connect(schema)
         .await
         .expect("Failed to connect to db");
+
     #[cfg(feature = "test")]
     let _ = Migrator::fresh(&db).await;
+
+    #[cfg(not(feature = "test"))]
+    Migrator::up(&db,None).await.unwrap();
 
     db
 }

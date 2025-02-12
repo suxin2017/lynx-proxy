@@ -3,7 +3,6 @@ use std::{fs, path::PathBuf};
 use derive_builder::Builder;
 use tracing::debug;
 
-
 #[derive(Builder, Debug, Default, Clone)]
 pub struct AppConfig {
     pub asserts_root_dir: PathBuf,
@@ -25,17 +24,25 @@ impl AppConfig {
     }
 }
 
-pub fn init_config(ui_assert_dir: Option<PathBuf>) -> AppConfig {
-    // #[cfg(not(test))]
-    // let default_asserts_root_dir = dirs::home_dir()
-    //     .expect("can not get home dir")
-    //     .join(format!(".config/{}", env!("CARGO_PKG_NAME")));
-    let default_asserts_root_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asserts");
+#[derive(Debug, Default)]
+pub struct InitAppConfigParams {
+    pub ui_assert_dir: Option<PathBuf>,
+    pub root_dir: Option<PathBuf>,
+}
+
+pub fn set_up_config_dir(init_params: InitAppConfigParams) -> AppConfig {
+    let default_asserts_root_dir = if let Some(root_dir) = init_params.root_dir {
+        root_dir
+    } else {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asserts")
+    };
 
     let default_ca_root_dir = default_asserts_root_dir.join("ca");
     let default_raw_root_dir = default_asserts_root_dir.join("raw");
     let default_db_root_dir = default_asserts_root_dir.join("db");
-    let default_ui_root_dir = ui_assert_dir.unwrap_or_else(|| default_asserts_root_dir.join("ui"));
+    let default_ui_root_dir = init_params
+        .ui_assert_dir
+        .unwrap_or_else(|| default_asserts_root_dir.join("ui"));
 
     let config = AppConfigBuilder::create_empty()
         .asserts_root_dir(default_asserts_root_dir)
@@ -46,11 +53,6 @@ pub fn init_config(ui_assert_dir: Option<PathBuf>) -> AppConfig {
         .build()
         .expect("init asserts dir error");
 
-    config
-}
-
-pub fn set_up_config_dir(ui_assert_dir: Option<PathBuf>) -> AppConfig {
-    let config = init_config(ui_assert_dir);
     create_dir_if_not_exists(&config.asserts_root_dir);
     create_dir_if_not_exists(&config.ca_root_dir);
     create_dir_if_not_exists(&config.db_root_dir);
