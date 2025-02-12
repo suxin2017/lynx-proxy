@@ -1,4 +1,26 @@
 [workspace]
-publish_allow_dirty = true
-allow_dirty = true
 git_tag_name = "v{{ version }}"
+
+# enable changelog updates
+changelog_update = true
+
+# update dependencies with `cargo update`
+dependencies_update = true
+
+# create tags for the releases
+git_tag_enable = true
+
+# disable GitHub releases
+git_release_enable = false
+
+# labels for the release PR
+pr_labels = ["release"]
+
+# disallow updating repositories with uncommitted changes
+allow_dirty = true
+
+# disallow packaging with uncommitted changes
+publish_allow_dirty = true
+
+# disable running `cargo-semver-checks`
+semver_check = false
