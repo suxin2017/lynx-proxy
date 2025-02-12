@@ -24,7 +24,7 @@ runs:
       uses: arduino/setup-task@v2
       with:
         version: 3.x
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        repo-token: ${{ secrets.RELEASE_PLZ_TOKEN }}
 
     - name: Pnpm Install
       run: task setup-ui
