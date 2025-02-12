@@ -20,3 +20,4 @@ anyhow = { workspace = true }
 tokio = { workspace = true }
 clap = { version = "4.5.27", features = ["derive"] }
 console = { version = "0.15.10", features = ["windows-console-colors"] }
+directories = "6.0.0"
