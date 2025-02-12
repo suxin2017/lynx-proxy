@@ -21,5 +21,5 @@ allow-dirty = ["ci", "msi"]
 pr-run-mode = "upload"
 
 [dist.github-custom-runners]
-aarch64-unknown-linux-gnu = "ubuntu-22.04"
-aarch64-unknown-linux-musl = "ubuntu-22.04"
+x86_64-unknown-linux-gnu = "ubuntu-22.04"
+x86_64-unknown-linux-musl = "ubuntu-22.04"
