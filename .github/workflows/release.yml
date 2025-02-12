@@ -122,6 +122,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: Linux-specific step
+        if: contains(runner.os,'ubuntu')
+        shell: bash
+        run: |
+          sudo apt install libwebkit2gtk-4.1-dev libsoup3.0-dev
       - name: Install Rust non-interactively if not already installed
         if: ${{ matrix.container }}
         run: |
