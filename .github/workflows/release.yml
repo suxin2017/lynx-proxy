@@ -40,6 +40,9 @@ permissions:
 # will be marked as a prerelease.
 on:
   pull_request:
+  push:
+    tags:
+      - 'lynx-cli-**[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   # Run 'dist plan' (or host) to determine what tasks we need to do
