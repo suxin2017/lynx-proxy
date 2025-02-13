@@ -61,3 +61,37 @@ tasks:
     dir: crates/lynx-core
     cmds:
       - cargo test --package lynx-core --test start_test_server --features test -- start_test_server --exact --nocapture --ignored
+
+  release-minor:
+    desc: Release minor version
+    cmds:
+      - cargo release minor --execute
+      # - task: publish
+      - task: generate-change-log
+  release-patch:
+    desc: Release patch version
+    cmds:
+      - cargo release patch --execute
+      - task: publish
+      - task: generate-change-log
+  release-alpha:
+    desc: Release alpha version
+    cmds:
+      - cargo release alpha --execute
+      - task: publish
+
+  generate-change-log:
+    desc: Generate change log
+    cmds:
+      - git cliff -o CHANGELOG.md
+      - git add .
+      - git commit --amend --no-edit
+      - git push
+      - git push --tags
+
+
+  publish:
+    desc: Publish to crates.io
+    cmds:
+      - cargo publish --registry crates-io -p lynx-core
+      - cargo publish --registry crates-io -p lynx-cli --allow-dirty

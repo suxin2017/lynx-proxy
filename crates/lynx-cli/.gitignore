@@ -1,0 +1,10 @@
+target
+sql.db
+asserts
+# Local
+.DS_Store
+*.local
+*.log*
+.idea
+.vscode
+ui_assert

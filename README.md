@@ -28,6 +28,8 @@ We welcome your contributions! Please follow these steps to contribute:
 - Create a new branch (git checkout -b feature-branch).
 - Install necessary dependencies
   - Install [taskfile](https://taskfile.dev/)
+  - Install(Optional) [cargo-release](https://crates.io/crates/cargo-release)
+  - Install(Optional) [git-cliff](https://git-cliff.org/docs/)
   - 
     Install UI-related dependencies
     ```bash
