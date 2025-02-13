@@ -72,13 +72,14 @@ tasks:
     desc: Release patch version
     cmds:
       - cargo release patch --execute
-      - task: publish
+      # - task: publish
       - task: generate-change-log
   release-alpha:
     desc: Release alpha version
     cmds:
       - cargo release alpha --execute
-      - task: publish
+      # - task: publish
+      - task: generate-change-log
 
   generate-change-log:
     desc: Generate change log
@@ -93,5 +94,6 @@ tasks:
   publish:
     desc: Publish to crates.io
     cmds:
+      - task: build-ui
       - cargo publish --registry crates-io -p lynx-core
       - cargo publish --registry crates-io -p lynx-cli --allow-dirty
