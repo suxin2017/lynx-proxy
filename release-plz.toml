@@ -1,6 +1,5 @@
 [workspace]
 publish_allow_dirty = true
 allow_dirty = true
-git_release_enable = false
 dependencies_update = true
 changelog_path = "./CHANGELOG.md"
