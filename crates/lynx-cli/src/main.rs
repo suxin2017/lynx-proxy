@@ -6,6 +6,7 @@ use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use console::style;
 use directories::ProjectDirs;
+use include_dir::{include_dir, Dir};
 use lynx_core::config::InitAppConfigParams;
 use lynx_core::self_service::SELF_SERVICE_PATH_PREFIX;
 use lynx_core::server::{Server, ServerConfig};
@@ -56,14 +57,20 @@ impl Display for LogLevel {
 }
 
 fn escape_spaces_in_path(path: &PathBuf) -> String {
-    path.to_string_lossy().chars().flat_map(|c| {
-        if c == ' ' {
-            vec!['\\', ' '].into_iter()
-        } else {
-            vec![c].into_iter()
-        }
-    }).collect()
+    path.to_string_lossy()
+        .chars()
+        .flat_map(|c| {
+            if c == ' ' {
+                vec!['\\', ' '].into_iter()
+            } else {
+                vec![c].into_iter()
+            }
+        })
+        .collect()
 }
+
+// compile time include asserts dir
+static _ASSERT_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/asserts");
 
 #[tokio::main]
 async fn main() -> Result<()> {

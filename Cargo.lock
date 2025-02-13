@@ -2737,6 +2737,7 @@ dependencies = [
  "clap",
  "console",
  "directories",
+ "include_dir",
  "lynx-core",
  "tokio",
  "tracing",
