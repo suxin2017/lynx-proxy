@@ -116,7 +116,7 @@ pub async fn self_service_router(
                 || path == ASSERT_INDEX
                 || path == ASSERT_ROOT =>
         {
-            self::api::asserts::handle_ui_assert(req).await
+            self::api::assets::handle_ui_assert(req).await
         }
 
         _ => Ok(not_found()),
