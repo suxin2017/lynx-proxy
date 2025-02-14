@@ -60,7 +60,9 @@ pub async fn build_proxy_request(
     });
 
     let req_url = url::Url::parse(parts.uri.to_string().as_str());
-    let mut builder = hyper::Request::builder().method(parts.method);
+    let mut builder = hyper::Request::builder()
+        .method(parts.method)
+        .version(parts.version);
 
     let db = DB.get().unwrap();
 
@@ -121,10 +123,7 @@ pub async fn build_proxy_request(
 
     for (key, value) in parts.headers.into_iter() {
         if let Some(key) = key {
-            if matches!(
-                &key,
-                &HOST | &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH
-            ) {
+            if matches!(&key, &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH) {
                 continue;
             }
             builder = builder.header(key, value);
