@@ -1,6 +1,6 @@
 target
 sql.db
-asserts/*
+assets/*
 # Local
 .DS_Store
 *.local

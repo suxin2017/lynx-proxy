@@ -1,6 +1,6 @@
 target
 sql.db
-crates/lynx-core/asserts
+crates/lynx-core/assets
 # Local
 .DS_Store
 *.local

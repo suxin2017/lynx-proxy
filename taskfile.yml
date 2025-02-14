@@ -42,8 +42,8 @@ tasks:
     desc: Build UI
     cmds:
       - cd crates/lynx-proxy && pnpm build
-      - rm -rf crates/lynx-cli/asserts
-      - cp -r crates/lynx-proxy/dist/ crates/lynx-cli/asserts
+      - rm -rf crates/lynx-cli/assets
+      - cp -r crates/lynx-proxy/dist/ crates/lynx-cli/assets
 
   build-server:
     desc: Build server

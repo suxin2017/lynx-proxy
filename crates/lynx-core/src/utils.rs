@@ -38,7 +38,7 @@ pub fn get_current_timestamp_millis() -> u128 {
     since_the_epoch.as_millis()
 }
 
-pub async fn read_file(file_path: PathBuf) -> anyhow::Result<String> {
-    let content = tokio::fs::read_to_string(file_path).await?;
+pub async fn read_file(file_path: &PathBuf) -> anyhow::Result<Vec<u8>> {
+    let content = tokio::fs::read(file_path).await?;
     Ok(content)
 }

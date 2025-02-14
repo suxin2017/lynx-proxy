@@ -1,12 +1,13 @@
 use std::fmt::Display;
+use std::path::Path;
+use std::path::PathBuf;
 use std::str::FromStr;
-use std::{env, path::PathBuf};
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use console::style;
 use directories::ProjectDirs;
-use include_dir::{include_dir, Dir};
+use include_dir::include_dir;
 use lynx_core::config::InitAppConfigParams;
 use lynx_core::self_service::SELF_SERVICE_PATH_PREFIX;
 use lynx_core::server::{Server, ServerConfig};
@@ -56,7 +57,7 @@ impl Display for LogLevel {
     }
 }
 
-fn escape_spaces_in_path(path: &PathBuf) -> String {
+fn escape_spaces_in_path(path: &Path) -> String {
     path.to_string_lossy()
         .chars()
         .flat_map(|c| {
@@ -68,9 +69,6 @@ fn escape_spaces_in_path(path: &PathBuf) -> String {
         })
         .collect()
 }
-
-// compile time include asserts dir
-static _ASSERT_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/asserts");
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -89,9 +87,6 @@ async fn main() -> Result<()> {
             .init();
     }
 
-    // init ui asserts
-    let default_ui_asserts = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asserts");
-
     // init data dir
     let data_dir = if let Some(data_dir) = args.data_dir {
         PathBuf::from(data_dir)
@@ -102,9 +97,11 @@ async fn main() -> Result<()> {
     let data_dir_path = escape_spaces_in_path(&data_dir);
 
     info!("Starting proxy server");
+    let dir = include_dir!("$CARGO_MANIFEST_DIR/assets");
+
     set_up_context(InitContextParams {
         init_app_config_params: InitAppConfigParams {
-            ui_assert_dir: Some(default_ui_asserts),
+            assets_ui_root_dir: Some(dir),
             root_dir: Some(data_dir),
         },
     })

@@ -1,5 +1,5 @@
 pub mod app_config_api;
-pub mod asserts;
+pub mod assets;
 pub mod certificate;
 pub mod request;
 pub mod response;
