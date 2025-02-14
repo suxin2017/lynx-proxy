@@ -2758,6 +2758,7 @@ dependencies = [
  "hyper-rustls",
  "hyper-tungstenite",
  "hyper-util",
+ "include_dir",
  "jsonschema",
  "local-ip-address",
  "mime_guess",
