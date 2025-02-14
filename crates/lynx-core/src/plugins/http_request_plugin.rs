@@ -1,7 +1,5 @@
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::{fs, io};
 
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
@@ -200,6 +198,8 @@ pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
 #[cfg(feature = "test")]
 fn get_test_root_ca(host: Option<&str>) -> hyper_rustls::HttpsConnector<HttpConnector> {
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+    use std::path::PathBuf;
+    use std::{fs, io};
 
     use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 

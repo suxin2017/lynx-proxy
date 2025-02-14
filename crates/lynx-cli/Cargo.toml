@@ -8,10 +8,10 @@ license.workspace = true
 documentation.workspace = true
 homepage.workspace = true
 repository.workspace = true
-include = ["src", "Cargo.toml", "README.md", "asserts"]
+include = ["src", "Cargo.toml", "README.md", "assets"]
 
 [dependencies]
-lynx-core = { version = "0.1.1", path = "../lynx-core" }
+lynx-core = { version = "0.1.2", path = "../lynx-core" }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
@@ -19,3 +19,4 @@ tokio = { workspace = true }
 clap = { version = "4.5.27", features = ["derive"] }
 console = { version = "0.15.10", features = ["windows-console-colors"] }
 directories = "6.0.0"
+include_dir = "0.7.4"
