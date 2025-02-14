@@ -10,9 +10,11 @@ use http_body_util::combinators::BoxBody;
 use http_body_util::BodyExt;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
+use tracing::trace;
 
 pub async fn handle_ui_assert(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
     let path = req.uri().path();
+    let app_config = APP_CONFIG.get().unwrap();
     let mut static_path = &path[SELF_SERVICE_PATH_PREFIX.len()..];
     if static_path.starts_with("/") {
         static_path = &static_path[1..];
@@ -22,9 +24,21 @@ pub async fn handle_ui_assert(req: Request<Incoming>) -> Result<Response<BoxBody
         static_path = "index.html";
     }
 
-    let file_path = APP_CONFIG.get().unwrap().ui_root_dir.join(static_path);
+    let content = app_config.assets_ui_root_dir.as_ref().and_then(|dir| {
+        trace!("Get file from include_dir: {}", static_path);
+        dir.get_file(static_path)
+            .map(|file| file.contents())
+            .map(Bytes::copy_from_slice)
+    });
 
-    let static_file = crate::utils::read_file(file_path).await;
+    let content = match content {
+        Some(content) => content,
+        None => {
+            trace!("Not found: {}", static_path);
+            return Ok(not_found());
+        }
+    };
+
     let mime_type = mime_guess::from_path(static_path);
     let content_type = mime_type
         .first()
@@ -34,15 +48,7 @@ pub async fn handle_ui_assert(req: Request<Incoming>) -> Result<Response<BoxBody
         })
         .unwrap_or_else(|| HeaderValue::from_static("text/html"));
 
-    let static_file = static_file;
-    if static_file.is_err() {
-        return Ok(not_found());
-    }
-    let static_file = static_file.unwrap();
-
-    let bytes = Bytes::from(static_file);
-
-    let body = BoxBody::boxed(full(bytes));
+    let body = BoxBody::boxed(full(content));
 
     let res: Response<BoxBody<Bytes, Error>> = Response::builder()
         .header(CONTENT_TYPE, content_type)

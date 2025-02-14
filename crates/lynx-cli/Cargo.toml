@@ -8,7 +8,7 @@ license.workspace = true
 documentation.workspace = true
 homepage.workspace = true
 repository.workspace = true
-include = ["src", "Cargo.toml", "README.md", "asserts"]
+include = ["src", "Cargo.toml", "README.md", "assets"]
 
 [dependencies]
 lynx-core = { version = "0.1.1", path = "../lynx-core" }
