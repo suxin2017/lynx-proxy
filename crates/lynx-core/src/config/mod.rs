@@ -1,11 +1,13 @@
 use std::{fs, path::PathBuf};
 
 use derive_builder::Builder;
+use include_dir::Dir;
 use tracing::debug;
 
 #[derive(Builder, Debug, Default, Clone)]
 pub struct AppConfig {
-    pub asserts_root_dir: PathBuf,
+    pub assets_ui_root_dir: Option<Dir<'static>>,
+    pub assets_root_dir: PathBuf,
     pub ca_root_dir: PathBuf,
     pub raw_root_dir: PathBuf,
     pub db_root_dir: PathBuf,
@@ -27,33 +29,35 @@ impl AppConfig {
 #[derive(Debug, Default)]
 pub struct InitAppConfigParams {
     pub ui_assert_dir: Option<PathBuf>,
+    pub assets_ui_root_dir: Option<Dir<'static>>,
     pub root_dir: Option<PathBuf>,
 }
 
 pub fn set_up_config_dir(init_params: InitAppConfigParams) -> AppConfig {
-    let default_asserts_root_dir = if let Some(root_dir) = init_params.root_dir {
+    let default_assets_root_dir = if let Some(root_dir) = init_params.root_dir {
         root_dir
     } else {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("asserts")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets")
     };
 
-    let default_ca_root_dir = default_asserts_root_dir.join("ca");
-    let default_raw_root_dir = default_asserts_root_dir.join("raw");
-    let default_db_root_dir = default_asserts_root_dir.join("db");
+    let default_ca_root_dir = default_assets_root_dir.join("ca");
+    let default_raw_root_dir = default_assets_root_dir.join("raw");
+    let default_db_root_dir = default_assets_root_dir.join("db");
     let default_ui_root_dir = init_params
         .ui_assert_dir
-        .unwrap_or_else(|| default_asserts_root_dir.join("ui"));
+        .unwrap_or_else(|| default_assets_root_dir.join("ui"));
 
     let config = AppConfigBuilder::create_empty()
-        .asserts_root_dir(default_asserts_root_dir)
+        .assets_root_dir(default_assets_root_dir)
         .ca_root_dir(default_ca_root_dir)
         .db_root_dir(default_db_root_dir)
         .raw_root_dir(default_raw_root_dir)
         .ui_root_dir(default_ui_root_dir)
+        .assets_ui_root_dir(init_params.assets_ui_root_dir)
         .build()
-        .expect("init asserts dir error");
+        .expect("init assets dir error");
 
-    create_dir_if_not_exists(&config.asserts_root_dir);
+    create_dir_if_not_exists(&config.assets_root_dir);
     create_dir_if_not_exists(&config.ca_root_dir);
     create_dir_if_not_exists(&config.db_root_dir);
     create_dir_if_not_exists(&config.raw_root_dir);
