@@ -14,11 +14,32 @@ Lynx Proxy is a high-performance, flexible proxy tool built using the Rust progr
 
 # Installation
 
-TODO
+## Bash
+
+```
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx/releases/latest/download/lynx-cli-installer.sh | sh
+```
 
 # Usage
 
-TODO
+```
+# start server
+lynx-cli
+```
+
+```
+A proxy service
+
+Usage: lynx-cli [OPTIONS]
+
+Options:
+  -p, --port <PORT>            proxy server port [default: 3000]
+      --only-localhost         only allow localhost access
+      --log-level <LOG_LEVEL>  log level [default: silent] [possible values: silent, info, error, debug, trace]
+      --data-dir <DATA_DIR>    data dir if not set, use default data dir
+  -h, --help                   Print help
+  -V, --version                Print version
+```
 
 # Contribution
 
@@ -30,13 +51,12 @@ We welcome your contributions! Please follow these steps to contribute:
   - Install [taskfile](https://taskfile.dev/)
   - Install(Optional) [cargo-release](https://crates.io/crates/cargo-release)
   - Install(Optional) [git-cliff](https://git-cliff.org/docs/)
-  - 
-    Install UI-related dependencies
+  - Install UI-related dependencies
     ```bash
     task setup-ui
     ```
   - Start the service
-     ```bash
+    ```bash
     task dev
     ```
 - Make your changes.
