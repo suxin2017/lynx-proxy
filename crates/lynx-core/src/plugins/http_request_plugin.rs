@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
 use glob_match::glob_match;
-use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
+use http::header::{CONNECTION, CONTENT_LENGTH, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http::Uri;
 use http_body_util::combinators::BoxBody;
@@ -59,8 +59,10 @@ pub async fn build_proxy_request(
         }
     });
 
-    let req_url = url::Url::parse(parts.uri.to_string().as_str()).unwrap();
-    let mut builder = hyper::Request::builder().method(parts.method);
+    let req_url = url::Url::parse(parts.uri.to_string().as_str());
+    let mut builder = hyper::Request::builder()
+        .method(parts.method)
+        .version(parts.version);
 
     let db = DB.get().unwrap();
 
@@ -68,47 +70,51 @@ pub async fn build_proxy_request(
 
     let mut match_handled = false;
 
-    for rule in rules {
-        trace!("current rule: {:?}", rule);
-        match parse_rule_content(rule.content) {
-            Ok(content) => {
-                let capture_glob_pattern_str = content.capture.uri;
-                let is_match = glob_match(&capture_glob_pattern_str, req_url.as_str());
-                trace!("is match: {}", is_match);
-                trace!("capture_glob_pattern_str: {}", capture_glob_pattern_str);
-                trace!("req_url: {}", req_url.as_str());
-                if is_match {
-                    match_handled = true;
-                    let pass_proxy_uri = url::Url::parse(&content.handler.proxy_pass);
+    if let Ok(req_url) = req_url {
+        for rule in rules {
+            trace!("current rule: {:?}", rule);
+            match parse_rule_content(rule.content) {
+                Ok(content) => {
+                    let capture_glob_pattern_str = content.capture.uri;
+                    let is_match = glob_match(&capture_glob_pattern_str, req_url.as_str());
+                    trace!("is match: {}", is_match);
+                    trace!("capture_glob_pattern_str: {}", capture_glob_pattern_str);
+                    trace!("req_url: {}", req_url.as_str());
+                    if is_match {
+                        match_handled = true;
+                        let pass_proxy_uri = url::Url::parse(&content.handler.proxy_pass);
 
-                    match pass_proxy_uri {
-                        Ok(pass_proxy_uri) => {
-                            let host = pass_proxy_uri.host_str();
-                            let port = pass_proxy_uri.port();
+                        match pass_proxy_uri {
+                            Ok(pass_proxy_uri) => {
+                                let host = pass_proxy_uri.host_str();
+                                let port = pass_proxy_uri.port();
 
-                            let mut new_uri = req_url.clone();
-                            let _ = new_uri.set_scheme(pass_proxy_uri.scheme());
-                            let _ = new_uri.set_host(host);
-                            let _ = new_uri.set_port(port);
+                                let mut new_uri = req_url.clone();
+                                let _ = new_uri.set_scheme(pass_proxy_uri.scheme());
+                                let _ = new_uri.set_host(host);
+                                let _ = new_uri.set_port(port);
 
-                            trace!("new url: {:?}", new_uri);
+                                trace!("new url: {:?}", new_uri);
 
-                            if let Ok(new_uri) = Uri::from_str(new_uri.as_str()) {
-                                builder = builder.uri(new_uri);
-                            } else {
-                                warn!("parse pass proxy uri error: {}", new_uri.as_str());
+                                if let Ok(new_uri) = Uri::from_str(new_uri.as_str()) {
+                                    builder = builder.uri(new_uri);
+                                } else {
+                                    warn!("parse pass proxy uri error: {}", new_uri.as_str());
+                                }
                             }
-                        }
-                        Err(e) => {
-                            warn!("parse pass proxy uri error: {}", e);
+                            Err(e) => {
+                                warn!("parse pass proxy uri error: {}", e);
+                            }
                         }
                     }
                 }
-            }
-            Err(e) => {
-                warn!("parse rule content error: {}", e);
+                Err(e) => {
+                    warn!("parse rule content error: {}", e);
+                }
             }
         }
+    } else {
+        warn!("parse req url error: {}", parts.uri);
     }
 
     if !match_handled {
@@ -117,10 +123,7 @@ pub async fn build_proxy_request(
 
     for (key, value) in parts.headers.into_iter() {
         if let Some(key) = key {
-            if matches!(
-                &key,
-                &HOST | &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH
-            ) {
+            if matches!(&key, &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH) {
                 continue;
             }
             builder = builder.header(key, value);

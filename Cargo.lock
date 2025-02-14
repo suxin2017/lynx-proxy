@@ -2746,6 +2746,7 @@ name = "lynx-core"
 version = "0.1.2"
 dependencies = [
  "anyhow",
+ "async-compression",
  "bytes",
  "chrono",
  "derive_builder",

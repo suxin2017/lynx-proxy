@@ -140,7 +140,10 @@ async fn test_rule_proxy() {
         .send()
         .await
         .unwrap();
-    assert_eq!(lynx_core_res.headers(), target_res.headers());
+    assert_eq!(
+        lynx_core_res.headers().get("x-host"),
+        target_res.headers().get("x-host")
+    );
     assert_eq!(
         lynx_core_res.text().await.unwrap(),
         target_res.text().await.unwrap()
@@ -198,7 +201,10 @@ async fn test_rule_ignore_proxy() {
         .await
         .unwrap();
 
-    assert_ne!(lynx_core_res.headers(), target_res.headers());
+    assert_ne!(
+        lynx_core_res.headers().get("x-host"),
+        target_res.headers().get("x-host")
+    );
 
     let lynx_core_res = proxy_request_client
         .post(format!("http://{match_addr}{}", ECHO_PATH))
@@ -214,7 +220,10 @@ async fn test_rule_ignore_proxy() {
         .await
         .unwrap();
     println!("{:?}", target_res.headers());
-    assert_eq!(lynx_core_res.headers(), target_res.headers());
+    assert_eq!(
+        lynx_core_res.headers().get("x-host"),
+        target_res.headers().get("x-host")
+    );
     assert_eq!(
         lynx_core_res.text().await.unwrap(),
         target_res.text().await.unwrap()

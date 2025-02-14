@@ -15,12 +15,10 @@ pub struct Model {
     pub method: String,
     pub schema: String,
     pub version: String,
-    pub status_code: u16,
+    pub status_code: Option<u16>,
     pub header: Option<Json>,
     pub header_size: Option<u32>,
 }
-
-
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {

@@ -18,7 +18,7 @@ use crate::utils::empty;
 pub async fn https_proxy(
     req: Request<Incoming>,
 ) -> anyhow::Result<Response<BoxBody<Bytes, Error>>> {
-    info!("proxy https request");
+    trace!("proxy https request");
     let mut res = Response::default();
     let authority = match req.uri().authority().cloned() {
         Some(authority) => authority,
