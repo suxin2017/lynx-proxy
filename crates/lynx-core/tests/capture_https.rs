@@ -1,16 +1,10 @@
 use common::{
-    build_proxy_client::{
-        build_https_client, build_https_proxy_client,
-    },
+    build_proxy_client::{build_https_client, build_https_proxy_client},
     start_http_server::start_https_server,
     test_server::HELLO_PATH,
     tracing_config::init_tracing,
 };
-use lynx_core::{
-    self_service::SSL_CONFIG_SAVE,
-    server::Server,
-    server_context::set_up_context,
-};
+use lynx_core::{self_service::SSL_CONFIG_SAVE, server::Server, server_context::set_up_context};
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::net::SocketAddr;

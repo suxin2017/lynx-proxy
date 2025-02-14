@@ -3,7 +3,7 @@ version: "3"
 tasks:
   dev:
     desc: Run development server
-    deps: [dev-ui, start-test-server]
+    deps: [start-test-server,dev-ui]
   test:
     desc: Run tests
     dir: crates/lynx-core
