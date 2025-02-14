@@ -27,7 +27,7 @@ pub async fn tunnel_proxy(
             method: Set(req.method().to_string()),
             schema: Set(req.uri().scheme_str().unwrap_or("").to_string()),
             version: Set(format!("{:?}", req.version())),
-            status_code: Set(200),
+            status_code: Set(Some(200)),
             ..Default::default()
         };
         let record = request_active_model.insert(DB.get().unwrap()).await?;

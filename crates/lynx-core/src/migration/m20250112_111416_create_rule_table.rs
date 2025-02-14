@@ -77,8 +77,26 @@ impl MigrationTrait for Migration {
 
         let insert = Query::insert()
             .into_table(AppConfig::Table)
-            .columns([AppConfig::CaptureSSL, AppConfig::RecordingStatus])
-            .values_panic([true.into(), RecordingStatus::StartRecording.into()])
+            .columns([
+                AppConfig::CaptureSSL,
+                AppConfig::RecordingStatus,
+                AppConfig::CaptureSSL,
+                AppConfig::SSLConfig,
+            ])
+            .values_panic([
+                true.into(),
+                RecordingStatus::StartRecording.into(),
+                true.into(),
+                json!({
+                    "includeDomains": [{
+                        "host": "*",
+                        "port": null,
+                        "switch": true
+                    }],
+                    "excludeDomains": []
+                })
+                .into(),
+            ])
             .to_owned();
         let _ = manager.exec_stmt(insert).await?;
 
