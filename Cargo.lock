@@ -2385,25 +2385,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "include_dir"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "923d117408f1e49d914f1a379a309cffe4f18c05cf4e3d12e613a15fc81bd0dd"
-dependencies = [
- "include_dir_macros",
-]
-
-[[package]]
-name = "include_dir_macros"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cab85a7ed0bd5f0e76d93846e0147172bed2e2d3f859bcc33a8d9699cad1a75"
-dependencies = [
- "proc-macro2",
- "quote",
-]
-
-[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2721,10 +2702,7 @@ checksum = "419e0dc8046cb947daa77eb95ae174acfbddb7673b4151f56d1eed8e93fbfaca"
 dependencies = [
  "cfg-if",
  "generator",
- "pin-utils",
  "scoped-tls",
- "serde",
- "serde_json",
  "tracing",
  "tracing-subscriber",
 ]
@@ -2748,11 +2726,9 @@ name = "lynx-core"
 version = "0.1.1"
 dependencies = [
  "anyhow",
- "async-compression",
  "bytes",
  "chrono",
  "derive_builder",
- "dirs 6.0.0",
  "dotenv",
  "futures-util",
  "glob-match",
@@ -2762,7 +2738,6 @@ dependencies = [
  "hyper-rustls",
  "hyper-tungstenite",
  "hyper-util",
- "include_dir",
  "jsonschema",
  "local-ip-address",
  "mime_guess",
@@ -2782,7 +2757,6 @@ dependencies = [
  "serde_json",
  "time",
  "tokio",
- "tokio-graceful",
  "tokio-rustls",
  "tokio-stream",
  "tokio-tungstenite",
@@ -4342,15 +4316,14 @@ dependencies = [
 
 [[package]]
 name = "ring"
-version = "0.17.8"
+version = "0.17.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c17fa4cb658e3583423e915b9f3acc01cceaee1860e33d59ebae66adc3a2dc0d"
+checksum = "e75ec5e92c4d8aede845126adc388046234541629e76029599ed35a003c7ed24"
 dependencies = [
  "cc",
  "cfg-if",
  "getrandom 0.2.15",
  "libc",
- "spin",
  "untrusted",
  "windows-sys 0.52.0",
 ]
@@ -5944,19 +5917,6 @@ dependencies = [
  "socket2",
  "tokio-macros",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "tokio-graceful"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45740b38b48641855471cd402922e89156bdfbd97b69b45eeff170369cc18c7d"
-dependencies = [
- "loom",
- "pin-project-lite",
- "slab",
- "tokio",
- "tracing",
 ]
 
 [[package]]
