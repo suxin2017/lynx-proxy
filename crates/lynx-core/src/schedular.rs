@@ -25,6 +25,8 @@ pub fn get_req_trace_id(req: &Request<hyper::body::Incoming>) -> Arc<String> {
 }
 
 pub async fn capture_ssl(req: &Request<Incoming>) -> Result<bool> {
+    return Ok(true);
+    
     let app_config = get_app_config().await;
     if !app_config.capture_ssl {
         return Ok(false);
