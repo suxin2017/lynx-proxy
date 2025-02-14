@@ -19,9 +19,9 @@ pub struct Server {
     pub access_addr_list: Vec<SocketAddr>,
 }
 
-async fn test_lister(addr: SocketAddr) -> SocketAddr {
-    let listener = TcpListener::bind(addr).await.unwrap();
-    let addr = listener.local_addr().unwrap();
+async fn test_lister(addr: SocketAddr) -> Result<SocketAddr> {
+    let listener = TcpListener::bind(addr).await?;
+    let addr = listener.local_addr()?;
 
     tokio::spawn(async move {
         loop {
@@ -57,7 +57,7 @@ async fn test_lister(addr: SocketAddr) -> SocketAddr {
             });
         }
     });
-    addr
+    Ok(addr)
 }
 
 #[derive(Debug)]
@@ -106,8 +106,16 @@ impl Server {
         let mut new_addrs = Vec::new();
         for addr in self.access_addr_list.iter() {
             let addr = test_lister(*addr).await;
-            trace!("Server started on: http://{}", addr);
-            new_addrs.push(addr);
+            match addr {
+                Ok(addr) => {
+                    trace!("Server started on: http://{}", addr);
+                    new_addrs.push(addr);
+                }
+                Err(e) => {
+                    error!("Server error: {}", &e);
+                    continue;
+                }
+            };
         }
         self.access_addr_list = new_addrs;
         Ok(())
