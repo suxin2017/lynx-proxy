@@ -11,7 +11,6 @@ pub struct AppConfig {
     pub ca_root_dir: PathBuf,
     pub raw_root_dir: PathBuf,
     pub db_root_dir: PathBuf,
-    pub ui_root_dir: PathBuf,
 }
 
 impl AppConfig {
@@ -28,7 +27,6 @@ impl AppConfig {
 
 #[derive(Debug, Default)]
 pub struct InitAppConfigParams {
-    pub ui_assert_dir: Option<PathBuf>,
     pub assets_ui_root_dir: Option<Dir<'static>>,
     pub root_dir: Option<PathBuf>,
 }
@@ -43,16 +41,12 @@ pub fn set_up_config_dir(init_params: InitAppConfigParams) -> AppConfig {
     let default_ca_root_dir = default_assets_root_dir.join("ca");
     let default_raw_root_dir = default_assets_root_dir.join("raw");
     let default_db_root_dir = default_assets_root_dir.join("db");
-    let default_ui_root_dir = init_params
-        .ui_assert_dir
-        .unwrap_or_else(|| default_assets_root_dir.join("ui"));
 
     let config = AppConfigBuilder::create_empty()
         .assets_root_dir(default_assets_root_dir)
         .ca_root_dir(default_ca_root_dir)
         .db_root_dir(default_db_root_dir)
         .raw_root_dir(default_raw_root_dir)
-        .ui_root_dir(default_ui_root_dir)
         .assets_ui_root_dir(init_params.assets_ui_root_dir)
         .build()
         .expect("init assets dir error");

@@ -24,19 +24,12 @@ pub async fn handle_ui_assert(req: Request<Incoming>) -> Result<Response<BoxBody
         static_path = "index.html";
     }
 
-    let content = if let Some(dir) = &app_config.assets_ui_root_dir {
+    let content = app_config.assets_ui_root_dir.as_ref().and_then(|dir| {
         trace!("Get file from include_dir: {}", static_path);
         dir.get_file(static_path)
             .map(|file| file.contents())
             .map(Bytes::copy_from_slice)
-    } else {
-        trace!("Get file from ui_root_dir: {}", static_path);
-        let file_path = &app_config.ui_root_dir.join(static_path);
-        crate::utils::read_file(file_path)
-            .await
-            .map(Bytes::from)
-            .ok()
-    };
+    });
 
     let content = match content {
         Some(content) => content,

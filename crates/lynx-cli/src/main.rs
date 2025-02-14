@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::path::Path;
-use std::str::FromStr;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
@@ -102,7 +102,6 @@ async fn main() -> Result<()> {
     set_up_context(InitContextParams {
         init_app_config_params: InitAppConfigParams {
             assets_ui_root_dir: Some(dir),
-            ui_assert_dir: None,
             root_dir: Some(data_dir),
         },
     })
