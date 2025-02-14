@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
 use glob_match::glob_match;
-use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
+use http::header::{CONNECTION, CONTENT_LENGTH, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http::Uri;
 use http_body_util::combinators::BoxBody;
@@ -204,8 +204,6 @@ fn get_test_root_ca(host: Option<&str>) -> hyper_rustls::HttpsConnector<HttpConn
     use std::path::PathBuf;
     use std::{fs, io};
 
-    use std::path::PathBuf;
-    use std::{fs, io};
     use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 
     fn is_localhost(host: Option<&str>) -> bool {
