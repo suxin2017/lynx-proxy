@@ -6,7 +6,7 @@ import { RequestTree } from '../RequestTree';
 import { useSize } from 'ahooks';
 import { Toolbar } from '../Toolbar';
 
-interface IStructureProps {}
+interface IStructureProps { }
 
 export const Structure: React.FC<IStructureProps> = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -32,13 +32,13 @@ export const Structure: React.FC<IStructureProps> = () => {
               }
               setSizes(sizes);
             }}
-            className="h-full bg-white"
+            className="h-full max-h-screen bg-white"
             layout="horizontal"
           >
             <Splitter.Panel
               size={sizes[0]}
               className="flex flex-col"
-              min="10%"
+              min={240}
               max="70%"
             >
               <ShowTypeSegmented />

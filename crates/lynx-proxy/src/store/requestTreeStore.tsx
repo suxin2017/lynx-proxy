@@ -1,5 +1,6 @@
 import { IRequestModel } from '@/api/models';
 import { createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit';
+import { clear } from 'console';
 import { last } from 'lodash';
 
 export interface IRequestTreeNode {
@@ -24,6 +25,7 @@ const requestTreeSlice = createSlice({
   name: 'requestTree',
   initialState,
   reducers: {
+    clearRequestTree: () => initialState,
     appendTreeNode: (state, action: PayloadAction<IRequestModel>) => {
       const { uri } = action.payload;
       const schemaIndex = uri.indexOf('://');
@@ -45,7 +47,7 @@ const requestTreeSlice = createSlice({
         if (isEndNode) {
           const newNode: IRequestTreeNode = {
             key: nanoid(),
-            title: part,
+            title: part === "" ? "/" : part,
             record: action.payload,
             children: [],
           };
@@ -70,6 +72,6 @@ const requestTreeSlice = createSlice({
   },
 });
 
-export const { appendTreeNode } = requestTreeSlice.actions;
+export const { appendTreeNode, clearRequestTree } = requestTreeSlice.actions;
 
 export const requestTreeReducer = requestTreeSlice.reducer;

@@ -14,7 +14,7 @@ function InnerComponent() {
   const { state } = useShowTypeSegmentedStateContext();
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full">
+    <div className="flex-1  flex flex-col h-full w-full overflow-hidden">
       {state === 'Sequence' && <Sequence />}
       {state === 'Structure' && <Structure />}
     </div>
