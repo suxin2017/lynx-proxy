@@ -5,7 +5,7 @@
   "scripts": {
     "build": "rsbuild build",
     "dev": "rsbuild dev --open",
-    "dev:mock": "MOCK=true rsbuild dev --open",
+    "dev:mock": "cross-env MOCK=true rsbuild dev --open",
     "format": "prettier --write .",
     "lint": "eslint .",
     "preview": "rsbuild preview"
@@ -56,6 +56,7 @@
     "@types/react-dom": "^19.0.0",
     "@types/react-virtualized": "^9.22.0",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
     "eslint": "^9.12.0",
     "eslint-plugin-react": "^7.37.1",
     "eslint-plugin-react-hooks": "^5.0.0",

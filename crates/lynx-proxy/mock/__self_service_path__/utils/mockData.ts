@@ -9,8 +9,8 @@ export const mockData = (id?: number) => {
   return Mock.mock({
     id: uid,
     uri:
-      '@pick(["http","https"])://abc.com/ffff/@word(10)/@pick(["a","b","c"])/' +
-      type.path +"?"+ "@word()=" + "@word()",
+      '@pick(["http","https"])://abc.com/ffff/@word(40)/@pick(["a","b","c"])/' +
+      type.path + "?" + "@word()=" + "@word()",
     traceId: '@guid',
     method: '@pick(["GET", "POST", "PUT", "DELETE"])',
     schema: '@pick(["http", "https"])',

@@ -4,7 +4,7 @@ import { Button } from 'antd';
 import { useChangeRecordStatus, useGetAppConfig } from '@/api/app';
 import { RecordStatusEnum } from '@/api/models';
 
-interface IRecordingStatusButtonProps {}
+interface IRecordingStatusButtonProps { }
 
 export const RecordingStatusButton: React.FC<
   IRecordingStatusButtonProps

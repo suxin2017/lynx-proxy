@@ -34,8 +34,8 @@ tasks:
 
   dev-mock-ui:
     desc: Run UI in mock development mode
+    dir: crates/lynx-proxy
     cmds:
-      - cd crates/lynx-proxy
       - pnpm dev:mock
 
   build-ui:

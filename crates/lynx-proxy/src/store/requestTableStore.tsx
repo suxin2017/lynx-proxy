@@ -12,12 +12,13 @@ const requestTableSlice = createSlice({
   name: 'requestTable',
   initialState,
   reducers: {
+    clearRequestTable: () => initialState,
     appendRequest: (state, action: PayloadAction<IRequestModel>) => {
       state.requests.push(action.payload);
     },
   },
 });
 
-export const { appendRequest } = requestTableSlice.actions;
+export const { appendRequest, clearRequestTable } = requestTableSlice.actions;
 
 export const requestTableReducer = requestTableSlice.reducer;

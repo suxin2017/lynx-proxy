@@ -1,6 +1,8 @@
-import { Segmented } from 'antd';
+import { Segmented, Tag } from 'antd';
 import { useState } from 'react';
 import constate from 'constate';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 const options = ['Sequence', 'Structure'];
 
@@ -18,15 +20,23 @@ export const [
 
 export function ShowTypeSegmented() {
   const { state, setState } = useShowTypeSegmentedStateContext();
+  const requestLogLength = useSelector(
+    (state: RootState) => state.requestTable.requests?.length,
+  );
 
   return (
-    <Segmented
-      className="bg-white"
-      options={options}
-      value={state}
-      onChange={(value) => {
-        setState(value);
-      }}
-    />
+    <div className='flex items-center min-w-56'>
+      <Segmented
+        className="bg-white"
+        options={options}
+        value={state}
+        onChange={(value) => {
+          setState(value);
+        }}
+      />
+      <div className='text-xs font-light'>
+        <Tag color="blue">Requests: {requestLogLength}</Tag>
+      </div>
+    </div>
   );
 }
