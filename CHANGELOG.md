@@ -2,15 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.2] - 2025-02-14
+## [0.1.3] - 2025-02-15
 
 ### 🐛 Bug Fixes
 
 - Ui assert not found
+- Window local ip ([#33](https://github.com/suxin2017/lynx/issues/33))
+- *(ui)* Clear request log and content ui bug in request tree struce  ([#35](https://github.com/suxin2017/lynx/issues/35))
 
 ### 🚜 Refactor
 
-- Use include dir replace static dir (#32)
+- Use include dir replace static dir ([#32](https://github.com/suxin2017/lynx/issues/32))
 
 ## [0.1.0] - 2025-02-13
 
@@ -18,14 +20,14 @@ All notable changes to this project will be documented in this file.
 
 - Rule support
 - Add rule group
-- Support tariui (#5)
+- Support tariui ([#5](https://github.com/suxin2017/lynx/issues/5))
 - *(lynx-core)* Support glob match model 
 - Support more access ip
 - Support certificate download and install doc
-- Fetch request log in the app context (#13)
-- Support clear request log (#16)
-- Support ssl capture switch and ssl capture rule (#18)
-- Support better default config dir and support specifying dir (#21)
+- Fetch request log in the app context ([#13](https://github.com/suxin2017/lynx/issues/13))
+- Support clear request log ([#16](https://github.com/suxin2017/lynx/issues/16))
+- Support ssl capture switch and ssl capture rule ([#18](https://github.com/suxin2017/lynx/issues/18))
+- Support better default config dir and support specifying dir ([#21](https://github.com/suxin2017/lynx/issues/21))
 
 ### 🐛 Bug Fixes
 
