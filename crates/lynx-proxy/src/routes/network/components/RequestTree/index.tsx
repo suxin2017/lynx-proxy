@@ -28,8 +28,8 @@ export const RequestTree: React.FC = () => {
         expandedKeys={expandedKeys}
         showIcon
         blockNode
-        // virtual
-        // height={size?.height}
+        virtual
+        height={size?.height}
         onSelect={(_selectedKeys, info) => {
           console.log(_selectedKeys, '_selectedKeys');
           if (info.node.record) {
