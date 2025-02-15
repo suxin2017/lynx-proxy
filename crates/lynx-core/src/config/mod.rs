@@ -62,7 +62,8 @@ pub fn create_dir_if_not_exists(dir: &PathBuf) {
     if !fs::exists(dir)
         .unwrap_or_else(|_| panic!("can't check existence of {}", &dir.to_string_lossy()))
     {
-        fs::create_dir(dir).unwrap_or_else(|_| panic!("can't create {}", &dir.to_string_lossy()));
+        fs::create_dir_all(dir)
+            .unwrap_or_else(|e| panic!("can't create {}\nreason: {}", &dir.to_string_lossy(), e));
         debug!("create dir {}", &dir.to_string_lossy());
     }
     debug!("dir {} exists", &dir.to_string_lossy());
