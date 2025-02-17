@@ -3,7 +3,7 @@ members = ["crates/lynx-core", "crates/lynx-proxy/src-tauri", "crates/lynx-cli"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.3"
+version = "0.1.4"
 authors = ["suxin2017"]
 description = "A proxy service"
 edition = "2021"
