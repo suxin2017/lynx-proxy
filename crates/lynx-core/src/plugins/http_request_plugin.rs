@@ -4,7 +4,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
 use glob_match::glob_match;
-use http::header::{CONNECTION, CONTENT_LENGTH, PROXY_AUTHORIZATION};
+use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http::Uri;
 use http_body_util::combinators::BoxBody;
@@ -121,13 +121,11 @@ pub async fn build_proxy_request(
         builder = builder.uri(parts.uri);
     }
 
-    for (key, value) in parts.headers.into_iter() {
-        if let Some(key) = key {
-            if matches!(&key, &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH) {
-                continue;
-            }
-            builder = builder.header(key, value);
+    for (key, value) in parts.headers.iter() {
+        if matches!(key, &HOST | &CONNECTION | &PROXY_AUTHORIZATION) {
+            continue;
         }
+        builder = builder.header(key, value);
     }
 
     builder.body(stream).map_err(|e| anyhow!(e))
@@ -172,8 +170,7 @@ pub async fn build_proxy_response(
 pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
     let client_builder = Client::builder(TokioExecutor::new());
     trace!("request: {:?}", req);
-    let proxy_req = req;
-    //  build_proxy_request(req).await?;
+    let proxy_req = build_proxy_request(req).await?;
     trace!("proxy request: {:?}", proxy_req);
     let proxy_res = if proxy_req.uri().scheme() == Some(&Scheme::HTTPS) {
         trace!("fetch https request {}", proxy_req.uri());
