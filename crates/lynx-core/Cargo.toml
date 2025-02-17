@@ -58,6 +58,7 @@ rcgen = { version = "0.13.0", default-features = false, features = [
 time = "0.3.37"
 rsa = "0.9.7"
 once_cell = "1.20.2"
+async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }
 chrono = "0.4.39"
 derive_builder = "0.20.2"
 local-ip-address = "0.6.3"
@@ -70,10 +71,10 @@ sea-orm-migration = { version = "1.1.0", features = [
     "runtime-tokio-rustls",
 ] }
 url = "2.5.4"
+include_dir = "0.7.4"
 mime_guess = "=2.0.5"
 schemars = "0.8.21"
 glob-match = "0.2.1"
-include_dir = "0.7.4"
 
 [dev-dependencies]
 dotenv = "0.15.0"

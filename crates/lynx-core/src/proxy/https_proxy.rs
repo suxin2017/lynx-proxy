@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use anyhow::Error;
-use http::StatusCode;
+use http::uri::Scheme;
+use http::{StatusCode, Uri, Version};
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::service::service_fn;
@@ -50,15 +51,31 @@ pub async fn https_proxy(
                         }
                     };
                     trace!("end build tls stream");
-                    let service = service_fn(|mut req| async move {
-                        info!("proxying http request {:?}", req);
-                        req.extensions_mut().insert(Arc::new(nanoid!()));
-                        let res = proxy_http_request(req).await;
-                        match res {
-                            Ok(res) => Ok::<_, hyper::Error>(res),
-                            Err(err) => {
-                                error!("proxy http request error: {}", err.to_string());
-                                Ok(Response::new(empty()))
+                    let service = service_fn(|mut req| {
+                        let authority = authority.clone();
+                        async move {
+                            if matches!(req.version(), Version::HTTP_10 | Version::HTTP_11) {
+                                let (mut parts, body) = req.into_parts();
+
+                                parts.uri = {
+                                    let mut parts = parts.uri.into_parts();
+                                    parts.scheme = Some(Scheme::HTTPS);
+                                    parts.authority = Some(authority);
+                                    Uri::from_parts(parts).expect("Failed to build URI")
+                                };
+
+                                req = Request::from_parts(parts, body);
+                            }
+
+                            info!("proxying http request {:?}", req);
+                            req.extensions_mut().insert(Arc::new(nanoid!()));
+                            let res = proxy_http_request(req).await;
+                            match res {
+                                Ok(res) => Ok::<_, hyper::Error>(res),
+                                Err(err) => {
+                                    error!("proxy http request error: {}", err.to_string());
+                                    Ok(Response::new(empty()))
+                                }
                             }
                         }
                     });
