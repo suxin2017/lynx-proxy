@@ -4,6 +4,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, Error, Result};
 use bytes::Bytes;
 use glob_match::glob_match;
+use handle_request_with_rule::handle_request_with_rule;
 use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http::Uri;
@@ -26,10 +27,14 @@ use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
 use crate::schedular::get_req_trace_id;
 use crate::server_context::DB;
 
+pub mod handle_request_with_rule;
+
 pub async fn build_proxy_request(
     req: Request<Incoming>,
 ) -> Result<Request<BoxBody<bytes::Bytes, anyhow::Error>>> {
     let trace_id = get_req_trace_id(&req);
+
+    let req = handle_request_with_rule(req).await?;
 
     let (parts, body) = req.into_parts();
     let mut body = body
@@ -59,67 +64,10 @@ pub async fn build_proxy_request(
         }
     });
 
-    let req_url = url::Url::parse(parts.uri.to_string().as_str());
     let mut builder = hyper::Request::builder()
         .method(parts.method)
+        .uri(parts.uri)
         .version(parts.version);
-
-    let db = DB.get().unwrap();
-
-    let rules = rule_content::Entity::find().all(db).await?;
-
-    let mut match_handled = false;
-
-    if let Ok(req_url) = req_url {
-        for rule in rules {
-            trace!("current rule: {:?}", rule);
-            match parse_rule_content(rule.content) {
-                Ok(content) => {
-                    let capture_glob_pattern_str = content.capture.uri;
-                    let is_match = glob_match(&capture_glob_pattern_str, req_url.as_str());
-                    trace!("is match: {}", is_match);
-                    trace!("capture_glob_pattern_str: {}", capture_glob_pattern_str);
-                    trace!("req_url: {}", req_url.as_str());
-                    if is_match {
-                        match_handled = true;
-                        let pass_proxy_uri = url::Url::parse(&content.handler.proxy_pass);
-
-                        match pass_proxy_uri {
-                            Ok(pass_proxy_uri) => {
-                                let host = pass_proxy_uri.host_str();
-                                let port = pass_proxy_uri.port();
-
-                                let mut new_uri = req_url.clone();
-                                let _ = new_uri.set_scheme(pass_proxy_uri.scheme());
-                                let _ = new_uri.set_host(host);
-                                let _ = new_uri.set_port(port);
-
-                                trace!("new url: {:?}", new_uri);
-
-                                if let Ok(new_uri) = Uri::from_str(new_uri.as_str()) {
-                                    builder = builder.uri(new_uri);
-                                } else {
-                                    warn!("parse pass proxy uri error: {}", new_uri.as_str());
-                                }
-                            }
-                            Err(e) => {
-                                warn!("parse pass proxy uri error: {}", e);
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    warn!("parse rule content error: {}", e);
-                }
-            }
-        }
-    } else {
-        warn!("parse req url error: {}", parts.uri);
-    }
-
-    if !match_handled {
-        builder = builder.uri(parts.uri);
-    }
 
     for (key, value) in parts.headers.iter() {
         if matches!(key, &HOST | &CONNECTION | &PROXY_AUTHORIZATION) {

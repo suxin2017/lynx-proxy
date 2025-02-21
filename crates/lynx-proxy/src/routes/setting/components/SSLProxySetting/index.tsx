@@ -109,7 +109,7 @@ export const SSLProxySetting: React.FC = () => {
   }
   return (
     <Form
-      className="w-full px-5"
+      className="w-full px-6"
       layout="vertical"
       form={form}
       initialValues={{

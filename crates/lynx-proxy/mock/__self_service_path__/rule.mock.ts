@@ -7,13 +7,11 @@ export default defineMock({
     res.setHeader('Content-Type', 'application/json');
     const data = mockjs.mock({
       id: '@id',
-      content: {
-        match: {
-          uri: 'http://127.0.0.1:3002',
-        },
-        target: {
-          uri: 'http://127.0.0.1:3002',
-        },
+      capture: {
+        uri: mockjs.mock('http://@ip():@integer(1, 65535)'),
+      },
+      handler: {
+        proxyPass: mockjs.mock('http://@ip():@integer(1, 65535)'),
       },
     });
     res.write(Buffer.from(JSON.stringify({ message: '', data, code: 'Ok' })));

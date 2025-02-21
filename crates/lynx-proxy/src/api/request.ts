@@ -2,6 +2,7 @@ import { message } from 'antd';
 import { IRequestModel, IResponseBoxView } from './models';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import queryString from 'query-string';
+import axiosInstance from './axiosInstance';
 
 export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
   const controller = new AbortController();
@@ -42,41 +43,56 @@ export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
 
 export const useGetRequestBodyQuery = (params: { id?: number }) => {
   return useQuery({
-    queryKey: ['/__self_service_path__/request_body', params],
-    queryFn: async () =>
-      fetch(
-        `/__self_service_path__/request_body?${queryString.stringify(params)}`,
-      ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
+    queryKey: ['/request_body', params],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/request_body?${queryString.stringify(params)}`,
+        {
+          responseType: 'arraybuffer',
+        },
+      );
+      return res.data;
+    },
     enabled: !!params.id,
   });
 };
 
 export const useGetResponseQuery = (params: { requestId?: number }) => {
   return useQuery({
-    queryKey: ['/__self_service_path__/response', params],
-    queryFn: async () =>
-      fetch(
-        `/__self_service_path__/response?${queryString.stringify(params)}`,
-      ).then((res) => res.json() as Promise<IResponseBoxView>),
+    queryKey: ['/response', params],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/response?${queryString.stringify(params)}`,
+      );
+      return res.data as IResponseBoxView;
+    },
     enabled: !!params.requestId,
   });
 };
 
 export const useGetResponseBodyQuery = (params: { requestId?: number }) => {
   return useQuery({
-    queryKey: ['/__self_service_path__/response_body', params],
-    queryFn: async () =>
-      fetch(
-        `/__self_service_path__/response_body?${queryString.stringify(params)}`,
-      ).then((res) => res.blob().then((blob) => blob.arrayBuffer())),
+    queryKey: ['/response_body', params],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/response_body?${queryString.stringify(params)}`,
+        {
+          responseType: 'arraybuffer',
+        },
+      );
+      return res.data;
+    },
   });
 };
 
 export const useClearRequestLog = () => {
   return useMutation({
-    mutationFn: async () =>
-      fetch(`/__self_service_path__/request/clear`, {
-        method: 'POST',
-      }).then((res) => res.json()),
+    mutationFn: async () => {
+      const res = await axiosInstance.post('/request/clear');
+      return res.data;
+    },
+    onSuccess: () => {
+      message.success('Request log cleared');
+    },
   });
 };

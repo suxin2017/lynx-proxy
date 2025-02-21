@@ -7,13 +7,14 @@ import {
   OperatorType,
   useMenuItemMap,
 } from '../TreeContentMenu';
-import { Form, Input, message, Modal } from 'antd';
+import { Form, Input, Modal } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import { useAddRule, useAddRuleGroup, useUpdateRule } from '@/api/rule';
+import { message } from 'antd';
 
 interface ISaveTreeNodeModalProps {}
 
-export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = (props) => {
+export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = () => {
   const { open, type, closeModal, contextData } = useSaveTreeNodeModalContext();
 
   const menuItemMap = useMenuItemMap();

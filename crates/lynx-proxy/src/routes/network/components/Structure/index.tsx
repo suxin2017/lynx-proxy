@@ -6,7 +6,7 @@ import { RequestTree } from '../RequestTree';
 import { useSize } from 'ahooks';
 import { Toolbar } from '../Toolbar';
 
-interface IStructureProps { }
+interface IStructureProps {}
 
 export const Structure: React.FC<IStructureProps> = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -18,8 +18,6 @@ export const Structure: React.FC<IStructureProps> = () => {
       setSizes([240, size.width - 240]);
     }
   }, [size?.width]);
-
-  console.log(sizes, size);
 
   return (
     <div className="flex-1 animate-fade-in">
@@ -45,7 +43,7 @@ export const Structure: React.FC<IStructureProps> = () => {
               <RequestTree />
             </Splitter.Panel>
             <Splitter.Panel size={sizes[1]} min={'40%'} max="90%">
-              <div className="h-full">
+              <div className='flex flex-col h-full'>
                 <Toolbar />
                 <Detail />
               </div>

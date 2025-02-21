@@ -4,24 +4,26 @@ import {
   IRuleGroupTreeResponse as IRuleGroupTreeResponse,
 } from './models';
 import queryString from 'query-string';
+import { message } from 'antd';
+import axiosInstance from './axiosInstance';
 
 export const useGetRuleTreeQuery = () => {
   return useQuery({
-    queryKey: ['/__self_service_path__/rule_group/list'],
-    queryFn: async () =>
-      fetch(`/__self_service_path__/rule_group/list`).then(
-        (res) => res.json() as Promise<IRuleGroupTreeResponse>,
-      ),
+    queryKey: ['/rule_group/list'],
+    queryFn: async () => {
+      const res = await axiosInstance.get('/rule_group/list');
+      return res.data as IRuleGroupTreeResponse;
+    },
   });
 };
 
 export const useGetRuleDetailQuery = (params: { id?: number }) => {
   return useQuery({
-    queryKey: ['/__self_service_path__/rule', params],
-    queryFn: async () =>
-      fetch(
-        `/__self_service_path__/rule?${queryString.stringify(params)}`,
-      ).then((res) => res.json() as Promise<IRuleContentResponse>),
+    queryKey: ['/rule', params],
+    queryFn: async () => {
+      const res = await axiosInstance.get(`/rule?${queryString.stringify(params)}`);
+      return res.data as IRuleContentResponse;
+    },
     enabled: !!params.id,
   });
 };
@@ -29,14 +31,13 @@ export const useGetRuleDetailQuery = (params: { id?: number }) => {
 export const useAddRuleGroup = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { name: string }) =>
-      fetch(`/__self_service_path__/rule_group/add`, {
-        method: 'POST',
-        body: JSON.stringify(params),
-      }).then((res) => res.json()),
+    mutationFn: async (params: { name: string }) => {
+      const res = await axiosInstance.post('/rule_group/add', params);
+      return res.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['/__self_service_path__/rule_group/list'],
+        queryKey: ['/rule_group/list'],
       });
     },
   });
@@ -49,18 +50,16 @@ export const useUpdateRule = () => {
     mutationFn: async (
       params: { id: number; name: string } | { id: number; content: string },
     ) => {
-      const res = await fetch(`/__self_service_path__/rule/update`, {
-        method: 'POST',
-        body: JSON.stringify(params),
-      });
-      return await res.json();
+      const res = await axiosInstance.post('/rule/update', params);
+      return res.data;
     },
     onSuccess: () => {
+      message.success('Update success');
       queryClient.invalidateQueries({
-        queryKey: ['/__self_service_path__/rule_group/list'],
+        queryKey: ['/rule_group/list'],
       });
       queryClient.invalidateQueries({
-        queryKey: ['/__self_service_path__/rule'],
+        queryKey: ['/rule'],
       });
     },
   });
@@ -71,15 +70,12 @@ export const useAddRule = () => {
 
   return useMutation({
     mutationFn: async (params: { ruleGroupId: number; name: string }) => {
-      const res = await fetch(`/__self_service_path__/rule/add`, {
-        method: 'POST',
-        body: JSON.stringify(params),
-      });
-      return await res.json();
+      const res = await axiosInstance.post('/rule/add', params);
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['/__self_service_path__/rule_group/list'],
+        queryKey: ['/rule_group/list'],
       });
     },
   });
@@ -87,10 +83,10 @@ export const useAddRule = () => {
 
 export const useRuleContextSchema = () => {
   return useQuery({
-    queryKey: ['/__self_service_path__/rule/context/schema'],
+    queryKey: ['/rule/context/schema'],
     queryFn: async () => {
-      const res = await fetch(`/__self_service_path__/rule/context/schema`);
-      return await res.json();
+      const res = await axiosInstance.get('/rule/context/schema');
+      return res.data;
     },
   });
 };
