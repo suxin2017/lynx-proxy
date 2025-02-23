@@ -1,20 +1,19 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use glob_match::glob_match;
-use handle_request_with_rule::handle_request_with_rule;
-use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
-use http::uri::Scheme;
 use http::Uri;
+use http::header::{CONNECTION, HOST, PROXY_AUTHORIZATION};
+use http::uri::Scheme;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::Incoming;
 use hyper::{Request, Response};
 use hyper_rustls::HttpsConnectorBuilder;
-use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::client::legacy::Client;
+use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::rt::TokioExecutor;
 use sea_orm::EntityTrait;
 use tokio::io::AsyncWriteExt;
