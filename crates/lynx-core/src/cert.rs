@@ -1,20 +1,19 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use http::uri::Authority;
 use moka::future::Cache;
-use rand::{rngs::OsRng, thread_rng, Rng};
+use rand::{Rng, rngs::OsRng, thread_rng};
 use rcgen::{
     BasicConstraints, Certificate, CertificateParams, DnType, ExtendedKeyUsagePurpose, Ia5String,
     IsCa, KeyPair, KeyUsagePurpose, SanType,
 };
-use rsa::{pkcs8::EncodePrivateKey, RsaPrivateKey};
-use tracing::trace;
+use rsa::{RsaPrivateKey, pkcs8::EncodePrivateKey};
 use std::{fs, io::Cursor, path::Path, sync::Arc};
 use time::{Duration, OffsetDateTime};
 use tokio_rustls::rustls::{
-    pki_types::{CertificateDer, PrivateKeyDer},
     ServerConfig,
+    pki_types::{CertificateDer, PrivateKeyDer},
 };
-
+use tracing::trace;
 
 use crate::config::AppConfig;
 
@@ -25,7 +24,7 @@ const NOT_BEFORE_OFFSET: i64 = 60;
 pub fn set_up_ca_manager(app_config: &AppConfig) -> CertificateAuthority {
     let ca_cert_file = app_config.get_root_ca_path();
     let private_key_file = app_config.get_root_ca_key();
-    
+
     init_ca(ca_cert_file, private_key_file).expect("Failed to init CA")
 }
 
@@ -146,7 +145,7 @@ impl CertificateAuthority {
 
     pub fn gen_cert(&self, authority: &Authority) -> Result<CertificateDer<'static>> {
         let mut params = CertificateParams::default();
-        params.serial_number = Some(thread_rng().gen::<u64>().into());
+        params.serial_number = Some(thread_rng().r#gen::<u64>().into());
 
         let not_before = OffsetDateTime::now_utc() - Duration::seconds(NOT_BEFORE_OFFSET);
         params.not_before = not_before;
