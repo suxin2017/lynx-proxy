@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
-import { Form, Button, Typography } from 'antd';
+import { Form, Button, Typography, FormInstance } from 'antd';
 import { useGetRuleDetailQuery, useUpdateRule } from '@/api/rule';
 import { useRuleContentState, useSelectedRuleContext } from '../store';
 import { Capture } from './Capture';
 import { Handler } from './Handler';
+import { HandlerType } from './Handler/constant';
+import { IConnectPassProxyData } from './Handler/Connect';
+import { NamePath } from 'antd/es/form/interface';
 
 const { Title, Text } = Typography;
 
@@ -12,32 +15,38 @@ enum CaptureType {
   Regex = 'regex',
 }
 
+export interface IHandlerData<D, T extends HandlerType> {
+  switch: boolean,
+  type: T,
+  data: D
+}
+
 export interface IRuleFormValues {
   capture: {
     type: CaptureType;
     globUrl: string;
     regexUrl: string;
   };
-  handler: {
-    proxyPass: string;
-  };
+  handlers: Array<IConnectPassProxyData>;
 }
 
+
+export const RuleFormItem = Form.Item<IRuleFormValues>;
 export const formKeys = {
-  captureType: 'capture.type',
-  captureGlobUrl: 'capture.globUrl',
-  captureRegexUrl: 'capture.regexUrl',
-  handlerProxyPass: 'handler.proxyPass',
-  capture: 'capture',
-  handler: 'handler',
-};
+  captureType: ['capture', 'type'],
+  captureGlobUrl: ['capture', 'globUrl'],
+  captureRegexUrl: ['capture', 'regexUrl'],
+  capture: ['capture'],
+  handlers: 'handlers',
+} as const;
+
 
 export function useFormInstance() {
-  return Form.useForm<IRuleFormValues>();
+  const form = Form.useFormInstance<IRuleFormValues>();
 }
 
-export function useFormWatch(name: string | string[]) {
-  const form = Form.useFormInstance();
+export function useFormWatch(name: NamePath<IRuleFormValues>) {
+  const form = Form.useFormInstance<IRuleFormValues>();
   return Form.useWatch(name, form);
 }
 
@@ -64,28 +73,35 @@ export const RuleForm = () => {
           });
         }
       }}
+      className="h-full flex flex-col"
       layout="vertical"
-      onValuesChange={() => {
+      onValuesChange={(value) => {
+        console.log(value, 'value');
+
         setState((draft) => {
           draft.isChanged = true;
         });
       }}
     >
-      <Title level={3} className="m-0">
-        Rule Content
-        <Text type="secondary" className="pl-1">
-          ({selectedRule?.name})
-        </Text>
-      </Title>
 
-      <Capture />
-      <Handler />
+      <div className="flex-1">
+        <Title level={3} className="m-0">
+          Rule Content
+          <Text type="secondary" className="pl-1">
+            ({selectedRule?.name})
+          </Text>
+        </Title>
 
-      <Form.Item>
+        <Capture />
+        <Handler />
+      </div>
+
+
+      <RuleFormItem className="">
         <Button type="primary" htmlType="submit">
           Submit
         </Button>
-      </Form.Item>
+      </RuleFormItem>
     </Form>
   );
 };

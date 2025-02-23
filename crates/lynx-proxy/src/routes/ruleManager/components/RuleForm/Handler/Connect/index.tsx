@@ -1,17 +1,26 @@
-import { Form, Input, Switch } from 'antd';
+import { Form, FormListFieldData, Input, Switch } from 'antd';
 import React from 'react';
+import { IHandlerData } from '../..';
+import { HandlerType } from '../constant';
 
-interface IConnectProps {}
 
-export const Connect: React.FC<IConnectProps> = () => {
+export const ConnectBreakConnect: React.FC<{ field: FormListFieldData }> = ({ field }) => {
   return (
-    <div>
-      <Form.Item label="Break Connect">
-        <Switch className="w-8" size="small" />
-      </Form.Item>
-      <Form.Item label="Pass Proxy">
-        <Input />
-      </Form.Item>
-    </div>
+    <Form.Item noStyle name={[field.name, 'breakConnect']} valuePropName="checked">
+      <Switch className="w-8" size="small" />
+    </Form.Item>
   );
 };
+
+export type IConnectPassProxyData = IHandlerData<{
+  url: string
+}, HandlerType.ConnectPassProxy>;
+
+export const ConnectPassProxy: React.FC<{ field: FormListFieldData }> = ({ field }) => {
+  return (
+    <Form.Item label="Pass Proxy Url" name={[field.name, 'url']}>
+      <Input />
+    </Form.Item>
+  );
+}
+

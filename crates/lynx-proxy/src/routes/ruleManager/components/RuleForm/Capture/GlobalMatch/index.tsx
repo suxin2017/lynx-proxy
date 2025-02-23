@@ -8,7 +8,7 @@ import { formKeys, useFormWatch } from '../..';
 
 import { ExampleUrl } from '../ExampleUrl';
 
-interface IGlobalMatchProps {}
+interface IGlobalMatchProps { }
 
 export const GlobMatch: React.FC<IGlobalMatchProps> = () => {
   const url = useFormWatch(formKeys.captureGlobUrl);
