@@ -105,5 +105,3 @@ pub async fn dispatch(
         .unwrap())
 }
 
-#[test]
-fn global_() {}

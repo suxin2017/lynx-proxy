@@ -1,11 +1,11 @@
 use common::{build_proxy_client::build_http_client, tracing_config::init_tracing};
 use lynx_core::{
-    self_service::{RULE_ADD, RULE_DELETE, RULE_GROUP_ADD, RULE_GROUP_DELETE, RULE_UPDATE},
+    self_service::{RULE_ADD, RULE_DELETE, RULE_GROUP_ADD, RULE_GROUP_DELETE, RULE_UPDATE_NAME},
     server::Server,
     server_context::set_up_context,
 };
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::net::SocketAddr;
 pub mod common;
 
@@ -106,7 +106,7 @@ async fn test_add_and_delete_rule() {
     let id = data.get("id").unwrap();
 
     let res = client
-        .post(format!("http://{addr}{}", RULE_UPDATE))
+        .post(format!("http://{addr}{}", RULE_UPDATE_NAME))
         .json(&json!({
             "id": id,
             "content": json!({

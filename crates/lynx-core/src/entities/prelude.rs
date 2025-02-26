@@ -3,5 +3,7 @@
 pub use super::app_config::Entity as AppConfig;
 pub use super::request::Entity as Request;
 pub use super::response::Entity as Response;
-pub use super::rule::Entity as Rule;
-pub use super::rule_group::Entity as RuleGroup;
+pub use super::rule::capture::Entity as Capture;
+pub use super::rule::handler::Entity as Handler;
+pub use super::rule::rule::Entity as Rule;
+pub use super::rule::rule_group::Entity as RuleGroup;

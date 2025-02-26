@@ -1,10 +1,7 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
-use glob_match::glob_match;
-use http::Uri;
 use http::header::{CONNECTION, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http_body_util::combinators::BoxBody;
@@ -15,16 +12,14 @@ use hyper_rustls::HttpsConnectorBuilder;
 use hyper_util::client::legacy::Client;
 use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::rt::TokioExecutor;
-use sea_orm::EntityTrait;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{error, trace, warn};
+use tracing::{error, trace};
 
-use crate::entities::rule_content::{self, parse_rule_content};
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
 use crate::schedular::get_req_trace_id;
-use crate::server_context::DB;
+use handle_request_with_rule::handle_request_with_rule;
 
 pub mod handle_request_with_rule;
 

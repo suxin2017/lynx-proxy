@@ -1,14 +1,14 @@
-use crate::entities::{rule, rule_group};
-use crate::self_service::utils::{parse_body_params, response_ok, OperationError};
+use crate::entities::rule::{rule, rule_group};
+use crate::self_service::utils::{OperationError, parse_body_params, response_ok};
 use crate::server_context::DB;
 use crate::utils::full;
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
-use schemars::{schema_for, JsonSchema};
+use schemars::{JsonSchema, schema_for};
 use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;

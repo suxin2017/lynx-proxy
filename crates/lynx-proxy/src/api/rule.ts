@@ -48,7 +48,7 @@ export const useUpdateRule = () => {
 
   return useMutation({
     mutationFn: async (
-      params: { id: number; name: string } | { id: number; content: string },
+      params: { id: number; name: string } | { id: number; content: unknown },
     ) => {
       const res = await axiosInstance.post('/rule/update', params);
       return res.data;

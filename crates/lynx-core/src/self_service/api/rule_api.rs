@@ -1,14 +1,19 @@
-use crate::entities::{rule, rule_content};
+use crate::bo::rule_content::{
+    Capture, Handler, RuleContent, delete_rule_content_by_rule_id, get_rule_content_by_rule_id,
+    save_content_by_rule_id,
+};
+use crate::entities::response;
+use crate::entities::rule::rule;
 use crate::self_service::utils::{
-    parse_body_params, parse_query_params, response_ok, OperationError, ValidateError,
+    OperationError, ValidateError, parse_body_params, parse_query_params, response_ok,
 };
 use crate::server_context::DB;
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
-use schemars::{schema_for, JsonSchema};
+use schemars::{JsonSchema, schema_for};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, ModelTrait, TransactionTrait,
 };
@@ -36,46 +41,28 @@ pub async fn handle_rule_add(req: Request<Incoming>) -> Result<Response<BoxBody<
     };
     let res = active_model.insert(&txn).await?;
 
-    let content_active_model = rule_content::ActiveModel {
-        content: ActiveValue::set(json!({})),
-        rule_id: ActiveValue::set(res.id),
-        ..Default::default()
-    };
-    content_active_model.insert(&txn).await?;
     txn.commit().await?;
 
     response_ok(res)
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
-struct RuleUpdateParams {
+struct RuleUpdateNameParams {
     id: i32,
     name: Option<String>,
-    content: Option<serde_json::Value>,
 }
 
-pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let body_params: RuleUpdateParams =
-        parse_body_params(req.into_body(), schema_for!(RuleUpdateParams)).await?;
+pub async fn handle_rule_update_name(
+    req: Request<Incoming>,
+) -> Result<Response<BoxBody<Bytes, Error>>> {
+    let body_params: RuleUpdateNameParams =
+        parse_body_params(req.into_body(), schema_for!(RuleUpdateNameParams)).await?;
 
     let db = DB.get().unwrap();
 
     let rule = rule::Entity::find_by_id(body_params.id).one(db).await?;
 
     if let Some(rule) = rule {
-        if let Some(rule_content) = body_params.content {
-            let content = rule.find_related(rule_content::Entity).one(db).await?;
-            if let Some(content) = content {
-                let mut content_active = content.into_active_model();
-                content_active.content = ActiveValue::set(rule_content);
-                let res = content_active.update(db).await?;
-                return response_ok(res);
-            } else {
-                return Err(anyhow!(OperationError::new(
-                    "can not find the rule content".into()
-                )));
-            }
-        }
         if let Some(name) = body_params.name {
             let mut rule = rule.into_active_model();
             rule.name = ActiveValue::set(name);
@@ -92,6 +79,28 @@ pub async fn handle_rule_update(req: Request<Incoming>) -> Result<Response<BoxBo
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
+struct RuleUpdateContentParams {
+    rule_id: i32,
+    capture: Capture,
+    handlers: Vec<Handler>,
+}
+
+pub async fn handle_rule_update_content(
+    req: Request<Incoming>,
+) -> Result<Response<BoxBody<Bytes, Error>>> {
+    let body_params: RuleUpdateContentParams =
+        parse_body_params(req.into_body(), schema_for!(RuleUpdateContentParams)).await?;
+
+    save_content_by_rule_id(
+        body_params.rule_id,
+        RuleContent::new(Some(body_params.capture), body_params.handlers),
+    )
+    .await?;
+
+    response_ok::<Option<()>>(None)
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 struct RuleDeleteParams {
     id: i32,
 }
@@ -101,63 +110,34 @@ pub async fn handle_rule_delete(req: Request<Incoming>) -> Result<Response<BoxBo
         parse_body_params(req.into_body(), schema_for!(RuleDeleteParams)).await?;
 
     let db = DB.get().unwrap();
-    let rule = rule::Entity::find_by_id(body_params.id)
-        .find_also_related(rule_content::Entity)
-        .one(DB.get().unwrap())
-        .await?;
 
-    if let Some(rule) = rule {
-        let txn = db.begin().await?;
-        rule.0.delete(&txn).await?;
+    delete_rule_content_by_rule_id(body_params.id).await?;
+    let result = rule::Entity::delete_by_id(body_params.id).exec(db).await?;
 
-        if let Some(content) = rule.1 {
-            content.delete(&txn).await?;
-        }
-
-        if let Err(e) = txn.commit().await {
-            error!("commit error: {:?}", e);
-            return Err(anyhow!(OperationError::new(
-                "delete rule failed".to_string()
-            )));
-        }
+    if result.rows_affected > 0 {
+        response_ok::<Option<()>>(None)
     } else {
-        return Err(anyhow!(OperationError::new(
-            "can not find the rule".to_string()
-        )));
+        Err(anyhow!(OperationError::new("can not find the rule".into())))
     }
-
-    response_ok::<Option<()>>(None)
 }
 
 pub async fn handle_rule_detail(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
     let query_params = parse_query_params(req.uri());
+
     let id = query_params
         .get("id")
         .ok_or_else(|| anyhow!(ValidateError::new("name is required".to_string())))?;
+
     let id = id
         .parse::<i32>()
         .map_err(|_| anyhow!(ValidateError::new("id must be a number".to_string())))?;
 
-    let rule = rule::Entity::find_by_id(id).one(DB.get().unwrap()).await?;
+    let rule_content = get_rule_content_by_rule_id(id).await?;
 
-    let rule =
-        rule.ok_or_else(|| anyhow!(OperationError::new("can not find the rule".to_string())))?;
-
-    let content = rule
-        .find_related(rule_content::Entity)
-        .one(DB.get().unwrap())
-        .await?;
-
-    if let Some(content) = content {
-        response_ok(content)
+    if let Some(rule_content) = rule_content {
+        response_ok(rule_content)
     } else {
-        let rule_content = rule_content::ActiveModel {
-            rule_id: ActiveValue::set(rule.id),
-            content: ActiveValue::set(json!({})),
-            ..Default::default()
-        }
-        .insert(DB.get().unwrap())
-        .await?;
+        let rule_content = RuleContent::new(None, vec![]);
         response_ok(rule_content)
     }
 }

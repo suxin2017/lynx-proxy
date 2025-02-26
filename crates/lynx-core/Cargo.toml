@@ -14,7 +14,7 @@ include = ["src", "Cargo.toml", "README.md"]
 path = "src/lib.rs"
 
 [dependencies]
-sea-orm = { workspace = true }
+sea-orm = { workspace = true, features = ["mock"] }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
