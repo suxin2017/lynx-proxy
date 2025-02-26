@@ -5,7 +5,7 @@ use hyper::{Request, Response};
 use sea_orm::{ActiveModelTrait, Set};
 use tracing::{info, trace};
 
-use crate::entities::app_config::{get_app_config, RecordingStatus};
+use crate::entities::app_config::{RecordingStatus, get_app_config};
 use crate::entities::request::{self};
 use crate::entities::response;
 use crate::plugins::http_request_plugin::{self, build_proxy_response};

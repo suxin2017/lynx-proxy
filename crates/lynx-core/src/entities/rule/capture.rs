@@ -47,4 +47,3 @@ impl Related<super::rule::Entity> for Entity {
 
 #[async_trait]
 impl ActiveModelBehavior for ActiveModel {}
-

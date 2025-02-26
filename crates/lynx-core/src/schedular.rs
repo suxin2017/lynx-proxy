@@ -10,7 +10,7 @@ use hyper::{Method, Request, Response};
 use nanoid::nanoid;
 use tracing::{debug, info, trace};
 
-use crate::entities::app_config::{get_app_config, get_enabled_ssl_config, SSLConfigRule};
+use crate::entities::app_config::{SSLConfigRule, get_app_config, get_enabled_ssl_config};
 use crate::proxy::http_proxy::proxy_http_request;
 use crate::proxy::https_proxy::https_proxy;
 use crate::self_service::{handle_self_service, match_self_service};
@@ -40,9 +40,7 @@ pub async fn capture_ssl(req: &Request<Incoming>) -> Result<bool> {
         let glob_match_host = glob_match(&config.host, host);
         trace!(
             "matching host: {:?} {:?} {:?}",
-            config.host,
-            host,
-            glob_match_host
+            config.host, host, glob_match_host
         );
         if !glob_match_host {
             return false;
@@ -104,4 +102,3 @@ pub async fn dispatch(
         )))
         .unwrap())
 }
-

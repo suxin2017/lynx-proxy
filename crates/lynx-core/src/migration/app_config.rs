@@ -1,7 +1,4 @@
-use sea_orm::{
-    ActiveModelTrait,
-    ActiveValue::{NotSet}, Schema, Set,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, Schema, Set};
 use sea_orm_migration::prelude::*;
 
 use serde_json::json;

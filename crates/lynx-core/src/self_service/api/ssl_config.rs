@@ -1,12 +1,12 @@
-use crate::entities::app_config::{get_app_config, SSLConfig, SSLConfigRule};
+use crate::entities::app_config::{SSLConfig, SSLConfigRule, get_app_config};
 use crate::self_service::utils::{parse_body_params, response_ok};
 use crate::server_context::DB;
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
-use schemars::{schema_for, JsonSchema};
+use schemars::{JsonSchema, schema_for};
 use sea_orm::{ActiveModelTrait, IntoActiveModel, Set};
 use serde::{Deserialize, Serialize};
 

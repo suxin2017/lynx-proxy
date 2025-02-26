@@ -1,20 +1,19 @@
 use std::fmt::Display;
 
 use anyhow::anyhow;
-use schemars::{schema_for, JsonSchema};
+use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[schemars(example = "example_my_struct")]
 struct MyStruct {
     #[schemars(description = "The name of the person.")]
     name: String,
-   
+
     #[schemars(description = "The age of the person.")]
     age: u32,
-    
+
     /// # is human
     /// desc
     /// i can write anything here
@@ -39,22 +38,16 @@ impl Display for ValidateError {
     }
 }
 
-
 #[tokio::main]
 async fn main() {
     let schema = schema_for!(MyStruct);
     let schema = serde_json::to_value(&schema).unwrap();
 
-    let instance = json!({
-      
-    });
+    let instance = json!({});
     println!("{}", serde_json::to_string_pretty(&schema).unwrap());
-
-
 
     let res = jsonschema::validate(&schema, &instance);
 
-    
     match res {
         Ok(_) => println!("Valid"),
         Err(e) => {
@@ -68,8 +61,6 @@ async fn main() {
                 Ok(err) => println!("Error: {}", err.message),
                 Err(_) => println!("Error: Unknown"),
             }
-        },
+        }
     }
-
-
 }

@@ -6,7 +6,7 @@ use common::{
 };
 use lynx_core::{self_service::SSL_CONFIG_SAVE, server::Server, server_context::set_up_context};
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::net::SocketAddr;
 pub mod common;
 

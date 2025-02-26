@@ -77,7 +77,9 @@ pub async fn self_service_router(
 
         (&method::Method::GET, RULE_DETAIL) => api::rule_api::handle_rule_detail(req).await,
         (&method::Method::POST, RULE_ADD) => api::rule_api::handle_rule_add(req).await,
-        (&method::Method::POST, RULE_UPDATE_NAME) => api::rule_api::handle_rule_update_name(req).await,
+        (&method::Method::POST, RULE_UPDATE_NAME) => {
+            api::rule_api::handle_rule_update_name(req).await
+        }
         (&method::Method::POST, RULE_UPDATE_CONTENT) => {
             api::rule_api::handle_rule_update_content(req).await
         }

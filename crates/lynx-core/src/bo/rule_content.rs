@@ -11,7 +11,7 @@ use serde_json::json;
 
 use crate::{
     entities::rule::{
-        capture::{self, CaptureType, CaptureTypeEnum},
+        capture::{self, CaptureType},
         handler, rule,
     },
     self_service::utils::OperationError,
@@ -228,11 +228,11 @@ pub async fn delete_rule_content_by_rule_id(rule_id: i32) -> anyhow::Result<()> 
 
 #[cfg(test)]
 mod tests {
-    use crate::{entities::set_up_db, migration::Migrator};
+    use crate::migration::Migrator;
 
     use super::*;
     use sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, Database, DatabaseBackend, MockDatabase, Set,
+        ActiveModelTrait, ActiveValue::NotSet, Database, Set,
     };
     use sea_orm_migration::MigratorTrait;
     use serde_json::json;

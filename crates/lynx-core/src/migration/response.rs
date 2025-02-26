@@ -1,7 +1,6 @@
 use sea_orm::Schema;
 use sea_orm_migration::prelude::*;
 
-
 use crate::entities::prelude::Response;
 
 #[derive(DeriveMigrationName)]
