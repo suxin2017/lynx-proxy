@@ -113,7 +113,7 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
 
   return (
     <div
-      className="border border-gray-300 rounded p-1 font-mono text-xs flex h-full flex-col"
+      className="border border-gray-300 rounded-sm p-1 font-mono text-xs flex h-full flex-col"
       onMouseUp={endSelection} // Finish selection
     >
       {renderHeader()}
