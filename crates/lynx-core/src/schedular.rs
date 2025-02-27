@@ -10,6 +10,7 @@ use hyper::{Method, Request, Response};
 use nanoid::nanoid;
 use tracing::{debug, info, trace};
 
+use crate::bo::rule_content::get_all_rule_content;
 use crate::entities::app_config::{SSLConfigRule, get_app_config, get_enabled_ssl_config};
 use crate::proxy::http_proxy::proxy_http_request;
 use crate::proxy::https_proxy::https_proxy;
@@ -73,7 +74,7 @@ pub async fn dispatch(
     debug!("dispatching request {:?}", req);
 
     req.extensions_mut().insert(Arc::new(nanoid!()));
-
+  
     if is_http(req.uri()) {
         trace!("proxying http request {:?}", req);
         return proxy_http_request(req).await;

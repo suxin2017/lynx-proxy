@@ -7,52 +7,58 @@ use hyper::body::Incoming;
 use sea_orm::EntityTrait;
 use tracing::{trace, warn};
 
-use crate::server_context::DB;
+use crate::{
+    bo::rule_content::{Handler, RuleContent, get_all_rule_content},
+    server_context::DB,
+};
 
 pub async fn handle_request_with_rule(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
-    // let db = DB.get().unwrap();
+    let db = DB.get().unwrap();
 
-    // let rules = rule_content::Entity::find().all(db).await?;
+    let all_handlers = req.extensions().get::<Vec<Handler>>();
 
-    // let req_url = url::Url::parse(&req.uri().to_string())
-    //     .map_err(|e| anyhow!(e).context("parse req url error"))?;
+    let connect_handler = all_handlers.map(|handlers| {
+        handlers
+            .iter()
+            .map(|handler| match handler {
+                Handler::ConnectPassProxyHandler(handler) => handler,
+            })
+            .collect::<Vec<_>>()
+    });
 
-    // for rule in rules {
-    //     let content = parse_rule_content(rule.content);
-    //     let _ = content.map(|content| {
-    //         let capture_glob_pattern_str = content.capture.uri;
-    //         let is_match = glob_match(&capture_glob_pattern_str, req_url.as_str());
-    //         trace!("is match: {}", is_match);
-    //         trace!("capture_glob_pattern_str: {}", capture_glob_pattern_str);
-    //         trace!("req_url: {}", req_url.as_str());
-    //         if is_match {
-    //             let pass_proxy_uri = url::Url::parse(&content.handler.proxy_pass);
+    if let Some(connect_handler) = connect_handler {
+        if !connect_handler.is_empty() {
+            return Ok(req);
+        }
+        let req_url = url::Url::parse(&req.uri().to_string())
+            .map_err(|e| anyhow!(e).context("parse req url error"))?;
 
-    //             match pass_proxy_uri {
-    //                 Ok(pass_proxy_uri) => {
-    //                     let host = pass_proxy_uri.host_str();
-    //                     let port = pass_proxy_uri.port();
+        let connect_handler = connect_handler.first().unwrap();
+        let pass_proxy_uri = url::Url::parse(&connect_handler.url);
+        match pass_proxy_uri {
+            Ok(pass_proxy_uri) => {
+                let host = pass_proxy_uri.host_str();
+                let port = pass_proxy_uri.port();
 
-    //                     let mut new_uri = req_url.clone();
-    //                     let _ = new_uri.set_scheme(pass_proxy_uri.scheme());
-    //                     let _ = new_uri.set_host(host);
-    //                     let _ = new_uri.set_port(port);
+                let mut new_uri = req_url.clone();
+                let _ = new_uri.set_scheme(pass_proxy_uri.scheme());
+                let _ = new_uri.set_host(host);
+                let _ = new_uri.set_port(port);
 
-    //                     trace!("new url: {:?}", new_uri);
+                trace!("new url: {:?}", new_uri);
 
-    //                     if let Ok(new_uri) = Uri::from_str(new_uri.as_str()) {
-    //                         let uri = req.uri_mut();
-    //                         *uri = new_uri;
-    //                     } else {
-    //                         warn!("parse pass proxy uri error: {}", new_uri.as_str());
-    //                     }
-    //                 }
-    //                 Err(e) => {
-    //                     warn!("parse pass proxy uri error: {}", e);
-    //                 }
-    //             }
-    //         };
-    //     });
-    // }
+                if let Ok(new_uri) = Uri::from_str(new_uri.as_str()) {
+                    let uri = req.uri_mut();
+                    *uri = new_uri;
+                } else {
+                    warn!("parse pass proxy uri error: {}", new_uri.as_str());
+                }
+            }
+            Err(e) => {
+                warn!("parse pass proxy uri error: {}", e);
+            }
+        }
+    }
+
     Ok(req)
 }
