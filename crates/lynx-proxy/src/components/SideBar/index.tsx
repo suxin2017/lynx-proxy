@@ -35,7 +35,7 @@ export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex w-14 flex-col justify-center shadow-sm shadow-slate-400">
+    <div className="flex w-14 flex-col justify-center shadow-xs shadow-slate-400">
       {menuConfig.map((item) => (
         <Button
           key={item.key}
