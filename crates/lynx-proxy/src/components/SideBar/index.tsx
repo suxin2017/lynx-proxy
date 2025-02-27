@@ -37,7 +37,7 @@ export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex w-14 flex-col justify-between bg-zinc-50 shadow-sm shadow-slate-400">
+    <div className="flex w-14 flex-col justify-between bg-zinc-50 shadow-xs shadow-slate-400">
       <div>
         {topMenuConfig.map((item) => (
           <Button

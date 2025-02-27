@@ -54,6 +54,7 @@
     "@eslint/js": "^9.12.0",
     "@rsbuild/core": "^1.2.7",
     "@rsbuild/plugin-react": "^1.0.7",
+    "@tailwindcss/postcss": "^4.0.9",
     "@tanstack/router-plugin": "^1.97.3",
     "@tauri-apps/cli": "^2.2.7",
     "@types/glob-to-regexp": "^0.4.4",
@@ -64,7 +65,6 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/react-virtualized": "^9.22.0",
-    "autoprefixer": "^10.4.20",
     "cross-env": "^7.0.3",
     "eslint": "^9.12.0",
     "eslint-plugin-react": "^7.37.1",
@@ -74,7 +74,7 @@
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "rspack-plugin-mock": "^1.0.1",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^4.0.9",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.8.1"
   }
