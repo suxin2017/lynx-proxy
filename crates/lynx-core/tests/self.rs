@@ -1,12 +1,11 @@
 use common::{build_proxy_client::build_http_client, tracing_config::init_tracing};
 use lynx_core::{
-    self_service::{RULE_ADD, RULE_DELETE, RULE_GROUP_ADD, RULE_GROUP_DELETE, RULE_UPDATE_NAME},
-    server::Server,
-    server_context::set_up_context,
+    self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
 };
 use reqwest::Client;
 use serde_json::{Value, json};
 use std::net::SocketAddr;
+use typeshare::typeshare;
 pub mod common;
 
 async fn init_test_server() -> (SocketAddr, Client) {
@@ -25,7 +24,7 @@ async fn test_hello() {
     let (addr, client) = init_test_server().await;
 
     let res = client
-        .get(format!("http://{addr}/__self_service_path__/hello"))
+        .get(format!("http://{addr}{}", SelfServiceRouterPath::Hello))
         .send()
         .await
         .unwrap();
@@ -39,7 +38,10 @@ async fn test_delete_unfound_rule_group() {
     let (addr, client) = init_test_server().await;
 
     let res = client
-        .post(format!("http://{addr}{}", RULE_GROUP_DELETE))
+        .post(format!(
+            "http://{addr}{}",
+            SelfServiceRouterPath::RuleGroupDelete
+        ))
         .json(&json!({
             "id": 9999999,
         }))
@@ -58,7 +60,10 @@ async fn test_add_and_delete_rule_group() {
     let (addr, client) = init_test_server().await;
 
     let res = client
-        .post(format!("http://{addr}{}", RULE_GROUP_ADD))
+        .post(format!(
+            "http://{addr}{}",
+            SelfServiceRouterPath::RuleGroupAdd
+        ))
         .json(&json!({
             "name": "test",
         }))
@@ -72,7 +77,10 @@ async fn test_add_and_delete_rule_group() {
     let id = data.get("id").unwrap();
 
     let res = client
-        .post(format!("http://{addr}{}", RULE_GROUP_DELETE))
+        .post(format!(
+            "http://{addr}{}",
+            SelfServiceRouterPath::RuleGroupDelete
+        ))
         .json(&json!({
             "id": id,
         }))
@@ -90,7 +98,7 @@ async fn test_add_and_delete_rule() {
     let (addr, client) = init_test_server().await;
 
     let res = client
-        .post(format!("http://{addr}{}", RULE_ADD))
+        .post(format!("http://{addr}{}", SelfServiceRouterPath::RuleAdd))
         .json(&json!({
             "name": "test",
             // default rule group id
@@ -100,30 +108,61 @@ async fn test_add_and_delete_rule() {
         .await
         .unwrap();
     let binding = res.json::<Value>().await.unwrap();
-    let _code = binding.get("code").unwrap();
+    let code = binding.get("code").unwrap();
+    assert_eq!(code, &json!("Ok"));
 
     let data = binding.get("data").unwrap();
     let id = data.get("id").unwrap();
 
     let res = client
-        .post(format!("http://{addr}{}", RULE_UPDATE_NAME))
+        .post(format!(
+            "http://{addr}{}",
+            SelfServiceRouterPath::RuleUpdateName
+        ))
         .json(&json!({
             "id": id,
-            "content": json!({
-                "test": "test"
-            })
+            "name": "test",
         }))
         .send()
         .await
         .unwrap();
     let binding = res.json::<Value>().await.unwrap();
-    let _code = binding.get("code").unwrap();
-
-    let data = binding.get("data").unwrap();
-    let id = data.get("id").unwrap();
+    let code = binding.get("code").unwrap();
+    assert_eq!(code, &json!("Ok"));
 
     let res = client
-        .post(format!("http://{addr}{}", RULE_DELETE))
+        .post(format!(
+            "http://{addr}{}",
+            SelfServiceRouterPath::RuleUpdateContent
+        ))
+        .json(&json!({
+            "id": id,
+            "capture": {
+                "type":"glob",
+                "url":"http://example.com"
+            },
+            "handlers":[
+                {
+                    "type":"connectPassProxyHandler",
+                    "data":{
+                        "switch":true,
+                        "url":"http://example.com"
+                    },
+                }
+            ]
+        }))
+        .send()
+        .await
+        .unwrap();
+    let binding = res.json::<Value>().await.unwrap();
+    let code = binding.get("code").unwrap();
+    assert_eq!(code, &json!("Ok"));
+
+    let res = client
+        .post(format!(
+            "http://{addr}{}",
+            SelfServiceRouterPath::RuleDelete
+        ))
         .json(&json!({
             "id": id,
         }))

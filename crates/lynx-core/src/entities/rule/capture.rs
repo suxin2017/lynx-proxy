@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use schemars::{JsonSchema, schema_for};
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use typeshare::typeshare;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,6 +25,8 @@ pub struct Model {
     db_type = "String(StringLen::None)",
     rename_all = "camelCase"
 )]
+#[serde(rename_all = "camelCase")]
+#[typeshare]
 pub enum CaptureType {
     Glob,
     Regex,

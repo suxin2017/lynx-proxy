@@ -13,8 +13,6 @@ use crate::{
 };
 
 pub async fn handle_request_with_rule(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
-    let db = DB.get().unwrap();
-
     let all_handlers = req.extensions().get::<Vec<Handler>>();
 
     let connect_handler = all_handlers.map(|handlers| {
@@ -27,7 +25,7 @@ pub async fn handle_request_with_rule(mut req: Request<Incoming>) -> Result<Requ
     });
 
     if let Some(connect_handler) = connect_handler {
-        if !connect_handler.is_empty() {
+        if connect_handler.is_empty() {
             return Ok(req);
         }
         let req_url = url::Url::parse(&req.uri().to_string())

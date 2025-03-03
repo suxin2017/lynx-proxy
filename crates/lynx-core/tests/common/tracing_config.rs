@@ -1,5 +1,5 @@
 use tracing_subscriber::{
-    filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer,
+    Layer, filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
 pub fn init_tracing() {

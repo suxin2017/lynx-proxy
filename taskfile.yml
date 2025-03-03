@@ -60,7 +60,7 @@ tasks:
     desc: Start test server
     dir: crates/lynx-core
     cmds:
-      - cargo test --package lynx-core --test start_test_server -- start_test_server --exact --nocapture --ignored
+      - cargo test --package lynx-core --test start_test_server --features test  -- start_test_server --exact --nocapture --ignored
 
   release-minor:
     deps: [update-main-branch]

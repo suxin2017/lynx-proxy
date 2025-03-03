@@ -29,7 +29,6 @@ pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<In
                     CaptureType::Glob => {
                         let req_url = url::Url::parse(&req.uri().to_string()).unwrap();
                         let is_match = glob_match::glob_match(&capture.url, req_url.as_str());
-                        trace!("is match: {}", is_match);
                         is_match
                     }
                     CaptureType::Regex => {

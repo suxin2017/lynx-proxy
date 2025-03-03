@@ -8,6 +8,7 @@ use sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use typeshare::typeshare;
 
 use crate::{
     entities::rule::{
@@ -27,6 +28,7 @@ pub struct RuleContent {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+#[typeshare]
 pub struct Capture {
     pub r#type: CaptureType,
     pub url: String,
@@ -44,6 +46,7 @@ impl From<capture::Model> for Capture {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", content = "data")]
 #[serde(rename_all = "camelCase")]
+#[typeshare]
 pub enum Handler {
     ConnectPassProxyHandler(ConnectPassProxyHandler),
 }
@@ -62,6 +65,7 @@ impl From<handler::Model> for Handler {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[typeshare]
 pub struct ConnectPassProxyHandler {
     pub switch: bool,
     pub url: String,
@@ -220,8 +224,6 @@ pub async fn delete_rule_content_by_rule_id(rule_id: i32) -> anyhow::Result<()> 
         .await
         .map_err(|e| anyhow!(e).context("delete handler error"))?;
 
-    rule.delete(&txn).await?;
-
     txn.commit().await?;
     Ok(())
 }
@@ -231,9 +233,7 @@ mod tests {
     use crate::migration::Migrator;
 
     use super::*;
-    use sea_orm::{
-        ActiveModelTrait, ActiveValue::NotSet, Database, Set,
-    };
+    use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, Database, Set};
     use sea_orm_migration::MigratorTrait;
     use serde_json::json;
 

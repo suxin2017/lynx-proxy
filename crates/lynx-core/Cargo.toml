@@ -76,6 +76,7 @@ mime_guess = "=2.0.5"
 schemars = "0.8.21"
 glob-match = "0.2.1"
 regex = "1.11.1"
+typeshare = "1.0.0" # Use whichever version is the most recent
 
 [dev-dependencies]
 dotenv = "0.15.0"

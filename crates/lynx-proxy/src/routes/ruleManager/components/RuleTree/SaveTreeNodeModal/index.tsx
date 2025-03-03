@@ -2,14 +2,14 @@ import constate from 'constate';
 import React, { useEffect } from 'react';
 import { useImmer } from 'use-immer';
 import {
-  ContextDataType,
-  IContentData,
-  OperatorType,
-  useMenuItemMap,
+    ContextDataType,
+    IContentData,
+    OperatorType,
+    useMenuItemMap,
 } from '../TreeContentMenu';
 import { Form, Input, Modal } from 'antd';
 import { useForm } from 'antd/es/form/Form';
-import { useAddRule, useAddRuleGroup, useUpdateRule } from '@/api/rule';
+import { useAddRule, useAddRuleGroup, useUpdateRuleName } from '@/api/rule';
 import { message } from 'antd';
 
 interface ISaveTreeNodeModalProps {}
@@ -28,7 +28,7 @@ export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = () => {
     return menuItem.label;
   }, [menuItem]);
   const { mutateAsync: addRule } = useAddRule();
-  const { mutateAsync: updateRule } = useUpdateRule();
+  const { mutateAsync: updateRule } = useUpdateRuleName();
   const { mutateAsync: addRuleGroup } = useAddRuleGroup();
 
   const [form] = useForm();

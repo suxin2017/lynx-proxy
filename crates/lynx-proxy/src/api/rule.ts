@@ -21,7 +21,9 @@ export const useGetRuleDetailQuery = (params: { id?: number }) => {
   return useQuery({
     queryKey: ['/rule', params],
     queryFn: async () => {
-      const res = await axiosInstance.get(`/rule?${queryString.stringify(params)}`);
+      const res = await axiosInstance.get(
+        `/rule?${queryString.stringify(params)}`,
+      );
       return res.data as IRuleContentResponse;
     },
     enabled: !!params.id,
@@ -43,14 +45,12 @@ export const useAddRuleGroup = () => {
   });
 };
 
-export const useUpdateRule = () => {
+export const useUpdateRuleName = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (
-      params: { id: number; name: string } | { id: number; content: unknown },
-    ) => {
-      const res = await axiosInstance.post('/rule/update', params);
+    mutationFn: async (params: { id: number; name: string }) => {
+      const res = await axiosInstance.post('/rule/update_name', params);
       return res.data;
     },
     onSuccess: () => {
@@ -64,6 +64,27 @@ export const useUpdateRule = () => {
     },
   });
 };
+
+export const useUpdateRuleContent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { id: number; name: string }) => {
+      const res = await axiosInstance.post('/rule/update_content', params);
+      return res.data;
+    },
+    onSuccess: () => {
+      message.success('Update success');
+      queryClient.invalidateQueries({
+        queryKey: ['/rule_group/list'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/rule'],
+      });
+    },
+  });
+};
+
 
 export const useAddRule = () => {
   const queryClient = useQueryClient();

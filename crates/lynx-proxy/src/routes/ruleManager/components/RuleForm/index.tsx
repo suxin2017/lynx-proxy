@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { Form, Button, Typography, FormInstance } from 'antd';
-import { useGetRuleDetailQuery, useUpdateRule } from '@/api/rule';
+import { Form, Button, Typography } from 'antd';
+import { useGetRuleDetailQuery, useUpdateRuleName } from '@/api/rule';
 import { useRuleContentState, useSelectedRuleContext } from '../store';
 import { Capture } from './Capture';
 import { Handler } from './Handler';
@@ -52,7 +52,7 @@ export function useFormWatch(name: NamePath<IRuleFormValues>) {
 
 export const RuleForm = () => {
   const [form] = Form.useForm<IRuleFormValues>();
-  const { mutateAsync: updateRule } = useUpdateRule();
+  const { mutateAsync: updateRule } = useUpdateRuleName();
   const { selectedRule } = useSelectedRuleContext();
   const { data } = useGetRuleDetailQuery({ id: selectedRule?.id });
   const { setState } = useRuleContentState();
