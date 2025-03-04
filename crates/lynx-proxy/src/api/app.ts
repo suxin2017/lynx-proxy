@@ -4,7 +4,7 @@ import {
   IAppConfigResponse,
   RecordStatusEnum,
 } from './models';
-import { message } from 'antd';
+import { App } from 'antd';
 import axiosInstance from './axiosInstance';
 
 export const useChangeRecordStatus = () => {
@@ -34,6 +34,7 @@ export const useGetAppConfig = () => {
 };
 
 export const useSaveSSLConfig = () => {
+  const { message } = App.useApp();
   return useMutation({
     mutationFn: async (
       config: IAppConfigModel['sslConfig'] & { captureSSL: boolean },

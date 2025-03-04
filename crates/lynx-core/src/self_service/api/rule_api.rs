@@ -105,7 +105,7 @@ pub async fn handle_update_rule_content(
     )
     .await?;
 
-    response_ok(UpdateRuleContentBody(ok(None)))
+    response_ok::<Option<()>>(None)
 }
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
@@ -128,11 +128,15 @@ pub async fn handle_delete_rule(req: Request<Incoming>) -> Result<Response<BoxBo
     let result = rule::Entity::delete_by_id(body_params.id).exec(db).await?;
 
     if result.rows_affected > 0 {
-        response_ok(DeleteRuleBody(ok(None)))
+        response_ok::<Option<()>>(None)
     } else {
         Err(anyhow!(OperationError::new("can not find the rule".into())))
     }
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+#[typeshare]
+struct RuleDetailBody(ResponseBox<RuleContent>);
 
 pub async fn handle_rule_detail(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
     let query_params = parse_query_params(req.uri());

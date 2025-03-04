@@ -4,6 +4,7 @@ tasks:
   dev:
     desc: Run development server
     deps: [start-test-server, dev-ui]
+    
   test:
     desc: Run tests
     dir: crates/lynx-core
@@ -92,6 +93,15 @@ tasks:
       - git commit --amend --no-edit
       - git push
       - git push --tags
+
+  generate-type-defined:
+    aliases: [gen-ty]
+    watch: true
+    sources:
+      - "crates/lynx-core/src/self_service/**/*.rs"
+    desc: Generate type defined
+    cmds:
+      - typeshare ./crates/lynx-core --lang=typescript --output-file=./crates/lynx-proxy/src/api/type.ts
 
   update-main-branch:
     desc: Update remote branch

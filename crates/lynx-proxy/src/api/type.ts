@@ -17,13 +17,6 @@ export interface ResponseBox<T> {
 
 export type DeleteRuleBody = ResponseBox<undefined>;
 
-export type UpdateRuleContentBody = ResponseBox<undefined>;
-
-export interface AddRuleParams {
-	ruleGroupId: number;
-	name: string;
-}
-
 export enum CaptureType {
 	Glob = "glob",
 	Regex = "regex",
@@ -34,6 +27,23 @@ export interface Capture {
 	url: string;
 }
 
+export type Handler = 
+	| { type: "connectPassProxyHandler", data: ConnectPassProxyHandler };
+
+export interface RuleContent {
+	capture?: Capture;
+	handlers: Handler[];
+}
+
+export type RuleDetailBody = ResponseBox<RuleContent>;
+
+export type UpdateRuleContentBody = ResponseBox<undefined>;
+
+export interface AddRuleParams {
+	ruleGroupId: number;
+	name: string;
+}
+
 export interface ConnectPassProxyHandler {
 	switch: boolean;
 	url: string;
@@ -42,9 +52,6 @@ export interface ConnectPassProxyHandler {
 export interface DeleteRuleParams {
 	id: number;
 }
-
-export type Handler = 
-	| { type: "connectPassProxyHandler", data: ConnectPassProxyHandler };
 
 export interface RuleUpdateContentParams {
 	id: number;
@@ -59,10 +66,5 @@ export interface UpdateRuleNameParams {
 
 export interface ValidateError {
 	message: string;
-}
-
-export enum StringEnum {
-	Hello = "Hello",
-	World = "World",
 }
 

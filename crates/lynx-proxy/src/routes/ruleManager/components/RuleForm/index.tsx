@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { Form, Button, Typography } from 'antd';
-import { useGetRuleDetailQuery, useUpdateRuleName } from '@/api/rule';
+import { useGetRuleDetailQuery, useUpdateRuleContent } from '@/api/rule';
 import { useRuleContentState, useSelectedRuleContext } from '../store';
 import { Capture } from './Capture';
-import { Handler } from './Handler';
 import { HandlerType } from './Handler/constant';
-import { IConnectPassProxyData } from './Handler/Connect';
 import { NamePath } from 'antd/es/form/interface';
+import { Handler as HandlerData } from '@/api/type';
+import { HandlerComponent } from './Handler';
 
 const { Title, Text } = Typography;
 
@@ -16,34 +16,20 @@ enum CaptureType {
 }
 
 export interface IHandlerData<D, T extends HandlerType> {
-  switch: boolean,
-  type: T,
-  data: D
+  type: T;
+  data: D;
 }
 
 export interface IRuleFormValues {
-  capture: {
-    type: CaptureType;
-    globUrl: string;
-    regexUrl: string;
+  capture?: {
+    type?: CaptureType;
+    globUrl?: string;
+    regexUrl?: string;
   };
-  handlers: Array<IConnectPassProxyData>;
+  handlers: Array<HandlerData>;
 }
-
 
 export const RuleFormItem = Form.Item<IRuleFormValues>;
-export const formKeys = {
-  captureType: ['capture', 'type'],
-  captureGlobUrl: ['capture', 'globUrl'],
-  captureRegexUrl: ['capture', 'regexUrl'],
-  capture: ['capture'],
-  handlers: 'handlers',
-} as const;
-
-
-export function useFormInstance() {
-  const form = Form.useFormInstance<IRuleFormValues>();
-}
 
 export function useFormWatch(name: NamePath<IRuleFormValues>) {
   const form = Form.useFormInstance<IRuleFormValues>();
@@ -52,28 +38,65 @@ export function useFormWatch(name: NamePath<IRuleFormValues>) {
 
 export const RuleForm = () => {
   const [form] = Form.useForm<IRuleFormValues>();
-  const { mutateAsync: updateRule } = useUpdateRuleName();
+  const { mutateAsync: updateRule } = useUpdateRuleContent();
   const { selectedRule } = useSelectedRuleContext();
   const { data } = useGetRuleDetailQuery({ id: selectedRule?.id });
   const { setState } = useRuleContentState();
 
   useEffect(() => {
-    form.setFieldsValue(data?.data);
+    if (!data) {
+      return;
+    }
+    const remoteData = data?.data;
+    console.log(
+      data.data,
+      {
+        capture: {
+          type: remoteData?.capture?.type || CaptureType.Glob,
+          globUrl: remoteData?.capture?.url || '',
+          regexUrl: remoteData?.capture?.url || '',
+        },
+        handlers: remoteData?.handlers,
+      },
+      'remoteData',
+    );
+    form.setFieldsValue({
+      capture: {
+        type: remoteData?.capture?.type || CaptureType.Glob,
+        globUrl: remoteData?.capture?.url ?? '',
+        regexUrl: remoteData?.capture?.url ?? '',
+      },
+      handlers: remoteData?.handlers,
+    });
   }, [data, form]);
 
   return (
     <Form
       form={form}
-      initialValues={data?.data}
+      initialValues={{
+        capture: {
+          type: CaptureType.Glob,
+          globUrl: '',
+          regexUrl: '',
+        },
+        handlers: [],
+      }}
       onFinish={async (values) => {
         if (selectedRule?.id) {
           await updateRule({
             id: selectedRule.id,
-            content: values,
+            capture: {
+              type: values.capture.type,
+              url:
+                values.capture.type === CaptureType.Glob
+                  ? values.capture.globUrl
+                  : values.capture.regexUrl,
+            },
+            handlers: values.handlers,
           });
         }
       }}
-      className="h-full flex flex-col"
+      className="flex h-full flex-col"
       layout="vertical"
       onValuesChange={(value) => {
         console.log(value, 'value');
@@ -83,7 +106,6 @@ export const RuleForm = () => {
         });
       }}
     >
-
       <div className="flex-1">
         <Title level={3} className="m-0">
           Rule Content
@@ -93,9 +115,8 @@ export const RuleForm = () => {
         </Title>
 
         <Capture />
-        <Handler />
+        <HandlerComponent />
       </div>
-
 
       <RuleFormItem className="">
         <Button type="primary" htmlType="submit">

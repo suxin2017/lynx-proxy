@@ -1,7 +1,5 @@
 import { Form, FormListFieldData, Input, Switch } from 'antd';
 import React from 'react';
-import { IHandlerData } from '../..';
-import { HandlerType } from '../constant';
 
 
 export const ConnectBreakConnect: React.FC<{ field: FormListFieldData }> = ({ field }) => {
@@ -12,9 +10,6 @@ export const ConnectBreakConnect: React.FC<{ field: FormListFieldData }> = ({ fi
   );
 };
 
-export type IConnectPassProxyData = IHandlerData<{
-  url: string
-}, HandlerType.ConnectPassProxy>;
 
 export const ConnectPassProxy: React.FC<{ field: FormListFieldData }> = ({ field }) => {
   return (

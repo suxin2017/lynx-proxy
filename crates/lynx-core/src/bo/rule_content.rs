@@ -21,6 +21,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[typeshare]
 pub struct RuleContent {
     pub capture: Option<Capture>,
     pub handlers: Vec<Handler>,

@@ -1,4 +1,4 @@
-import { message } from 'antd';
+import { App, message } from 'antd';
 import { IRequestModel, IResponseBoxView } from './models';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import queryString from 'query-string';
@@ -86,6 +86,7 @@ export const useGetResponseBodyQuery = (params: { requestId?: number }) => {
 };
 
 export const useClearRequestLog = () => {
+  const { message } = App.useApp();
   return useMutation({
     mutationFn: async () => {
       const res = await axiosInstance.post('/request/clear');

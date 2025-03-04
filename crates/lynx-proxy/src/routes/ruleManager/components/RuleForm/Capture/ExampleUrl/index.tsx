@@ -7,16 +7,26 @@ interface IExampleUrlProps {
   type: 'glob' | 'regex';
 }
 
+export const getRegexByType = (type: 'glob' | 'regex', pattern?: string) => {
+  if (!pattern) {
+    return;
+  }
+  if (type === 'glob') {
+    return globrex(pattern, { extended: true }).regex;
+  } else {
+    return new RegExp(pattern);
+  }
+};
+
 export const ExampleUrl: React.FC<IExampleUrlProps> = ({ url, type }) => {
   const exampleUrl = useMemo(() => {
     try {
       if (!url) return '';
-      let regexUrl;
-      if (type === 'glob') {
-        regexUrl = globrex(url, { extended: true }).regex;
-      } else {
-        regexUrl = new RegExp(url);
+      const regexUrl = getRegexByType(type, url);
+      if (!regexUrl) {
+        return '';
       }
+
       const randExp = new RandExp(regexUrl);
       randExp.max = 10;
       // Set valid URL characters range

@@ -2,21 +2,20 @@ import constate from 'constate';
 import React, { useEffect } from 'react';
 import { useImmer } from 'use-immer';
 import {
-    ContextDataType,
-    IContentData,
-    OperatorType,
-    useMenuItemMap,
+  ContextDataType,
+  IContentData,
+  OperatorType,
+  useMenuItemMap,
 } from '../TreeContentMenu';
-import { Form, Input, Modal } from 'antd';
+import { App, Form, Input, Modal } from 'antd';
 import { useForm } from 'antd/es/form/Form';
 import { useAddRule, useAddRuleGroup, useUpdateRuleName } from '@/api/rule';
-import { message } from 'antd';
 
 interface ISaveTreeNodeModalProps {}
 
 export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = () => {
   const { open, type, closeModal, contextData } = useSaveTreeNodeModalContext();
-
+  const { message } = App.useApp();
   const menuItemMap = useMenuItemMap();
   const menuItem = React.useMemo(() => {
     if (!type) return null;

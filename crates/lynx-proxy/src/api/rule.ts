@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  IRuleContentResponse,
-  IRuleGroupTreeResponse as IRuleGroupTreeResponse,
+  IRuleGroupTreeResponse as IRuleGroupTreeResponse
 } from './models';
 import queryString from 'query-string';
-import { message } from 'antd';
+import { App } from 'antd';
 import axiosInstance from './axiosInstance';
+import { RuleDetailBody, RuleUpdateContentParams } from './type';
 
 export const useGetRuleTreeQuery = () => {
   return useQuery({
@@ -21,10 +21,10 @@ export const useGetRuleDetailQuery = (params: { id?: number }) => {
   return useQuery({
     queryKey: ['/rule', params],
     queryFn: async () => {
-      const res = await axiosInstance.get(
+      const res = await axiosInstance.get<RuleDetailBody>(
         `/rule?${queryString.stringify(params)}`,
       );
-      return res.data as IRuleContentResponse;
+      return res.data;
     },
     enabled: !!params.id,
   });
@@ -47,7 +47,7 @@ export const useAddRuleGroup = () => {
 
 export const useUpdateRuleName = () => {
   const queryClient = useQueryClient();
-
+  const { message } = App.useApp();
   return useMutation({
     mutationFn: async (params: { id: number; name: string }) => {
       const res = await axiosInstance.post('/rule/update_name', params);
@@ -66,25 +66,17 @@ export const useUpdateRuleName = () => {
 };
 
 export const useUpdateRuleContent = () => {
-  const queryClient = useQueryClient();
-
+  const { message } = App.useApp();
   return useMutation({
-    mutationFn: async (params: { id: number; name: string }) => {
+    mutationFn: async (params: RuleUpdateContentParams) => {
       const res = await axiosInstance.post('/rule/update_content', params);
       return res.data;
     },
     onSuccess: () => {
       message.success('Update success');
-      queryClient.invalidateQueries({
-        queryKey: ['/rule_group/list'],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['/rule'],
-      });
     },
   });
 };
-
 
 export const useAddRule = () => {
   const queryClient = useQueryClient();

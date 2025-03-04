@@ -2,26 +2,26 @@ import React from 'react';
 import Markdown from 'react-markdown';
 import syntax from './syntax.md';
 import remarkGfm from 'remark-gfm';
-import { Collapse, Form, Input } from 'antd';
+import { Collapse, Input } from 'antd';
 import { RiInformationLine } from '@remixicon/react';
-import { formKeys, useFormWatch } from '../..';
+import { RuleFormItem, useFormWatch } from '../..';
 
 import { ExampleUrl } from '../ExampleUrl';
 
-interface IGlobalMatchProps { }
+interface IGlobalMatchProps {}
 
 export const GlobMatch: React.FC<IGlobalMatchProps> = () => {
-  const url = useFormWatch(formKeys.captureGlobUrl);
+  const url = useFormWatch(['capture', 'globUrl']);
 
   return (
     <>
-      <Form.Item
+      <RuleFormItem
         label="Url"
-        name={formKeys.captureGlobUrl}
+        name={['capture', 'globUrl']}
         rules={[{ required: true }]}
       >
         <Input />
-      </Form.Item>
+      </RuleFormItem>
       <ExampleUrl url={url} type="glob" />
 
       <Collapse expandIconPosition={'right'} ghost>

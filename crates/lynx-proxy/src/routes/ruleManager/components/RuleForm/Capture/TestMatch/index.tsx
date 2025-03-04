@@ -1,13 +1,22 @@
-import { Typography, Form, Select, Button, Tag } from 'antd';
-import React from 'react';
-import { formKeys, useFormWatch } from '../..';
-import RandExp from 'randexp';
-import globToRegExp from 'glob-to-regexp';
-import { RiErrorWarningLine } from '@remixicon/react';
+import { Typography, Form, Select, Tag } from 'antd';
+import React, { useMemo } from 'react';
+import { RiCheckLine, RiErrorWarningLine } from '@remixicon/react';
+import { IRuleFormValues, useFormWatch } from '../..';
+import { getRegexByType } from '../ExampleUrl';
 
 export const TestMatch: React.FC = () => {
-  const type = useFormWatch(formKeys.captureType);
+  const capture: IRuleFormValues['capture'] = useFormWatch(['capture']);
 
+  const testReg = useMemo(() => {
+    try {
+      return getRegexByType(capture?.type ?? 'glob', capture?.globUrl);
+    } catch (e) {
+      console.warn(e);
+
+      return;
+    }
+  }, [capture]);
+  console.log(testReg,'testReg');
   return (
     <>
       <Typography.Text strong className="text-sm">
@@ -22,29 +31,27 @@ export const TestMatch: React.FC = () => {
             open={false}
             suffixIcon={null}
             tagRender={(props) => {
+              const isMatch = testReg?.test(props.value);
+
+              const color = isMatch ? 'text-green-500' : 'text-red-500';
+
               return (
                 <Tag
                   closable={props.closable}
-                  className="flex items-center text-red-500"
+                  className={`${color} flex items-center`}
                 >
-                  <RiErrorWarningLine size={12} />
-                  {props.value}
+                  <div className="flex items-center justify-center gap-1">
+                    {isMatch ? (
+                      <RiCheckLine size={12} />
+                    ) : (
+                      <RiErrorWarningLine size={12} />
+                    )}
+                    <span>{props.value}</span>
+                  </div>
                 </Tag>
               );
             }}
           />
-          <Button
-            className="mt-1"
-            type="primary"
-            onClick={() => {
-              const re = globToRegExp('*test');
-
-              const randexp = new RandExp(re);
-              console.log(randexp.gen());
-            }}
-          >
-            Test
-          </Button>
         </div>
       </Form.Item>
     </>

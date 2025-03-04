@@ -1,18 +1,18 @@
 import React from 'react';
 import { Form, Input } from 'antd';
-import { formKeys, useFormWatch } from '../..';
+import { useFormWatch } from '../..';
 import { ExampleUrl } from '../ExampleUrl';
 
 interface IGlobalMatchProps {}
 
 export const RegexMatch: React.FC<IGlobalMatchProps> = () => {
-  const url = useFormWatch(formKeys.captureRegexUrl);
+  const url = useFormWatch(['capture', 'regexUrl']);
 
   return (
     <>
       <Form.Item
         label="Url"
-        name={formKeys.captureRegexUrl}
+        name={['capture', 'regexUrl']}
         rules={[{ required: true }]}
       >
         <Input />

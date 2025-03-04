@@ -1,19 +1,15 @@
-import { ConnectBreakConnect, ConnectPassProxy } from "./Connect";
+import { Handler } from '@/api/type';
+import { ConnectPassProxy } from './Connect';
 
-export enum HandlerType {
-    ConnectBreakConnct = "ConnectBreakConnct",
-    ConnectPassProxy = "ConnectPassProxy",
-}
-
-export const FormComponentMap = {
-    [HandlerType.ConnectPassProxy]: {
-        title: "Connect (Pass Proxy)",
-        conent: ConnectPassProxy,
-
-    },
-    [HandlerType.ConnectBreakConnct]: {
-        title: "Connect (Break Connect)",
-        conent: ConnectBreakConnect
-    }
-}
-
+export type HandlerType = Handler['type'];
+export const getFormComponent = (handler: Handler) => {
+  switch (handler.type) {
+    case 'connectPassProxyHandler':
+      return {
+        title: 'Connect (Pass Proxy)',
+        component: ConnectPassProxy,
+      };
+    default:
+      return null;
+  }
+};
