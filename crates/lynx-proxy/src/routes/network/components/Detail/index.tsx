@@ -3,7 +3,7 @@ import React from 'react';
 import { Overview } from '../Overview';
 import { Contents } from '../Contents';
 
-interface IDetailProps { }
+interface IDetailProps {}
 
 const initialItems = [
   { label: 'Overview', children: <Overview />, key: '1' },
@@ -12,10 +12,10 @@ const initialItems = [
 
 export const Detail: React.FC<IDetailProps> = (_props) => {
   return (
-    <div className="bg-white px-2 flex-1 h-full ">
+    <div className="flex-1 bg-white px-2 h-full">
       <Tabs
         animated
-        className="h-full  flex-1 [&_.ant-tabs-content]:h-full [&_.ant-tabs-tabpane]:h-full"
+        className="h-full flex-1 [&_.ant-tabs-content]:h-full [&_.ant-tabs-tabpane]:h-full"
         defaultActiveKey="1"
         tabBarStyle={{ margin: 0 }}
         items={initialItems}

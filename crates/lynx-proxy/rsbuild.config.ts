@@ -17,6 +17,11 @@ export default defineConfig({
   html: {
     title: 'Lynx Proxy',
   },
+  source: {
+    define: {
+      'process.platform': '"browser"',
+    },
+  },
   server: {
     port: 8080,
     proxy: {

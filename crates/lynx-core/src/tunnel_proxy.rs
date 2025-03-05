@@ -62,8 +62,7 @@ pub async fn tunnel(upgraded: Upgraded, addr: String) -> std::io::Result<()> {
 
     trace!(
         "client wrote {} bytes and received {} bytes",
-        from_client,
-        from_server
+        from_client, from_server
     );
 
     Ok(())

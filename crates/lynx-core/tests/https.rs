@@ -110,3 +110,27 @@ async fn ping_pong_test() {
         lynx_core_res.bytes().await.unwrap()
     );
 }
+
+
+
+#[tokio::test]
+async fn baidu_test() {
+    init_tracing();
+    let (_, direct_request_client, proxy_request_client) = init_test_server().await;
+
+    let direct_res = direct_request_client
+        .post("https://www.baidu.com")
+        .send()
+        .await
+        .unwrap();
+
+    let lynx_core_res = proxy_request_client
+        .post("https://www.baidu.com")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(
+        direct_res.bytes().await.unwrap(),
+        lynx_core_res.bytes().await.unwrap()
+    );
+}

@@ -3,7 +3,9 @@ use common::{
     test_server::HELLO_PATH,
     tracing_config::init_tracing,
 };
-use lynx_core::{self_service::REQUEST_LOG, server::Server, server_context::set_up_context};
+use lynx_core::{
+    self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
+};
 use reqwest::Client;
 use std::net::SocketAddr;
 pub mod common;
@@ -36,7 +38,10 @@ async fn request_test() {
     let (addr, proxy_addr, direct_request_client, proxy_request_client) = init_test_server().await;
 
     let mut log = direct_request_client
-        .get(format!("http://{proxy_addr}{}", REQUEST_LOG))
+        .get(format!(
+            "http://{proxy_addr}{}",
+            SelfServiceRouterPath::RequestLog
+        ))
         .send()
         .await
         .unwrap();

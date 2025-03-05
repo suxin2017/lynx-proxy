@@ -2,23 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IAppConfigModel,
   IAppConfigResponse,
-  IRuleGroupTreeResponse as IRuleGroupTreeResponse,
   RecordStatusEnum,
 } from './models';
-import { message } from 'antd';
+import { App } from 'antd';
+import axiosInstance from './axiosInstance';
 
 export const useChangeRecordStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ status }: { status: RecordStatusEnum }) =>
-      fetch(`/__self_service_path__/app_config/record_status`, {
-        method: 'POST',
-        body: JSON.stringify({ status }),
-      }).then((res) => res.json() as Promise<IRuleGroupTreeResponse>),
+    mutationFn: async ({ status }: { status: RecordStatusEnum }) => {
+      const response = await axiosInstance.post('/app_config/record_status', { status });
+      return response.data as IAppConfigResponse;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['/__self_service_path__/app_config'],
+        queryKey: ['/app_config'],
       });
     },
   });
@@ -26,23 +25,23 @@ export const useChangeRecordStatus = () => {
 
 export const useGetAppConfig = () => {
   return useQuery({
-    queryKey: ['/__self_service_path__/app_config'],
-    queryFn: async () =>
-      fetch(`/__self_service_path__/app_config`).then(
-        (res) => res.json() as Promise<IAppConfigResponse>,
-      ),
+    queryKey: ['/app_config'],
+    queryFn: async () => {
+      const response = await axiosInstance.get('/app_config');
+      return response.data as IAppConfigResponse;
+    },
   });
 };
 
 export const useSaveSSLConfig = () => {
+  const { message } = App.useApp();
   return useMutation({
     mutationFn: async (
       config: IAppConfigModel['sslConfig'] & { captureSSL: boolean },
-    ) =>
-      fetch(`/__self_service_path__/ssl_config/save`, {
-        method: 'POST',
-        body: JSON.stringify(config),
-      }).then((res) => res.json()),
+    ) => {
+      const response = await axiosInstance.post('/ssl_config/save', config);
+      return response.data;
+    },
     onSuccess: () => {
       message.success('Save successfully');
     },

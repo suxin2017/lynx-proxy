@@ -5,12 +5,10 @@ use common::{
 };
 use http::header::CONTENT_TYPE;
 use lynx_core::{
-    self_service::{RULE_ADD, RULE_DELETE, RULE_UPDATE},
-    server::Server,
-    server_context::set_up_context,
+    self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
 };
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::net::SocketAddr;
 pub mod common;
 
@@ -49,12 +47,16 @@ impl RuleContext {
         match_addr: &SocketAddr,
         target_addr: &SocketAddr,
         client: &Client,
-        rule: Value,
+        mut rule: Value,
     ) -> RuleContext {
         let match_domain = format!("http://{}", match_addr);
         let _target_domain = format!("http://{}", target_addr);
         let res = client
-            .post(format!("{}{}", match_domain, RULE_ADD))
+            .post(format!(
+                "{}{}",
+                match_domain,
+                SelfServiceRouterPath::RuleAdd
+            ))
             .json(&json!({
                 "name": "test",
                 // default rule group id
@@ -69,13 +71,17 @@ impl RuleContext {
         let data = binding.get("data").unwrap();
         let id = data.get("id").unwrap().clone();
 
+        rule.as_object_mut()
+            .unwrap()
+            .insert("id".to_string(), id.clone());
         // set match rule
         let res = client
-            .post(format!("http://{}{}", proxy_addr, RULE_UPDATE))
-            .json(&json!({
-                "id": id,
-                "content": rule
-            }))
+            .post(format!(
+                "http://{}{}",
+                proxy_addr,
+                SelfServiceRouterPath::RuleUpdateContent
+            ))
+            .json(&rule)
             .send()
             .await
             .unwrap();
@@ -88,7 +94,10 @@ impl RuleContext {
     }
     async fn destroy(&self, addr: &SocketAddr, client: &Client) {
         let res = client
-            .post(format!("http://{addr}{}", RULE_DELETE))
+            .post(format!(
+                "http://{addr}{}",
+                SelfServiceRouterPath::RuleDelete
+            ))
             .json(&json!({
                 "id": self.id,
             }))
@@ -111,12 +120,19 @@ async fn test_rule_proxy() {
     let target_domain = format!("http://{}", target_addr);
 
     let rule = json!({
-        "capture":{
-            "uri": format!("{}/**", match_domain)
+        "capture": {
+            "type":"glob",
+            "url":format!("{}/**", match_domain)
         },
-        "handler": {
-            "proxyPass": target_domain
-        }
+        "handlers":[
+            {
+                "type":"connectPassProxyHandler",
+                "data":{
+                    "switch":true,
+                    "url":target_domain
+                },
+            }
+        ]
     });
 
     let rule_context = RuleContext::init(
@@ -170,13 +186,19 @@ async fn test_rule_ignore_proxy() {
     let target_domain = format!("http://{}", target_addr);
 
     let rule = json!({
-        "capture":{
-            // ignore hello path
-            "uri": format!("!{}{}**", match_domain,HELLO_PATH)
+        "capture": {
+            "type":"glob",
+            "url":format!("!{}{}**", match_domain,HELLO_PATH)
         },
-        "handler": {
-            "proxyPass": target_domain
-        }
+        "handlers":[
+            {
+                "type":"connectPassProxyHandler",
+                "data":{
+                    "switch":true,
+                    "url":target_domain
+                },
+            }
+        ]
     });
 
     let rule_context = RuleContext::init(

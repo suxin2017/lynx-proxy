@@ -1,11 +1,17 @@
-import React, { useRef, useState } from 'react';
-import { Space, Tree } from 'antd';
+import React, { useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useSize } from 'ahooks';
-import { Icon } from '@/components/Icon';
 import { useSelectRequest } from '../store/selectRequestStore';
 import { RootState } from '@/store';
 import { IRequestTreeNode } from '@/store/requestTreeStore';
+import { NodeRendererProps, Tree } from 'react-arborist';
+import {
+  RiArrowDropDownLine,
+  RiArrowDropRightLine,
+  RiFolder6Line,
+} from '@remixicon/react';
+import { first, get, keys } from 'lodash';
+import { MimeTypeIcon } from '@/components/MimeTypeIcon';
 
 export const RequestTree: React.FC = () => {
   const treeData = useSelector(
@@ -15,71 +21,81 @@ export const RequestTree: React.FC = () => {
   const ref = useRef(null);
   const size = useSize(ref);
 
-  const [expandedKeys, setExpandKeys] = useState<string[]>([]);
   const { setSelectRequest } = useSelectRequest();
   return (
-    <div
-      ref={ref}
-      className="h-full w-full bg-white overflow-auto"
-      style={{ width: size?.width, height: size?.height }}
-    >
+    <div ref={ref} className="h-full w-full bg-white">
       <Tree
-        className="w-full h-full overflow-auto"
-        expandedKeys={expandedKeys}
-        showIcon
-        blockNode
-        virtual
         height={size?.height}
-        onSelect={(_selectedKeys, info) => {
-          console.log(_selectedKeys, '_selectedKeys');
-          if (info.node.record) {
-            setSelectRequest(info.node.record);
+        width={size?.width}
+        data={treeData}
+        indent={24}
+        disableDrag
+        openByDefault={false}
+        onSelect={(node) => {
+          const selectedNode = first(node);
+          if (selectedNode && selectedNode.data.record) {
+            setSelectRequest(selectedNode.data.record);
           }
         }}
-        onExpand={(keys, info) => {
-          console.log(keys, info, 'onExpand');
-          if (info.expanded) {
-            const paths = getExpandPaths(info.node);
-            setExpandKeys(Array.from(new Set([...expandedKeys, ...paths])));
-          } else {
-            setExpandKeys(keys as string[]);
-          }
-        }}
-        treeData={treeData}
-        titleRender={(node) => {
-          return (
-            <Space>
-              <span>{<Icon type="icon-network" />}</span>
-              <span
-                className="inline-block whitespace-nowrap"
-                title={node.title}
-              >
-                {node.title}
-              </span>
-            </Space>
-          );
-        }}
-      />
+      >
+        {Node}
+      </Tree>
     </div>
   );
 };
 
-const getExpandPaths = (
-  treeData?: IRequestTreeNode,
-  path: string[] = [],
-): string[] => {
-  if (!treeData) {
-    return [];
-  }
-  if (!treeData.children || treeData.children.length === 0) {
-    return path;
-  }
-  const newPath = [...path, treeData.key];
-  for (const child of treeData.children) {
-    const result = getExpandPaths(child, newPath);
-    if (result.length > 0) {
-      return result;
-    }
-  }
-  return [];
+const baseClassName = 'flex items-center h-full w-full text-xs';
+const selectNodeClassName = 'bg-sky-100';
+
+const Node = ({
+  node,
+  style,
+  dragHandle,
+}: NodeRendererProps<IRequestTreeNode>) => {
+  /* This node instance can do many things. See the API reference. */
+  const isLeaf = !node.children?.length;
+
+  return (
+    <div
+      style={style}
+      className={`${baseClassName} ${
+        node.isSelected ? selectNodeClassName : ''
+      }`}
+      ref={dragHandle}
+      onClick={() => {
+        node.select();
+        node.toggle();
+      }}
+    >
+      {!isLeaf && (
+        <span className="flex items-center">
+          {node.isClosed ? (
+            <RiArrowDropRightLine size={14} />
+          ) : (
+            <RiArrowDropDownLine size={14} />
+          )}
+        </span>
+      )}
+      {isLeaf ? (
+        <span className="mr-1 flex items-center">
+          <MimeTypeIcon
+            size={14}
+            mimeType={get(
+              node?.data?.record?.header,
+              keys(node?.data?.record?.header).find(
+                (item) => item.toLowerCase() === 'content-type',
+              ) ?? 'un-content-type',
+            )}
+          />
+        </span>
+      ) : (
+        <span className="mr-1 flex items-center">
+          <RiFolder6Line size={14} />
+        </span>
+      )}
+      <span className="inline-block w-full overflow-ellipsis">
+        {node.data.name}
+      </span>
+    </div>
+  );
 };

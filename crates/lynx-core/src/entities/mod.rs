@@ -11,8 +11,6 @@ pub mod app_config;
 pub mod request;
 pub mod response;
 pub mod rule;
-pub mod rule_content;
-pub mod rule_group;
 
 pub async fn set_up_db(config: &AppConfig) -> DatabaseConnection {
     let schema = format!(
@@ -27,7 +25,7 @@ pub async fn set_up_db(config: &AppConfig) -> DatabaseConnection {
     let _ = Migrator::fresh(&db).await;
 
     #[cfg(not(feature = "test"))]
-    Migrator::up(&db,None).await.unwrap();
+    Migrator::up(&db, None).await.unwrap();
 
     db
 }

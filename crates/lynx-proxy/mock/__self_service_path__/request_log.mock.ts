@@ -14,6 +14,6 @@ export default defineMock({
       }
       const data = mockData();
       res.write(Buffer.from(JSON.stringify({ add: data })));
-    }, 500);
+    }, 5000);
   },
 });
