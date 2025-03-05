@@ -9,7 +9,10 @@ import {
   useTreeContentMenuContext,
 } from './TreeContentMenu';
 import { useEventListener, useSize } from 'ahooks';
-import { SaveTreeNodeModal, SaveTreeNodeModalContextProvider } from './SaveTreeNodeModal';
+import {
+  SaveTreeNodeModal,
+  SaveTreeNodeModalContextProvider,
+} from './SaveTreeNodeModal';
 
 interface IRuleTreeProps {}
 
@@ -40,32 +43,35 @@ export const InnerRullTree: React.FC<IRuleTreeProps> = () => {
           e.preventDefault();
         }}
       >
-        <Tree.DirectoryTree
-          height={height}
-          treeData={data?.data}
-          selectedKeys={selectKeys}
-          icon={false}
-          onRightClick={({ node, event }) => {
-            event.stopPropagation();
-            if (node.isLeaf) {
-              openRuleMenu(node.record as unknown as IRuleModel, {
-                x: event.clientX,
-                y: event.clientY,
-              });
-            } else {
-              openGroupMenu(node.record as unknown as IRuleGroupModel, {
-                x: event.clientX,
-                y: event.clientY,
-              });
-            }
-          }}
-          onSelect={(keys, info) => {
-            if (info.node.isLeaf) {
-              setSelectKeys(keys);
-              setSelectedRule(info.node.record as unknown as IRuleModel);
-            }
-          }}
-        />
+        {data && (
+          <Tree.DirectoryTree
+            height={height}
+            treeData={data?.data}
+            selectedKeys={selectKeys}
+            defaultExpandAll
+            icon={false}
+            onRightClick={({ node, event }) => {
+              event.stopPropagation();
+              if (node.isLeaf) {
+                openRuleMenu(node.record as unknown as IRuleModel, {
+                  x: event.clientX,
+                  y: event.clientY,
+                });
+              } else {
+                openGroupMenu(node.record as unknown as IRuleGroupModel, {
+                  x: event.clientX,
+                  y: event.clientY,
+                });
+              }
+            }}
+            onSelect={(keys, info) => {
+              if (info.node.isLeaf) {
+                setSelectKeys(keys);
+                setSelectedRule(info.node.record as unknown as IRuleModel);
+              }
+            }}
+          />
+        )}
       </div>
     </TreeContentMenu>
   );

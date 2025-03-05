@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
-use http::header::{CONNECTION, HOST, PROXY_AUTHORIZATION};
+use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
@@ -60,11 +60,13 @@ pub async fn build_proxy_request(
 
     let mut builder = hyper::Request::builder()
         .method(parts.method)
-        .uri(parts.uri)
-        .version(parts.version);
+        .uri(parts.uri);
 
     for (key, value) in parts.headers.iter() {
-        if matches!(key, &HOST | &CONNECTION | &PROXY_AUTHORIZATION) {
+        if matches!(
+            key,
+            &HOST | &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH
+        ) {
             continue;
         }
         builder = builder.header(key, value);
@@ -135,7 +137,7 @@ pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
             .await
     };
 
-    proxy_res.map_err(|e| anyhow!(e))
+    proxy_res.map_err(|e| anyhow!(e).context("proxy request error"))
 }
 
 #[cfg(feature = "test")]

@@ -175,7 +175,7 @@ const HandlerComponentList: React.FC = () => {
       <Collapse
         ghost
         className="[&_.ant-collapse-content-box]:px-0 [&_.ant-collapse-header]:flex [&_.ant-collapse-header]:items-center [&_.ant-collapse-header]:p-0"
-        expandIconPosition="right"
+        expandIconPosition="end"
         activeKey={activeKey}
         onChange={setActiveKey}
         items={items}
