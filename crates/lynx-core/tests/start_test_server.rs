@@ -1,13 +1,11 @@
 pub mod common;
 
-use common::{
-    start_http_server::start_http_server_with_port, tracing_config::init_tracing,
-};
+use common::{start_http_server::start_http_server_with_port, tracing_config::init_tracing};
 use lynx_core::{server::Server, server_context::set_up_context};
 
 #[tokio::test]
 #[ignore]
-#[allow(dead_code,unused)]
+#[allow(dead_code, unused)]
 async fn start_test_server() {
     init_tracing();
     let addr: std::net::SocketAddr = start_http_server_with_port(3002).await.unwrap();

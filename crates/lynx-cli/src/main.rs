@@ -11,8 +11,8 @@ use include_dir::include_dir;
 use lynx_core::config::InitAppConfigParams;
 use lynx_core::self_service::SELF_SERVICE_PATH_PREFIX;
 use lynx_core::server::{Server, ServerConfig};
-use lynx_core::server_context::{set_up_context, InitContextParams};
-use tracing::{info, Level};
+use lynx_core::server_context::{InitContextParams, set_up_context};
+use tracing::{Level, info};
 use tracing_subscriber::filter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 

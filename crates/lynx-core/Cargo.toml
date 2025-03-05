@@ -14,7 +14,7 @@ include = ["src", "Cargo.toml", "README.md"]
 path = "src/lib.rs"
 
 [dependencies]
-sea-orm = { workspace = true }
+sea-orm = { workspace = true, features = ["mock"] }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
@@ -75,6 +75,8 @@ include_dir = "0.7.4"
 mime_guess = "=2.0.5"
 schemars = "0.8.21"
 glob-match = "0.2.1"
+regex = "1.11.1"
+typeshare = "1.0.0" # Use whichever version is the most recent
 
 [dev-dependencies]
 dotenv = "0.15.0"
@@ -83,6 +85,7 @@ reqwest = { version = "0.12.12", features = [
     "gzip",
     "json",
     "stream",
+    "rustls-tls"
 ] }
 reqwest-websocket = "0.4.4"
 async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }

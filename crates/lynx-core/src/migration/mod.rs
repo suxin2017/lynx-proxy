@@ -1,6 +1,9 @@
 pub use sea_orm_migration::prelude::*;
 
-mod m20250112_111416_create_rule_table;
+mod app_config;
+mod request;
+mod response;
+mod rule;
 
 pub struct Migrator;
 
@@ -8,7 +11,10 @@ pub struct Migrator;
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
         vec![
-            Box::new(m20250112_111416_create_rule_table::Migration),
+            Box::new(app_config::Migration),
+            Box::new(rule::Migration),
+            Box::new(request::Migration),
+            Box::new(response::Migration),
         ]
     }
 }

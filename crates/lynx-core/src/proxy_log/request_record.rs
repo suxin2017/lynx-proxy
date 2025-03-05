@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::schedular::get_req_trace_id;
 
-
 #[derive(Default, Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestRecord {

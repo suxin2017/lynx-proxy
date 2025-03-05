@@ -4,9 +4,11 @@ use common::{
     test_server::HELLO_PATH,
     tracing_config::init_tracing,
 };
-use lynx_core::{self_service::SSL_CONFIG_SAVE, server::Server, server_context::set_up_context};
+use lynx_core::{
+    self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
+};
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::net::SocketAddr;
 pub mod common;
 
@@ -36,7 +38,11 @@ struct SSLTextContext {}
 impl SSLTextContext {
     async fn init(proxy_addr: &SocketAddr, client: &Client, value: Value) -> SSLTextContext {
         let res = client
-            .post(format!("http://{}{}", proxy_addr, SSL_CONFIG_SAVE))
+            .post(format!(
+                "http://{}{}",
+                proxy_addr,
+                SelfServiceRouterPath::SslConfigSave
+            ))
             .json(&value)
             .send()
             .await
@@ -50,7 +56,11 @@ impl SSLTextContext {
     }
     async fn destroy(&self, proxy_addr: &SocketAddr, client: &Client) {
         let res = client
-            .post(format!("http://{}{}", proxy_addr, SSL_CONFIG_SAVE))
+            .post(format!(
+                "http://{}{}",
+                proxy_addr,
+                SelfServiceRouterPath::SslConfigSave
+            ))
             .json(&json!({
                 "captureSSL": false,
                 "includeDomains": [],
@@ -88,13 +98,13 @@ async fn test_ssl_capture() {
 
     // proxy request
     let lynx_core_res = proxy_request_client
-        .get(format!("https://{target_addr}{HELLO_PATH}"))
+        .get(format!("https://{target_addr}{}", HELLO_PATH))
         .send()
         .await
         .unwrap();
     // direct request
     let target_res = client
-        .get(format!("https://{target_addr}{HELLO_PATH}"))
+        .get(format!("https://{target_addr}{}", HELLO_PATH))
         .send()
         .await
         .unwrap();

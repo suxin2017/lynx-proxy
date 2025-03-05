@@ -14,7 +14,6 @@ export const Request: React.FC<IContentsProps> = (_props) => {
 
   const headers = get(selectRequest, 'header', {});
   const contentType = get(headers, 'Content-Type', '');
-
   return (
     <ContextTabs
       isLoading={isLoading}

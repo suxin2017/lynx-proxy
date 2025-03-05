@@ -1,6 +1,7 @@
-use crate::entities::rule_content::RuleContent;
+use std::fmt;
+
 use crate::utils::full;
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http::header::CONTENT_TYPE;
 use http::method;
@@ -10,44 +11,17 @@ use hyper::{Request, Response};
 use schemars::schema_for;
 use tracing::{error, trace};
 use utils::{
-    internal_server_error, not_found, operation_error, response_ok, validate_error, OperationError,
-    ValidateError,
+    OperationError, ValidateError, internal_server_error, not_found, operation_error, response_ok,
+    validate_error,
 };
 
 pub mod api;
+pub mod paths;
 pub mod utils;
 
+use paths::SelfServiceRouterPath;
+
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
-
-pub const HELLO_PATH: &str = "/__self_service_path__/hello";
-pub const RULE_GROUP_ADD: &str = "/__self_service_path__/rule_group/add";
-pub const RULE_GROUP_UPDATE: &str = "/__self_service_path__/rule_group/update";
-pub const RULE_GROUP_DELETE: &str = "/__self_service_path__/rule_group/delete";
-pub const RULE_GROUP_LIST: &str = "/__self_service_path__/rule_group/list";
-
-pub const RULE_ADD: &str = "/__self_service_path__/rule/add";
-pub const RULE_UPDATE: &str = "/__self_service_path__/rule/update";
-pub const RULE_DELETE: &str = "/__self_service_path__/rule/delete";
-pub const RULE_DETAIL: &str = "/__self_service_path__/rule";
-pub const RULE_CONTEXT_SCHEMA: &str = "/__self_service_path__/rule/context/schema";
-
-pub const REQUEST_CLEAR: &str = "/__self_service_path__/request/clear";
-pub const REQUEST_LOG: &str = "/__self_service_path__/request_log";
-pub const REQUEST_BODY: &str = "/__self_service_path__/request_body";
-
-pub const RESPONSE: &str = "/__self_service_path__/response";
-pub const RESPONSE_BODY: &str = "/__self_service_path__/response_body";
-
-pub const APP_CONFIG_RECORD_STATUS: &str = "/__self_service_path__/app_config/record_status";
-pub const APP_CONFIG_PATH: &str = "/__self_service_path__/app_config";
-
-pub const CERTIFICATE_PATH: &str = "/__self_service_path__/certificate";
-
-pub const SSL_CONFIG_SAVE: &str = "/__self_service_path__/ssl_config/save";
-
-pub const ASSERT_DIT: &str = "/__self_service_path__/static";
-pub const ASSERT_INDEX: &str = "/__self_service_path__/index.html";
-pub const ASSERT_ROOT: &str = "/__self_service_path__";
 
 pub fn match_self_service(req: &Request<Incoming>) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
@@ -61,60 +35,75 @@ pub async fn self_service_router(
 
     trace!("self_service_router: method: {:?}, path: {}", method, path);
 
-    match (method, path) {
-        (&method::Method::GET, HELLO_PATH) => Ok(Response::new(full(Bytes::from("Hello, World!")))),
-        (&method::Method::GET, RULE_GROUP_LIST) => {
+    match (method, SelfServiceRouterPath::from(path)) {
+        (&method::Method::GET, SelfServiceRouterPath::Hello) => {
+            Ok(Response::new(full(Bytes::from("Hello, World!"))))
+        }
+        (&method::Method::GET, SelfServiceRouterPath::RuleGroupList) => {
             api::rule_group_api::handle_rule_group_find(req).await
         }
-        (&method::Method::POST, RULE_GROUP_ADD) => {
+        (&method::Method::POST, SelfServiceRouterPath::RuleGroupAdd) => {
             api::rule_group_api::handle_rule_group_add(req).await
         }
-        (&method::Method::POST, RULE_GROUP_UPDATE) => {
+        (&method::Method::POST, SelfServiceRouterPath::RuleGroupUpdate) => {
             api::rule_group_api::handle_rule_group_update(req).await
         }
-        (&method::Method::POST, RULE_GROUP_DELETE) => {
+        (&method::Method::POST, SelfServiceRouterPath::RuleGroupDelete) => {
             api::rule_group_api::handle_rule_group_delete(req).await
         }
 
-        (&method::Method::GET, RULE_DETAIL) => api::rule_api::handle_rule_detail(req).await,
-        (&method::Method::POST, RULE_ADD) => api::rule_api::handle_rule_add(req).await,
-        (&method::Method::POST, RULE_UPDATE) => api::rule_api::handle_rule_update(req).await,
-        (&method::Method::POST, RULE_DELETE) => api::rule_api::handle_rule_delete(req).await,
+        (&method::Method::GET, SelfServiceRouterPath::RuleDetail) => {
+            api::rule_api::handle_rule_detail(req).await
+        }
+        (&method::Method::POST, SelfServiceRouterPath::RuleAdd) => {
+            api::rule_api::handle_add_rule(req).await
+        }
+        (&method::Method::POST, SelfServiceRouterPath::RuleUpdateName) => {
+            api::rule_api::handle_update_rule_name(req).await
+        }
+        (&method::Method::POST, SelfServiceRouterPath::RuleUpdateContent) => {
+            api::rule_api::handle_update_rule_content(req).await
+        }
+        (&method::Method::POST, SelfServiceRouterPath::RuleDelete) => {
+            api::rule_api::handle_delete_rule(req).await
+        }
 
-        (&method::Method::POST, APP_CONFIG_RECORD_STATUS) => {
+        (&method::Method::POST, SelfServiceRouterPath::AppConfigRecordStatus) => {
             api::app_config_api::handle_recording_status(req).await
         }
-        (&method::Method::GET, APP_CONFIG_PATH) => {
+        (&method::Method::GET, SelfServiceRouterPath::AppConfigPath) => {
             api::app_config_api::handle_app_config(req).await
         }
-        (&method::Method::GET, RULE_CONTEXT_SCHEMA) => {
-            let schema = schema_for!(RuleContent);
-            let schema = serde_json::to_value(&schema).map_err(|e| anyhow!(e))?;
-            response_ok(schema)
+
+        (&method::Method::GET, SelfServiceRouterPath::RequestLog) => {
+            api::request::handle_request_log().await
+        }
+        (&method::Method::POST, SelfServiceRouterPath::RequestClear) => {
+            api::request::handle_request_clear().await
+        }
+        (&method::Method::GET, SelfServiceRouterPath::RequestBody) => {
+            self::api::request::handle_request_body(req).await
         }
 
-        (&method::Method::GET, REQUEST_LOG) => api::request::handle_request_log().await,
-        (&method::Method::POST, REQUEST_CLEAR) => api::request::handle_request_clear().await,
-        (&method::Method::GET, REQUEST_BODY) => self::api::request::handle_request_body(req).await,
-
-        (&method::Method::GET, RESPONSE) => self::api::response::handle_response(req).await,
-        (&method::Method::GET, RESPONSE_BODY) => {
+        (&method::Method::GET, SelfServiceRouterPath::Response) => {
+            self::api::response::handle_response(req).await
+        }
+        (&method::Method::GET, SelfServiceRouterPath::ResponseBody) => {
             self::api::response::handle_response_body(req).await
         }
 
-        (&method::Method::POST, SSL_CONFIG_SAVE) => {
+        (&method::Method::POST, SelfServiceRouterPath::SslConfigSave) => {
             self::api::ssl_config::handle_save_ssl_config(req).await
         }
 
-        (&method::Method::GET, CERTIFICATE_PATH) => {
+        (&method::Method::GET, SelfServiceRouterPath::CertificatePath) => {
             self::api::certificate::handle_certificate(req).await
         }
 
-        (&method::Method::GET, path)
-            if path == SELF_SERVICE_PATH_PREFIX
-                || path.starts_with(ASSERT_DIT)
-                || path == ASSERT_INDEX
-                || path == ASSERT_ROOT =>
+        (&method::Method::GET, _)
+            if path.starts_with(&SelfServiceRouterPath::AssertDit.to_string())
+                || path == SelfServiceRouterPath::AssertIndex.to_string()
+                || path == SelfServiceRouterPath::AssertRoot.to_string() =>
         {
             self::api::assets::handle_ui_assert(req).await
         }

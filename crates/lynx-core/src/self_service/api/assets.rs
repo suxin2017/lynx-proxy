@@ -1,13 +1,13 @@
-use crate::self_service::utils::not_found;
 use crate::self_service::SELF_SERVICE_PATH_PREFIX;
+use crate::self_service::utils::not_found;
 use crate::server_context::APP_CONFIG;
 use crate::utils::full;
 use anyhow::{Error, Result};
 use bytes::Bytes;
-use http::header::CONTENT_TYPE;
 use http::HeaderValue;
-use http_body_util::combinators::BoxBody;
+use http::header::CONTENT_TYPE;
 use http_body_util::BodyExt;
+use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
 use tracing::trace;

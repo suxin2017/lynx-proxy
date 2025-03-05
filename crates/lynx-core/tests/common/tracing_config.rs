@@ -1,13 +1,11 @@
 use tracing_subscriber::{
-    filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt, Layer,
+    Layer, filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
 pub fn init_tracing() {
     let my_filter = FilterFn::new(|metadata| {
         // Only enable spans or events with the target "interesting_things"
-        {
-            metadata.target().starts_with("lynx")
-        }
+        metadata.target().starts_with("lynx")
     });
     let _ = tracing_subscriber::registry()
         .with(

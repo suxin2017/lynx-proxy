@@ -1,18 +1,18 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_compression::tokio::bufread::GzipEncoder;
 use bytes::Bytes;
 use futures_util::{SinkExt, TryStreamExt};
 use http::{
-    header::{CONTENT_ENCODING, CONTENT_TYPE},
     HeaderValue, Method, StatusCode,
+    header::{CONTENT_ENCODING, CONTENT_TYPE},
 };
-use http_body_util::{combinators::BoxBody, BodyExt, Full, StreamBody};
+use http_body_util::{BodyExt, Full, StreamBody, combinators::BoxBody};
 use hyper::{
-    body::{Frame, Incoming},
     Request, Response,
+    body::{Frame, Incoming},
 };
 use once_cell::sync::Lazy;
-use tokio_stream::{wrappers::BroadcastStream, StreamExt};
+use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 
 use std::{sync::Arc, time::Duration};
 use tokio::sync::broadcast;

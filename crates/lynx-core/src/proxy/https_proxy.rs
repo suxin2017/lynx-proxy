@@ -73,7 +73,7 @@ pub async fn https_proxy(
                             match res {
                                 Ok(res) => Ok::<_, hyper::Error>(res),
                                 Err(err) => {
-                                    error!("proxy http request error: {}", err.to_string());
+                                    error!("proxy http request error: {:?}", err);
                                     Ok(Response::new(empty()))
                                 }
                             }

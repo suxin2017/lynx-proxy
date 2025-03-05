@@ -1,14 +1,15 @@
 use core::fmt;
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use bytes::{Buf, Bytes};
 use http::header::CONTENT_TYPE;
-use http_body_util::combinators::BoxBody;
 use http_body_util::BodyExt;
-use hyper::body::Incoming;
+use http_body_util::combinators::BoxBody;
 use hyper::Response;
+use hyper::body::Incoming;
 use schemars::schema::RootSchema;
+use typeshare::typeshare;
 
 use crate::utils::{empty, full};
 
@@ -48,6 +49,7 @@ pub fn parse_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[typeshare]
 pub struct ResponseBox<T> {
     pub code: ResponseCode,
     pub message: Option<String>,
@@ -55,6 +57,7 @@ pub struct ResponseBox<T> {
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[typeshare]
 pub enum ResponseCode {
     Ok,
     ValidateError,
@@ -63,6 +66,7 @@ pub enum ResponseCode {
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[typeshare]
 pub struct ValidateError {
     message: String,
 }

@@ -10,7 +10,7 @@ export const Route = createRootRoute({
 function InnerRouteComponent() {
   useUpdateRequestLog();
   return (
-    <div className="flex h-screen flex-1">
+    <div className="flex h-full w-full flex-1">
       <div className="flex">
         <SideBar />
       </div>

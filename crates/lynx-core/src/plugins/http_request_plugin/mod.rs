@@ -1,11 +1,8 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
-use glob_match::glob_match;
-use http::Uri;
-use http::header::{CONNECTION, HOST, PROXY_AUTHORIZATION};
+use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 use http::uri::Scheme;
 use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, StreamBody};
@@ -15,21 +12,23 @@ use hyper_rustls::HttpsConnectorBuilder;
 use hyper_util::client::legacy::Client;
 use hyper_util::client::legacy::connect::HttpConnector;
 use hyper_util::rt::TokioExecutor;
-use sea_orm::EntityTrait;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tracing::{error, trace, warn};
+use tracing::{error, trace};
 
-use crate::entities::rule_content::{self, parse_rule_content};
 use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
 use crate::schedular::get_req_trace_id;
-use crate::server_context::DB;
+use handle_request_with_rule::handle_request_with_rule;
+
+pub mod handle_request_with_rule;
 
 pub async fn build_proxy_request(
     req: Request<Incoming>,
 ) -> Result<Request<BoxBody<bytes::Bytes, anyhow::Error>>> {
     let trace_id = get_req_trace_id(&req);
+
+    let req = handle_request_with_rule(req).await?;
 
     let (parts, body) = req.into_parts();
     let mut body = body
@@ -59,70 +58,15 @@ pub async fn build_proxy_request(
         }
     });
 
-    let req_url = url::Url::parse(parts.uri.to_string().as_str());
     let mut builder = hyper::Request::builder()
         .method(parts.method)
-        .version(parts.version);
-
-    let db = DB.get().unwrap();
-
-    let rules = rule_content::Entity::find().all(db).await?;
-
-    let mut match_handled = false;
-
-    if let Ok(req_url) = req_url {
-        for rule in rules {
-            trace!("current rule: {:?}", rule);
-            match parse_rule_content(rule.content) {
-                Ok(content) => {
-                    let capture_glob_pattern_str = content.capture.uri;
-                    let is_match = glob_match(&capture_glob_pattern_str, req_url.as_str());
-                    trace!("is match: {}", is_match);
-                    trace!("capture_glob_pattern_str: {}", capture_glob_pattern_str);
-                    trace!("req_url: {}", req_url.as_str());
-                    if is_match {
-                        match_handled = true;
-                        let pass_proxy_uri = url::Url::parse(&content.handler.proxy_pass);
-
-                        match pass_proxy_uri {
-                            Ok(pass_proxy_uri) => {
-                                let host = pass_proxy_uri.host_str();
-                                let port = pass_proxy_uri.port();
-
-                                let mut new_uri = req_url.clone();
-                                let _ = new_uri.set_scheme(pass_proxy_uri.scheme());
-                                let _ = new_uri.set_host(host);
-                                let _ = new_uri.set_port(port);
-
-                                trace!("new url: {:?}", new_uri);
-
-                                if let Ok(new_uri) = Uri::from_str(new_uri.as_str()) {
-                                    builder = builder.uri(new_uri);
-                                } else {
-                                    warn!("parse pass proxy uri error: {}", new_uri.as_str());
-                                }
-                            }
-                            Err(e) => {
-                                warn!("parse pass proxy uri error: {}", e);
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    warn!("parse rule content error: {}", e);
-                }
-            }
-        }
-    } else {
-        warn!("parse req url error: {}", parts.uri);
-    }
-
-    if !match_handled {
-        builder = builder.uri(parts.uri);
-    }
+        .uri(parts.uri);
 
     for (key, value) in parts.headers.iter() {
-        if matches!(key, &HOST | &CONNECTION | &PROXY_AUTHORIZATION) {
+        if matches!(
+            key,
+            &HOST | &CONNECTION | &PROXY_AUTHORIZATION | &CONTENT_LENGTH
+        ) {
             continue;
         }
         builder = builder.header(key, value);
@@ -193,7 +137,7 @@ pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
             .await
     };
 
-    proxy_res.map_err(|e| anyhow!(e))
+    proxy_res.map_err(|e| anyhow!(e).context("proxy request error"))
 }
 
 #[cfg(feature = "test")]

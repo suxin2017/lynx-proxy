@@ -6,13 +6,8 @@ import {
 } from '@tanstack/react-router';
 import { StyleProvider } from '@ant-design/cssinjs';
 import { routeTree } from './routeTree.gen';
-import { ConfigProvider, theme } from 'antd';
-import {
-  MutationCache,
-  QueryCache,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import { ConfigProvider, theme, App as AntdApp } from 'antd';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const hashHistory = createHashHistory();
 // Set up a Router instance
@@ -35,16 +30,6 @@ const queryClient = new QueryClient({
       retry: false,
     },
   },
-  queryCache: new QueryCache({
-    onError: (error) => {
-      console.log(error);
-    },
-  }),
-  mutationCache: new MutationCache({
-    onError: (error) => {
-      console.log(error);
-    },
-  }),
 });
 
 const App = () => {
@@ -54,12 +39,14 @@ const App = () => {
         <ConfigProvider
           theme={{
             token: {
-              borderRadius: 8,
+              borderRadius: 2,
             },
             algorithm: [theme.compactAlgorithm],
           }}
         >
-          <RouterProvider router={router} />
+          <AntdApp className='h-full w-full'>
+            <RouterProvider router={router} />
+          </AntdApp>
         </ConfigProvider>
       </StyleProvider>
     </QueryClientProvider>

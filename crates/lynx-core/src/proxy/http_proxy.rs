@@ -5,16 +5,50 @@ use hyper::{Request, Response};
 use sea_orm::{ActiveModelTrait, Set};
 use tracing::{info, trace};
 
-use crate::entities::app_config::{get_app_config, RecordingStatus};
+use crate::bo::rule_content::get_all_rule_content;
+use crate::entities::app_config::{RecordingStatus, get_app_config};
 use crate::entities::request::{self};
 use crate::entities::response;
+use crate::entities::rule::capture::CaptureType;
 use crate::plugins::http_request_plugin::{self, build_proxy_response};
 use crate::proxy_log::message::Message;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
 use crate::server_context::DB;
 
+pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
+    let all_rule_content = get_all_rule_content().await?;
+
+    let handlers = all_rule_content
+        .into_iter()
+        .filter(|rule_content| {
+            rule_content
+                .capture
+                .as_ref()
+                .map(|capture| match capture.r#type {
+                    CaptureType::Glob => {
+                        let req_url = url::Url::parse(&req.uri().to_string()).unwrap();
+                        let is_match = glob_match::glob_match(&capture.url, req_url.as_str());
+                        is_match
+                    }
+                    CaptureType::Regex => {
+                        let req_url = req.uri().to_string();
+                        let is_match = regex::Regex::new(&capture.url).unwrap().is_match(&req_url);
+                        trace!("is match: {}", is_match);
+                        is_match
+                    }
+                })
+                .unwrap_or(false)
+        })
+        .flat_map(|rule_content| rule_content.handlers)
+        .collect::<Vec<_>>();
+    req.extensions_mut().insert(handlers);
+    Ok(req)
+}
+
 pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
+    let req = handle_capture_req(req).await?;
+
     info!("proxying http request {:?}", req);
     let trace_id = get_req_trace_id(&req);
 
