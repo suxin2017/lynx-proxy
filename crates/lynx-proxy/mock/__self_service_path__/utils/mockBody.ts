@@ -112,5 +112,9 @@ chrome.storage.local.get(["show_side_ball", "disable_side_ball_domains"], async 
     return readFileSync(
       join(__dirname, 'mock/__self_service_path__', 'rabbit320.webm'),
     );
+  } else if (type === 'font') {
+    return readFileSync(
+      join(__dirname, 'mock/__self_service_path__', 'font.ttf'),
+    );
   }
 }

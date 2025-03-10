@@ -40,6 +40,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
     const contentTypeJson = !!contentType?.includes('application/json');
     const contentTypeImage = !!contentType?.includes('image');
     const contentTypeVideo = !!contentType?.includes('video');
+    const contentTypeFont = !!contentType?.includes('font');
     const contentTypeHtml = !!contentType?.includes('html');
     const contentTypeXml = !!contentType?.includes('xml');
     const contentTypeCss = !!contentType?.includes('css');
@@ -50,6 +51,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
     );
     return {
       contentTypeJson,
+      contentTypeFont,
       contentTypeImage,
       contentTypeVideo,
       contentTypeHtml,
@@ -66,7 +68,8 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       return ContentPreviewType.Json;
     } else if (
       contentTypeCheck.contentTypeImage ||
-      contentTypeCheck.contentTypeVideo
+      contentTypeCheck.contentTypeVideo ||
+      contentTypeCheck.contentTypeFont
     ) {
       return ContentPreviewType.Media;
     } else if (
@@ -98,12 +101,28 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       contentTypeJavascript,
       contentTypeMultiForm,
       contentTypeForm,
+      contentTypeFont,
     } = contentTypeCheck;
     const contentTypeCode =
       contentTypeHtml ||
       contentTypeXml ||
       contentTypeCss ||
       contentTypeJavascript;
+
+    const contentTypeMedia =
+      contentTypeImage || contentTypeVideo || contentTypeFont;
+    let mediaLabel = 'Media Preview';
+    if (contentTypeMedia) {
+      if (contentTypeImage) {
+        mediaLabel = 'Image Preview';
+      }
+      if (contentTypeVideo) {
+        mediaLabel = 'Video Preview';
+      }
+      if (contentTypeFont) {
+        mediaLabel = 'Font Preview';
+      }
+    }
     return filter(
       [
         {
@@ -116,14 +135,14 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
           label: 'Json',
           children: <JsonPreview arrayBuffer={body} />,
         }),
-        ifTrue(contentTypeImage || contentTypeVideo, {
+        ifTrue(contentTypeMedia, {
           key: ContentPreviewType.Media,
-          label: 'Media Preview',
+          label: mediaLabel,
           children: (
             <MediaViewer
               arrayBuffer={body}
               contentType={contentType}
-              type={[contentTypeImage, contentTypeVideo]}
+              type={[contentTypeImage, contentTypeVideo, contentTypeFont]}
             />
           ),
         }),
@@ -142,17 +161,11 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
             />
           ),
         }),
-        ifTrue(
-          !contentTypeJson &&
-            !contentTypeImage &&
-            !contentTypeVideo &&
-            !contentTypeCode,
-          {
-            key: ContentPreviewType.Text,
-            label: 'Text',
-            children: <TextView arrayBuffer={body} />,
-          },
-        ),
+        ifTrue(!contentTypeJson && !contentTypeMedia && !contentTypeCode, {
+          key: ContentPreviewType.Text,
+          label: 'Text',
+          children: <TextView arrayBuffer={body} />,
+        }),
         ifTrue(contentTypeMultiForm || contentTypeForm, {
           key: ContentPreviewType.Form,
           label: 'Form Data',
