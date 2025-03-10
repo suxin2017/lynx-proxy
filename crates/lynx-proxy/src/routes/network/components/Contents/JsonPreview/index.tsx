@@ -16,5 +16,5 @@ export const JsonPreview: React.FC<IJsonPreviewProps> = ({ arrayBuffer }) => {
   if (!json) {
     return null;
   }
-  return <ReactJson className="text-sm" src={json} />;
+  return <ReactJson className="text-xs" src={json} />;
 };

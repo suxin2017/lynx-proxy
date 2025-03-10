@@ -2,18 +2,33 @@ import React, { useMemo } from 'react';
 
 interface IMediaViewerProps {
   arrayBuffer?: ArrayBuffer;
+  contentType?: string;
+  type: [
+    boolean, // image
+    boolean, // video
+  ];
 }
 
-export const MediaViewer: React.FC<IMediaViewerProps> = ({ arrayBuffer }) => {
-  const image = useMemo(() => {
+export const MediaViewer: React.FC<IMediaViewerProps> = ({
+  arrayBuffer,
+  type,
+  contentType,
+}) => {
+  const mediaUrl = useMemo(() => {
     if (!arrayBuffer) {
       return null;
     }
-    const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+    const blob = new Blob([arrayBuffer], { type: contentType });
     return URL.createObjectURL(blob);
-  }, [arrayBuffer]);
-  if (!image) {
+  }, [arrayBuffer, contentType]);
+
+  if (!mediaUrl) {
     return null;
   }
-  return <img src={image} />;
+
+  if (type[1]) {
+    return <video controls src={mediaUrl} />;
+  }
+
+  return <img src={mediaUrl} />;
 };
