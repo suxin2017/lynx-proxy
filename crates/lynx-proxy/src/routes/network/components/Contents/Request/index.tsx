@@ -1,7 +1,7 @@
 import React from 'react';
 import { useGetRequestBodyQuery } from '@/api/request';
 import { get } from 'lodash';
-import { ContextTabs } from '../ContextTabs';
+import { ContentPreviewTabs } from '../ContentPreviewTabs';
 import { useSelectRequest } from '../../store/selectRequestStore';
 
 interface IContentsProps {}
@@ -15,7 +15,7 @@ export const Request: React.FC<IContentsProps> = (_props) => {
   const headers = get(selectRequest, 'header', {});
   const contentType = get(headers, 'Content-Type', '');
   return (
-    <ContextTabs
+    <ContentPreviewTabs
       isLoading={isLoading}
       title={'Request'}
       headers={headers}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGetResponseBodyQuery, useGetResponseQuery } from '@/api/request';
-import { ContextTabs } from '../ContextTabs';
+import { ContentPreviewTabs } from '../ContentPreviewTabs';
 import { get } from 'lodash';
 import { useSelectRequest } from '../../store/selectRequestStore';
 
@@ -20,7 +20,7 @@ export const Response: React.FC<IContentsProps> = (_props) => {
   const contentType = get(headers, 'Content-Type', '');
 
   return (
-    <ContextTabs
+    <ContentPreviewTabs
       title={'Response'}
       headers={headers}
       contentType={contentType}

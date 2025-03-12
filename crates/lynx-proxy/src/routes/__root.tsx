@@ -14,7 +14,7 @@ function InnerRouteComponent() {
       <div className="flex">
         <SideBar />
       </div>
-      <div className="flex flex-1 p-2">
+      <div className="flex flex-1 p-2 w-[calc(100%-56px)]">
         <Outlet />
       </div>
     </div>
