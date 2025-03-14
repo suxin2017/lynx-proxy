@@ -9,6 +9,7 @@ export default defineMock({
       id: '1',
       recordingStatus: 1,
       captureHttps: true,
+      maxLogSize: 1000,
     },
   },
 });

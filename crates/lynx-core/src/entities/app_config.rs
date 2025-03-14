@@ -17,6 +17,7 @@ pub struct Model {
     #[serde(rename = "captureSSL")]
     pub capture_ssl: bool,
     pub ssl_config: Option<Json>,
+    pub max_log_size: i32,
 }
 
 #[derive(

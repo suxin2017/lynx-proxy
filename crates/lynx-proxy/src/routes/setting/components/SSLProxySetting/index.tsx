@@ -16,7 +16,14 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
   name,
 }) => {
   return (
-    <Form.List name={name}>
+    <Form.List
+      name={name}
+      initialValue={[
+        {
+          switch: true,
+        },
+      ]}
+    >
       {(fields, { add, remove }) => {
         return (
           <div>
@@ -27,11 +34,10 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
               <div>Operation </div>
               {fields.map((field, index) => (
                 <React.Fragment key={field.key}>
-                  <Form.Item key={field.key} name={[field.name, 'switch']}>
+                  <Form.Item name={[field.name, 'switch']}>
                     <Switch size="small" />
                   </Form.Item>
                   <Form.Item
-                    key={field.key}
                     required
                     rules={[
                       {
@@ -48,7 +54,6 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
                     />
                   </Form.Item>
                   <Form.Item
-                    key={field.key}
                     required
                     rules={[
                       {
@@ -79,7 +84,7 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
                 </React.Fragment>
               ))}
             </div>
-            <div>
+            <div className="flex justify-end">
               <Button
                 type="primary"
                 onClick={() => {
@@ -124,7 +129,7 @@ export const SSLProxySetting: React.FC = () => {
         });
       }}
     >
-      <Typography.Title level={3}>SSL Proxying Setting</Typography.Title>
+      <Typography.Title level={4}>SSL Proxying Setting</Typography.Title>
       <Form.Item
         layout="horizontal"
         colon={false}
@@ -135,16 +140,16 @@ export const SSLProxySetting: React.FC = () => {
         <Switch className="w-8" size="small" />
       </Form.Item>
       <Form.Item
-        label={<Typography.Title level={4}>Include Domain</Typography.Title>}
+        label={<Typography.Title level={5}>Include Domain</Typography.Title>}
       >
         <IncludeDomainList name={['sslConfig', 'includeDomains']} />
       </Form.Item>
       <Form.Item
-        label={<Typography.Title level={4}>Exclude Domain</Typography.Title>}
+        label={<Typography.Title level={5}>Exclude Domain</Typography.Title>}
       >
         <IncludeDomainList name={['sslConfig', 'excludeDomains']} />
       </Form.Item>
-      <Form.Item>
+      <Form.Item className="flex justify-end">
         <Button disabled={isPending} type="primary" htmlType="submit">
           Save
         </Button>

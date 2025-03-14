@@ -4,10 +4,10 @@ import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import { IRequestModel } from '@/api/models';
-import { useSelector } from 'react-redux';
 import { useSize } from 'ahooks';
 import { useSelectRequest } from '../store/selectRequestStore';
-import { RootState } from '@/store';
+import { TableFilter } from '../TableFilter';
+import { useFilteredTableData } from '@/store/requestTableStore';
 
 dayjs.extend(duration);
 
@@ -42,9 +42,7 @@ const columns: ColumnsType<IRequestModel> = [
   },
 ];
 export const RequestTable: React.FC = () => {
-  const requestTable = useSelector(
-    (state: RootState) => state.requestTable.requests,
-  );
+  const requestTable = useFilteredTableData()
   const { selectRequest, setSelectRequest } = useSelectRequest();
 
   const ref = useRef(null);
@@ -63,55 +61,58 @@ export const RequestTable: React.FC = () => {
 
   return (
     <div
-      className="flex-1 bg-red flex flex-col relative h-full w-full overflow-hidden"
+      className="bg-red relative flex h-full w-full flex-1 flex-col overflow-hidden"
       ref={ref}
     >
-      {!autoScroll && (
-        <div className="absolute bottom-2 right-2 z-10">
-          <Button
-            size="small"
-            onClick={() => {
-              tblRef.current?.scrollTo({
-                index: requestTable.length - 1,
-              });
-              setAutoScroll(true);
-            }}
-          >
-            Back to bottom
-          </Button>
-        </div>
-      )}
+      <div className="flex-1">
+        {!autoScroll && (
+          <div className="absolute right-2 bottom-8 z-10">
+            <Button
+              size="small"
+              onClick={() => {
+                tblRef.current?.scrollTo({
+                  index: requestTable.length - 1,
+                });
+                setAutoScroll(true);
+              }}
+            >
+              Back to bottom
+            </Button>
+          </div>
+        )}
 
-      <Table<IRequestModel>
-        ref={tblRef}
-        sticky
-        className="flex-1"
-        columns={columns}
-        rowKey="id"
-        size="small"
-        rowClassName={(record) => {
-          if (selectRequest?.id === record.id) {
-            return 'cursor-pointer ant-table-row-selected';
-          }
-          return 'cursor-pointer';
-        }}
-        onRow={(record) => ({
-          onClick: () => {
-            setSelectRequest(record);
-          },
-        })}
-        onScroll={(e) => {
-          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-          const isAtBottom = scrollHeight - scrollTop === clientHeight;
-          if (!isAtBottom && autoScroll) {
-            setAutoScroll(false);
-          }
-        }}
-        virtual
-        scroll={{ x: 800, y: size?.height ?? 400 }}
-        pagination={false}
-        dataSource={requestTable}
-      />
+        <Table<IRequestModel>
+          ref={tblRef}
+          sticky
+          className="flex-1"
+          columns={columns}
+          rowKey="id"
+          size="small"
+          rowClassName={(record) => {
+            if (selectRequest?.id === record.id) {
+              return 'cursor-pointer ant-table-row-selected';
+            }
+            return 'cursor-pointer';
+          }}
+          onRow={(record) => ({
+            onClick: () => {
+              setSelectRequest(record);
+            },
+          })}
+          onScroll={(e) => {
+            const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+            const isAtBottom = scrollHeight - scrollTop === clientHeight;
+            if (!isAtBottom && autoScroll) {
+              setAutoScroll(false);
+            }
+          }}
+          virtual
+          scroll={{ x: 800, y: size?.height ? size.height - 66 : 400 }}
+          pagination={false}
+          dataSource={requestTable}
+        />
+      </div>
+      <TableFilter />
     </div>
   );
 };
