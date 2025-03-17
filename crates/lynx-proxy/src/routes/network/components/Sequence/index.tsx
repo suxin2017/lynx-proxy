@@ -4,14 +4,11 @@ import { Detail } from '../Detail';
 import { RequestTable } from '../RequestTable';
 import { ShowTypeSegmented } from '../ShowTypeSegmented';
 import { Toolbar } from '../Toolbar';
-import { useSize } from 'ahooks';
 
 interface ISequenceProps {}
 
 export const Sequence: React.FC<ISequenceProps> = () => {
   const ref = useRef(null);
-  const size = useSize(ref);
-
   return (
     <div className="animate-fade-in flex h-full w-full flex-1 flex-col">
       <div className="flex items-center">

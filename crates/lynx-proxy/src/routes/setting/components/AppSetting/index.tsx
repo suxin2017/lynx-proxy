@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { SSLProxySetting } from '../SSLProxySetting';
-import { Divider, Menu } from 'antd';
+import { Divider, Menu, Spin } from 'antd';
 import { GeneralSetting } from '../GeneralSetting';
 import { Link } from '@tanstack/react-router';
 import { useInViewport } from 'ahooks';
+import { useGetAppConfig } from '@/api/app';
 
 const menuConfig = [
   {
@@ -20,8 +21,10 @@ const menuConfig = [
 
 export const AppSetting: React.FC = () => {
   const [currentMenu, setCurrentMenu] = React.useState(menuConfig[0].key);
+  const { isLoading } = useGetAppConfig();
+
   return (
-    <div className="flex flex-1 max-w-full">
+    <div className="flex max-w-full flex-1">
       <Menu
         mode="vertical"
         selectedKeys={[currentMenu]}
@@ -39,15 +42,17 @@ export const AppSetting: React.FC = () => {
           };
         })}
       />
-      <div className="flex-1 max-h-full">
-        {menuConfig.map((item) => (
-          <MenuItem
-            setCurrentMenu={setCurrentMenu}
-            component={item.component}
-            key={item.key}
-            value={item.key}
-          />
-        ))}
+      <div className="max-h-full flex-1">
+        <Spin spinning={isLoading}>
+          {menuConfig.map((item) => (
+            <MenuItem
+              setCurrentMenu={setCurrentMenu}
+              component={item.component}
+              key={item.key}
+              value={item.key}
+            />
+          ))}
+        </Spin>
       </div>
     </div>
   );
@@ -70,7 +75,7 @@ const MenuItem: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inViewPort]);
   return (
-    <div id={value} ref={ref} className="w-[476px] min-h-52">
+    <div id={value} ref={ref} className="min-h-52 w-[476px]">
       {component}
       <Divider />
     </div>

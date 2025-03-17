@@ -2,10 +2,12 @@
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize,TS)]
 #[serde(rename_all = "camelCase")]
 #[sea_orm(table_name = "request")]
+#[ts(export, export_to = "RequestModel.ts")]
 // #[builder(pattern = "owned")]
 pub struct Model {
     #[sea_orm(primary_key)]
@@ -16,6 +18,8 @@ pub struct Model {
     pub schema: String,
     pub version: String,
     pub status_code: Option<u16>,
+    pub response_mime_type: Option<String>,
+    #[ts(type = "Record<string, any> | null")]
     pub header: Option<Json>,
     pub header_size: Option<u32>,
 }

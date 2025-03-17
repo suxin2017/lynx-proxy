@@ -1,6 +1,5 @@
 import { useGetAppConfig, useSaveSSLConfig } from '@/api/app';
 import { IAppConfigModel } from '@/api/models';
-import { PageLoading } from '@/components/PageLoading';
 import { RiAddLine, RiDeleteBinLine } from '@remixicon/react';
 import { Form, Switch, Input, Button, Typography, InputNumber } from 'antd';
 import { FormListProps } from 'antd/es/form';
@@ -102,15 +101,15 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
 };
 
 export const SSLProxySetting: React.FC = () => {
-  const { data: appConfig, isFetching } = useGetAppConfig();
+  const { data: appConfig, isLoading } = useGetAppConfig();
   const { captureSSL, sslConfig } = appConfig?.data || ({} as IAppConfigModel);
 
   const { mutateAsync: saveSSLConfig, isPending } = useSaveSSLConfig();
 
   const [form] = Form.useForm<IAppConfigModel>();
 
-  if (isFetching) {
-    return <PageLoading />;
+  if (isLoading) {
+    return null;
   }
   return (
     <Form

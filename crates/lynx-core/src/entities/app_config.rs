@@ -4,30 +4,35 @@ use anyhow::{Result, anyhow};
 use schemars::JsonSchema;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::server_context::DB;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize,TS)]
 #[serde(rename_all = "camelCase")]
 #[sea_orm(table_name = "app_config")]
+#[ts(export, export_to = "AppConfigModel.ts")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub recording_status: RecordingStatus,
     #[serde(rename = "captureSSL")]
     pub capture_ssl: bool,
+    #[ts(type = "Record<string, string> | null")]
     pub ssl_config: Option<Json>,
     pub max_log_size: i32,
+    pub clear_log_size: i32,
 }
 
 #[derive(
-    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,
+    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,TS
 )]
 #[sea_orm(
     rs_type = "String",
     db_type = "String(StringLen::None)",
     rename_all = "camelCase"
 )]
+#[ts(export)]
 pub enum RecordingStatus {
     StartRecording,
     PauseRecording,

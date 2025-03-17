@@ -1,11 +1,10 @@
-import { IRequestModel } from '@/api/models';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { get } from 'lodash';
 import { useSelector } from 'react-redux';
 import { RootState } from '.';
+import { Model as RequestModel } from '@/RequestModel';
 
 export interface RequestTableState {
-  requests: IRequestModel[];
+  requests: RequestModel[];
   filterUri: string;
   filterMimeType: string[];
 }
@@ -20,7 +19,7 @@ const requestTableSlice = createSlice({
   initialState,
   reducers: {
     clearRequestTable: () => initialState,
-    appendRequest: (state, action: PayloadAction<IRequestModel>) => {
+    appendRequest: (state, action: PayloadAction<RequestModel>) => {
       state.requests.push(action.payload);
     },
     filterUri: (state, action: PayloadAction<string>) => {
@@ -29,9 +28,23 @@ const requestTableSlice = createSlice({
     filterMimeType: (state, action: PayloadAction<string[]>) => {
       state.filterMimeType = action.payload;
     },
+    removeOldRequest: (
+      state,
+      action: PayloadAction<{
+        maxLogSize: number;
+        clearLogSize: number;
+      }>,
+    ) => {
+      state.requests = state.requests.slice(
+        -(action.payload.maxLogSize - action.payload.clearLogSize),
+      );
+    },
   },
 });
 
+export const useRequestLogCount = () => {
+  return useSelector((state: RootState) => state.requestTable.requests.length);
+};
 export const useFilteredTableData = () => {
   return useSelector((state: RootState) => {
     return state.requestTable.requests
@@ -45,7 +58,7 @@ export const useFilteredTableData = () => {
         if (state.requestTable.filterMimeType.length === 0) {
           return true;
         }
-        const mimeType = get(request.header, 'Content-Type', '');
+        const mimeType = request.responseMimeType || '';
         return state.requestTable.filterMimeType.some((type) =>
           mimeType.includes(type),
         );
@@ -53,7 +66,12 @@ export const useFilteredTableData = () => {
   });
 };
 
-export const { appendRequest, clearRequestTable, filterMimeType, filterUri } =
-  requestTableSlice.actions;
+export const {
+  appendRequest,
+  removeOldRequest,
+  clearRequestTable,
+  filterMimeType,
+  filterUri,
+} = requestTableSlice.actions;
 
 export const requestTableReducer = requestTableSlice.reducer;

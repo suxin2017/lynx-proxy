@@ -1,17 +1,18 @@
-import { useGetAppConfig } from '@/api/app';
-import { IAppConfigModel } from '@/api/models';
-import { PageLoading } from '@/components/PageLoading';
+import { useGetAppConfig, useSaveGeneralConfig } from '@/api/app';
 import { Button, Form, InputNumber, Typography } from 'antd';
 import React from 'react';
+import { Model as AppConfigModel } from '@/AppConfigModel';
 
 interface IGeneralSettingProps {}
 
-export const GeneralSetting: React.FC<IGeneralSettingProps> = (props) => {
-  const { data: appConfig, isFetching } = useGetAppConfig();
-  const [form] = Form.useForm<IAppConfigModel>();
+export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
+  const { data: appConfig, isLoading } = useGetAppConfig();
+  const { mutateAsync: saveGeneralConfig } = useSaveGeneralConfig();
 
-  if (isFetching) {
-    return <PageLoading />;
+  const [form] = Form.useForm<AppConfigModel>();
+
+  if (isLoading) {
+    return null;
   }
   return (
     <Form
@@ -19,10 +20,11 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = (props) => {
       layout="vertical"
       form={form}
       initialValues={{
-        maxLogSize: 1000,
+        maxLogSize: appConfig?.data?.maxLogSize ?? 1000,
+        clearLogSize: appConfig?.data?.clearLogSize ?? 100,
       }}
-      onFinish={async ({ maxLogSize }) => {
-        // TODO: save general setting
+      onFinish={async ({ maxLogSize, clearLogSize }) => {
+        await saveGeneralConfig({ maxLogSize, clearLogSize });
       }}
     >
       <Typography.Title level={4}>General Setting</Typography.Title>
@@ -30,6 +32,33 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = (props) => {
         colon={false}
         name={'maxLogSize'}
         label={<span>Maximum number of logs</span>}
+        rules={[
+          {
+            required: true,
+            message: 'Please input the max log size!',
+          },
+          {
+            type: 'number',
+            min: 60,
+            max: 6000,
+            message: 'The max log size must be between 60 and 6000!',
+          },
+        ]}
+      >
+        <InputNumber size="small" />
+      </Form.Item>
+      <Form.Item
+        colon={false}
+        name={'clearLogSize'}
+        label={'Clear old logs when the max is reached'}
+        rules={[
+          {
+            type: 'number',
+            required: true,
+            min: 1,
+            message: 'The max log size must be greater than 0!',
+          },
+        ]}
       >
         <InputNumber size="small" />
       </Form.Item>
