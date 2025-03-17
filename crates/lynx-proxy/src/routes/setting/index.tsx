@@ -7,7 +7,7 @@ export const Route = createFileRoute('/setting/')({
 
 function RouteComponent() {
   return (
-    <div className="flex flex-1 animate-fade-in">
+    <div className="flex flex-1 animate-fade-in max-w-full">
       <AppSetting />
     </div>
   );

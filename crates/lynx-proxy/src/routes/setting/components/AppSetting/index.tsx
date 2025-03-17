@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SSLProxySetting } from '../SSLProxySetting';
-import { Menu } from 'antd';
+import { Divider, Menu, Spin } from 'antd';
+import { GeneralSetting } from '../GeneralSetting';
+import { Link } from '@tanstack/react-router';
+import { useInViewport } from 'ahooks';
+import { useGetAppConfig } from '@/api/app';
 
 const menuConfig = [
+  {
+    key: 'General Settings',
+    title: 'General Settings',
+    component: <GeneralSetting />,
+  },
   {
     key: 'ssl-proxy',
     title: 'SSL Proxy',
@@ -12,22 +21,63 @@ const menuConfig = [
 
 export const AppSetting: React.FC = () => {
   const [currentMenu, setCurrentMenu] = React.useState(menuConfig[0].key);
+  const { isLoading } = useGetAppConfig();
+
   return (
-    <div className="flex flex-1 space-x-2">
+    <div className="flex max-w-full flex-1">
       <Menu
         mode="vertical"
         selectedKeys={[currentMenu]}
         className="h-full w-64"
-      >
-        {menuConfig.map((item) => (
-          <Menu.Item key={item.key} onClick={() => setCurrentMenu(item.key)}>
-            {item.title}
-          </Menu.Item>
-        ))}
-      </Menu>
-      <div className='flex-1'>
-        {menuConfig.find((item) => item.key === currentMenu)?.component}
+        items={menuConfig?.map((item) => {
+          return {
+            key: item.key,
+            title: item.title,
+            onClick: () => setCurrentMenu(item.key),
+            label: (
+              <Link to="/setting" hash={item.key} key={item.key}>
+                {item.title}
+              </Link>
+            ),
+          };
+        })}
+      />
+      <div className="max-h-full flex-1">
+        <Spin spinning={isLoading}>
+          {menuConfig.map((item) => (
+            <MenuItem
+              setCurrentMenu={setCurrentMenu}
+              component={item.component}
+              key={item.key}
+              value={item.key}
+            />
+          ))}
+        </Spin>
       </div>
+    </div>
+  );
+};
+
+const MenuItem: React.FC<{
+  component: React.ReactElement;
+  value: string;
+  setCurrentMenu: (key: string) => void;
+}> = ({ component, value, setCurrentMenu }) => {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const inViewPort = useInViewport(ref, {
+    threshold: 1,
+  });
+
+  useEffect(() => {
+    if (inViewPort[0]) {
+      setCurrentMenu(value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inViewPort]);
+  return (
+    <div id={value} ref={ref} className="min-h-52 w-[476px]">
+      {component}
+      <Divider />
     </div>
   );
 };

@@ -11,7 +11,6 @@ export const RecordingStatusButton: React.FC<
 > = () => {
   const { data: appConfigData } = useGetAppConfig();
   const changeRecordStatus = useChangeRecordStatus();
-
   const recordingStatus = appConfigData?.data?.recordingStatus;
   return (
     <div>

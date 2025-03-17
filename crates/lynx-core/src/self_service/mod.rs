@@ -1,4 +1,3 @@
-use std::fmt;
 
 use crate::utils::full;
 use anyhow::{Error, Result, anyhow};
@@ -8,10 +7,9 @@ use http::method;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
-use schemars::schema_for;
 use tracing::{error, trace};
 use utils::{
-    OperationError, ValidateError, internal_server_error, not_found, operation_error, response_ok,
+    OperationError, ValidateError, internal_server_error, not_found, operation_error,
     validate_error,
 };
 
@@ -94,6 +92,9 @@ pub async fn self_service_router(
 
         (&method::Method::POST, SelfServiceRouterPath::SslConfigSave) => {
             self::api::ssl_config::handle_save_ssl_config(req).await
+        }
+        (&method::Method::POST, SelfServiceRouterPath::GeneralConfigSave) => {
+            self::api::app_config_api::handle_save_general_config(req).await
         }
 
         (&method::Method::GET, SelfServiceRouterPath::CertificatePath) => {

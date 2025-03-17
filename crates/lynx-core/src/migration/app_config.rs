@@ -32,6 +32,8 @@ impl MigrationTrait for Migration {
                 }],
                 "excludeDomains": []
             }))),
+            clear_log_size: Set(100),
+            max_log_size: Set(1000),
         };
 
         default_app_config.insert(manager.get_connection()).await?;

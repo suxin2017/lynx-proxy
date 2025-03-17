@@ -5,7 +5,6 @@ use lynx_core::{
 use reqwest::Client;
 use serde_json::{Value, json};
 use std::net::SocketAddr;
-use typeshare::typeshare;
 pub mod common;
 
 async fn init_test_server() -> (SocketAddr, Client) {

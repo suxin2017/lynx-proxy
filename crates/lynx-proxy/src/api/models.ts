@@ -79,6 +79,7 @@ export interface IAppConfigModel  {
   recordingStatus: RecordStatusEnum;
   captureSSL: boolean;
   sslConfig: ISSLConfigModel;
+  maxLogSize: number;
 }
 export interface IRuleGroupTreeResponse extends IResponseBox<IRuleTree[]> {}
 export interface IRuleContentResponse extends IResponseBox<IRuleContentModel> {}

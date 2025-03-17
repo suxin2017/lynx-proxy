@@ -5,7 +5,8 @@ import {
 import queryString from 'query-string';
 import { App } from 'antd';
 import axiosInstance from './axiosInstance';
-import { RuleDetailBody, RuleUpdateContentParams } from './type';
+import { RuleDetailBody } from '@/RuleDetailBody';
+import { RuleUpdateContentParams } from '@/RuleUpdateContentParams';
 
 export const useGetRuleTreeQuery = () => {
   return useQuery({

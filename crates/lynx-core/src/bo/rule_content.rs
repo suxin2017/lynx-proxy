@@ -3,12 +3,12 @@ use std::iter::zip;
 use anyhow::anyhow;
 use schemars::JsonSchema;
 use sea_orm::{
-    ColumnTrait, EntityTrait, FromQueryResult, IntoActiveModel, ModelTrait, QueryFilter,
-    QuerySelect, RelationTrait, Set, TransactionTrait,
+    ColumnTrait, EntityTrait, ModelTrait, QueryFilter,
+    QuerySelect, Set, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use typeshare::typeshare;
+use ts_rs::TS;
 
 use crate::{
     entities::rule::{
@@ -19,17 +19,17 @@ use crate::{
     server_context::DB,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[typeshare]
+#[ts(export)]
 pub struct RuleContent {
     pub capture: Option<Capture>,
     pub handlers: Vec<Handler>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
-#[typeshare]
+#[ts(export)]
 pub struct Capture {
     pub r#type: CaptureType,
     pub url: String,
@@ -44,10 +44,10 @@ impl From<capture::Model> for Capture {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,TS)]
 #[serde(tag = "type", content = "data")]
 #[serde(rename_all = "camelCase")]
-#[typeshare]
+#[ts(export)]
 pub enum Handler {
     ConnectPassProxyHandler(ConnectPassProxyHandler),
 }
@@ -65,8 +65,8 @@ impl From<handler::Model> for Handler {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[typeshare]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,TS)]
+#[ts(export)]
 pub struct ConnectPassProxyHandler {
     pub switch: bool,
     pub url: String,

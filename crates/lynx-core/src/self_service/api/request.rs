@@ -15,10 +15,16 @@ use http_body_util::{BodyExt, StreamBody};
 use hyper::body::{Frame, Incoming};
 use hyper::{Request, Response};
 use sea_orm::EntityTrait;
+use serde::{Deserialize, Serialize};
 use tokio::fs::File;
 use tokio_stream::wrappers::{BroadcastStream, ReadDirStream};
 use tokio_util::io::ReaderStream;
 use tracing::{error, trace};
+use ts_rs::TS;
+
+#[derive(Debug, Deserialize, Serialize,TS)]
+#[ts(export)]
+struct RequestLogBody(request::Model);
 
 pub async fn handle_request_log() -> Result<Response<BoxBody<Bytes, Error>>> {
     let rx = PROXY_BOARD_CAST.subscribe();

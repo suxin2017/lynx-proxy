@@ -7,12 +7,18 @@ import {
 import { App } from 'antd';
 import axiosInstance from './axiosInstance';
 
+import { SaveGeneralConfigParams } from '@/SaveGeneralConfigParams';
+import { GetAppConfigResponse } from '@/GetAppConfigResponse';
+import { SaveGeneralConfigResponse } from '@/SaveGeneralConfigResponse';
+
 export const useChangeRecordStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ status }: { status: RecordStatusEnum }) => {
-      const response = await axiosInstance.post('/app_config/record_status', { status });
+      const response = await axiosInstance.post('/app_config/record_status', {
+        status,
+      });
       return response.data as IAppConfigResponse;
     },
     onSuccess: () => {
@@ -27,8 +33,9 @@ export const useGetAppConfig = () => {
   return useQuery({
     queryKey: ['/app_config'],
     queryFn: async () => {
-      const response = await axiosInstance.get('/app_config');
-      return response.data as IAppConfigResponse;
+      const response =
+        await axiosInstance.get<GetAppConfigResponse>('/app_config');
+      return response.data;
     },
   });
 };
@@ -44,6 +51,26 @@ export const useSaveSSLConfig = () => {
     },
     onSuccess: () => {
       message.success('Save successfully');
+    },
+  });
+};
+
+export const useSaveGeneralConfig = () => {
+  const queryClient = useQueryClient();
+  const { message } = App.useApp();
+  return useMutation({
+    mutationFn: async (config: SaveGeneralConfigParams) => {
+      const response = await axiosInstance.post<SaveGeneralConfigResponse>(
+        '/general_config/save',
+        config,
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      message.success('Save successfully');
+      queryClient.invalidateQueries({
+        queryKey: ['/app_config'],
+      });
     },
   });
 };

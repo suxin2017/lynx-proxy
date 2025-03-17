@@ -1,15 +1,5 @@
 use std::fmt;
 
-use crate::utils::full;
-use anyhow::{Error, Result, anyhow};
-use bytes::Bytes;
-use http::header::CONTENT_TYPE;
-use http::method;
-use http_body_util::combinators::BoxBody;
-use hyper::body::Incoming;
-use hyper::{Request, Response};
-use schemars::schema_for;
-use tracing::{error, trace};
 
 // TODO: add macro support
 
@@ -31,12 +21,14 @@ pub enum SelfServiceRouterPath {
     ResponseBody,
     AppConfigRecordStatus,
     AppConfigPath,
+    GeneralConfigSave,
     CertificatePath,
     SslConfigSave,
     AssertDit,
     AssertIndex,
     AssertRoot,
     RuleContextSchema, // Add this line
+    Unknown,           // To 404
 }
 
 impl From<&str> for SelfServiceRouterPath {
@@ -68,8 +60,13 @@ impl From<&str> for SelfServiceRouterPath {
             "/__self_service_path__/static" => SelfServiceRouterPath::AssertDit,
             "/__self_service_path__/index.html" => SelfServiceRouterPath::AssertIndex,
             "/__self_service_path__" => SelfServiceRouterPath::AssertRoot,
-            "/__self_service_path__/rule/context/schema" => SelfServiceRouterPath::RuleContextSchema, // Add this line
-            _ => panic!("Invalid path: {}", value),
+            "/__self_service_path__/rule/context/schema" => {
+                SelfServiceRouterPath::RuleContextSchema
+            } // Add this line
+            "/__self_service_path__/general_config/save" => {
+                SelfServiceRouterPath::GeneralConfigSave
+            }
+            _ => SelfServiceRouterPath::Unknown,
         }
     }
 }
@@ -121,7 +118,13 @@ impl fmt::Display for SelfServiceRouterPath {
             SelfServiceRouterPath::AssertDit => write!(f, "/__self_service_path__/static"),
             SelfServiceRouterPath::AssertIndex => write!(f, "/__self_service_path__/index.html"),
             SelfServiceRouterPath::AssertRoot => write!(f, "/__self_service_path__"),
-            SelfServiceRouterPath::RuleContextSchema => write!(f, "/__self_service_path__/rule/context/schema"), // Add this line
+            SelfServiceRouterPath::RuleContextSchema => {
+                write!(f, "/__self_service_path__/rule/context/schema")
+            } // Add this line
+            SelfServiceRouterPath::GeneralConfigSave => {
+                write!(f, "/__self_service_path__/general_config/save")
+            }
+            SelfServiceRouterPath::Unknown => write!(f, "Unknown"),
         }
     }
 }
