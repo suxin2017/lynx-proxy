@@ -1,16 +1,11 @@
 use std::str::FromStr;
 
 use anyhow::{Result, anyhow};
-use glob_match::glob_match;
 use http::{Request, Uri};
 use hyper::body::Incoming;
-use sea_orm::EntityTrait;
 use tracing::{trace, warn};
 
-use crate::{
-    bo::rule_content::{Handler, RuleContent, get_all_rule_content},
-    server_context::DB,
-};
+use crate::bo::rule_content::Handler;
 
 pub async fn handle_request_with_rule(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
     let all_handlers = req.extensions().get::<Vec<Handler>>();

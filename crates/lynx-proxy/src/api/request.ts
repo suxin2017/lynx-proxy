@@ -1,10 +1,12 @@
 import { App, message } from 'antd';
-import { IRequestModel, IResponseBoxView } from './models';
+import { IResponseBoxView } from './models';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import queryString from 'query-string';
 import axiosInstance from './axiosInstance';
+import { Model as RequestModel } from '@/RequestModel';
 
-export function fetchRequest(cb: (data: { add: IRequestModel }) => void) {
+
+export function fetchRequest(cb: (data: { add: RequestModel }) => void) {
   const controller = new AbortController();
   const signal = controller.signal;
   fetch('/__self_service_path__/request_log', { signal }).then(

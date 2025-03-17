@@ -1,9 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { appendTreeNode, requestTreeReducer } from './requestTreeStore';
-import { appendRequest, requestTableReducer } from './requestTableStore';
+import {
+  appendRequest,
+  removeOldRequest,
+  requestTableReducer,
+  useRequestLogCount,
+} from './requestTableStore';
 import { fetchRequest } from '@/api/request';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { useGetAppConfig } from '@/api/app';
 
 export const store = configureStore({
   reducer: {
@@ -20,15 +26,26 @@ export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
 export const useUpdateRequestLog = () => {
+  const { data: appConfigData } = useGetAppConfig();
   const dispatch = useDispatch();
+  const requestLogCount = useRequestLogCount();
+  const { maxLogSize = 1000, clearLogSize = 100 } = appConfigData?.data ?? {};
 
   useEffect(() => {
     const controller = fetchRequest((data) => {
+      if (requestLogCount >= maxLogSize) {
+        dispatch(
+          removeOldRequest({
+            maxLogSize,
+            clearLogSize,
+          }),
+        );
+      }
       dispatch(appendRequest({ ...data.add }));
       dispatch(appendTreeNode({ ...data.add }));
     });
     return () => {
       controller.abort('Component unmounted');
     };
-  }, [dispatch]);
+  }, [maxLogSize, clearLogSize, dispatch, requestLogCount]);
 };

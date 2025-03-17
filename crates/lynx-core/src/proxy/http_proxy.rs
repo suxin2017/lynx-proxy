@@ -1,4 +1,5 @@
 use anyhow::{Error, Result};
+use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
@@ -78,6 +79,10 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
         Ok(proxy_res) => {
             trace!("origin response: {:?}", proxy_res);
             request_active_model.status_code = Set(Some(proxy_res.status().as_u16()));
+            request_active_model.response_mime_type = Set(proxy_res
+                .headers()
+                .get(CONTENT_TYPE)
+                .map(|v| v.to_str().unwrap_or("").to_string()));
             let app_config = get_app_config().await;
             trace!("recording status: {:?}", app_config.recording_status);
             if matches!(app_config.recording_status, RecordingStatus::StartRecording) {

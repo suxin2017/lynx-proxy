@@ -1,11 +1,11 @@
-import { IRequestModel } from '@/api/models';
 import { createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit';
 import { last } from 'lodash';
+import { Model as RequestModel } from '@/RequestModel';
 
 export interface IRequestTreeNode {
   id: string;
   name: string;
-  record?: IRequestModel;
+  record?: RequestModel;
   children: IRequestTreeNode[];
 }
 
@@ -25,7 +25,7 @@ const requestTreeSlice = createSlice({
   initialState,
   reducers: {
     clearRequestTree: () => initialState,
-    appendTreeNode: (state, action: PayloadAction<IRequestModel>) => {
+    appendTreeNode: (state, action: PayloadAction<RequestModel>) => {
       const { uri } = action.payload;
       const schemaIndex = uri.indexOf('://');
       const schema = uri.slice(0, schemaIndex + 3);
