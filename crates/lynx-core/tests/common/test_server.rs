@@ -78,6 +78,7 @@ pub async fn test_server(
         return Ok(Response::from_parts(parts, body));
     }
 
+    // http
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/hello") => {
             let mut res = Response::new(

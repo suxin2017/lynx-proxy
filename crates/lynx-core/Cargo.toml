@@ -36,6 +36,7 @@ tokio-stream = { version = "0.1.14", default-features = false, features = [
 tokio-tungstenite = { version = "0.26.1", features = [
     "rustls",
     "rustls-tls-webpki-roots",
+    "connect"
 ] }
 futures-util = "0.3.31"
 bytes = "1.9.0"

@@ -13,6 +13,7 @@ use tracing::{debug, info, trace};
 use crate::entities::app_config::{SSLConfigRule, get_app_config, get_enabled_ssl_config};
 use crate::proxy::http_proxy::proxy_http_request;
 use crate::proxy::https_proxy::https_proxy;
+use crate::proxy::websocket_proxy::{self, websocket_proxy};
 use crate::self_service::{handle_self_service, match_self_service};
 use crate::tunnel_proxy::tunnel_proxy;
 use crate::utils::{full, is_http};
@@ -73,18 +74,19 @@ pub async fn dispatch(
     debug!("dispatching request {:?}", req);
 
     req.extensions_mut().insert(Arc::new(nanoid!()));
-  
+
+    let is_websocket = hyper_tungstenite::is_upgrade_request(&req);
+    if is_websocket {
+        info!("proxying websocket request {:?}", req);
+        return websocket_proxy(req).await;
+    }
     if is_http(req.uri()) {
         trace!("proxying http request {:?}", req);
         return proxy_http_request(req).await;
     }
 
     if capture_ssl(&req).await? {
-        // TODO: support websocket
-        // let is_websocket = hyper_tungstenite::is_upgrade_request(&req);
-        // if is_websocket {
-        //     return WebsocketProxy {}.proxy(req).await;
-        // }
+      
         trace!("proxying https request {:?}", req);
         if req.method() == Method::CONNECT {
             return https_proxy(req).await;

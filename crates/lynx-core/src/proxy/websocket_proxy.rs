@@ -1,76 +1,79 @@
 use anyhow::{Error, Result, anyhow};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{Sink, SinkExt, Stream, StreamExt};
+use http::Uri;
+use http::uri::Scheme;
 use http_body_util::BodyExt;
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
 use hyper_tungstenite::HyperWebsocket;
+use hyper_util::rt::TokioIo;
+use jsonschema::error;
+use tokio::spawn;
+use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
+use tokio_tungstenite::{WebSocketStream, tungstenite};
+use tracing::error;
 
-pub struct WebsocketProxy {}
+use crate::utils::empty;
 
-impl WebsocketProxy {
-    pub async fn proxy(
-        &self,
-        req: Request<Incoming>,
-    ) -> anyhow::Result<Response<BoxBody<Bytes, Error>>> {
-        let mut req = req;
-        let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
+pub async fn websocket_proxy(
+    req: Request<Incoming>,
+) -> anyhow::Result<Response<BoxBody<Bytes, Error>>> {
+    let mut req = req.map(|_| ());
 
-        // Spawn a task to handle the websocket connection.
-        tokio::spawn(async move {
-            if let Err(e) = serve_websocket(websocket).await {
-                eprintln!("Error in websocket connection: {e}");
+    let (res, client_to_server_socket) = hyper_tungstenite::upgrade(&mut req, None)?;
+
+    let (mut parts, _) = req.into_parts();
+    parts.uri = {
+        let mut parts = parts.uri.into_parts();
+        parts.scheme = if parts.scheme.unwrap_or(Scheme::HTTP) == Scheme::HTTP {
+            Some("ws".try_into().expect("Failed to convert scheme"))
+        } else {
+            Some("wss".try_into().expect("Failed to convert scheme"))
+        };
+        Uri::from_parts(parts)?
+    };
+
+    spawn(async move {
+        match client_to_server_socket.await {
+            Ok(client_to_server_socket) => {
+                let proxy_req = Request::from_parts(parts, ());
+                match tokio_tungstenite::connect_async(proxy_req).await {
+                    Ok((server_to_client_socket, _)) => {
+                        let (client_sink, client_stream) = client_to_server_socket.split();
+                        let (server_sink, server_stream) = server_to_client_socket.split();
+                        spawn(serve_websocket(server_sink, client_stream));
+                        spawn(serve_websocket(client_sink, server_stream));
+                    }
+                    Err(e) => {
+                        error!("create websocket connect error {:?}", e);
+                    }
+                }
             }
-        });
-        let (parts, body) = response.into_parts();
+            Err(e) => {
+                error!("handle websocket connect error: {:?}", e);
+            }
+        }
+    });
 
-        let body = body.boxed().map_err(|e| anyhow!(e)).boxed();
-
-        Ok(Response::from_parts(parts, body))
-    }
+    let (parts, body) = res.into_parts();
+    let body: BoxBody<Bytes, Error> = body.map_err(|never| anyhow!(never)).boxed();
+    Ok(Response::from_parts(parts, body))
 }
 
 /// Handle a websocket connection.
-async fn serve_websocket(websocket: HyperWebsocket) -> Result<()> {
-    let mut websocket = websocket.await?;
-    while let Some(message) = websocket.next().await {
-        match message? {
-            Message::Text(msg) => {
-                println!("Received text message: {msg}");
-                websocket
-                    .send(Message::text("Thank you, come again."))
-                    .await?;
-            }
-            Message::Binary(msg) => {
-                println!("Received binary message: {msg:02X?}");
-                websocket
-                    .send(Message::binary(b"Thank you, come again.".to_vec()))
-                    .await?;
-            }
-            Message::Ping(msg) => {
-                // No need to send a reply: tungstenite takes care of this for you.
-                println!("Received ping message: {msg:02X?}");
-            }
-            Message::Pong(msg) => {
-                println!("Received pong message: {msg:02X?}");
-            }
-            Message::Close(msg) => {
-                // No need to send a reply: tungstenite takes care of this for you.
-                if let Some(msg) = &msg {
-                    println!(
-                        "Received close message with code {} and message: {}",
-                        msg.code, msg.reason
-                    );
-                } else {
-                    println!("Received close message");
-                }
-            }
-            Message::Frame(_msg) => {
-                unreachable!();
-            }
-        }
+async fn serve_websocket(
+    mut sink: impl Sink<tungstenite::Message, Error = tungstenite::Error> + Unpin + Send + 'static,
+    mut stream: impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>>
+    + Unpin
+    + Send
+    + 'static,
+) -> Result<()> {
+    while let Some(message) = stream.next().await {
+        let message = message?;
+        println!("Received message: {:?}", message);
+        sink.send(message).await?;
     }
-
     Ok(())
 }
