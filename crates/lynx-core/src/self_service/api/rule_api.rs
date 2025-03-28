@@ -4,23 +4,20 @@ use crate::bo::rule_content::{
 };
 use crate::entities::rule::rule;
 use crate::self_service::utils::{
-    OperationError, ResponseBox, ValidateError, parse_body_params, parse_query_params,
-    response_ok,
+    OperationError, ResponseBox, ValidateError, parse_body_params, parse_query_params, response_ok,
 };
-use crate::server_context::{get_db_connect, DB};
+use crate::server_context::get_db_connect;
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
 use schemars::{JsonSchema, schema_for};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, ModelTrait, TransactionTrait,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-#[derive(Debug, Deserialize, Serialize, JsonSchema,TS)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema, TS)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 struct AddRuleParams {
@@ -46,7 +43,7 @@ pub async fn handle_add_rule(req: Request<Incoming>) -> Result<Response<BoxBody<
     response_ok(res)
 }
 
-#[derive(Debug, Deserialize, Serialize, JsonSchema,TS)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema, TS)]
 #[ts(export)]
 struct UpdateRuleNameParams {
     id: i32,
@@ -77,7 +74,7 @@ pub async fn handle_update_rule_name(
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, JsonSchema,TS)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 struct RuleUpdateContentParams {
@@ -86,7 +83,7 @@ struct RuleUpdateContentParams {
     handlers: Vec<Handler>,
 }
 
-#[derive(Debug, Deserialize, Serialize,TS)]
+#[derive(Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 struct UpdateRuleContentBody(ResponseBox<Option<()>>);
 
@@ -105,13 +102,13 @@ pub async fn handle_update_rule_content(
     response_ok::<Option<()>>(None)
 }
 
-#[derive(Debug, Deserialize, Serialize, JsonSchema,TS)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema, TS)]
 #[ts(export)]
 struct DeleteRuleParams {
     id: i32,
 }
 
-#[derive(Debug, Deserialize, Serialize,TS)]
+#[derive(Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 struct DeleteRuleBody(ResponseBox<Option<()>>);
 
@@ -131,7 +128,7 @@ pub async fn handle_delete_rule(req: Request<Incoming>) -> Result<Response<BoxBo
     }
 }
 
-#[derive(Debug, Deserialize, Serialize,TS)]
+#[derive(Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 struct RuleDetailBody(ResponseBox<RuleContent>);
 

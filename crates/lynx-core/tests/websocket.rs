@@ -1,18 +1,10 @@
-use anyhow::anyhow;
-use bytes::Bytes;
 use common::{
-    build_proxy_client::{build_http_client, build_http_proxy_client},
-    test_server::{ECHO_PATH, GZIP_PATH, HELLO_PATH, PING_PATH, PUSH_MSG_PATH, WORLD},
+    test_server::WORLD,
     tracing_config::init_tracing,
 };
 use futures_util::{SinkExt, TryStreamExt};
-use http::header::CONTENT_TYPE;
 use lynx_core::{server::Server, server_context::set_up_context};
-use reqwest::Client;
 use reqwest_websocket::{Message, RequestBuilderExt};
-use std::{net::SocketAddr, time::Duration};
-use tokio::{sync::broadcast, time::interval};
-use tokio_stream::wrappers::BroadcastStream;
 pub mod common;
 
 use crate::common::start_http_server::start_http_server;

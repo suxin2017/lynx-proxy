@@ -1,6 +1,6 @@
 use crate::entities::app_config::{SSLConfig, SSLConfigRule, get_app_config};
 use crate::self_service::utils::{parse_body_params, response_ok};
-use crate::server_context::{get_db_connect, DB};
+use crate::server_context::get_db_connect;
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;

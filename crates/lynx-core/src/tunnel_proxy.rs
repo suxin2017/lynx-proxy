@@ -12,7 +12,7 @@ use crate::entities::request;
 use crate::proxy_log::message::Message;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
-use crate::server_context::{get_db_connect, DB};
+use crate::server_context::get_db_connect;
 use crate::utils::{empty, host_addr};
 
 pub async fn tunnel_proxy(

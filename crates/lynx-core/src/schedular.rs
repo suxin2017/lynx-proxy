@@ -13,7 +13,7 @@ use tracing::{debug, info, trace};
 use crate::entities::app_config::{SSLConfigRule, get_app_config, get_enabled_ssl_config};
 use crate::proxy::http_proxy::proxy_http_request;
 use crate::proxy::https_proxy::https_proxy;
-use crate::proxy::websocket_proxy::{self, websocket_proxy};
+use crate::proxy::websocket_proxy::{websocket_proxy};
 use crate::self_service::{handle_self_service, match_self_service};
 use crate::tunnel_proxy::tunnel_proxy;
 use crate::utils::{full, is_http};

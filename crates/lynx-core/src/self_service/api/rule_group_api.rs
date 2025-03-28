@@ -1,6 +1,6 @@
 use crate::entities::rule::{rule, rule_group};
 use crate::self_service::utils::{OperationError, parse_body_params, response_ok};
-use crate::server_context::{get_db_connect, DB};
+use crate::server_context::get_db_connect;
 use crate::utils::full;
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;

@@ -4,7 +4,7 @@ use crate::config::REQ_DIR;
 use crate::entities::{request, response};
 use crate::proxy_log::PROXY_BOARD_CAST;
 use crate::self_service::utils::{OperationError, ValidateError, response_ok};
-use crate::server_context::{APP_CONFIG, DB, get_db_connect};
+use crate::server_context::{APP_CONFIG, get_db_connect};
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use futures_util::{StreamExt, TryStreamExt};

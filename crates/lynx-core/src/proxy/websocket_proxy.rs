@@ -6,16 +6,10 @@ use http_body_util::BodyExt;
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
-use hyper_tungstenite::HyperWebsocket;
-use hyper_util::rt::TokioIo;
-use jsonschema::error;
 use tokio::spawn;
-use tokio::sync::mpsc;
-use tokio_tungstenite::tungstenite::Message;
-use tokio_tungstenite::{WebSocketStream, tungstenite};
+use tokio_tungstenite::tungstenite;
 use tracing::error;
 
-use crate::utils::empty;
 
 pub async fn websocket_proxy(
     req: Request<Incoming>,

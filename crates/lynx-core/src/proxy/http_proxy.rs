@@ -15,7 +15,7 @@ use crate::plugins::http_request_plugin::{self, build_proxy_response};
 use crate::proxy_log::message::Message;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
-use crate::server_context::{get_db_connect, DB};
+use crate::server_context::get_db_connect;
 
 pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
     let all_rule_content = get_all_rule_content().await?;

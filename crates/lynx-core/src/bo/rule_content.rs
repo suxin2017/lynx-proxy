@@ -2,9 +2,7 @@ use std::iter::zip;
 
 use anyhow::anyhow;
 use schemars::JsonSchema;
-use sea_orm::{
-    ColumnTrait, EntityTrait, ModelTrait, QueryFilter, QuerySelect, Set, TransactionTrait,
-};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use ts_rs::TS;
@@ -15,7 +13,7 @@ use crate::{
         handler, rule,
     },
     self_service::utils::OperationError,
-    server_context::{DB, get_db_connect},
+    server_context::get_db_connect,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -235,7 +233,7 @@ pub async fn delete_rule_content_by_rule_id(rule_id: i32) -> anyhow::Result<()> 
 
 #[cfg(test)]
 mod tests {
-    use crate::migration::Migrator;
+    use crate::{migration::Migrator, server_context::DB};
 
     use super::*;
     use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, Database, Set};
