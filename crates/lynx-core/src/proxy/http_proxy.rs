@@ -15,7 +15,7 @@ use crate::plugins::http_request_plugin::{self, build_proxy_response};
 use crate::proxy_log::message::Message;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
-use crate::server_context::DB;
+use crate::server_context::{get_db_connect, DB};
 
 pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
     let all_rule_content = get_all_rule_content().await?;
@@ -85,8 +85,8 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
                 .map(|v| v.to_str().unwrap_or("").to_string()));
             let app_config = get_app_config().await;
             trace!("recording status: {:?}", app_config.recording_status);
-            if matches!(app_config.recording_status, RecordingStatus::StartRecording) {
-                let record = request_active_model.insert(DB.get().unwrap()).await?;
+            if app_config.is_recording() {
+                let record = request_active_model.insert(get_db_connect()).await?;
                 let request_id = record.id;
                 try_send_message(Message::add(record));
                 let header_size: usize = proxy_res
@@ -109,7 +109,7 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
                     ..Default::default()
                 };
 
-                response.insert(DB.get().unwrap()).await?;
+                response.insert(get_db_connect()).await?;
             }
 
             build_proxy_response(trace_id, proxy_res).await
@@ -119,7 +119,7 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
             let app_config = get_app_config().await;
 
             if matches!(app_config.recording_status, RecordingStatus::StartRecording) {
-                let record = request_active_model.insert(DB.get().unwrap()).await?;
+                let record = request_active_model.insert(get_db_connect()).await?;
                 try_send_message(Message::add(record));
             }
             Err(e)

@@ -1,6 +1,6 @@
 use crate::entities::rule::{rule, rule_group};
 use crate::self_service::utils::{OperationError, parse_body_params, response_ok};
-use crate::server_context::DB;
+use crate::server_context::{get_db_connect, DB};
 use crate::utils::full;
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
@@ -25,7 +25,7 @@ pub async fn handle_rule_group_add(
     let group_add_params: RuleGroupAddParams =
         parse_body_params(req.into_body(), schema_for!(RuleGroupAddParams)).await?;
 
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
 
     let active_model = rule_group::ActiveModel {
         name: ActiveValue::set(group_add_params.name),
@@ -55,7 +55,7 @@ pub async fn handle_rule_group_update(
         description: ActiveValue::set(body_params.description),
         ..Default::default()
     };
-    let res = active_model.update(DB.get().unwrap()).await?;
+    let res = active_model.update(get_db_connect()).await?;
     dbg!(&res);
 
     Ok(Response::builder()
@@ -78,7 +78,7 @@ pub async fn handle_rule_group_delete(
         id: ActiveValue::set(body_params.id),
         ..Default::default()
     };
-    let res = active_model.delete(DB.get().unwrap()).await?;
+    let res = active_model.delete(get_db_connect()).await?;
 
     if res.rows_affected == 0 {
         return Err(anyhow!(OperationError::new(
@@ -100,7 +100,7 @@ pub async fn handle_rule_group_find(
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
     let res = rule_group::Entity::find()
         .find_with_related(rule::Entity)
-        .all(DB.get().unwrap())
+        .all(get_db_connect())
         .await
         .map_err(|e| anyhow!(e).context("get rule group tree error"))?;
 

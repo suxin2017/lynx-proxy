@@ -7,7 +7,7 @@ use crate::self_service::utils::{
     OperationError, ResponseBox, ValidateError, parse_body_params, parse_query_params,
     response_ok,
 };
-use crate::server_context::DB;
+use crate::server_context::{get_db_connect, DB};
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
@@ -29,7 +29,7 @@ struct AddRuleParams {
 }
 
 pub async fn handle_add_rule(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
     let add_params: AddRuleParams =
         parse_body_params(req.into_body(), schema_for!(AddRuleParams)).await?;
 
@@ -59,7 +59,7 @@ pub async fn handle_update_rule_name(
     let body_params: UpdateRuleNameParams =
         parse_body_params(req.into_body(), schema_for!(UpdateRuleNameParams)).await?;
 
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
 
     let rule = rule::Entity::find_by_id(body_params.id).one(db).await?;
 
@@ -119,7 +119,7 @@ pub async fn handle_delete_rule(req: Request<Incoming>) -> Result<Response<BoxBo
     let body_params: DeleteRuleParams =
         parse_body_params(req.into_body(), schema_for!(DeleteRuleParams)).await?;
 
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
 
     delete_rule_content_by_rule_id(body_params.id).await?;
     let result = rule::Entity::delete_by_id(body_params.id).exec(db).await?;

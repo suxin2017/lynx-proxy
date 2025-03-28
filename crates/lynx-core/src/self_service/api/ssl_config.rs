@@ -1,6 +1,6 @@
 use crate::entities::app_config::{SSLConfig, SSLConfigRule, get_app_config};
 use crate::self_service::utils::{parse_body_params, response_ok};
-use crate::server_context::DB;
+use crate::server_context::{get_db_connect, DB};
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
@@ -22,7 +22,7 @@ struct SaveSSLConfigParams {
 pub async fn handle_save_ssl_config(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
     let SaveSSLConfigParams {
         capture_ssl,
         include_domains,

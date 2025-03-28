@@ -158,7 +158,7 @@ impl CertificateAuthority {
             .push(SanType::DnsName(Ia5String::try_from(authority.host())?));
         params
             .subject_alt_names
-            .push(SanType::IpAddress("127.0.0.1".parse().unwrap()));
+            .push(SanType::IpAddress("127.0.0.1".parse()?));
 
         let cert = params.signed_by(&self.private_key, &self.ca_cert, &self.private_key)?;
         let cert_der = cert.der().clone();

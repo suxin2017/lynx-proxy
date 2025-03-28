@@ -64,15 +64,11 @@ pub async fn websocket_proxy(
 
 /// Handle a websocket connection.
 async fn serve_websocket(
-    mut sink: impl Sink<tungstenite::Message, Error = tungstenite::Error> + Unpin + Send + 'static,
-    mut stream: impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>>
-    + Unpin
-    + Send
-    + 'static,
+    mut sink: impl Sink<tungstenite::Message, Error = tungstenite::Error> + Unpin + Send,
+    mut stream: impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>> + Unpin + Send,
 ) -> Result<()> {
     while let Some(message) = stream.next().await {
         let message = message?;
-        println!("Received message: {:?}", message);
         sink.send(message).await?;
     }
     Ok(())

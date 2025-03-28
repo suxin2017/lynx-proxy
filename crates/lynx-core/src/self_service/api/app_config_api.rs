@@ -1,6 +1,6 @@
 use crate::entities::app_config::{self, RecordingStatus, get_app_config};
 use crate::self_service::utils::{OperationError, ResponseBox, parse_body_params, response_ok};
-use crate::server_context::DB;
+use crate::server_context::{get_db_connect, DB};
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use http_body_util::combinators::BoxBody;
@@ -19,11 +19,11 @@ struct ChangeRecordingStatusParams {
 pub async fn handle_recording_status(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
     let add_params: ChangeRecordingStatusParams =
         parse_body_params(req.into_body(), schema_for!(ChangeRecordingStatusParams)).await?;
 
-    let config = app_config::Entity::find().one(DB.get().unwrap()).await?;
+    let config = app_config::Entity::find().one(get_db_connect()).await?;
 
     if let Some(config) = config {
         let mut config_active = config.into_active_model();
@@ -44,7 +44,7 @@ pub async fn handle_recording_status(
 struct GetAppConfigResponse(ResponseBox<Option<app_config::Model>>);
 
 pub async fn handle_app_config(_req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let config = app_config::Entity::find().one(DB.get().unwrap()).await?;
+    let config = app_config::Entity::find().one(get_db_connect()).await?;
     response_ok(config)
 }
 
@@ -65,7 +65,7 @@ struct SaveGeneralConfigResponse(ResponseBox<Option<()>>);
 pub async fn handle_save_general_config(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
     let SaveGeneralConfigParams {
         max_log_size,
         clear_log_size,

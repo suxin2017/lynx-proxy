@@ -12,7 +12,7 @@ use crate::entities::request;
 use crate::proxy_log::message::Message;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
-use crate::server_context::DB;
+use crate::server_context::{get_db_connect, DB};
 use crate::utils::{empty, host_addr};
 
 pub async fn tunnel_proxy(
@@ -30,7 +30,7 @@ pub async fn tunnel_proxy(
             status_code: Set(Some(200)),
             ..Default::default()
         };
-        let record = request_active_model.insert(DB.get().unwrap()).await?;
+        let record = request_active_model.insert(get_db_connect()).await?;
         try_send_message(Message::add(record));
 
         if let Some(addr) = host_addr(req.uri()) {

@@ -86,7 +86,6 @@ pub async fn dispatch(
     }
 
     if capture_ssl(&req).await? {
-      
         trace!("proxying https request {:?}", req);
         if req.method() == Method::CONNECT {
             return https_proxy(req).await;
@@ -102,5 +101,5 @@ pub async fn dispatch(
         .body(full(Bytes::from(
             "The service does not support the current protocol",
         )))
-        .unwrap())
+        .map_err(Error::from)?)
 }
