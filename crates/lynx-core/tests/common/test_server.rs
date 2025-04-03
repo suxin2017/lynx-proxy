@@ -39,7 +39,6 @@ pub static BOARD_CAST: Lazy<Arc<broadcast::Sender<String>>> = Lazy::new(|| {
         loop {
             interval.tick().await;
             println!("send msg");
-            println!("当前订阅者数量: {}", tx1.receiver_count());
             match tx1.send("push msg\n".to_string()) {
                 Ok(_) => {}
                 Err(e) => {
@@ -56,26 +55,39 @@ pub async fn test_server(
     addr: std::net::SocketAddr,
 ) -> Result<Response<BoxBody<Bytes, anyhow::Error>>> {
     // websocket
-    if hyper_tungstenite::is_upgrade_request(&req) {
+    if hyper_tungstenite::is_upgrade_request(&req)
+        || req.headers().get("sec-websocket-key").is_some()
+    {
         let (res, ws) = hyper_tungstenite::upgrade(req, None)?;
 
         tokio::spawn(async move {
             let mut ws = ws.await.unwrap();
 
             while let Some(msg) = ws.next().await {
-                let msg = msg.unwrap();
-                if msg.is_close() {
-                    break;
+                match msg.unwrap() {
+                    Message::Binary(data) => {
+                        ws.send(Message::Binary(data)).await.unwrap();
+                    }
+                    Message::Text(data) => {
+                        ws.send(Message::Text(data)).await.unwrap();
+                    }
+                    // Message::Ping(data) => {
+                    //     ws.send(Message::Pong(data)).await.unwrap();
+                    // }
+                    Message::Pong(_) => {}
+                    Message::Close(_) => {}
+                    _ => {}
                 }
-                ws.send(Message::Text(WORLD.into())).await.unwrap();
             }
         });
+
 
         let (parts, body) = res.into_parts();
         let bytes = body.collect().await?.to_bytes();
         let body = Full::new(bytes).map_err(|err| anyhow!("{err}")).boxed();
-
-        return Ok(Response::from_parts(parts, body));
+        let res_result = Response::from_parts(parts, body);
+        println!("res {:?}",res_result);
+        return Ok(res_result);
     }
 
     // http

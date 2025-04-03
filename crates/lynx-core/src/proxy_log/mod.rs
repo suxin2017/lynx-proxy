@@ -8,8 +8,8 @@ pub mod body_write_to_file;
 pub mod message;
 pub mod request_record;
 
-pub static PROXY_BOARD_CAST: Lazy<Arc<broadcast::Sender<message::Message>>> = Lazy::new(|| {
-    let (tx, _) = broadcast::channel::<message::Message>(10);
+pub static PROXY_BOARD_CAST: Lazy<Arc<broadcast::Sender<message::MessageLog>>> = Lazy::new(|| {
+    let (tx, _) = broadcast::channel::<message::MessageLog>(10);
 
     Arc::new(tx)
 });
@@ -19,7 +19,7 @@ pub fn has_receiver() -> bool {
     tx.receiver_count() > 0
 }
 
-pub fn try_send_message(msg: message::Message) {
+pub fn try_send_message(msg: message::MessageLog) {
     let tx = Arc::clone(&PROXY_BOARD_CAST);
     debug!("current receiver count: {}", tx.receiver_count());
     if !has_receiver() {

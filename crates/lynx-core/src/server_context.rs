@@ -28,3 +28,11 @@ pub async fn set_up_context(init_context_params: InitContextParams) {
 pub fn get_db_connect() -> &'static DatabaseConnection {
     DB.get().unwrap()
 }
+
+pub fn get_app_config() -> &'static AppConfig {
+    APP_CONFIG.get().unwrap()
+}
+
+pub fn get_ca_manager() -> &'static CertificateAuthority {
+    CA_MANAGER.get().unwrap()
+}

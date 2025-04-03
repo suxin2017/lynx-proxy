@@ -1,16 +1,17 @@
 use anyhow::{Result, anyhow};
-use tokio::fs::File;
+use tokio::fs::{File, OpenOptions};
 use tracing::trace;
 
 use std::fmt;
 
-use crate::server_context::APP_CONFIG;
+use crate::server_context::get_app_config;
 
 use super::has_receiver;
 
 enum BodyType {
     Request,
     Response,
+    WebsocketMessage,
 }
 
 impl fmt::Display for BodyType {
@@ -18,20 +19,23 @@ impl fmt::Display for BodyType {
         match self {
             BodyType::Request => write!(f, "req"),
             BodyType::Response => write!(f, "res"),
+            BodyType::WebsocketMessage => write!(f, "ws"),
         }
     }
 }
 
 async fn body_file(trace_id: &String, body_type: BodyType) -> Result<File> {
-    let raw_root_dir = &APP_CONFIG.get().expect("app config not init").raw_root_dir;
+    let raw_root_dir = &get_app_config().raw_root_dir;
     let trace_dir = raw_root_dir.join(trace_id);
     if !trace_dir.exists() {
-        tokio::fs::create_dir(&trace_dir).await?;
+        tokio::fs::create_dir_all(&trace_dir).await?;
     }
-
-    let raw_path = File::create(trace_dir.join(format!("{}", body_type)))
+    let raw_path = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(trace_dir.join(format!("{}", body_type)))
         .await
-        .map_err(|e| anyhow!(e).context("create file error"))?;
+        .map_err(|e| anyhow!(e).context("open file error"))?;
 
     Ok(raw_path)
 }
@@ -48,6 +52,15 @@ pub async fn req_body_file(trace_id: &String) -> Result<File> {
 pub async fn res_body_file(trace_id: &String) -> Result<File> {
     if has_receiver() {
         body_file(trace_id, BodyType::Response).await
+    } else {
+        trace!("no receiver, skip write response body");
+        Err(anyhow!("no receiver, skip write response body"))
+    }
+}
+
+pub async fn ws_body_file(trace_id: &String) -> Result<File> {
+    if has_receiver() {
+        body_file(trace_id, BodyType::WebsocketMessage).await
     } else {
         trace!("no receiver, skip write response body");
         Err(anyhow!("no receiver, skip write response body"))

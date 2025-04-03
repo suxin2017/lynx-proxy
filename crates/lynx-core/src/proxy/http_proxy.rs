@@ -1,9 +1,11 @@
 use anyhow::{Error, Result};
+use http::HeaderMap;
 use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
 use sea_orm::{ActiveModelTrait, Set};
+use serde_json::Value;
 use tracing::{info, trace};
 
 use crate::bo::rule_content::get_all_rule_content;
@@ -12,7 +14,7 @@ use crate::entities::request::{self};
 use crate::entities::response;
 use crate::entities::rule::capture::CaptureType;
 use crate::plugins::http_request_plugin::{self, build_proxy_response};
-use crate::proxy_log::message::Message;
+use crate::proxy_log::message::MessageLog;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
 use crate::server_context::get_db_connect;
@@ -47,22 +49,25 @@ pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<In
     Ok(req)
 }
 
+pub fn get_header_and_size(header_map: &HeaderMap) -> (Value, usize) {
+    let headers = header_map
+        .iter()
+        .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
+        .collect();
+    let header_size: usize = header_map
+        .iter()
+        .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
+        .sum();
+    (headers, header_size)
+}
+
 pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
     let req = handle_capture_req(req).await?;
 
     info!("proxying http request {:?}", req);
     let trace_id = get_req_trace_id(&req);
 
-    let headers = req
-        .headers()
-        .iter()
-        .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
-        .collect();
-    let header_size: usize = req
-        .headers()
-        .iter()
-        .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
-        .sum();
+    let (headers, header_size) = get_header_and_size(req.headers());
 
     let mut request_active_model = request::ActiveModel {
         trace_id: Set(trace_id.to_string()),
@@ -88,7 +93,7 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
             if app_config.is_recording() {
                 let record = request_active_model.insert(get_db_connect()).await?;
                 let request_id = record.id;
-                try_send_message(Message::add(record));
+                try_send_message(MessageLog::request_log(record));
                 let header_size: usize = proxy_res
                     .headers()
                     .iter()
@@ -120,7 +125,7 @@ pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBo
 
             if matches!(app_config.recording_status, RecordingStatus::StartRecording) {
                 let record = request_active_model.insert(get_db_connect()).await?;
-                try_send_message(Message::add(record));
+                try_send_message(MessageLog::request_log(record));
             }
             Err(e)
         }

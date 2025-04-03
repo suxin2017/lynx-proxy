@@ -9,7 +9,7 @@ use tokio::net::TcpStream;
 use tracing::{error, trace};
 
 use crate::entities::request;
-use crate::proxy_log::message::Message;
+use crate::proxy_log::message::MessageLog;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
 use crate::server_context::get_db_connect;
@@ -31,7 +31,7 @@ pub async fn tunnel_proxy(
             ..Default::default()
         };
         let record = request_active_model.insert(get_db_connect()).await?;
-        try_send_message(Message::add(record));
+        try_send_message(MessageLog::request_log(record));
 
         if let Some(addr) = host_addr(req.uri()) {
             tokio::task::spawn(async move {

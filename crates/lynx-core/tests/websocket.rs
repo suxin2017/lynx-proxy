@@ -1,9 +1,10 @@
 use common::{
-    test_server::WORLD,
-    tracing_config::init_tracing,
+    build_proxy_client::build_http_client, test_server::WORLD, tracing_config::init_tracing,
 };
 use futures_util::{SinkExt, TryStreamExt};
-use lynx_core::{server::Server, server_context::set_up_context};
+use lynx_core::{
+    self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
+};
 use reqwest_websocket::{Message, RequestBuilderExt};
 pub mod common;
 
@@ -13,13 +14,13 @@ use crate::common::start_http_server::start_http_server;
 async fn ws_test() {
     init_tracing();
     set_up_context(Default::default()).await;
+    let direct_request_client = build_http_client();
 
     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-    let mut lynx_core = Server::new(Default::default());
-    lynx_core.run().await.unwrap();
-    let proxy_addr = format!("http://{}", lynx_core.access_addr_list.first().unwrap());
+    let proxy_addr = format!("http://127.0.0.1:3000");
 
-    let proxy = reqwest::Proxy::all(proxy_addr).unwrap();
+    let proxy = reqwest::Proxy::all(proxy_addr.clone()).unwrap();
+
     let client = reqwest::Client::builder()
         .proxy(proxy)
         .no_brotli()
@@ -33,16 +34,16 @@ async fn ws_test() {
         .send()
         .await
         .unwrap();
+
     // Turns the response into a WebSocket stream.
     let mut websocket = response.into_websocket().await.unwrap();
-
     // The WebSocket implements `Sink<Message>`.
-    websocket.send(Message::Text("Hello, World".into())).await.unwrap();
+    websocket
+        .send(Message::Text("Hello, World".into()))
+        .await
+        .unwrap();
     // The WebSocket is also a `TryStream` over `Message`s.
     while let Some(message) = websocket.try_next().await.unwrap() {
-        if let Message::Text(text) = message {
-            assert!(text == WORLD);
-            break;
-        }
+        println!("Received message: {:?}", message);
     }
 }

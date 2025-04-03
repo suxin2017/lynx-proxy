@@ -19,7 +19,7 @@ pub struct Model {
     pub version: String,
     pub status_code: Option<u16>,
     pub response_mime_type: Option<String>,
-    #[ts(type = "Record<string, any> | null")]
+    #[ts(type = "Record<string, string> | undefined")]
     pub header: Option<Json>,
     pub header_size: Option<u32>,
 }
