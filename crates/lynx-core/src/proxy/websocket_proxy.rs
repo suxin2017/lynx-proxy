@@ -34,17 +34,8 @@ use crate::server_context::get_db_connect;
 
 use anyhow::{Error, Result, anyhow};
 use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
-use http_body_util::StreamBody;
-use hyper_rustls::HttpsConnectorBuilder;
-use hyper_util::client::legacy::Client;
-use hyper_util::client::legacy::connect::HttpConnector;
-use hyper_util::rt::TokioExecutor;
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
 
-use crate::proxy_log::body_write_to_file::{req_body_file, res_body_file};
-
-use super::http_proxy::get_header_and_size;
+use super::util::get_header_and_size;
 
 fn get_test_root_ca() -> Certificate {
     let mut ca_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -161,7 +152,6 @@ pub async fn websocket_proxy(
                                     .iter()
                                     .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
                                     .sum();
-
                                 let response = response::ActiveModel {
                                     request_id: Set(request_id),
                                     trace_id: Set(trace_id.to_string()),
@@ -264,65 +254,6 @@ pub async fn websocket_proxy(
                         }
                     }
                 }
-
-                // match tokio_tungstenite::connect_async(proxy_req).await {
-                //     Ok((server_to_client_socket, proxy_res)) => {
-                //         request_active_model.status_code = Set(Some(proxy_res.status().as_u16()));
-                //         request_active_model.response_mime_type = Set(proxy_res
-                //             .headers()
-                //             .get(CONTENT_TYPE)
-                //             .map(|v| v.to_str().unwrap_or("").to_string()));
-                //         if app_config.is_recording() {
-                //             let record =
-                //                 request_active_model.insert(get_db_connect()).await.unwrap();
-                //             let request_id = record.id;
-                //             try_send_message(MessageLog::request_log(record));
-                //             let header_size: usize = proxy_res
-                //                 .headers()
-                //                 .iter()
-                //                 .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
-                //                 .sum();
-
-                //             let response = response::ActiveModel {
-                //                 request_id: Set(request_id),
-                //                 trace_id: Set(trace_id.to_string()),
-                //                 header: Set(proxy_res
-                //                     .headers()
-                //                     .iter()
-                //                     .map(|(k, v)| {
-                //                         (
-                //                             k.as_str().to_string(),
-                //                             v.to_str().unwrap_or("").to_string(),
-                //                         )
-                //                     })
-                //                     .collect()),
-                //                 header_size: Set(header_size as u32),
-                //                 ..Default::default()
-                //             };
-
-                //             response.insert(get_db_connect()).await.unwrap();
-                //         }
-                //         let (client_sink, client_stream) = client_to_server_socket.split();
-                //         let (server_sink, server_stream) = server_to_client_socket.split();
-                //         // send message to server from client
-                //         spawn(serve_websocket(
-                //             server_sink,
-                //             client_stream,
-                //             SendType::ClientToServer,
-                //             trace_id.clone(),
-                //         ));
-                //         // send message to client from server
-                //         spawn(serve_websocket(
-                //             client_sink,
-                //             server_stream,
-                //             SendType::ServerToClient,
-                //             trace_id.clone(),
-                //         ));
-                //     }
-                //     Err(e) => {
-                //         error!("create websocket connect error {:?}", e);
-                //     }
-                // }
             }
             Err(e) => {
                 error!("handle websocket connect error: {:?}", e);

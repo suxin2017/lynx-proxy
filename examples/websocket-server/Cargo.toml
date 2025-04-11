@@ -1,0 +1,33 @@
+[package]
+name = "websocket-server"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+tokio = { version = "1.10.0", features = ["full"] }
+hyper = { version = "1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+hyper-tungstenite = "0.17.0"
+tokio-stream = { version = "0.1.14", default-features = false, features = [
+    "sync",
+] }
+futures-util = "0.3.31"
+anyhow = { workspace = true }
+rcgen = { version = "0.13.0", default-features = false, features = [
+    "x509-parser",
+    "pem",
+    "ring",
+] }
+tokio-rustls = { version = "0.26.0", default-features = false, features = [
+    "ring",
+    "tls12",
+    "logging",
+] }
+http-body-util = "0.1"
+rustls-pemfile = "2.2.0"

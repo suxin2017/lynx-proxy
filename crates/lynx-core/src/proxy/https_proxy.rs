@@ -12,8 +12,8 @@ use nanoid::nanoid;
 use tokio_rustls::TlsAcceptor;
 use tracing::{error, info, trace};
 
+use crate::proxy::connect_upgraded::ConnectUpgraded;
 use crate::proxy::http_proxy::proxy_http_request;
-use crate::proxy::rewind::Rewind;
 use crate::proxy::websocket_proxy::websocket_proxy;
 use crate::server_context::CA_MANAGER;
 use crate::utils::empty;
@@ -36,7 +36,7 @@ pub async fn https_proxy(
             match hyper::upgrade::on(req).await {
                 Ok(upgraded) => {
                     let upgraded = TokioIo::new(upgraded);
-                    let (rewind, is_websocket, is_https) = Rewind::new(upgraded).await;
+                    let (rewind, is_websocket, is_https) = ConnectUpgraded::new(upgraded).await;
                     if is_websocket {
                         let service = service_fn(|mut req| {
                             println!("req: {:?}", req);

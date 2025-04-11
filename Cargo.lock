@@ -3067,6 +3067,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "self_signed_ca"
+version = "0.1.4"
+dependencies = [
+ "rcgen",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4227,6 +4234,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2210b291f7ea53617fbafcc4939f10914214ec15aace5ba62293a668f322c5c9"
 dependencies = [
  "rustls-pki-types",
+]
+
+[[package]]
+name = "websocket-server"
+version = "0.1.4"
+dependencies = [
+ "anyhow",
+ "futures-util",
+ "http-body-util",
+ "hyper",
+ "hyper-tungstenite",
+ "hyper-util",
+ "rcgen",
+ "rustls-pemfile",
+ "tokio",
+ "tokio-rustls",
+ "tokio-stream",
 ]
 
 [[package]]

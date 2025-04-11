@@ -13,12 +13,12 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, ReadBuf};
 
 /// Combine a buffer with an IO, rewinding reads to use the buffer.
 #[derive(Debug)]
-pub(crate) struct Rewind {
+pub(crate) struct ConnectUpgraded {
     pre: Option<Bytes>,
     inner: TokioIo<Upgraded>,
 }
 
-impl Rewind {
+impl ConnectUpgraded {
     pub(crate) async fn new(mut io: TokioIo<Upgraded>) -> (Self, bool, bool) {
         let mut buffer = [0; 4];
         let bytes_read = match io.read_exact(&mut buffer).await {
@@ -33,7 +33,7 @@ impl Rewind {
         let is_websocket = buffer == *b"GET ";
         let is_https = buffer[..2] == *b"\x16\x03";
         (
-            Rewind {
+            ConnectUpgraded {
                 pre: bytes_read.and_then(|bytes_read| {
                     if bytes_read == 0 {
                         None
@@ -49,24 +49,24 @@ impl Rewind {
     }
 }
 
-impl AsyncRead for Rewind {
+impl AsyncRead for ConnectUpgraded {
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
         buf: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
-        if let Some(mut prefix) = self.pre.take() {
-            // If there are no remaining bytes, let the bytes get dropped.
+        if let Some(prefix) = self.pre.take() {
             if !prefix.is_empty() {
                 let copy_len = cmp::min(prefix.len(), buf.remaining());
-                // TODO: There should be a way to do following two lines cleaner...
                 buf.put_slice(&prefix[..copy_len]);
-                prefix.advance(copy_len);
-                // Put back whats left
-                if !prefix.is_empty() {
-                    self.pre = Some(prefix);
+                
+                // Put back remaining bytes if any
+                if copy_len < prefix.len() {
+                    let mut remaining = prefix;
+                    remaining.advance(copy_len);
+                    self.pre = Some(remaining);
                 }
-
+                
                 return Poll::Ready(Ok(()));
             }
         }
@@ -74,7 +74,7 @@ impl AsyncRead for Rewind {
     }
 }
 
-impl AsyncWrite for Rewind {
+impl AsyncWrite for ConnectUpgraded {
     fn poll_write(
         mut self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,

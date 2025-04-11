@@ -5,18 +5,19 @@ use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
 use sea_orm::{ActiveModelTrait, Set};
-use serde_json::Value;
 use tracing::{info, trace};
 
-use crate::bo::rule_content::get_all_rule_content;
 use crate::entities::app_config::{RecordingStatus, get_app_config};
 use crate::entities::request::{self};
 use crate::entities::response;
 use crate::entities::rule::capture::CaptureType;
 use crate::plugins::http_request_plugin::{self, build_proxy_response};
 use crate::proxy_log::message::MessageLog;
-use crate::proxy_log::try_send_message;
+use crate::proxy_log::{
+    create_request_active_model_by_req, try_send_message, try_send_req_message,
+};
 use crate::schedular::get_req_trace_id;
+use crate::self_service::model::rule_content::get_all_rule_content;
 use crate::server_context::get_db_connect;
 
 pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
@@ -49,85 +50,24 @@ pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<In
     Ok(req)
 }
 
-pub fn get_header_and_size(header_map: &HeaderMap) -> (Value, usize) {
-    let headers = header_map
-        .iter()
-        .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
-        .collect();
-    let header_size: usize = header_map
-        .iter()
-        .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
-        .sum();
-    (headers, header_size)
-}
-
 pub async fn proxy_http_request(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
     let req = handle_capture_req(req).await?;
+    let request_active_model = create_request_active_model_by_req(&req);
 
     info!("proxying http request {:?}", req);
     let trace_id = get_req_trace_id(&req);
 
-    let (headers, header_size) = get_header_and_size(req.headers());
+    let response = http_request_plugin::request(req).await;
 
-    let mut request_active_model = request::ActiveModel {
-        trace_id: Set(trace_id.to_string()),
-        uri: Set(req.uri().to_string()),
-        method: Set(req.method().to_string()),
-        schema: Set(req.uri().scheme_str().unwrap_or("").to_string()),
-        version: Set(format!("{:?}", req.version())),
-        header: Set(Some(headers)),
-        header_size: Set(Some(header_size as u32)),
-        ..Default::default()
-    };
-
-    match http_request_plugin::request(req).await {
+    match response {
         Ok(proxy_res) => {
-            trace!("origin response: {:?}", proxy_res);
-            request_active_model.status_code = Set(Some(proxy_res.status().as_u16()));
-            request_active_model.response_mime_type = Set(proxy_res
-                .headers()
-                .get(CONTENT_TYPE)
-                .map(|v| v.to_str().unwrap_or("").to_string()));
-            let app_config = get_app_config().await;
-            trace!("recording status: {:?}", app_config.recording_status);
-            if app_config.is_recording() {
-                let record = request_active_model.insert(get_db_connect()).await?;
-                let request_id = record.id;
-                try_send_message(MessageLog::request_log(record));
-                let header_size: usize = proxy_res
-                    .headers()
-                    .iter()
-                    .map(|(k, v)| k.as_str().len() + v.as_bytes().len())
-                    .sum();
-
-                let response = response::ActiveModel {
-                    request_id: Set(request_id),
-                    trace_id: Set(trace_id.to_string()),
-                    header: Set(proxy_res
-                        .headers()
-                        .iter()
-                        .map(|(k, v)| {
-                            (k.as_str().to_string(), v.to_str().unwrap_or("").to_string())
-                        })
-                        .collect()),
-                    header_size: Set(header_size as u32),
-                    ..Default::default()
-                };
-
-                response.insert(get_db_connect()).await?;
-            }
-
-            build_proxy_response(trace_id, proxy_res).await
+            try_send_req_message(request_active_model, Some(&proxy_res)).await?;
+            return build_proxy_response(trace_id, proxy_res).await;
         }
         Err(e) => {
+            try_send_req_message(request_active_model, None).await?;
             trace!("proxy http request error: {:?}", e);
-            let app_config = get_app_config().await;
-
-            if matches!(app_config.recording_status, RecordingStatus::StartRecording) {
-                let record = request_active_model.insert(get_db_connect()).await?;
-                try_send_message(MessageLog::request_log(record));
-            }
-            Err(e)
+            return Err(e);
         }
     }
 }

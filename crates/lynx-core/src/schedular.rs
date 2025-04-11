@@ -25,6 +25,13 @@ pub fn get_req_trace_id(req: &Request<hyper::body::Incoming>) -> Arc<String> {
         .expect("trace id not found")
 }
 
+pub fn get_res_trace_id(res: &Response<hyper::body::Incoming>) -> Arc<String> {
+    res.extensions()
+        .get::<Arc<String>>()
+        .map(Arc::clone)
+        .expect("trace id not found")
+}
+
 pub async fn capture_ssl(req: &Request<Incoming>) -> Result<bool> {
     let app_config = get_app_config().await;
     if !app_config.capture_ssl {
@@ -95,11 +102,11 @@ pub async fn dispatch(
         return tunnel_proxy(req).await;
     }
 
-    Ok(Response::builder()
+    Response::builder()
         .status(status::StatusCode::NOT_FOUND)
         .header(CONTENT_TYPE, "text/plain")
         .body(full(Bytes::from(
             "The service does not support the current protocol",
         )))
-        .map_err(Error::from)?)
+        .map_err(Error::from)
 }

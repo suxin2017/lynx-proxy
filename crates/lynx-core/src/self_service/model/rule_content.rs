@@ -58,8 +58,7 @@ impl From<handler::Model> for Handler {
                     url: value
                         .data
                         .get("url")
-                        .map(|v| v.as_str().map(|v| v.to_owned()))
-                        .flatten()
+                        .and_then(|v| v.as_str().map(|v| v.to_owned()))
                         .unwrap_or_default(),
                 })
             }

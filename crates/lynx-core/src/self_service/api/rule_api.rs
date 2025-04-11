@@ -1,8 +1,8 @@
-use crate::bo::rule_content::{
+use crate::entities::rule::rule;
+use crate::self_service::model::rule_content::{
     Capture, Handler, RuleContent, delete_rule_content_by_rule_id, get_rule_content_by_rule_id,
     save_content_by_rule_id,
 };
-use crate::entities::rule::rule;
 use crate::self_service::utils::{
     OperationError, ResponseBox, ValidateError, parse_body_params, parse_query_params, response_ok,
 };
