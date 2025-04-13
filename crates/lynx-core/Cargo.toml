@@ -72,7 +72,7 @@ sea-orm-migration = { version = "1.1.0", features = [
     "runtime-tokio-rustls",
 ] }
 url = "2.5.4"
-include_dir = "0.7.4"
+include_dir = "0.5.0"
 mime_guess = "=2.0.5"
 schemars = "0.8.21"
 glob-match = "0.2.1"

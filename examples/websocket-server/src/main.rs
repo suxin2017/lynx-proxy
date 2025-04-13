@@ -22,7 +22,6 @@ use tokio_stream::StreamExt;
 #[tokio::main]
 async fn main() {
     websocket_server().await.unwrap();
-
     tokio::signal::ctrl_c().await.unwrap();
 }
 pub fn empty() -> BoxBody<Bytes, Error> {
@@ -105,23 +104,15 @@ async fn echo(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, anyhow::
             let mut ws = ws.await.unwrap();
 
             while let Some(msg) = ws.next().await {
-                match msg.unwrap() {
-                    Message::Binary(data) => {
-                        ws.send(Message::Binary(data)).await.unwrap();
+                match msg {
+                    Ok(msg) => {
+                        println!("Received message: {:?}", msg);
+                        ws.send(msg).await.unwrap();
                     }
-                    Message::Text(data) => {
-                        ws.send(Message::Text(data)).await.unwrap();
+                    Err(e) => {
+                        eprintln!("Error receiving message: {:?}", e);
+                        break;
                     }
-                    Message::Ping(data) => {
-                        ws.send(Message::Pong(data)).await.unwrap();
-                    }
-                    Message::Pong(data) => {
-                        println!("Received Pong: {:?}", data);
-                    }
-                    Message::Close(data) => {
-                        println!("Received Close: {:?}", data);
-                    }
-                    _ => {}
                 }
             }
         });

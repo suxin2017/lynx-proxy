@@ -2,6 +2,7 @@ use common::{
     build_proxy_client::build_http_client, test_server::WORLD, tracing_config::init_tracing,
 };
 use futures_util::{SinkExt, TryStreamExt};
+use http::Request;
 use lynx_core::{
     self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
 };
