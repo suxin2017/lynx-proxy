@@ -24,3 +24,15 @@ pub async fn set_up_context(init_context_params: InitContextParams) {
     DB.get_or_init(|| db);
     APP_CONFIG.get_or_init(|| app_config.clone());
 }
+
+pub fn get_db_connect() -> &'static DatabaseConnection {
+    DB.get().unwrap()
+}
+
+pub fn get_app_config() -> &'static AppConfig {
+    APP_CONFIG.get().unwrap()
+}
+
+pub fn get_ca_manager() -> &'static CertificateAuthority {
+    CA_MANAGER.get().unwrap()
+}

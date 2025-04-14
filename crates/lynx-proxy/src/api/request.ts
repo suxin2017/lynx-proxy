@@ -3,10 +3,9 @@ import { IResponseBoxView } from './models';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import queryString from 'query-string';
 import axiosInstance from './axiosInstance';
-import { Model as RequestModel } from '@/RequestModel';
+import { MessageLog } from '@/MessageLog';
 
-
-export function fetchRequest(cb: (data: { add: RequestModel }) => void) {
+export function fetchRequest(cb: (data: MessageLog) => void) {
   const controller = new AbortController();
   const signal = controller.signal;
   fetch('/__self_service_path__/request_log', { signal }).then(
@@ -84,6 +83,7 @@ export const useGetResponseBodyQuery = (params: { requestId?: number }) => {
       );
       return res.data;
     },
+    enabled: !!params.requestId,
   });
 };
 

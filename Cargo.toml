@@ -1,5 +1,6 @@
 [workspace]
-members = ["crates/lynx-core", "crates/lynx-cli"]
+members = ["crates/lynx-core", "crates/lynx-cli","examples/*"]
+exclude = ["third-libs"]
 resolver = "2"
 
 [workspace.package]

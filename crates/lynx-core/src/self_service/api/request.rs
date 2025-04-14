@@ -4,7 +4,7 @@ use crate::config::REQ_DIR;
 use crate::entities::{request, response};
 use crate::proxy_log::PROXY_BOARD_CAST;
 use crate::self_service::utils::{OperationError, ValidateError, response_ok};
-use crate::server_context::{APP_CONFIG, DB};
+use crate::server_context::{APP_CONFIG, get_db_connect};
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use futures_util::{StreamExt, TryStreamExt};
@@ -22,7 +22,7 @@ use tokio_util::io::ReaderStream;
 use tracing::{error, trace};
 use ts_rs::TS;
 
-#[derive(Debug, Deserialize, Serialize,TS)]
+#[derive(Debug, Deserialize, Serialize, TS)]
 #[ts(export)]
 struct RequestLogBody(request::Model);
 
@@ -64,7 +64,7 @@ pub async fn handle_request_log() -> Result<Response<BoxBody<Bytes, Error>>> {
 
 pub async fn handle_request_clear() -> Result<Response<BoxBody<Bytes, Error>>> {
     trace!("clear request and response data");
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
     request::Entity::delete_many().exec(db).await?;
     response::Entity::delete_many().exec(db).await?;
 
@@ -108,7 +108,7 @@ pub async fn handle_request_body(
     let id = id.unwrap().parse::<i32>().map_err(|e| anyhow!(e))?;
 
     let request = request::Entity::find_by_id(id)
-        .one(DB.get().unwrap())
+        .one(get_db_connect())
         .await?;
     if request.is_none() {
         return Err(anyhow!(OperationError::new(

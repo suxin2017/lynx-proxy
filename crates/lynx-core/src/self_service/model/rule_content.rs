@@ -2,10 +2,7 @@ use std::iter::zip;
 
 use anyhow::anyhow;
 use schemars::JsonSchema;
-use sea_orm::{
-    ColumnTrait, EntityTrait, ModelTrait, QueryFilter,
-    QuerySelect, Set, TransactionTrait,
-};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use ts_rs::TS;
@@ -16,7 +13,7 @@ use crate::{
         handler, rule,
     },
     self_service::utils::OperationError,
-    server_context::DB,
+    server_context::get_db_connect,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -44,7 +41,7 @@ impl From<capture::Model> for Capture {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,TS)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, TS)]
 #[serde(tag = "type", content = "data")]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
@@ -58,14 +55,18 @@ impl From<handler::Model> for Handler {
             handler::HandlerType::ConnectPassProxy => {
                 Handler::ConnectPassProxyHandler(ConnectPassProxyHandler {
                     switch: value.switch,
-                    url: value.data.get("url").unwrap().as_str().unwrap().to_owned(),
+                    url: value
+                        .data
+                        .get("url")
+                        .and_then(|v| v.as_str().map(|v| v.to_owned()))
+                        .unwrap_or_default(),
                 })
             }
         }
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,TS)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, TS)]
 #[ts(export)]
 pub struct ConnectPassProxyHandler {
     pub switch: bool,
@@ -79,7 +80,7 @@ impl RuleContent {
 }
 
 pub async fn get_all_rule_content() -> anyhow::Result<Vec<RuleContent>> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
 
     let mut rule_with_capture = rule::Entity::find()
         .find_also_related(capture::Entity)
@@ -115,7 +116,7 @@ pub async fn get_all_rule_content() -> anyhow::Result<Vec<RuleContent>> {
 }
 
 pub async fn get_rule_content_by_rule_id(rule_id: i32) -> anyhow::Result<Option<RuleContent>> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
 
     let rule_with_capture = rule::Entity::find_by_id(rule_id)
         .find_also_related(capture::Entity)
@@ -145,7 +146,7 @@ pub async fn save_content_by_rule_id(
     rule_id: i32,
     rule_content: RuleContent,
 ) -> anyhow::Result<()> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
 
     let rule = rule::Entity::find_by_id(rule_id)
         .one(db)
@@ -199,7 +200,7 @@ pub async fn save_content_by_rule_id(
 }
 
 pub async fn delete_rule_content_by_rule_id(rule_id: i32) -> anyhow::Result<()> {
-    let db = DB.get().unwrap();
+    let db = get_db_connect();
 
     let rule = rule::Entity::find_by_id(rule_id)
         .one(db)
@@ -231,7 +232,7 @@ pub async fn delete_rule_content_by_rule_id(rule_id: i32) -> anyhow::Result<()> 
 
 #[cfg(test)]
 mod tests {
-    use crate::migration::Migrator;
+    use crate::{migration::Migrator, server_context::DB};
 
     use super::*;
     use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, Database, Set};
