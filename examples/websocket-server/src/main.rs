@@ -106,6 +106,10 @@ async fn echo(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, anyhow::
             while let Some(msg) = ws.next().await {
                 match msg {
                     Ok(msg) => {
+                        if msg.is_close() {
+                            println!("Client closed connection");
+                            break;
+                        }
                         println!("Received message: {:?}", msg);
                         ws.send(msg).await.unwrap();
                     }

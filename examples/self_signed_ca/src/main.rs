@@ -4,11 +4,6 @@ use rcgen::{CertifiedKey, generate_simple_self_signed};
 
 fn main() {
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    println!(
-        "{} {}",
-        manifest_dir.to_string_lossy(),
-        manifest_dir.join("dist")
-    );
     fs::create_dir_all(manifest_dir.join("dist")).unwrap();
 
     let subject_alt_names = vec!["localhost".to_string(), "127.0.0.1".to_string()];

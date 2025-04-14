@@ -18,8 +18,6 @@ use url::Url;
 async fn main() {
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
 
-    Provi
-
     rustls::crypto::ring::default_provider()
         .install_default()
         .expect("Failed to install rustls crypto provider");
@@ -44,7 +42,6 @@ async fn main() {
         root_cert_store.add(cert).unwrap();
     }
 
-    ClientConfig::builder()
     let client_config = ClientConfig::builder()
         .with_root_certificates(root_cert_store)
         .with_no_client_auth();
@@ -56,7 +53,6 @@ async fn main() {
         .expect("WebSocket handshake failed");
 
     let (mut sink, mut stream) = ws_stream.split();
-
     let (shutdown_send, mut shutdown_recv) = unbounded_channel();
 
     spawn(async move {
@@ -65,13 +61,13 @@ async fn main() {
         ))
         .await
         .expect("Failed to send message");
-    });
-
-    spawn(async move {
         while let Some(msg) = stream.next().await {
             match msg {
                 Ok(msg) => {
                     println!("Received message: {:?}", msg);
+                    sink.send(tokio_tungstenite::tungstenite::Message::Close(None))
+                        .await
+                        .unwrap();
                     shutdown_send.send(()).unwrap();
                 }
                 Err(e) => {
