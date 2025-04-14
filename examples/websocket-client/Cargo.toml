@@ -1,0 +1,26 @@
+[package]
+name = "websocket-client"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+
+tokio-tungstenite = { version = "0.26.1", features = [
+    "rustls",
+    "rustls-tls-webpki-roots",
+    "connect",
+    "url",
+] }
+tokio = { version = "1.10.0", features = ["full"] }
+url = "2.5.4"
+http = "1.0"
+webpki-roots = "0.26.8"
+rustls = { version = "0.23.26", features = ["ring"] }
+futures-util = "0.3.31"
+rustls-pemfile = "2.2.0"

@@ -1,0 +1,17 @@
+[package]
+name = "self_signed_ca"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+rcgen = { version = "0.13.0", default-features = false, features = [
+    "x509-parser",
+    "pem",
+    "ring",
+] }

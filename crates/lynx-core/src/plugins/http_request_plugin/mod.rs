@@ -112,6 +112,7 @@ pub async fn build_proxy_response(
 }
 
 pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
+    let trace_id = get_req_trace_id(&req);
     let client_builder = Client::builder(TokioExecutor::new());
     trace!("request: {:?}", req);
     let proxy_req = build_proxy_request(req).await?;
@@ -136,8 +137,12 @@ pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
             .request(proxy_req)
             .await
     };
-
-    proxy_res.map_err(|e| anyhow!(e).context("proxy request error"))
+    proxy_res
+        .and_then(|mut res| {
+            res.extensions_mut().insert(trace_id.clone());
+            Ok(res)
+        })
+        .map_err(|e| anyhow!(e).context("proxy request error"))
 }
 
 #[cfg(feature = "test")]

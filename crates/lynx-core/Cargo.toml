@@ -36,6 +36,7 @@ tokio-stream = { version = "0.1.14", default-features = false, features = [
 tokio-tungstenite = { version = "0.26.1", features = [
     "rustls",
     "rustls-tls-webpki-roots",
+    "connect"
 ] }
 futures-util = "0.3.31"
 bytes = "1.9.0"
@@ -71,15 +72,13 @@ sea-orm-migration = { version = "1.1.0", features = [
     "runtime-tokio-rustls",
 ] }
 url = "2.5.4"
-include_dir = "0.7.4"
+include_dir = "0.5.0"
 mime_guess = "=2.0.5"
 schemars = "0.8.21"
 glob-match = "0.2.1"
 regex = "1.11.1"
 ts-rs = { version = "10.1", features = ["serde-json-impl"] }
-
-[dev-dependencies]
-dotenv = "0.15.0"
+base64 = "0.22.1"
 reqwest = { version = "0.12.12", features = [
     "rustls-tls-manual-roots",
     "gzip",
@@ -88,6 +87,9 @@ reqwest = { version = "0.12.12", features = [
     "rustls-tls",
 ] }
 reqwest-websocket = "0.4.4"
+
+[dev-dependencies]
+dotenv = "0.15.0"
 async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }
 
 

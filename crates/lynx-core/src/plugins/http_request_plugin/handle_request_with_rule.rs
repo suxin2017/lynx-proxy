@@ -5,7 +5,7 @@ use http::{Request, Uri};
 use hyper::body::Incoming;
 use tracing::{trace, warn};
 
-use crate::bo::rule_content::Handler;
+use crate::self_service::model::rule_content::Handler;
 
 pub async fn handle_request_with_rule(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
     let all_handlers = req.extensions().get::<Vec<Handler>>();

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::config::RES_DIR;
 use crate::entities::response;
 use crate::self_service::utils::{OperationError, ValidateError, response_ok};
-use crate::server_context::{APP_CONFIG, DB};
+use crate::server_context::{get_db_connect, APP_CONFIG};
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use futures_util::TryStreamExt;
@@ -36,7 +36,7 @@ pub async fn handle_response(req: Request<Incoming>) -> Result<Response<BoxBody<
 
     let response = response::Entity::find()
         .filter(response::Column::RequestId.eq(request_id.unwrap()))
-        .one(DB.get().unwrap())
+        .one(get_db_connect())
         .await?;
     if response.is_none() {
         return Err(anyhow!(OperationError::new(
@@ -68,7 +68,7 @@ pub async fn handle_response_body(
 
     let response = response::Entity::find()
         .filter(response::Column::RequestId.eq(request_id.unwrap()))
-        .one(DB.get().unwrap())
+        .one(get_db_connect())
         .await?;
     if response.is_none() {
         return Err(anyhow!(OperationError::new(

@@ -70,8 +70,6 @@ pub async fn start_https_server() -> Result<SocketAddr> {
         .with_single_cert(cert_chain, TEST_LOCALHOST_KEY.as_ref().unwrap().clone_key())
         .unwrap();
 
-    server_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
-
     let tls_acceptor = TlsAcceptor::from(Arc::new(server_config));
 
     tokio::spawn(async move {
@@ -91,7 +89,11 @@ pub async fn start_https_server() -> Result<SocketAddr> {
                 if let Err(err) = hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                     .serve_connection_with_upgrades(
                         TokioIo::new(tls_stream),
-                        service_fn(|req| test_server(req, addr)),
+                        service_fn(|req| {
+                            println!("req: {:?}", req);
+
+                            test_server(req, addr)
+                        }),
                     )
                     .await
                 {

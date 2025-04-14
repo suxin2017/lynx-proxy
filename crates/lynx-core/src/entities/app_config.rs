@@ -6,9 +6,9 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::server_context::DB;
+use crate::server_context::get_db_connect;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize,TS)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[sea_orm(table_name = "app_config")]
 #[ts(export, export_to = "AppConfigModel.ts")]
@@ -25,7 +25,7 @@ pub struct Model {
 }
 
 #[derive(
-    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,TS
+    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, TS,
 )]
 #[sea_orm(
     rs_type = "String",
@@ -45,7 +45,7 @@ impl ActiveModelBehavior for ActiveModel {}
 
 pub async fn get_app_config() -> Model {
     Entity::find()
-        .one(DB.get().unwrap())
+        .one(get_db_connect())
         .await
         .expect("app config not found")
         .expect("app config not found")
@@ -81,5 +81,11 @@ pub async fn get_enabled_ssl_config() -> Result<(Vec<SSLConfigRule>, Vec<SSLConf
             let exclude = exclude_domains.into_iter().filter(|x| x.switch).collect();
             Ok((include, exclude))
         }
+    }
+}
+
+impl Model {
+    pub fn is_recording(&self) -> bool {
+        self.recording_status == RecordingStatus::StartRecording
     }
 }

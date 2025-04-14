@@ -16,6 +16,7 @@ use utils::{
 pub mod api;
 pub mod paths;
 pub mod utils;
+pub mod model;
 
 use paths::SelfServiceRouterPath;
 

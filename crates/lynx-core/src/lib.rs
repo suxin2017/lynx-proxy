@@ -1,4 +1,3 @@
-pub mod bo;
 pub mod cert;
 pub mod config;
 pub mod entities;

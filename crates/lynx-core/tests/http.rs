@@ -163,37 +163,3 @@ async fn push_msg() {
         }
     }
 }
-
-// #[tokio::test]
-// async fn ws_test() {
-//
-//     let addr: std::net::SocketAddr = start_http_server().await.unwrap();
-//     let lynx_core = Server::new();
-//     lynx_core.run().await.unwrap();
-//     let proxy = reqwest::Proxy::all(format!("http://{}", lynx_core.addr)).unwrap();
-//     let mut client = reqwest::Client::builder()
-//         .proxy(proxy)
-//         .no_brotli()
-//         .no_deflate()
-//         .no_gzip()
-//         .build()
-//         .unwrap();
-//     let response = client
-//         .get(format!("ws://{}", addr))
-//         .upgrade()
-//         .send()
-//         .await
-//         .unwrap();
-//     // Turns the response into a WebSocket stream.
-//     let mut websocket = response.into_websocket().await.unwrap();
-
-//     // The WebSocket implements `Sink<Message>`.
-//     websocket.send(Message::Text("Hello, World".into())).await;
-//     // The WebSocket is also a `TryStream` over `Message`s.
-//     while let Some(message) = websocket.try_next().await.unwrap() {
-//         if let Message::Text(text) = message {
-//             println!("received: {text}")
-//         }
-//     }
-//     tokio::signal::ctrl_c().await;
-// }

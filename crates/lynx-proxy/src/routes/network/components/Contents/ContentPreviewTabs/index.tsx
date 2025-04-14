@@ -9,11 +9,14 @@ import { MediaViewer } from '../MediaViewer';
 import TextView from '../TextViewer';
 import CodeViewer from '../CodeViewer';
 import FormViewer from '../FormView';
+import { WebSocketLog } from '@/WebSocketLog';
+import Websocket from '../../Websocket';
 
 interface IContentsProps {
   title: string;
   contentType?: string;
   body?: ArrayBuffer;
+  websocketBody?: WebSocketLog[];
   headers?: Record<string, string>;
   isLoading?: boolean;
 }
@@ -25,10 +28,33 @@ export enum ContentPreviewType {
   Hex = 'Hex',
   Form = 'Form',
   Media = 'Media',
+  Websocket = 'Websocket',
+}
+
+function useAsyncMemo<T>(
+  asyncFn: () => Promise<T>,
+  deps: React.DependencyList,
+) {
+  const [value, setValue] = React.useState<T>();
+
+  useEffect(() => {
+    let isMounted = true;
+    asyncFn().then((result) => {
+      if (isMounted) {
+        setValue(result);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, deps);
+
+  return value;
 }
 
 export const ContentPreviewTabs: React.FC<IContentsProps> = ({
   title,
+  websocketBody,
   body,
   contentType,
   headers,
@@ -36,6 +62,13 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
 }) => {
   const [activeKey, setActiveKey] = React.useState<string>('0');
   useEffect(() => {}, [body]);
+
+  const websocketBodyArrayBuffer = useAsyncMemo(async () => {
+    const blob = new Blob(websocketBody?.map((item) => atob(item.data)));
+    return blob.arrayBuffer();
+  }, [websocketBody]);
+  // new TextEncoder().encode
+  console.log(websocketBodyArrayBuffer, 'websocketBodyArrayBuffer');
   const contentTypeCheck = useMemo(() => {
     const contentTypeJson = !!contentType?.includes('application/json');
     const contentTypeImage = !!contentType?.includes('image');
@@ -49,6 +82,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
     const contentTypeForm = !!contentType?.includes(
       'application/x-www-form-urlencoded',
     );
+    const contentTypeWebsocket = !!contentType?.includes('websocket');
     return {
       contentTypeJson,
       contentTypeFont,
@@ -61,6 +95,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       contentTypeMultiForm,
       contentType,
       contentTypeForm,
+      contentTypeWebsocket,
     };
   }, [contentType]);
   const defaultActiveKey = useMemo(() => {
@@ -102,6 +137,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       contentTypeMultiForm,
       contentTypeForm,
       contentTypeFont,
+      contentTypeWebsocket,
     } = contentTypeCheck;
     const contentTypeCode =
       contentTypeHtml ||
@@ -161,10 +197,15 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
             />
           ),
         }),
+        ifTrue(contentTypeWebsocket, {
+          key: ContentPreviewType.Websocket,
+          label: 'Websocket',
+          children: <Websocket websocketLog={websocketBody} />,
+        }),
         ifTrue(!contentTypeJson && !contentTypeMedia && !contentTypeCode, {
           key: ContentPreviewType.Text,
           label: 'Text',
-          children: <TextView arrayBuffer={body} />,
+          children: <TextView arrayBuffer={websocketBodyArrayBuffer ?? body} />,
         }),
         ifTrue(contentTypeMultiForm || contentTypeForm, {
           key: ContentPreviewType.Form,
@@ -176,15 +217,18 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
             />
           ),
         }),
+
         {
           key: ContentPreviewType.Hex,
           label: 'Hex',
-          children: <HexViewer arrayBuffer={body} />,
+          children: (
+            <HexViewer arrayBuffer={websocketBodyArrayBuffer ?? body} />
+          ),
         },
       ],
       (item) => item != null,
     );
-  }, [body, contentTypeCheck, headers]);
+  }, [body, contentType, contentTypeCheck, headers, websocketBodyArrayBuffer]);
 
   return (
     <Tabs
