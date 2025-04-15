@@ -1,4 +1,4 @@
-pub mod cert;
+pub mod ca_manage;
 pub mod config;
 pub mod entities;
 pub mod migration;

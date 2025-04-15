@@ -85,14 +85,14 @@ impl Server {
 
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
-            .filter(|x| {
+            .filter(|(_, ip)| {
                 if only_localhost {
-                    x.1.is_ipv4() && x.1.is_loopback()
+                    ip.is_ipv4() && ip.is_loopback()
                 } else {
-                    x.1.is_ipv4()
+                    ip.is_ipv4()
                 }
             })
-            .map(|x| x.1)
+            .map(|(_, ip)| ip)
             .map(|ip| SocketAddr::new(ip, port))
             .collect();
 

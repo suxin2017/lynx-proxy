@@ -81,7 +81,7 @@ pub async fn https_proxy(
                         }
                     } else {
                         let ca_manager = CA_MANAGER.get().expect("cert manager not found");
-                        let server_config = match ca_manager.gen_server_config(&authority).await {
+                        let server_config = match ca_manager.get_server_config(&authority).await {
                             Ok(server_config) => server_config,
                             Err(err) => {
                                 error!("Failed to build server config: {err}");

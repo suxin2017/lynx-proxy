@@ -36,7 +36,7 @@ tokio-stream = { version = "0.1.14", default-features = false, features = [
 tokio-tungstenite = { version = "0.26.1", features = [
     "rustls",
     "rustls-tls-webpki-roots",
-    "connect"
+    "connect",
 ] }
 futures-util = "0.3.31"
 bytes = "1.9.0"
@@ -72,7 +72,7 @@ sea-orm-migration = { version = "1.1.0", features = [
     "runtime-tokio-rustls",
 ] }
 url = "2.5.4"
-include_dir = "0.5.0"
+include_dir = { workspace = true }
 mime_guess = "=2.0.5"
 schemars = "0.8.21"
 glob-match = "0.2.1"
@@ -87,11 +87,12 @@ reqwest = { version = "0.12.12", features = [
     "rustls-tls",
 ] }
 reqwest-websocket = "0.4.4"
+lynx-cert = { path = "../lynx-cert" }
 
 [dev-dependencies]
 dotenv = "0.15.0"
 async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }
-
+tempdir = "0.3.7"
 
 [features]
 test = []

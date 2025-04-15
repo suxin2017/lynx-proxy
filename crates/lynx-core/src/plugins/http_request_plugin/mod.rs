@@ -138,9 +138,9 @@ pub async fn request(req: Request<Incoming>) -> Result<Response<Incoming>> {
             .await
     };
     proxy_res
-        .and_then(|mut res| {
+        .map(|mut res| {
             res.extensions_mut().insert(trace_id.clone());
-            Ok(res)
+            res
         })
         .map_err(|e| anyhow!(e).context("proxy request error"))
 }
