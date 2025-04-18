@@ -66,7 +66,8 @@ impl ServerCaManager {
                 let server_config = || {
                     let authority_cert =
                         gen_cert_by_ca(&self.ca_cert, &self.ca_key, authority.host().into())?;
-                    let server_config = gen_server_config_by_ca(&[authority_cert], &self.ca_key)?;
+                    let server_config =
+                        gen_server_config_by_ca(&[Arc::new(authority_cert)], &self.ca_key)?;
                     let server_config = Arc::new(server_config);
                     Ok::<Arc<_>, anyhow::Error>(server_config)
                 };

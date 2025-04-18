@@ -3,6 +3,7 @@ use std::{
     io::{self, Cursor},
     net::IpAddr,
     path::PathBuf,
+    sync::Arc,
 };
 
 use anyhow::{Ok, Result, anyhow};
@@ -20,13 +21,15 @@ use tokio_rustls::rustls::{
 };
 
 /// Generate a self-signed certificate and private key for localhost
-pub fn get_self_signed_cert(subject_alt_names: Option<Vec<String>>) -> Result<(String, String)> {
+pub fn get_self_signed_cert(
+    subject_alt_names: Option<Vec<String>>,
+) -> Result<(Certificate, KeyPair)> {
     let subject_alt_names =
         subject_alt_names.unwrap_or_else(|| vec!["localhost".to_string(), "127.0.0.1".to_string()]);
 
     let CertifiedKey { cert, key_pair } = generate_simple_self_signed(subject_alt_names)?;
 
-    Ok((cert.pem(), key_pair.serialize_pem()))
+    Ok((cert, key_pair))
 }
 
 fn gen_ca_cert(key: &KeyPair) -> Result<Certificate> {
@@ -128,7 +131,7 @@ pub fn gen_cert_by_ca(
 }
 
 pub fn gen_server_config_by_ca(
-    cert_chain: &[Certificate],
+    cert_chain: &[Arc<Certificate>],
     ca_key: &KeyPair,
 ) -> Result<ServerConfig> {
     let mut ca_key_cursor = Cursor::new(ca_key.serialize_pem());
@@ -155,7 +158,9 @@ pub fn gen_server_config_by_ca(
     Ok(server_config)
 }
 
-pub fn gen_client_config_by_cert(cert_chain: Option<&[Certificate]>) -> Result<ClientConfig> {
+pub fn gen_client_config_by_cert(
+    cert_chain: Option<Vec<Arc<Certificate>>>,
+) -> Result<ClientConfig> {
     let mut root_cert_store: RootCertStore = RootCertStore::empty();
     // add webpki roots
     root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());

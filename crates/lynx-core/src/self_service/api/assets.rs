@@ -48,7 +48,7 @@ pub async fn handle_ui_assert(req: Request<Incoming>) -> Result<Response<BoxBody
         })
         .unwrap_or_else(|| HeaderValue::from_static("text/html"));
 
-    let body = BoxBody::boxed(full(content));
+    let body = full(content);
 
     let res: Response<BoxBody<Bytes, Error>> = Response::builder()
         .header(CONTENT_TYPE, content_type)

@@ -204,6 +204,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-once-cell"
+version = "0.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4288f83726785267c6f2ef073a3d83dc3f9b81464e9f99898240cced85fce35a"
+
+[[package]]
 name = "async-stream"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1296,6 +1302,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hdrhistogram"
+version = "7.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "765c9198f173dd59ce26ff9f95ef0aafd0a0fe01fb9d72841bc5066a4c06511d"
+dependencies = [
+ "byteorder",
+ "num-traits",
+]
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1901,6 +1917,7 @@ version = "0.1.4"
 dependencies = [
  "anyhow",
  "async-compression",
+ "async-once-cell",
  "base64",
  "bytes",
  "chrono",
@@ -1918,10 +1935,12 @@ dependencies = [
  "jsonschema",
  "local-ip-address",
  "lynx-cert",
+ "lynx-mock",
  "mime_guess",
  "moka",
  "nanoid",
  "once_cell",
+ "pin-project-lite",
  "rand 0.8.5",
  "rcgen",
  "regex",
@@ -1941,10 +1960,40 @@ dependencies = [
  "tokio-stream",
  "tokio-tungstenite",
  "tokio-util",
+ "tower",
  "tracing",
  "tracing-subscriber",
  "ts-rs",
  "url",
+]
+
+[[package]]
+name = "lynx-mock"
+version = "0.1.4"
+dependencies = [
+ "anyhow",
+ "async-compression",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body-util",
+ "hyper",
+ "hyper-tungstenite",
+ "hyper-util",
+ "lynx-cert",
+ "once_cell",
+ "pin-project-lite",
+ "rcgen",
+ "reqwest",
+ "reqwest-websocket",
+ "tempdir",
+ "tokio",
+ "tokio-rustls",
+ "tokio-stream",
+ "tokio-util",
+ "tower",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -4034,11 +4083,16 @@ checksum = "d039ad9159c98b70ecfd540b2573b97f7f52c3e8d9f8ad57a24b916a536975f9"
 dependencies = [
  "futures-core",
  "futures-util",
+ "hdrhistogram",
+ "indexmap",
  "pin-project-lite",
+ "slab",
  "sync_wrapper",
  "tokio",
+ "tokio-util",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]

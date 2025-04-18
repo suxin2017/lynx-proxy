@@ -19,27 +19,21 @@ tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
-hyper = { version = "1", features = ["full"] }
-http-body-util = "0.1"
-hyper-util = { version = "0.1", features = ["full"] }
+hyper = { workspace = true }
+http-body-util = { workspace = true }
+hyper-util = { workspace = true }
 hyper-tungstenite = "0.17.0"
-http = "1.0"
-tokio-util = { version = "0.7", features = ["io-util", "compat"] }
-tokio-rustls = { version = "0.26.0", default-features = false, features = [
-    "ring",
-    "tls12",
-    "logging",
-] }
-tokio-stream = { version = "0.1.14", default-features = false, features = [
-    "sync",
-] }
+http = { workspace = true }
+tokio-util = { workspace = true }
+tokio-rustls = { workspace = true }
+tokio-stream = { workspace = true }
 tokio-tungstenite = { version = "0.26.1", features = [
     "rustls",
     "rustls-tls-webpki-roots",
     "connect",
 ] }
-futures-util = "0.3.31"
-bytes = "1.9.0"
+futures-util = { workspace = true }
+bytes = { workspace = true }
 hyper-rustls = { version = "0.27.3", default-features = false, features = [
     "webpki-roots",
     "webpki-tokio",
@@ -58,8 +52,8 @@ rcgen = { version = "0.13.0", default-features = false, features = [
 ] }
 time = "0.3.37"
 rsa = "0.9.7"
-once_cell = "1.20.2"
-async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }
+once_cell = { workspace = true }
+tower = { workspace = true }
 chrono = "0.4.39"
 derive_builder = "0.20.2"
 local-ip-address = "0.6.3"
@@ -88,11 +82,14 @@ reqwest = { version = "0.12.12", features = [
 ] }
 reqwest-websocket = "0.4.4"
 lynx-cert = { path = "../lynx-cert" }
+pin-project-lite = { workspace = true }
 
 [dev-dependencies]
 dotenv = "0.15.0"
 async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }
 tempdir = "0.3.7"
+lynx-mock = { path = "../lynx-mock" }
+async-once-cell = "0.5.4"
 
 [features]
 test = []

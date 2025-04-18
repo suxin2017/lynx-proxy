@@ -5,7 +5,7 @@ use bytes::Bytes;
 use http::header::CONTENT_TYPE;
 use http::method;
 use http_body_util::combinators::BoxBody;
-use hyper::body::Incoming;
+use hyper::body::{Body, Incoming};
 use hyper::{Request, Response};
 use tracing::{error, trace};
 use utils::{
@@ -29,6 +29,7 @@ pub fn match_self_service(req: &Request<Incoming>) -> bool {
 pub async fn self_service_router(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
+    
     let method = req.method();
     let path = req.uri().path();
 
