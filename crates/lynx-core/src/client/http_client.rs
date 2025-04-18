@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use bytes::Bytes;
 use derive_builder::Builder;
+use http::Request;
 use http_body_util::combinators::BoxBody;
+use hyper::body::Body;
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use hyper_util::{
     client::legacy::{Client, connect::HttpConnector},
@@ -12,12 +14,23 @@ use hyper_util::{
 use lynx_cert::gen_client_config_by_cert;
 use rcgen::Certificate;
 
+use crate::common::{HyperRes, Req};
+
 #[derive(Builder)]
 #[builder(build_fn(skip))]
 pub struct HttpClient {
     custom_certs: Option<Arc<Vec<Certificate>>>,
     #[builder(setter(skip))]
     client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
+}
+
+impl HttpClient {
+    pub async fn request(&self, req: Req) -> Result<HyperRes> {
+        self.client
+            .request(req)
+            .await
+            .map_err(|e| anyhow!(e).context("http request client error"))
+    }
 }
 
 impl HttpClientBuilder {

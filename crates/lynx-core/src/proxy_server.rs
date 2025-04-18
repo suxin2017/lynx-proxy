@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use anyhow::{Ok, Result};
 use bytes::Bytes;
@@ -15,10 +16,12 @@ use tokio::net::TcpListener;
 use tower::ServiceBuilder;
 use tracing::{trace, warn};
 
+use crate::client::request_client::RequestClientBuilder;
 use crate::layers::log_layer::LogLayer;
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
 use crate::layers::trace_id_layer::service::TraceIdExt;
+use crate::proxy_service::proxy_service_fn;
 
 #[derive(Builder)]
 #[builder(build_fn(skip))]
@@ -30,7 +33,7 @@ pub struct ProxyServer {
 }
 
 impl ProxyServerBuilder {
-    async fn build(&self) -> Result<ProxyServer> {
+    pub async fn build(&self) -> Result<ProxyServer> {
         let port = self.port.flatten().unwrap_or(0);
         let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
 
@@ -66,7 +69,7 @@ async fn hello(r: Request<Incoming>) -> Result<Response<Full<Bytes>>> {
     println!(
         "{:?} {:?}",
         r.extensions().get::<ClientAddr>().unwrap().0,
-        r.get_trace_id()
+        r.extensions().get_trace_id()
     );
 
     Ok(Response::new(Full::new(Bytes::from("Hello, World!"))))
@@ -102,10 +105,17 @@ impl ProxyServer {
                 let (stream, client_addr) = listener.accept().await.expect("accept failed");
                 let io = TokioIo::new(stream);
                 tokio::task::spawn(async move {
-                    let svc = tower::service_fn(hello);
+                    let svc = tower::service_fn(proxy_service_fn);
+
+                    let request_client = RequestClientBuilder::default()
+                        .custom_certs(None)
+                        .build()
+                        .expect("build request client error");
+
                     let svc = ServiceBuilder::new()
                         .layer(LogLayer {})
                         .layer(TraceIdLayer)
+                        .layer(RequestExtensionLayer::new(Arc::new(request_client)))
                         .layer(RequestExtensionLayer::new(ClientAddr(client_addr)))
                         .service(svc);
                     let svc = TowerToHyperService::new(svc);

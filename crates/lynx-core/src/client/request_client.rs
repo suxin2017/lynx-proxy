@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use derive_builder::Builder;
+use http::{Extensions, Request};
 use rcgen::Certificate;
 
 use super::{
@@ -38,16 +39,36 @@ impl RequestClientBuilder {
     }
 }
 
+pub type ShareRequestClient = Arc<RequestClient>;
+
+pub trait RequestClientExt {
+    fn get_http_client(&self) -> &HttpClient;
+    fn get_websocket_client(&self) -> &WebsocketClient;
+}
+
+impl RequestClientExt for Extensions {
+    fn get_http_client(&self) -> &HttpClient {
+        &self
+            .get::<ShareRequestClient>()
+            .expect("RequestClient not found")
+            .http_client
+    }
+
+    fn get_websocket_client(&self) -> &WebsocketClient {
+        &self
+            .get::<ShareRequestClient>()
+            .expect("RequestClient not found")
+            .websocket_client
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use anyhow::Ok;
-
     use super::*;
 
     #[test]
-    fn build_request_client_test() -> Result<()> {
+    fn build_request_client_test() {
         let client = RequestClientBuilder::default().custom_certs(None).build();
         assert!(client.is_ok());
-        Ok(())
     }
 }

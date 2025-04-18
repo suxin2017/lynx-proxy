@@ -3,10 +3,9 @@ use std::{
     task::{Context, Poll},
 };
 
-use http::{Request, Response};
+use http::{Extensions, Request, Response};
 use nanoid::nanoid;
 use tower::Service;
-
 
 #[derive(Debug, Clone)]
 pub struct TraceIdService<S> {
@@ -37,15 +36,9 @@ pub trait TraceIdExt {
     fn get_trace_id(&self) -> Option<TraceId>;
 }
 
-impl<Body> TraceIdExt for Request<Body> {
+impl TraceIdExt for Extensions {
     fn get_trace_id(&self) -> Option<TraceId> {
-        self.extensions().get::<TraceId>().cloned()
-    }
-}
-
-impl<Body> TraceIdExt for Response<Body> {
-    fn get_trace_id(&self) -> Option<TraceId> {
-        self.extensions().get::<TraceId>().cloned()
+        self.get::<TraceId>().cloned()
     }
 }
 
@@ -59,7 +52,7 @@ mod tests {
     fn get_trace_id_test() -> Result<()> {
         let mut req = Request::builder().body(())?;
         req.extensions_mut().insert(Arc::new(nanoid!()));
-        let trace_id = req.get_trace_id();
+        let trace_id = req.extensions().get_trace_id();
         assert!(trace_id.is_some());
 
         Ok(())

@@ -1,5 +1,3 @@
-// adapted from https://github.com/hyperium/hyper/blob/master/src/common/io/rewind.rs
-
 use bytes::{Buf, Bytes};
 use hyper::upgrade::Upgraded;
 use hyper_util::rt::TokioIo;
@@ -15,10 +13,18 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, ReadBuf};
 pub(crate) struct ConnectUpgraded {
     pre: Option<Bytes>,
     inner: TokioIo<Upgraded>,
+    pub steam_type: ConnectStreamType,
+}
+
+#[derive(Debug)]
+pub enum ConnectStreamType {
+    WebSocket,
+    Https,
+    Other,
 }
 
 impl ConnectUpgraded {
-    pub(crate) async fn new(mut io: TokioIo<Upgraded>) -> (Self, bool, bool) {
+    pub(crate) async fn new(mut io: TokioIo<Upgraded>) -> Self {
         let mut buffer = [0; 4];
         let bytes_read = match io.read_exact(&mut buffer).await {
             Ok(bytes_read) => Some(bytes_read),
@@ -31,20 +37,23 @@ impl ConnectUpgraded {
         };
         let is_websocket = buffer == *b"GET ";
         let is_https = buffer[..2] == *b"\x16\x03";
-        (
-            ConnectUpgraded {
-                pre: bytes_read.and_then(|bytes_read| {
-                    if bytes_read == 0 {
-                        None
-                    } else {
-                        Some(Bytes::copy_from_slice(&buffer[..bytes_read]))
-                    }
-                }),
-                inner: io,
+        ConnectUpgraded {
+            pre: bytes_read.and_then(|bytes_read| {
+                if bytes_read == 0 {
+                    None
+                } else {
+                    Some(Bytes::copy_from_slice(&buffer[..bytes_read]))
+                }
+            }),
+            inner: io,
+            steam_type: if is_websocket {
+                ConnectStreamType::WebSocket
+            } else if is_https {
+                ConnectStreamType::Https
+            } else {
+                ConnectStreamType::Other
             },
-            is_websocket,
-            is_https,
-        )
+        }
     }
 }
 
@@ -58,14 +67,14 @@ impl AsyncRead for ConnectUpgraded {
             if !prefix.is_empty() {
                 let copy_len = cmp::min(prefix.len(), buf.remaining());
                 buf.put_slice(&prefix[..copy_len]);
-                
+
                 // Put back remaining bytes if any
                 if copy_len < prefix.len() {
                     let mut remaining = prefix;
                     remaining.advance(copy_len);
                     self.pre = Some(remaining);
                 }
-                
+
                 return Poll::Ready(Ok(()));
             }
         }

@@ -95,7 +95,7 @@ pub fn set_up_ca_manager(app_config: &AppConfig) -> ServerCaManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use tempdir::TempDir;
 
     fn get_temp_dir() -> TempDir {
