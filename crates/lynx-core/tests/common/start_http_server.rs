@@ -65,7 +65,7 @@ pub async fn start_https_server() -> Result<SocketAddr> {
     println!("start test https server at {}", addr);
     let cert_chain = TEST_LOCALHOST_CERT.as_ref().unwrap().clone();
     // Build TLS configuration.
-    let mut server_config = ServerConfig::builder()
+    let server_config = ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(cert_chain, TEST_LOCALHOST_KEY.as_ref().unwrap().clone_key())
         .unwrap();

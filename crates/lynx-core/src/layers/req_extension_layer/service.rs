@@ -1,11 +1,8 @@
-use core::fmt;
-use std::task::{Context, Poll, ready};
+use std::task::{Context, Poll};
 
 use http::Request;
-use pin_project_lite::pin_project;
-use tower::{Layer, Service};
+use tower::Service;
 
-use crate::common::HyperReq;
 
 #[derive(Debug, Clone)]
 pub struct RequestExtensionService<S, V> {

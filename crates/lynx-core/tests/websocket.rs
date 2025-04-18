@@ -1,11 +1,8 @@
 use common::{
-    build_proxy_client::build_http_client, test_server::WORLD, tracing_config::init_tracing,
+    build_proxy_client::build_http_client, tracing_config::init_tracing,
 };
 use futures_util::{SinkExt, TryStreamExt};
-use http::Request;
-use lynx_core::{
-    self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
-};
+use lynx_core::server_context::set_up_context;
 use reqwest_websocket::{Message, RequestBuilderExt};
 pub mod common;
 

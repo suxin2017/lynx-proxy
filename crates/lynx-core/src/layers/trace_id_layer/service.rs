@@ -1,15 +1,12 @@
-use core::fmt;
 use std::{
     sync::Arc,
-    task::{Context, Poll, ready},
+    task::{Context, Poll},
 };
 
 use http::{Request, Response};
 use nanoid::nanoid;
-use pin_project_lite::pin_project;
-use tower::{Layer, Service};
+use tower::Service;
 
-use crate::common::HyperReq;
 
 #[derive(Debug, Clone)]
 pub struct TraceIdService<S> {

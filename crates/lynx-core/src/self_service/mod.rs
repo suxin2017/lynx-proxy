@@ -5,7 +5,7 @@ use bytes::Bytes;
 use http::header::CONTENT_TYPE;
 use http::method;
 use http_body_util::combinators::BoxBody;
-use hyper::body::{Body, Incoming};
+use hyper::body::Incoming;
 use hyper::{Request, Response};
 use tracing::{error, trace};
 use utils::{

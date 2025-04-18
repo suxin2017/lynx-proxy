@@ -6,7 +6,6 @@ use anyhow::{Error, Result};
 use bytes::Bytes;
 use http::HeaderValue;
 use http::header::CONTENT_TYPE;
-use http_body_util::BodyExt;
 use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
 use hyper::{Request, Response};

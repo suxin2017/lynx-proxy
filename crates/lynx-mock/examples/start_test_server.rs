@@ -1,9 +1,6 @@
-use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{Ok, Result};
-use lynx_mock::{client::MockClient, server::MockServer};
-use tempdir::TempDir;
-use tracing::info;
+use lynx_mock::server::MockServer;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]

@@ -1,15 +1,13 @@
 use std::{fs, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
-use base64::engine::general_purpose;
 use http::uri::Authority;
 use lynx_cert::{
     gen_cert_by_ca, gen_root_ca_cert, gen_server_config_by_ca, read_cert_and_key_by_file,
-    read_cert_by_file, read_cert_key_by_file,
 };
 use moka::future::Cache;
 use rcgen::{Certificate, KeyPair};
-use tokio_rustls::rustls::{ServerConfig, pki_types::CertificateDer};
+use tokio_rustls::rustls::ServerConfig;
 
 use crate::config::AppConfig;
 
@@ -97,7 +95,7 @@ pub fn set_up_ca_manager(app_config: &AppConfig) -> ServerCaManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::LazyLock;
+    
     use tempdir::TempDir;
 
     fn get_temp_dir() -> TempDir {

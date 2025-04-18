@@ -6,7 +6,7 @@ use std::sync::Arc;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use derive_builder::Builder;
-use futures_util::{Sink, SinkExt, Stream, StreamExt, stream};
+use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use http::Uri;
 use http::header::CONTENT_TYPE;
 use http::uri::Scheme;
@@ -27,13 +27,12 @@ use ts_rs::TS;
 use crate::entities::app_config::get_app_config;
 use crate::entities::{request, response};
 use crate::proxy_log::body_write_to_file::ws_body_file;
-use crate::proxy_log::message::{self, MessageLog};
+use crate::proxy_log::message::{MessageLog};
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
 use crate::server_context::get_db_connect;
 
 use anyhow::{Error, Result, anyhow};
-use http::header::{CONNECTION, CONTENT_LENGTH, HOST, PROXY_AUTHORIZATION};
 
 use super::util::get_header_and_size;
 

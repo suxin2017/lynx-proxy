@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
-use bytes::Bytes;
-use futures_util::{SinkExt, StreamExt, future::join_all, stream::SplitSink};
-use http::request;
+use futures_util::{SinkExt, StreamExt, stream::SplitSink};
 use reqwest::{self, Certificate, Client, Response};
 use reqwest_websocket::{CloseCode, Message, RequestBuilderExt};
 

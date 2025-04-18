@@ -1,24 +1,14 @@
 use crate::mark_service::MarkService;
-use crate::mock_server_fn::{HTTP_PATH_LIST, MockPath, WS_PATH, mock_server_fn};
-use anyhow::{Result, anyhow};
-use bytes::Bytes;
-use core::arch;
-use http_body_util::Full;
-use hyper::service::service_fn;
-use hyper::{Request, Response};
-use hyper_util::{
-    rt::{TokioExecutor, TokioIo},
-    server::{conn::auto, graceful::GracefulShutdown},
-};
+use crate::mock_server_fn::{HTTP_PATH_LIST, WS_PATH, mock_server_fn};
+use anyhow::Result;
+use hyper_util::rt::{TokioExecutor, TokioIo};
 use lynx_cert::{gen_server_config_by_ca, get_self_signed_cert};
 use rcgen::{Certificate, KeyPair};
-use std::convert::Infallible;
 use std::fs;
 use std::path::PathBuf;
 use std::{net::SocketAddr, sync::Arc};
 use tempdir::TempDir;
-use tokio::io::AsyncWriteExt;
-use tokio::{net::TcpListener, select, signal, sync::oneshot};
+use tokio::net::TcpListener;
 use tokio_rustls::{TlsAcceptor, rustls::ServerConfig};
 use tower::ServiceBuilder;
 use tracing::info;

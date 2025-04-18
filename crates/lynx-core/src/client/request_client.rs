@@ -1,20 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use bytes::Bytes;
 use derive_builder::Builder;
-use http_body_util::combinators::BoxBody;
-use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
-use hyper_util::{
-    client::legacy::{Client, connect::HttpConnector},
-    rt::TokioExecutor,
-};
-use lynx_cert::gen_client_config_by_cert;
 use rcgen::Certificate;
 
 use super::{
     http_client::{HttpClient, HttpClientBuilder},
-    websocket_client::{self, WebsocketClient, WebsocketClientBuilder},
+    websocket_client::{WebsocketClient, WebsocketClientBuilder},
 };
 
 #[derive(Builder)]

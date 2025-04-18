@@ -1,8 +1,6 @@
-use core::fmt;
 use std::task::{Context, Poll, ready};
 
 use pin_project_lite::pin_project;
-use tower::{Layer, Service};
 
 pin_project! {
     pub struct LogFuture<F> {

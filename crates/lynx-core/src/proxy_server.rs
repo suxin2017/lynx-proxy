@@ -1,32 +1,24 @@
-use std::convert::Infallible;
-use std::io;
 use std::net::SocketAddr;
 
 use anyhow::{Ok, Result};
 use bytes::Bytes;
 use derive_builder::Builder;
 use futures_util::future::join_all;
-use http::StatusCode;
 use http_body_util::Full;
-use http_body_util::combinators::BoxBody;
 use hyper::body::Incoming;
-use hyper::service::service_fn;
 use hyper::{Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use local_ip_address::list_afinet_netifas;
-use tokio::join;
 use tokio::net::TcpListener;
 use tower::ServiceBuilder;
-use tracing::{error, trace, warn};
+use tracing::{trace, warn};
 
 use crate::layers::log_layer::LogLayer;
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
 use crate::layers::trace_id_layer::service::TraceIdExt;
-use crate::schedular::dispatch;
-use crate::utils::full;
 
 #[derive(Builder)]
 #[builder(build_fn(skip))]

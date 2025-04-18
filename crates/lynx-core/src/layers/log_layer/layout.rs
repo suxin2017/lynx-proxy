@@ -1,10 +1,6 @@
-use core::fmt;
-use std::task::{Context, Poll, ready};
 
-use pin_project_lite::pin_project;
-use tower::{Layer, Service};
+use tower::Layer;
 
-use crate::common::HyperReq;
 
 use super::LogService;
 

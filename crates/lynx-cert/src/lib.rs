@@ -1,6 +1,6 @@
 use std::{
     fs,
-    io::{self, Cursor},
+    io::{Cursor},
     net::IpAddr,
     path::PathBuf,
     sync::Arc,
@@ -17,7 +17,7 @@ use rsa::{RsaPrivateKey, pkcs8::EncodePrivateKey};
 use time::{Duration, OffsetDateTime};
 use tokio_rustls::rustls::{
     ClientConfig, RootCertStore, ServerConfig,
-    pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
+    pki_types::{PrivateKeyDer, pem::PemObject},
 };
 
 /// Generate a self-signed certificate and private key for localhost

@@ -7,7 +7,7 @@ use std::{
 use bytes::Bytes;
 use futures_util::ready;
 use http::{HeaderValue, Response};
-use http_body_util::{Full, combinators::BoxBody};
+use http_body_util::combinators::BoxBody;
 use hyper::{Request, body::Incoming, service::Service};
 use pin_project_lite::pin_project;
 

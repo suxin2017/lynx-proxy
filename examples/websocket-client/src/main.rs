@@ -1,16 +1,14 @@
-use futures_util::{SinkExt, StreamExt, join};
-use http::{Request, request};
-use rustls::{ClientConfig, RootCertStore, crypto::CryptoProvider, pki_types::CertificateDer};
+use futures_util::{SinkExt, StreamExt};
+use rustls::{ClientConfig, RootCertStore, pki_types::CertificateDer};
 use std::{
     fs, io,
     path::PathBuf,
-    sync::{Arc, mpsc},
+    sync::Arc,
 };
 use tokio::sync::mpsc::unbounded_channel;
-use tokio::{net::TcpStream, spawn};
+use tokio::spawn;
 use tokio_tungstenite::{
-    Connector, WebSocketStream, client_async_tls_with_config, connect_async_tls_with_config,
-    tungstenite::client::IntoClientRequest,
+    Connector, connect_async_tls_with_config,
 };
 use url::Url;
 

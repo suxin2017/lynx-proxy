@@ -1,15 +1,12 @@
 use std::net::SocketAddr;
 
 use common::{
-    build_proxy_client::{build_http_client, build_https_client, build_https_proxy_client},
+    build_proxy_client::{build_https_client, build_https_proxy_client},
     start_http_server::start_https_server,
-    test_server::{HELLO_WORLD, WORLD},
     tracing_config::init_tracing,
 };
 use futures_util::{SinkExt, TryStreamExt};
-use lynx_core::{
-    self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
-};
+use lynx_core::{server::Server, server_context::set_up_context};
 use reqwest::Client;
 use reqwest_websocket::{Message, RequestBuilderExt};
 pub mod common;

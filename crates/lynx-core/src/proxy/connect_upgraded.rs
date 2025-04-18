@@ -5,7 +5,6 @@ use hyper::upgrade::Upgraded;
 use hyper_util::rt::TokioIo;
 use std::{
     cmp, io,
-    marker::Unpin,
     pin::Pin,
     task::{self, Poll},
 };

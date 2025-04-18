@@ -1,4 +1,4 @@
-use std::{env, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use rcgen::{CertifiedKey, generate_simple_self_signed};
 

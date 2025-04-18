@@ -3,7 +3,7 @@ use async_compression::tokio::bufread::GzipEncoder;
 use bytes::Bytes;
 use futures_util::{SinkExt, TryStreamExt};
 use http::{
-    HeaderValue, Method, StatusCode,
+    Method, StatusCode,
     header::{CONTENT_ENCODING, CONTENT_TYPE},
 };
 use http_body_util::{BodyExt, Full, StreamBody, combinators::BoxBody};
@@ -12,9 +12,8 @@ use hyper::{
     body::{Frame, Incoming},
 };
 use hyper_tungstenite::tungstenite::Message;
-use once_cell::sync::Lazy;
 use tokio_stream::{StreamExt, wrappers::BroadcastStream};
-use tracing::{info, instrument, trace};
+use tracing::{instrument, trace};
 
 use std::{fmt::Display, time::Duration};
 use tokio::sync::broadcast;
