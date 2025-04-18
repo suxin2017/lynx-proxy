@@ -159,14 +159,14 @@ pub fn gen_server_config_by_ca(
 }
 
 pub fn gen_client_config_by_cert(
-    cert_chain: Option<Vec<Arc<Certificate>>>,
+    cert_chain: Option<Arc<Vec<Certificate>>>,
 ) -> Result<ClientConfig> {
     let mut root_cert_store: RootCertStore = RootCertStore::empty();
     // add webpki roots
     root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
 
     if let Some(cert_chain) = cert_chain {
-        for cert in cert_chain {
+        for cert in cert_chain.as_ref() {
             root_cert_store.add(cert.der().to_owned())?;
         }
     }

@@ -14,16 +14,17 @@ use rcgen::Certificate;
 
 #[derive(Builder)]
 #[builder(build_fn(skip))]
-struct HttpClient {
-    custom_certs: Option<Vec<Arc<Certificate>>>,
+pub struct HttpClient {
+    custom_certs: Option<Arc<Vec<Certificate>>>,
     #[builder(setter(skip))]
     client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
 }
 
 impl HttpClientBuilder {
     pub fn build(&self) -> Result<HttpClient> {
-        let custom_certs = self.custom_certs.clone().flatten();
-        let client_config = gen_client_config_by_cert(custom_certs.clone())?;
+        let cert_chain = self.custom_certs.clone().flatten();
+
+        let client_config = gen_client_config_by_cert(cert_chain.clone())?;
 
         let connector = HttpsConnectorBuilder::new()
             .with_tls_config(client_config)
@@ -35,7 +36,7 @@ impl HttpClientBuilder {
         let client = client_builder.build(connector);
         Ok(HttpClient {
             client,
-            custom_certs,
+            custom_certs: cert_chain,
         })
     }
 }
@@ -57,6 +58,7 @@ mod tests {
     #[ignore = "need network connect"]
     async fn test_http_request() -> Result<()> {
         let client = HttpClientBuilder::default().custom_certs(None).build()?;
+
         let url = "https://example.com";
         let response = client.client.get(url.parse()?).await?;
         assert_eq!(response.status(), 200);
