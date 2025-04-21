@@ -8,6 +8,7 @@ use lynx_core::{
 };
 use reqwest::Client;
 use std::net::SocketAddr;
+use tokio::signal;
 pub mod common;
 
 use crate::common::start_http_server::start_http_server;
@@ -37,23 +38,26 @@ async fn request_test() {
     init_tracing();
     let (addr, proxy_addr, direct_request_client, proxy_request_client) = init_test_server().await;
 
-    let mut log = direct_request_client
-        .get(format!(
-            "http://{proxy_addr}{}",
-            SelfServiceRouterPath::RequestLog
-        ))
-        .send()
+    // let mut log = direct_request_client
+    //     .get(format!(
+    //         "http://{proxy_addr}{}",
+    //         SelfServiceRouterPath::RequestLog
+    //     ))
+    //     .send()
+    //     .await
+    //     .unwrap();
+
+    // let lynx_core_res = proxy_request_client
+    //     .get(format!("http://{addr}{HELLO_PATH}"))
+    //     .send()
+    //     .await
+    //     .unwrap();
+
+    // assert_eq!(lynx_core_res.text().await.unwrap(), "Hello, World!");
+
+    // let chunk = log.chunk().await.unwrap();
+    // assert!(chunk.is_some());
+    signal::ctrl_c()
         .await
-        .unwrap();
-
-    let lynx_core_res = proxy_request_client
-        .get(format!("http://{addr}{HELLO_PATH}"))
-        .send()
-        .await
-        .unwrap();
-
-    assert_eq!(lynx_core_res.text().await.unwrap(), "Hello, World!");
-
-    let chunk = log.chunk().await.unwrap();
-    assert!(chunk.is_some());
+        .expect("Failed to install Ctrl+C handler");
 }

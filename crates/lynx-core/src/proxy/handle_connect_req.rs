@@ -1,8 +1,12 @@
 use std::mem::take;
 
-use anyhow::{Ok, Result};
+use anyhow::{Ok, Result, anyhow};
 use http::{Request, Response};
-use hyper_util::rt::TokioIo;
+use hyper::service::service_fn;
+use hyper_util::{
+    rt::{TokioExecutor, TokioIo},
+    server::conn::auto,
+};
 use tokio::spawn;
 use tokio_rustls::TlsAcceptor;
 
@@ -10,13 +14,17 @@ use crate::{
     common::{HyperReq, Res},
     layers::trace_id_layer::service::TraceIdExt,
     server_context::{CA_MANAGER, get_ca_manager},
-    utils::empty,
+    utils::{empty, full},
 };
 
 use super::connect_upgraded::{ConnectStreamType, ConnectUpgraded};
 
 pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
     req.method() == "CONNECT"
+}
+
+pub async fn hello(req: HyperReq) -> Result<Res> {
+    Ok(Response::new(full("Hello World!")))
 }
 
 pub async fn handle_connect_req<Body>(req: HyperReq) -> Result<Res> {
@@ -45,6 +53,11 @@ pub async fn handle_connect_req<Body>(req: HyperReq) -> Result<Res> {
             let ca_manager = get_ca_manager();
             let server_config = ca_manager.get_server_config(&authority).await?;
             let tls_stream = TlsAcceptor::from(server_config).accept(upgraded).await?;
+
+            auto::Builder::new(TokioExecutor::new())
+                .serve_connection_with_upgrades(TokioIo::new(tls_stream), service_fn(hello))
+                .await
+                .map_err(|e| anyhow!(e))?;
 
             // Handle HTTP connection
             // proxy_http_request(req, upgraded).await?;
