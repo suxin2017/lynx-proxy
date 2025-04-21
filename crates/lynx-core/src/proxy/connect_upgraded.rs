@@ -2,9 +2,10 @@ use bytes::{Buf, Bytes};
 use hyper::upgrade::Upgraded;
 use hyper_util::rt::TokioIo;
 use std::{
-    cmp, io,
+    cmp,
+    io::{self, Read},
     pin::Pin,
-    task::{self, Poll},
+    task::{self, Context, Poll},
 };
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, ReadBuf};
 
