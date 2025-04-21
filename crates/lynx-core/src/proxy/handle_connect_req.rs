@@ -1,3 +1,5 @@
+use std::mem::take;
+
 use anyhow::{Ok, Result};
 use http::{Request, Response};
 use hyper_util::rt::TokioIo;
@@ -18,8 +20,9 @@ pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
 }
 
 pub async fn handle_connect_req<Body>(req: HyperReq) -> Result<Res> {
-    let (part, body) = req.into_parts();
-    let extensions = part.extensions.clone();
+    let (mut part, body) = req.into_parts();
+    let extensions = take(&mut part.extensions);
+
     let authority = part
         .uri
         .authority()
