@@ -31,7 +31,7 @@ pub async fn tunnel_proxy(
             ..Default::default()
         };
         let record = request_active_model.insert(get_db_connect()).await?;
-        try_send_message(MessageLog::request_log(record));
+        let _ = try_send_message(MessageLog::request_log(record));
 
         if let Some(addr) = host_addr(req.uri()) {
             tokio::task::spawn(async move {

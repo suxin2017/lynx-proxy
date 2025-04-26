@@ -1,0 +1,26 @@
+[package]
+name = "lynx-cert"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+rcgen = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+rustls-pemfile = { workspace = true }
+rsa = "0.9.7"
+time = "0.3.37"
+rand = "0.8.5"
+tokio-rustls = { version = "0.26.0", default-features = false, features = [
+    "ring",
+    "tls12",
+    "logging",
+] }
+webpki-roots = "0.26.8"

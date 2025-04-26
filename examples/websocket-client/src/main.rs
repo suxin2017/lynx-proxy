@@ -1,17 +1,9 @@
-use futures_util::{SinkExt, StreamExt, join};
-use http::{Request, request};
-use rustls::{ClientConfig, RootCertStore, crypto::CryptoProvider, pki_types::CertificateDer};
-use std::{
-    fs, io,
-    path::PathBuf,
-    sync::{Arc, mpsc},
-};
+use futures_util::{SinkExt, StreamExt};
+use rustls::{ClientConfig, RootCertStore, pki_types::CertificateDer};
+use std::{fs, io, path::PathBuf, sync::Arc};
+use tokio::spawn;
 use tokio::sync::mpsc::unbounded_channel;
-use tokio::{net::TcpStream, spawn};
-use tokio_tungstenite::{
-    Connector, WebSocketStream, client_async_tls_with_config, connect_async_tls_with_config,
-    tungstenite::client::IntoClientRequest,
-};
+use tokio_tungstenite::{Connector, connect_async_tls_with_config};
 use url::Url;
 
 #[tokio::main]
@@ -48,7 +40,7 @@ async fn main() {
 
     let connector = Connector::Rustls(Arc::new(client_config));
 
-    let (ws_stream, response) = connect_async_tls_with_config(url, None, false, Some(connector))
+    let (ws_stream, _response) = connect_async_tls_with_config(url, None, false, Some(connector))
         .await
         .expect("WebSocket handshake failed");
 

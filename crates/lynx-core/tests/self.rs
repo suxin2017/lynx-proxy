@@ -1,19 +1,23 @@
-use common::{build_proxy_client::build_http_client, tracing_config::init_tracing};
+use common::tracing_config::init_tracing;
 use lynx_core::{
     self_service::paths::SelfServiceRouterPath, server::Server, server_context::set_up_context,
 };
+use lynx_mock::client::MockClient;
 use reqwest::Client;
 use serde_json::{Value, json};
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 pub mod common;
 
-async fn init_test_server() -> (SocketAddr, Client) {
+async fn init_test_server() -> (SocketAddr, Arc<Client>) {
     set_up_context(Default::default()).await;
 
     let mut server = Server::new(Default::default());
     server.run().await.unwrap();
-    let client = build_http_client();
-    (*server.access_addr_list.first().unwrap(), client)
+    let client = MockClient::new(None, None).unwrap();
+    let c = client.0;
+    let cc = c.direct_client.clone();
+
+    (*server.access_addr_list.first().unwrap(), cc)
 }
 
 #[tokio::test]

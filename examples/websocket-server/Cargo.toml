@@ -30,4 +30,4 @@ tokio-rustls = { version = "0.26.0", default-features = false, features = [
     "logging",
 ] }
 http-body-util = "0.1"
-rustls-pemfile = "2.2.0"
+rustls-pemfile = { workspace = true }

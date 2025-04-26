@@ -3,19 +3,18 @@ use std::{fs, io};
 use std::{net::SocketAddr, sync::Arc};
 
 use anyhow::{Error, Result, anyhow};
-use futures_util::{SinkExt, future};
+use futures_util::SinkExt;
 use http_body_util::Full;
 use http_body_util::{BodyExt, Empty, combinators::BoxBody};
 use hyper::Request;
 use hyper::body::Incoming;
 use hyper::service::service_fn;
 use hyper::{Response, body::Bytes};
-use hyper_tungstenite::{HyperWebsocket, tungstenite::Message};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tokio_rustls::rustls::ServerConfig;
-use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use tokio_rustls::rustls::pki_types::CertificateDer;
 
 use tokio_stream::StreamExt;
 

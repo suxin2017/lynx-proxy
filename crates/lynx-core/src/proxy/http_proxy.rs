@@ -1,24 +1,14 @@
 use anyhow::{Error, Result};
-use http::HeaderMap;
-use http::header::CONTENT_TYPE;
 use http_body_util::combinators::BoxBody;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response};
-use sea_orm::{ActiveModelTrait, Set};
 use tracing::{info, trace};
 
-use crate::entities::app_config::{RecordingStatus, get_app_config};
-use crate::entities::request::{self};
-use crate::entities::response;
 use crate::entities::rule::capture::CaptureType;
 use crate::plugins::http_request_plugin::{self, build_proxy_response};
-use crate::proxy_log::message::MessageLog;
-use crate::proxy_log::{
-    create_request_active_model_by_req, try_send_message, try_send_req_message,
-};
+use crate::proxy_log::{create_request_active_model_by_req, try_send_req_message};
 use crate::schedular::get_req_trace_id;
 use crate::self_service::model::rule_content::get_all_rule_content;
-use crate::server_context::get_db_connect;
 
 pub async fn handle_capture_req(mut req: Request<Incoming>) -> Result<Request<Incoming>> {
     let all_rule_content = get_all_rule_content().await?;

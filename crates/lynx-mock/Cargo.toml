@@ -1,0 +1,43 @@
+[package]
+name = "lynx-mock"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+hyper = { workspace = true }
+hyper-tungstenite = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+http-body-util = { workspace = true }
+bytes = { workspace = true }
+futures-util = { workspace = true }
+tokio-util = { workspace = true }
+once_cell = { workspace = true }
+tokio-stream = { workspace = true }
+http = { workspace = true }
+hyper-util = { workspace = true }
+async-compression = { version = "0.4.18", features = ["gzip", "tokio"] }
+tokio-rustls = { workspace = true }
+lynx-cert = { path = "../lynx-cert" }
+pin-project-lite = { workspace = true }
+tower = { workspace = true }
+reqwest = { version = "0.12.12", features = [
+    "rustls-tls-manual-roots",
+    "gzip",
+    "json",
+    "stream",
+    "rustls-tls",
+] }
+reqwest-websocket = "0.4.4"
+rcgen = { workspace = true }
+tempdir = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tracing-subscriber = { workspace = true }
