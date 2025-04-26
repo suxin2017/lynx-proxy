@@ -1,11 +1,13 @@
 use anyhow::Result;
-use http::Request;
-use hyper::body::Body;
 
 use crate::{
     client::request_client::RequestClientExt,
     common::{HyperReq, HyperReqExt, HyperResExt, Res},
 };
+
+pub fn is_http_req(req: &HyperReq) -> bool {
+    req.headers().get("Upgrade").is_none()
+}
 
 pub async fn proxy_http_request(req: HyperReq) -> Result<Res> {
     tracing::debug!("proxy_http_request: {:?}", req);

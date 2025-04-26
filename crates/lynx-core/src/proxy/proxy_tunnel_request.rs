@@ -1,20 +1,13 @@
-use anyhow::{Error, Ok, Result};
-use http_body_util::combinators::BoxBody;
-use hyper::body::{Bytes, Incoming};
-use hyper::rt::{Read, Write};
-use hyper::upgrade::Upgraded;
-use hyper::{Method, Request, Response};
+use anyhow::{Ok, Result};
+use hyper::{Method, Response};
 use hyper_util::rt::TokioIo;
-use sea_orm::{ActiveModelTrait, Set};
 use tokio::io::{AsyncRead, AsyncWrite};
-use tokio::net::unix::SocketAddr;
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tracing::{error, trace};
 
 use crate::common::{HyperReq, Res};
 use crate::utils::{empty, host_addr};
 
-use super::connect_upgraded::ConnectUpgraded;
 
 fn handle_tunnel_error(err: anyhow::Error) {
     error!("Error handling tunnel: {}", err);

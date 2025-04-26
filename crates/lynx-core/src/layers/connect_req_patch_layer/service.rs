@@ -1,16 +1,11 @@
-use std::{
-    sync::Arc,
-    task::{Context, Poll},
-};
+use std::task::{Context, Poll};
 
 use http::{
-    Extensions, Request, Response, Uri, Version,
+    Request, Uri, Version,
     uri::{Authority, Scheme},
 };
-use nanoid::nanoid;
 use tower::Service;
 
-use crate::common::{HyperReq, HyperReqExt, Req};
 
 #[derive(Debug, Clone)]
 pub struct ConnectReqPatchService<S> {

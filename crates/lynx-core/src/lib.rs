@@ -9,7 +9,6 @@ pub mod plugins;
 pub mod proxy;
 pub mod proxy_log;
 pub mod proxy_server;
-pub mod proxy_service;
 pub mod schedular;
 pub mod self_service;
 pub mod server;

@@ -1,4 +1,3 @@
-
 use crate::utils::full;
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
@@ -14,22 +13,21 @@ use utils::{
 };
 
 pub mod api;
+pub mod model;
 pub mod paths;
 pub mod utils;
-pub mod model;
 
 use paths::SelfServiceRouterPath;
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
 
-pub fn match_self_service(req: &Request<Incoming>) -> bool {
+pub fn is_self_service(req: &Request<Incoming>) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
 }
 
 pub async fn self_service_router(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    
     let method = req.method();
     let path = req.uri().path();
 

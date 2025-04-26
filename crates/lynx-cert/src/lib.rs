@@ -9,10 +9,7 @@ use rcgen::{
 };
 use rsa::{RsaPrivateKey, pkcs8::EncodePrivateKey};
 use time::{Duration, OffsetDateTime};
-use tokio_rustls::rustls::{
-    ClientConfig, RootCertStore, ServerConfig,
-    pki_types::{PrivateKeyDer, pem::PemObject},
-};
+use tokio_rustls::rustls::{ClientConfig, RootCertStore, ServerConfig, pki_types::PrivateKeyDer};
 
 /// Generate a self-signed certificate and private key for localhost
 pub fn get_self_signed_cert(

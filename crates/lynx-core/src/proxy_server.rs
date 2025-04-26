@@ -2,30 +2,23 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use anyhow::{Ok, Result};
-use bytes::Bytes;
 use derive_builder::Builder;
 use futures_util::future::join_all;
 use http::Extensions;
-use http_body_util::Full;
-use hyper::body::Incoming;
-use hyper::{Request, Response};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use local_ip_address::list_afinet_netifas;
 use rcgen::Certificate;
 use tokio::net::TcpListener;
-use tower::{Service, ServiceBuilder, ServiceExt, service_fn};
+use tower::{ServiceBuilder, service_fn};
 use tracing::{trace, warn};
 
 use crate::client::request_client::RequestClientBuilder;
-use crate::gateway_service::{connect_proxy_service_fn, gateway_service_fn};
+use crate::gateway_service::gateway_service_fn;
 use crate::layers::log_layer::LogLayer;
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
-use crate::layers::trace_id_layer::service::TraceIdExt;
-use crate::proxy::proxy_connect_request::proxy_connect_request;
-use crate::server_ca_manage::{ServerCaManager, set_up_ca_manager};
 
 #[derive(Builder)]
 #[builder(build_fn(skip))]
@@ -74,17 +67,8 @@ impl Default for ServerConfig {
     }
 }
 
-async fn hello(r: Request<Incoming>) -> Result<Response<Full<Bytes>>> {
-    println!(
-        "{:?} {:?}",
-        r.extensions().get::<ClientAddr>().unwrap().0,
-        r.extensions().get_trace_id()
-    );
-
-    Ok(Response::new(Full::new(Bytes::from("Hello, World!"))))
-}
-
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct ClientAddr(SocketAddr);
 
 pub trait ClientAddrRequestExt {

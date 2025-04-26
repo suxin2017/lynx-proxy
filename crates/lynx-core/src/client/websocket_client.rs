@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use derive_builder::Builder;
 use lynx_cert::gen_client_config_by_cert;
 use rcgen::Certificate;
 use tokio_tungstenite::{
@@ -9,12 +8,13 @@ use tokio_tungstenite::{
     tungstenite::client::IntoClientRequest,
 };
 
-#[derive(Builder)]
-#[builder(build_fn(skip))]
 pub struct WebsocketClient {
-    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
-    #[builder(setter(skip))]
     connector: Connector,
+}
+
+#[derive(Default)]
+pub struct WebsocketClientBuilder {
+    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
 }
 
 impl WebsocketClient {
@@ -36,17 +36,18 @@ impl WebsocketClient {
 }
 
 impl WebsocketClientBuilder {
+    pub fn custom_certs(mut self, custom_certs: Option<Arc<Vec<Arc<Certificate>>>>) -> Self {
+        self.custom_certs = custom_certs;
+        self
+    }
     pub fn build(&self) -> Result<WebsocketClient> {
-        let cert_chain = self.custom_certs.clone().flatten();
+        let cert_chain = self.custom_certs.clone();
 
         let client_config = gen_client_config_by_cert(cert_chain.clone())?;
 
         let connector = Connector::Rustls(Arc::new(client_config));
 
-        Ok(WebsocketClient {
-            connector,
-            custom_certs: cert_chain,
-        })
+        Ok(WebsocketClient { connector })
     }
 }
 

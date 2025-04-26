@@ -6,7 +6,7 @@ use std::sync::Arc;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 use derive_builder::Builder;
-use futures_util::{Sink, SinkExt, Stream, StreamExt};
+use futures_util::{SinkExt, StreamExt};
 use http::Uri;
 use http::header::CONTENT_TYPE;
 use http::uri::Scheme;
@@ -27,7 +27,7 @@ use ts_rs::TS;
 use crate::entities::app_config::get_app_config;
 use crate::entities::{request, response};
 use crate::proxy_log::body_write_to_file::ws_body_file;
-use crate::proxy_log::message::{MessageLog};
+use crate::proxy_log::message::MessageLog;
 use crate::proxy_log::try_send_message;
 use crate::schedular::get_req_trace_id;
 use crate::server_context::get_db_connect;
@@ -145,7 +145,7 @@ pub async fn websocket_proxy(
                                 let record =
                                     request_active_model.insert(get_db_connect()).await.unwrap();
                                 let request_id = record.id;
-                                try_send_message(MessageLog::request_log(record));
+                                let _ = try_send_message(MessageLog::request_log(record));
                                 let header_size: usize = proxy_res
                                     .headers()
                                     .iter()
@@ -196,7 +196,9 @@ pub async fn websocket_proxy(
                                                 let json = serde_json::to_string(&log)
                                                     .map_err(|e| anyhow!(e))
                                                     .unwrap();
-                                                try_send_message(MessageLog::websocket_log(log));
+                                                let _ = try_send_message(
+                                                    MessageLog::websocket_log(log),
+                                                );
                                                 file.write_all(json.as_bytes()).await.unwrap();
                                                 file.write_all(b"\n").await.unwrap();
                                             } else {
@@ -229,7 +231,9 @@ pub async fn websocket_proxy(
                                                 let json = serde_json::to_string(&log)
                                                     .map_err(|e| anyhow!(e))
                                                     .unwrap();
-                                                try_send_message(MessageLog::websocket_log(log));
+                                                let _ = try_send_message(
+                                                    MessageLog::websocket_log(log),
+                                                );
                                                 file.write_all(json.as_bytes()).await.unwrap();
                                                 file.write_all(b"\n").await.unwrap();
                                             } else {
@@ -302,33 +306,4 @@ impl WebSocketLog {
             .build()
             .map_err(|e| anyhow!(e))
     }
-}
-
-/// Handle a websocket connection.
-async fn serve_websocket(
-    mut sink: impl Sink<tungstenite::Message, Error = tungstenite::Error> + Unpin + Send,
-    mut stream: impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>> + Unpin + Send,
-    send_type: SendType,
-    trace_id: Arc<String>,
-) -> Result<()> {
-    let mut file = ws_body_file(&trace_id).await;
-
-    while let Some(message) = stream.next().await {
-        let message = message?;
-        if let Ok(ref mut file) = file {
-            let log = WebSocketLog::from_message(trace_id.clone(), &send_type, &message)?;
-            let json = serde_json::to_string(&log).map_err(|e| anyhow!(e))?;
-            try_send_message(MessageLog::websocket_log(log));
-            file.write_all(json.as_bytes()).await?;
-            file.write_all(b"\n").await?;
-        } else {
-            trace!("no receiver, skip write websocket body");
-        }
-        sink.send(message).await?;
-    }
-    if let Ok(mut file) = file {
-        file.flush().await?;
-    }
-    trace!("WebSocket connection closed");
-    Ok(())
 }

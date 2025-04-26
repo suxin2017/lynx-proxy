@@ -3,7 +3,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use http::{Extensions, Request, Response};
+use http::{Extensions, Request};
 use nanoid::nanoid;
 use tower::Service;
 

@@ -3,9 +3,9 @@ use hyper::upgrade::Upgraded;
 use hyper_util::rt::TokioIo;
 use std::{
     cmp,
-    io::{self, Read},
+    io::{self},
     pin::Pin,
-    task::{self, Context, Poll},
+    task::{self, Poll},
 };
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, ReadBuf};
 

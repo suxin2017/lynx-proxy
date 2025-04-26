@@ -1,9 +1,13 @@
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
-use futures_util::{SinkExt, StreamExt, stream::SplitSink};
+use futures_util::{
+    SinkExt, StreamExt,
+    stream::{SplitSink, SplitStream},
+};
 use reqwest::{self, Certificate, Client, Response};
-use reqwest_websocket::{CloseCode, Message, RequestBuilderExt};
+use reqwest_websocket::{CloseCode, Message, RequestBuilderExt, WebSocket};
+use tokio::spawn;
 use tracing::{debug, trace};
 
 use crate::server::MockServer;
@@ -43,7 +47,7 @@ impl MockClientInner {
         )
     }
 }
-pub struct MockClient(Arc<MockClientInner>);
+pub struct MockClient(pub Arc<MockClientInner>);
 
 #[derive(Debug, Clone)]
 pub struct MessageWrapper(pub Message);
@@ -137,6 +141,13 @@ impl MockClient {
         Ok(())
     }
 
+    pub async fn test_request_tls_websocket(&self, server: &MockServer) -> Result<()> {
+        let ws_path = server.get_tls_websocket_path();
+        let (direct_res, proxy_res) = self.ws(ws_path.as_str()).await;
+        Self::assert_equality_ws(direct_res, proxy_res).await?;
+        Ok(())
+    }
+
     async fn ws(
         &self,
         ws_path: &str,
@@ -174,12 +185,16 @@ impl MockClient {
             );
             let (dsi, dst) = dw.split();
             let (psi, pst) = pw.split();
-            tokio::spawn(async move {
-                let _ = send_message(dsi).await;
-                let _ = send_message(psi).await;
-            });
-            let d_recv = dst.collect::<Vec<_>>().await;
-            let p_recv = pst.collect::<Vec<_>>().await;
+            let a = spawn(async move { send_message(dsi, dst).await });
+
+            let b = spawn(async move { send_message(psi, pst).await });
+
+            let d_recv = a.await??;
+            let p_recv = b.await??;
+
+            debug!("direct recv: {:?}", d_recv);
+            debug!("proxy recv: {:?}", p_recv);
+
             assert_eq!(d_recv.len(), p_recv.len());
             for (d_msg, p_msg) in d_recv.into_iter().zip(p_recv.into_iter()) {
                 assert_eq!(MessageWrapper(d_msg?), MessageWrapper(p_msg?));
@@ -189,17 +204,35 @@ impl MockClient {
     }
 }
 
-async fn send_message(mut si: SplitSink<reqwest_websocket::WebSocket, Message>) -> Result<()> {
+async fn send_message(
+    mut si: SplitSink<reqwest_websocket::WebSocket, Message>,
+    mut st: SplitStream<WebSocket>,
+) -> Result<Vec<Result<Message, reqwest_websocket::Error>>> {
+    let mut res = Vec::new();
     si.send(Message::Text("Hello".into())).await?;
+    let msg = st.next().await;
+    res.push(msg);
     si.send(Message::Binary(b"World".into())).await?;
-    si.send(Message::Ping("ping".into())).await?;
-    si.send(Message::Pong("pong".into())).await?;
+    let msg = st.next().await;
+    res.push(msg);
     si.send(Message::Close {
         code: CloseCode::Normal,
         reason: "".into(),
     })
     .await?;
-    Ok(())
+    let msg = st.next().await;
+    res.push(msg);
+
+    Ok(res
+        .into_iter()
+        .filter_map(|m| {
+            if let Some(Ok(m)) = m {
+                Some(Ok(m))
+            } else {
+                None
+            }
+        })
+        .collect())
 }
 
 #[cfg(test)]

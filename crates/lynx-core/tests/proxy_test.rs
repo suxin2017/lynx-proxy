@@ -4,7 +4,6 @@ use anyhow::{Ok, Result};
 use common::tracing_config;
 use lynx_core::{
     proxy_server::ProxyServerBuilder,
-    server::Server,
     server_context::{get_ca_manager, set_up_context},
 };
 use lynx_mock::{client::MockClient, server::MockServer};
@@ -35,9 +34,10 @@ async fn proxy_test() -> Result<()> {
         ]),
         Some(proxy_addr),
     )?;
-    // client.test_request_http_request(&server).await?;
+    client.test_request_http_request(&mock_server).await?;
     client.test_request_https_request(&mock_server).await?;
-    // client.test_request_websocket(&server).await?;
+    client.test_request_websocket(&mock_server).await?;
+    client.test_request_tls_websocket(&mock_server).await?;
 
     Ok(())
 }

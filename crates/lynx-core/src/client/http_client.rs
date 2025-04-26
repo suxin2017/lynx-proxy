@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
 use bytes::Bytes;
-use derive_builder::Builder;
-use http::Request;
 use http_body_util::combinators::BoxBody;
-use hyper::body::Body;
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use hyper_util::{
     client::legacy::{Client, connect::HttpConnector},
@@ -16,12 +13,13 @@ use rcgen::Certificate;
 
 use crate::common::{HyperRes, Req};
 
-#[derive(Builder)]
-#[builder(build_fn(skip))]
 pub struct HttpClient {
-    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
-    #[builder(setter(skip))]
     client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
+}
+
+#[derive(Default)]
+pub struct HttpClientBuilder {
+    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
 }
 
 impl HttpClient {
@@ -34,8 +32,13 @@ impl HttpClient {
 }
 
 impl HttpClientBuilder {
+    pub fn custom_certs(mut self, custom_certs: Option<Arc<Vec<Arc<Certificate>>>>) -> Self {
+        self.custom_certs = custom_certs;
+        self
+    }
+
     pub fn build(&self) -> Result<HttpClient> {
-        let cert_chain = self.custom_certs.clone().flatten();
+        let cert_chain = self.custom_certs.clone();
 
         let client_config = gen_client_config_by_cert(cert_chain.clone())?;
 
@@ -47,10 +50,7 @@ impl HttpClientBuilder {
         let client_builder = Client::builder(TokioExecutor::new());
 
         let client = client_builder.build(connector);
-        Ok(HttpClient {
-            client,
-            custom_certs: cert_chain,
-        })
+        Ok(HttpClient { client })
     }
 }
 

@@ -13,7 +13,7 @@ use hyper::{
 };
 use hyper_tungstenite::tungstenite::Message;
 use tokio_stream::{StreamExt, wrappers::BroadcastStream};
-use tracing::{instrument, trace};
+use tracing::{instrument, trace, warn};
 
 use std::{fmt::Display, time::Duration};
 use tokio::sync::broadcast;
@@ -86,19 +86,24 @@ pub async fn mock_server_fn(
 
                 while let Some(msg) = ws.next().await {
                     trace!("websocket msg: {:?}", msg);
-                    match msg.unwrap() {
-                        Message::Binary(data) => {
-                            ws.send(Message::Binary(data)).await.unwrap();
+                    match msg {
+                        Ok(msg) => match msg {
+                            Message::Binary(data) => {
+                                ws.send(Message::Binary(data)).await.unwrap();
+                            }
+                            Message::Text(data) => {
+                                ws.send(Message::Text(data)).await.unwrap();
+                            }
+                            Message::Ping(data) => {
+                                ws.send(Message::Pong(data)).await.unwrap();
+                            }
+                            Message::Pong(_) => {}
+                            Message::Close(_) => {}
+                            Message::Frame(_) => {}
+                        },
+                        _ => {
+                            warn!("websocket msg error: {:?}", msg);
                         }
-                        Message::Text(data) => {
-                            ws.send(Message::Text(data)).await.unwrap();
-                        }
-                        Message::Ping(data) => {
-                            ws.send(Message::Pong(data)).await.unwrap();
-                        }
-                        Message::Pong(_) => {}
-                        Message::Close(_) => {}
-                        _ => {}
                     }
                 }
             });

@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use derive_builder::Builder;
-use http::{Extensions, Request};
+use http::Extensions;
 use rcgen::Certificate;
 
 use super::{
@@ -10,19 +9,24 @@ use super::{
     websocket_client::{WebsocketClient, WebsocketClientBuilder},
 };
 
-#[derive(Builder)]
-#[builder(build_fn(skip))]
 pub struct RequestClient {
-    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
-    #[builder(setter(skip))]
     http_client: Arc<HttpClient>,
-    #[builder(setter(skip))]
     websocket_client: Arc<WebsocketClient>,
 }
 
+#[derive(Default)]
+pub struct RequestClientBuilder {
+    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
+}
+
 impl RequestClientBuilder {
+    pub fn custom_certs(mut self, custom_certs: Option<Arc<Vec<Arc<Certificate>>>>) -> Self {
+        self.custom_certs = custom_certs;
+        self
+    }
+
     pub fn build(&self) -> Result<RequestClient> {
-        let custom_certs = self.custom_certs.clone().flatten();
+        let custom_certs = self.custom_certs.clone();
 
         let http_client = Arc::new(
             HttpClientBuilder::default()
@@ -31,12 +35,11 @@ impl RequestClientBuilder {
         );
         let websocket_client = Arc::new(
             WebsocketClientBuilder::default()
-                .custom_certs(custom_certs.clone())
+                .custom_certs(custom_certs)
                 .build()?,
         );
 
         Ok(RequestClient {
-            custom_certs,
             http_client,
             websocket_client,
         })

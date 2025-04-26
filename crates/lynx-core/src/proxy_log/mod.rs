@@ -100,7 +100,7 @@ pub async fn try_send_req_message(
         let trace_id = get_res_trace_id(res);
 
         // save response model
-        save_res(res, request_id, trace_id.clone()).await;
+        let _ = save_res(res, request_id, trace_id.clone()).await;
     }
     return Ok(());
 }

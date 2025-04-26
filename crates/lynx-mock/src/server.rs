@@ -79,6 +79,10 @@ impl MockServer {
         format!("ws://{}{}", self.addr, WS_PATH)
     }
 
+    pub fn get_tls_websocket_path(&self) -> String {
+        format!("wss://{}{}", self.addr, WS_PATH)
+    }
+
     pub fn write_cert_to_file(&mut self) -> Result<()> {
         let temp_dir = TempDir::new("lynx_mock")?;
         let temp_dir_path = temp_dir.path();
