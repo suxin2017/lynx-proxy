@@ -1,10 +1,4 @@
-use std::{
-    fs,
-    io::{Cursor},
-    net::IpAddr,
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{fs, io::Cursor, net::IpAddr, path::PathBuf, sync::Arc};
 
 use anyhow::{Ok, Result, anyhow};
 use rand::{Rng, rngs::OsRng, thread_rng};
@@ -159,7 +153,7 @@ pub fn gen_server_config_by_ca(
 }
 
 pub fn gen_client_config_by_cert(
-    cert_chain: Option<Arc<Vec<Certificate>>>,
+    cert_chain: Option<Arc<Vec<Arc<Certificate>>>>,
 ) -> Result<ClientConfig> {
     let mut root_cert_store: RootCertStore = RootCertStore::empty();
     // add webpki roots

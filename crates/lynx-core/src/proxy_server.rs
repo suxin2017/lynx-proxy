@@ -5,6 +5,7 @@ use anyhow::{Ok, Result};
 use bytes::Bytes;
 use derive_builder::Builder;
 use futures_util::future::join_all;
+use http::Extensions;
 use http_body_util::Full;
 use hyper::body::Incoming;
 use hyper::{Request, Response};
@@ -12,16 +13,19 @@ use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use local_ip_address::list_afinet_netifas;
+use rcgen::Certificate;
 use tokio::net::TcpListener;
-use tower::ServiceBuilder;
+use tower::{Service, ServiceBuilder, ServiceExt, service_fn};
 use tracing::{trace, warn};
 
 use crate::client::request_client::RequestClientBuilder;
+use crate::gateway_service::{connect_proxy_service_fn, gateway_service_fn};
 use crate::layers::log_layer::LogLayer;
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
 use crate::layers::trace_id_layer::service::TraceIdExt;
-use crate::proxy_service::proxy_service_fn;
+use crate::proxy::proxy_connect_request::proxy_connect_request;
+use crate::server_ca_manage::{ServerCaManager, set_up_ca_manager};
 
 #[derive(Builder)]
 #[builder(build_fn(skip))]
@@ -29,7 +33,9 @@ pub struct ProxyServer {
     #[builder(setter(strip_option))]
     pub port: Option<u16>,
     #[builder(setter(skip))]
-    access_addr_list: Vec<SocketAddr>,
+    pub access_addr_list: Vec<SocketAddr>,
+    #[builder(setter(strip_option))]
+    pub custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
 }
 
 impl ProxyServerBuilder {
@@ -43,9 +49,12 @@ impl ProxyServerBuilder {
             .map(|(_, ip)| ip)
             .map(|ip| SocketAddr::new(ip, port))
             .collect();
+        let custom_certs = self.custom_certs.clone().flatten();
+
         Ok(ProxyServer {
             port: self.port.flatten(),
             access_addr_list,
+            custom_certs,
         })
     }
 }
@@ -76,10 +85,20 @@ async fn hello(r: Request<Incoming>) -> Result<Response<Full<Bytes>>> {
 }
 
 #[derive(Clone)]
-struct ClientAddr(SocketAddr);
+pub struct ClientAddr(SocketAddr);
+
+pub trait ClientAddrRequestExt {
+    fn get_client_addr(&self) -> Option<ClientAddr>;
+}
+
+impl ClientAddrRequestExt for Extensions {
+    fn get_client_addr(&self) -> Option<ClientAddr> {
+        self.get::<ClientAddr>().cloned()
+    }
+}
 
 impl ProxyServer {
-    pub async fn run(&self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
         self.bind_tcp_listener_to_hyper().await?;
         Ok(())
     }
@@ -100,15 +119,17 @@ impl ProxyServer {
     }
 
     async fn bind_hyper(&self, listener: TcpListener) -> Result<()> {
+        let client_custome_certs = self.custom_certs.clone();
         tokio::spawn(async move {
             loop {
                 let (stream, client_addr) = listener.accept().await.expect("accept failed");
                 let io = TokioIo::new(stream);
+                let client_custome_certs = client_custome_certs.clone();
                 tokio::task::spawn(async move {
-                    let svc = tower::service_fn(proxy_service_fn);
+                    let svc = service_fn(gateway_service_fn);
 
                     let request_client = RequestClientBuilder::default()
-                        .custom_certs(None)
+                        .custom_certs(client_custome_certs)
                         .build()
                         .expect("build request client error");
 
@@ -131,12 +152,14 @@ impl ProxyServer {
         Ok(())
     }
 
-    async fn bind_tcp_listener_to_hyper(&self) -> Result<()> {
+    async fn bind_tcp_listener_to_hyper(&mut self) -> Result<()> {
         let tcp_listeners = self.bind_tcp_listener().await?;
-
+        let mut addrs = vec![];
         for tcp_listener in tcp_listeners {
+            addrs.push(tcp_listener.local_addr()?);
             self.bind_hyper(tcp_listener).await?;
         }
+        self.access_addr_list = addrs;
         Ok(())
     }
 }
@@ -178,7 +201,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_test() -> Result<()> {
-        let server = ProxyServerBuilder::default().port(3000).build().await?;
+        let mut server = ProxyServerBuilder::default().port(3000).build().await?;
 
         server.run().await?;
         Ok(())

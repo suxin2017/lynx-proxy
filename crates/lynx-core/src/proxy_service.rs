@@ -12,6 +12,6 @@ use crate::{
 
 use tower::{make::MakeService, service_fn};
 
-pub async fn proxy_service_fn(req: HyperReq) -> Result<Res> {
+pub async fn proxy_service_builder() -> Result<Res> {
     Ok(Response::new(full("Hello World!")))
 }

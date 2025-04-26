@@ -4,6 +4,7 @@ use anyhow::{Result, anyhow};
 use futures_util::{SinkExt, StreamExt, stream::SplitSink};
 use reqwest::{self, Certificate, Client, Response};
 use reqwest_websocket::{CloseCode, Message, RequestBuilderExt};
+use tracing::{debug, trace};
 
 use crate::server::MockServer;
 
@@ -14,6 +15,7 @@ pub struct MockClientInner {
 
 impl MockClientInner {
     pub async fn get(&self, url: &str) -> (Result<Response>, Result<Response>) {
+        trace!("send request {url}");
         (
             self.direct_client
                 .get(url)
@@ -74,6 +76,9 @@ impl MockClient {
         proxy_url: Option<String>,
     ) -> Result<Self> {
         let direct_client = Self::build_client(&custom_cert, None)?;
+        if let Some(proxy_url) = &proxy_url {
+            trace!("proxy addr: {proxy_url}");
+        }
         let proxy_client = Self::build_client(&custom_cert, proxy_url.clone())?;
         Ok(MockClient(Arc::new(MockClientInner {
             direct_client: Arc::new(direct_client),
@@ -100,7 +105,7 @@ impl MockClient {
             }
         }
         if let Some(proxy_url) = proxy_url {
-            client = client.proxy(reqwest::Proxy::http(proxy_url).unwrap());
+            client = client.proxy(reqwest::Proxy::all(proxy_url).unwrap());
         }
         client.build().map_err(|e| anyhow!(e))
     }
@@ -110,7 +115,15 @@ impl MockClient {
     }
 
     pub async fn test_request_http_request(&self, server: &MockServer) -> Result<()> {
-        for path in server.get_mock_paths() {
+        for path in server.get_http_mock_paths() {
+            let (direct_res, proxy_res) = self.get(path.as_str()).await;
+            Self::assert_equality_res(direct_res, proxy_res).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn test_request_https_request(&self, server: &MockServer) -> Result<()> {
+        for path in server.get_https_mock_paths() {
             let (direct_res, proxy_res) = self.get(path.as_str()).await;
             Self::assert_equality_res(direct_res, proxy_res).await?;
         }
@@ -138,6 +151,8 @@ impl MockClient {
         direct_res: Result<Response>,
         proxy_res: Result<Response>,
     ) -> Result<()> {
+        debug!("direct res: {:?}", direct_res);
+        debug!("proxy res: {:?}", proxy_res);
         assert_eq!(direct_res.is_ok(), proxy_res.is_ok());
         if let (Ok(direct_res), Ok(proxy_res)) = (direct_res, proxy_res) {
             assert_eq!(direct_res.status(), proxy_res.status());

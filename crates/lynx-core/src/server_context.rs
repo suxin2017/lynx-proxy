@@ -2,7 +2,7 @@ use once_cell::sync::OnceCell;
 use sea_orm::DatabaseConnection;
 
 use crate::{
-    ca_manage::{ServerCaManager, set_up_ca_manager},
+    server_ca_manage::{ServerCaManager, set_up_ca_manager},
     // cert::{CertificateAuthority, set_up_ca_manager},
     config::{AppConfig, InitAppConfigParams, set_up_config_dir},
     entities::set_up_db,

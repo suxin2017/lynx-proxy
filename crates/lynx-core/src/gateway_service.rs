@@ -1,12 +1,20 @@
 use std::{convert::Infallible, task::Poll};
 
+use anyhow::Result;
 use http::{Request, Response, StatusCode};
-use tower::{BoxError, MakeService, Service, service_fn, steer::Steer, util::BoxService};
+use tower::{
+    BoxError, MakeService, Service, service_fn,
+    steer::Steer,
+    util::{BoxCloneService, BoxService},
+};
 
 use crate::{
-    common::{HyperReq, Res},
-    proxy::proxy_connect_request::proxy_connect_request,
-    utils::full,
+    common::{HyperReq, HyperReqExt, Res},
+    proxy::{
+        proxy_connect_request::{is_connect_req, proxy_connect_request},
+        proxy_http_request::proxy_http_request,
+    },
+    utils::{empty, full},
 };
 
 struct GatewayService {
@@ -19,19 +27,10 @@ pub fn connect_proxy_service_fn() -> BoxProxyService {
     BoxService::new(service_fn(proxy_connect_request))
 }
 
-pub fn gateway_service_fn() {
-    let connect_proxy_service = connect_proxy_service_fn();
-
-    Steer::<BoxProxyService, _, HyperReq>::new(
-        // All services we route between
-        vec![connect_proxy_service],
-        // How we pick which service to send the request to
-        |req: &HyperReq, services: &[BoxProxyService]| {
-            // if is_connect_req(req) {
-            //     // If the request is a CONNECT request, route to the connect_proxy_service
-            //     0
-            // }
-            0
-        },
-    );
+pub async fn gateway_service_fn(req: HyperReq) -> Result<Res> {
+    if is_connect_req(&req) {
+        return proxy_connect_request(req).await;
+    }
+    return proxy_http_request(req).await;
+    // Ok(Response::new(empty()))
 }

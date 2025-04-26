@@ -13,7 +13,7 @@ use super::{
 #[derive(Builder)]
 #[builder(build_fn(skip))]
 pub struct RequestClient {
-    custom_certs: Option<Arc<Vec<Certificate>>>,
+    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
     #[builder(setter(skip))]
     http_client: Arc<HttpClient>,
     #[builder(setter(skip))]
@@ -46,11 +46,16 @@ impl RequestClientBuilder {
 pub type ShareRequestClient = Arc<RequestClient>;
 
 pub trait RequestClientExt {
+    fn get_request_client(&self) -> Option<ShareRequestClient>;
     fn get_http_client(&self) -> Arc<HttpClient>;
     fn get_websocket_client(&self) -> Arc<WebsocketClient>;
 }
 
 impl RequestClientExt for Extensions {
+    fn get_request_client(&self) -> Option<ShareRequestClient> {
+        self.get::<ShareRequestClient>().map(|c| Arc::clone(c))
+    }
+
     fn get_http_client(&self) -> Arc<HttpClient> {
         self.get::<ShareRequestClient>()
             .map(|c| Arc::clone(&c.http_client))

@@ -12,7 +12,7 @@ use tokio_tungstenite::{
 #[derive(Builder)]
 #[builder(build_fn(skip))]
 pub struct WebsocketClient {
-    custom_certs: Option<Arc<Vec<Certificate>>>,
+    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
     #[builder(setter(skip))]
     connector: Connector,
 }

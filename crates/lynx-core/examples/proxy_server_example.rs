@@ -4,7 +4,7 @@ use tokio::signal;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let server = ProxyServerBuilder::default().port(3000).build().await?;
+    let mut server = ProxyServerBuilder::default().port(3000).build().await?;
 
     server.run().await?;
 

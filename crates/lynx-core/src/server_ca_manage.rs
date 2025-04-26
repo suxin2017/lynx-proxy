@@ -40,8 +40,8 @@ impl ServerCaManagerBuilder {
             };
 
         Ok(ServerCaManager {
-            ca_cert,
-            ca_key,
+            ca_cert: Arc::new(ca_cert),
+            ca_key: Arc::new(ca_key),
             cache: Cache::builder()
                 .max_capacity(100)
                 .time_to_live(std::time::Duration::from_secs(CACHE_TTL))
@@ -51,8 +51,8 @@ impl ServerCaManagerBuilder {
 }
 
 pub struct ServerCaManager {
-    pub ca_cert: Certificate,
-    pub ca_key: KeyPair,
+    pub ca_cert: Arc<Certificate>,
+    pub ca_key: Arc<KeyPair>,
     pub cache: Cache<Authority, Arc<ServerConfig>>,
 }
 

@@ -2,8 +2,7 @@ use core::fmt;
 use std::task::{Context, Poll};
 
 use tower::Service;
-
-
+use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct LogService<S> {
@@ -26,7 +25,7 @@ where
 
     fn call(&mut self, request: Request) -> Self::Future {
         // Insert log statement here or other functionality
-        println!("request = {:?}", request);
+        info!("request = {:?}", request);
         self.service.call(request)
     }
 }

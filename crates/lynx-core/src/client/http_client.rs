@@ -19,7 +19,7 @@ use crate::common::{HyperRes, Req};
 #[derive(Builder)]
 #[builder(build_fn(skip))]
 pub struct HttpClient {
-    custom_certs: Option<Arc<Vec<Certificate>>>,
+    custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
     #[builder(setter(skip))]
     client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
 }

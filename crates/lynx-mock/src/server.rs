@@ -61,17 +61,18 @@ impl MockServer {
         }
     }
 
-    pub fn get_mock_paths(&self) -> Vec<String> {
-        let http_paths: Vec<String> = HTTP_PATH_LIST
+    pub fn get_http_mock_paths(&self) -> Vec<String> {
+        HTTP_PATH_LIST
             .iter()
             .map(|path| format!("http://{}{}", self.addr, path))
-            .collect();
+            .collect()
+    }
 
-        // let https_paths: Vec<String> = HTTP_PATH_LIST
-        //     .iter()
-        //     .map(|path| format!("https://{}{}", self.addr, path))
-        //     .collect();
-        http_paths
+    pub fn get_https_mock_paths(&self) -> Vec<String> {
+        HTTP_PATH_LIST
+            .iter()
+            .map(|path| format!("https://{}{}", self.addr, path))
+            .collect()
     }
 
     pub fn get_websocket_path(&self) -> String {
