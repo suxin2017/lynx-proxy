@@ -22,7 +22,7 @@ use http::HeaderMap;
 use sea_orm::{ActiveModelTrait, Set};
 use serde_json::Value;
 
-use crate::{entities::request, schedular::get_req_trace_id};
+use crate::entities::request;
 
 pub static PROXY_BOARD_CAST: Lazy<Arc<broadcast::Sender<message::MessageLog>>> = Lazy::new(|| {
     let (tx, _) = broadcast::channel::<message::MessageLog>(10);
@@ -100,7 +100,7 @@ pub async fn try_send_req_message(
         let trace_id = get_res_trace_id(res);
 
         // save response model
-        save_res(res, request_id, trace_id.clone()).await;
+        let _ = save_res(res, request_id, trace_id.clone()).await;
     }
     return Ok(());
 }

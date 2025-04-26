@@ -1,8 +1,6 @@
 use http::HeaderMap;
-use sea_orm::Set;
 use serde_json::Value;
 
-use crate::{entities::request, schedular::get_req_trace_id};
 
 /// Get headers and their size from a HeaderMap
 pub fn get_header_and_size(header_map: &HeaderMap) -> (Value, usize) {
