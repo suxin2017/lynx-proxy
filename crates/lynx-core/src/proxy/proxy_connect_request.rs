@@ -1,6 +1,5 @@
-
 use anyhow::{Ok, Result, anyhow};
-use http::{Method, Request, Response};
+use http::{Extensions, Method, Request, Response};
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     service::TowerToHyperService,
@@ -12,62 +11,76 @@ use tower::{ServiceBuilder, service_fn};
 use crate::{
     client::request_client::RequestClientExt,
     common::{HyperReq, Res},
-    gateway_service::gatetway_proxy_service_fn,
+    gateway_service::proxy_gateway_service_fn,
     layers::{
         connect_req_patch_layer::service::ConnectReqPatchLayer,
-        log_layer::LogLayer,
-        req_extension_layer::RequestExtensionLayer,
-        trace_id_layer::TraceIdLayer,
+        error_handle_layer::ErrorHandlerLayer, extend_extension_layer::ExtendExtensionsLayer,
+        log_layer::LogLayer, trace_id_layer::TraceIdLayer,
     },
     proxy::proxy_ws_request::proxy_ws_request,
-    proxy_server::ClientAddrRequestExt,
-    server_context::get_ca_manager,
+    proxy_server::{
+        ClientAddrRequestExt, server_ca_manage::ServerCaManagerExtensionsExt,
+        server_config::ProxyServerConfigExtensionsExt,
+    },
     utils::empty,
 };
 
 use super::{
     connect_upgraded::{ConnectStreamType, ConnectUpgraded},
-    proxy_tunnel_request::{tunnel_proxy_by_stream},
+    proxy_tunnel_request::tunnel_proxy_by_stream,
 };
 
 pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
     req.method() == Method::CONNECT
 }
 
-async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
-    let request_client = req
-        .extensions()
+fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
+    let request_client = ex
         .get_request_client()
         .ok_or_else(|| anyhow::anyhow!("Missing request client in request"))?;
-    let client_addr = req
-        .extensions()
+    let client_addr = ex
         .get_client_addr()
         .ok_or_else(|| anyhow::anyhow!("Missing client address in request"))?;
+    let server_config = ex.get_proxy_server_config();
+
+    let mut nex = Extensions::new();
+    nex.insert(request_client);
+    nex.insert(client_addr);
+    nex.insert(server_config);
+    Ok(nex)
+}
+
+async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
+    let new_extension = clone_extensions(req.extensions())?;
+
     let uri = req.uri().clone();
     let version = req.version();
-
     let authority = uri
         .authority()
         .cloned()
         .ok_or_else(|| anyhow::anyhow!("Missing authority in URI"))?;
     let target_addr = uri.to_string();
+
+    let server_ca_manage = req.extensions().get_server_ca_manager();
+
     let upgraded = hyper::upgrade::on(req)
         .await
         .map_err(|e| anyhow!(e).context("Failed to upgrade connect request"))?;
     let upgraded = TokioIo::new(upgraded);
     let upgraded = ConnectUpgraded::new(upgraded).await;
 
+    let service_builder = ServiceBuilder::new()
+        .layer(ErrorHandlerLayer)
+        .layer(LogLayer)
+        .layer(ExtendExtensionsLayer::new(new_extension))
+        .layer(TraceIdLayer)
+        .layer(ConnectReqPatchLayer::new(authority.clone(), version));
+
     match upgraded.steam_type {
         // connect proxy and then upgrade to websocket
         ConnectStreamType::WebSocket => {
             let svc = service_fn(proxy_ws_request);
-            let svc = ServiceBuilder::new()
-                .layer(LogLayer {})
-                .layer(TraceIdLayer)
-                .layer(RequestExtensionLayer::new(request_client))
-                .layer(RequestExtensionLayer::new(client_addr))
-                .layer(ConnectReqPatchLayer::new(authority, version))
-                .service(svc);
+            let svc = service_builder.service(svc);
             let svc = TowerToHyperService::new(svc);
             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                 .serve_connection_with_upgrades(TokioIo::new(upgraded), svc)
@@ -75,8 +88,7 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
                 .map_err(|e| anyhow!(e))?;
         }
         ConnectStreamType::Https => {
-            let ca_manager = get_ca_manager();
-            let server_config = ca_manager
+            let server_config = server_ca_manage
                 .get_server_config(&authority)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to get server config"))?;
@@ -85,15 +97,8 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to accept TLS connection"))?;
 
-            let svc = service_fn(gatetway_proxy_service_fn);
-
-            let svc = ServiceBuilder::new()
-                .layer(LogLayer {})
-                .layer(TraceIdLayer)
-                .layer(RequestExtensionLayer::new(request_client))
-                .layer(RequestExtensionLayer::new(client_addr))
-                .layer(ConnectReqPatchLayer::new(authority, version))
-                .service(svc);
+            let svc = service_fn(proxy_gateway_service_fn);
+            let svc = service_builder.service(svc);
             let svc = TowerToHyperService::new(svc);
 
             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())

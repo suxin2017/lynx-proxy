@@ -6,7 +6,6 @@ use http::{
 };
 use tower::Service;
 
-
 #[derive(Debug, Clone)]
 pub struct ConnectReqPatchService<S> {
     pub service: S,

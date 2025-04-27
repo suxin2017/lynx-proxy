@@ -5,7 +5,7 @@ use tracing_subscriber::{
 pub fn init_tracing() {
     let my_filter = FilterFn::new(|metadata| {
         // Only enable spans or events with the target "interesting_things"
-        metadata.target().starts_with("lynx")
+        metadata.target().starts_with("lynx_core")
     });
     let _ = tracing_subscriber::registry()
         .with(
