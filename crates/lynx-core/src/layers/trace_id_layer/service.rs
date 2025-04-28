@@ -33,12 +33,12 @@ where
 }
 
 pub trait TraceIdExt {
-    fn get_trace_id(&self) -> Option<TraceId>;
+    fn get_trace_id(&self) -> TraceId;
 }
 
 impl TraceIdExt for Extensions {
-    fn get_trace_id(&self) -> Option<TraceId> {
-        self.get::<TraceId>().cloned()
+    fn get_trace_id(&self) -> TraceId {
+        self.get::<TraceId>().expect("expect trace id").clone()
     }
 }
 
@@ -52,8 +52,7 @@ mod tests {
     fn get_trace_id_test() -> Result<()> {
         let mut req = Request::builder().body(())?;
         req.extensions_mut().insert(Arc::new(nanoid!()));
-        let trace_id = req.extensions().get_trace_id();
-        assert!(trace_id.is_some());
+        let _trace_id = req.extensions().get_trace_id();
 
         Ok(())
     }

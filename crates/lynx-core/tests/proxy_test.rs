@@ -15,7 +15,6 @@ async fn proxy_test() -> Result<()> {
     tracing_config::init_tracing();
 
     let mut mock_server = MockServer::new(None);
-    mock_server.write_cert_to_file()?;
     mock_server.start_server().await?;
 
     let temp_dir = TempDir::new("proxy_test")?;

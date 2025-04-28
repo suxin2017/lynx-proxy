@@ -1,11 +1,10 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use lynx_core::proxy_server::{
     ProxyServerBuilder, server_ca_manage::ServerCaManagerBuilder,
     server_config::ProxyServerConfigBuilder,
 };
-use tempdir::TempDir;
 use tokio::signal;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -15,8 +14,9 @@ async fn main() -> Result<()> {
         .with(fmt::layer())
         .with(EnvFilter::from_default_env().add_directive("lynx_core=trace".parse()?))
         .init();
-    let temp_dir = TempDir::new("proxy_server_example")?;
-    let temp_dir_path = temp_dir.path();
+    // let temp_dir = TempDir::new("proxy_server_example")?;
+    let temp_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples");
+    let temp_dir_path = temp_dir;
 
     let server_config = ProxyServerConfigBuilder::default()
         .root_cert_file_path(temp_dir_path.join("root.pem"))

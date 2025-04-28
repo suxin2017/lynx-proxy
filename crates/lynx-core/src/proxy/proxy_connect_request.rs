@@ -1,5 +1,5 @@
 use anyhow::{Ok, Result, anyhow};
-use http::{Extensions, Method, Request, Response};
+use http::{Method, Request, Response};
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     service::TowerToHyperService,
@@ -9,19 +9,17 @@ use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn};
 
 use crate::{
-    client::request_client::RequestClientExt,
     common::{HyperReq, Res},
     gateway_service::proxy_gateway_service_fn,
     layers::{
         connect_req_patch_layer::service::ConnectReqPatchLayer,
-        error_handle_layer::ErrorHandlerLayer, extend_extension_layer::ExtendExtensionsLayer,
-        log_layer::LogLayer, trace_id_layer::TraceIdLayer,
+        error_handle_layer::ErrorHandlerLayer,
+        extend_extension_layer::{ExtendExtensionsLayer, clone_extensions},
+        log_layer::LogLayer,
+        trace_id_layer::TraceIdLayer,
     },
     proxy::proxy_ws_request::proxy_ws_request,
-    proxy_server::{
-        ClientAddrRequestExt, server_ca_manage::ServerCaManagerExtensionsExt,
-        server_config::ProxyServerConfigExtensionsExt,
-    },
+    proxy_server::server_ca_manage::ServerCaManagerExtensionsExt,
     utils::empty,
 };
 
@@ -34,27 +32,10 @@ pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
     req.method() == Method::CONNECT
 }
 
-fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
-    let request_client = ex
-        .get_request_client()
-        .ok_or_else(|| anyhow::anyhow!("Missing request client in request"))?;
-    let client_addr = ex
-        .get_client_addr()
-        .ok_or_else(|| anyhow::anyhow!("Missing client address in request"))?;
-    let server_config = ex.get_proxy_server_config();
-
-    let mut nex = Extensions::new();
-    nex.insert(request_client);
-    nex.insert(client_addr);
-    nex.insert(server_config);
-    Ok(nex)
-}
-
 async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
     let new_extension = clone_extensions(req.extensions())?;
 
     let uri = req.uri().clone();
-    let version = req.version();
     let authority = uri
         .authority()
         .cloned()
@@ -73,14 +54,18 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
         .layer(ErrorHandlerLayer)
         .layer(LogLayer)
         .layer(ExtendExtensionsLayer::new(new_extension))
-        .layer(TraceIdLayer)
-        .layer(ConnectReqPatchLayer::new(authority.clone(), version));
+        .layer(TraceIdLayer);
 
     match upgraded.steam_type {
         // connect proxy and then upgrade to websocket
         ConnectStreamType::WebSocket => {
             let svc = service_fn(proxy_ws_request);
-            let svc = service_builder.service(svc);
+            let svc = service_builder
+                .layer(ConnectReqPatchLayer::new(
+                    authority.clone(),
+                    http::uri::Scheme::HTTP,
+                ))
+                .service(svc);
             let svc = TowerToHyperService::new(svc);
             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                 .serve_connection_with_upgrades(TokioIo::new(upgraded), svc)
@@ -92,13 +77,20 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
                 .get_server_config(&authority)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to get server config"))?;
+                vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
             let tls_stream = TlsAcceptor::from(server_config)
                 .accept(upgraded)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to accept TLS connection"))?;
 
             let svc = service_fn(proxy_gateway_service_fn);
-            let svc = service_builder.service(svc);
+
+            let svc = service_builder
+                .layer(ConnectReqPatchLayer::new(
+                    authority.clone(),
+                    http::uri::Scheme::HTTPS,
+                ))
+                .service(svc);
             let svc = TowerToHyperService::new(svc);
 
             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())

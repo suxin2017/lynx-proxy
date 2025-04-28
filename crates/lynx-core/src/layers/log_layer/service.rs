@@ -27,7 +27,7 @@ where
 
     fn call(&mut self, request: HyperReq) -> Self::Future {
         // Insert log statement here or other functionality
-        let span = info_span!("log_service", method = %request.method(), url = %request.uri(), version = ?request.version());
+        let span = info_span!("log_service", request = ?request);
         let future = {
             let _guard = span.enter();
             info!("handling request");
