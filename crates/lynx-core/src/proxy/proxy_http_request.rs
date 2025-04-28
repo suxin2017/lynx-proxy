@@ -5,7 +5,7 @@ use tracing::info;
 use crate::{
     client::request_client::RequestClientExt,
     common::{HyperReq, HyperReqExt, HyperResExt, Req, Res},
-    layers::build_proxy_request::build_proxy_request,
+    layers::build_proxy_request::BuildProxyRequestService,
 };
 
 pub fn is_http_req(req: &HyperReq) -> bool {
@@ -25,9 +25,10 @@ async fn proxy_http_request_inner(req: Req) -> Result<Res> {
 pub async fn proxy_http_request(req: HyperReq) -> Result<Res> {
     let svc = service_fn(proxy_http_request_inner);
 
-    let svc = ServiceBuilder::new().service(svc);
+    let svc = ServiceBuilder::new()
+        .layer_fn(|s| BuildProxyRequestService { service: s })
+        .service(svc);
 
-    let proxy_req = build_proxy_request(req.into_box_req())?;
-    let res = svc.oneshot(proxy_req).await?;
+    let res = svc.oneshot(req.into_box_req()).await?;
     Ok(res)
 }
