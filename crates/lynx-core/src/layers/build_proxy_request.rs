@@ -1,7 +1,7 @@
 use std::{
     pin::Pin,
     str::FromStr,
-    task::{Context, Poll}, time::Instant,
+    task::{Context, Poll},
 };
 
 use anyhow::Result;
@@ -10,7 +10,6 @@ use http::{
     header::{CONNECTION, HOST, PROXY_AUTHORIZATION},
 };
 use tower::Service;
-use tracing::info;
 use url::Url;
 
 use crate::{common::Req, layers::extend_extension_layer::clone_extensions};
