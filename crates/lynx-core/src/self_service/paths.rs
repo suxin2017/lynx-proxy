@@ -1,6 +1,5 @@
 use std::fmt;
 
-
 // TODO: add macro support
 
 pub enum SelfServiceRouterPath {

@@ -8,7 +8,6 @@ use tracing::{error, trace};
 use crate::common::{HyperReq, Res};
 use crate::utils::{empty, host_addr};
 
-
 fn handle_tunnel_error(err: anyhow::Error) {
     error!("Error handling tunnel: {}", err);
 }
