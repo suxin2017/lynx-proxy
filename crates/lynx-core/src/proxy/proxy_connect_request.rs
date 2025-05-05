@@ -1,6 +1,6 @@
-
 use anyhow::{Ok, Result, anyhow};
-use http::{Method, Request, Response};
+use axum::{body::Body, extract::Request, response::Response};
+use http::Method;
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     service::TowerToHyperService,
@@ -11,23 +11,20 @@ use tower::{ServiceBuilder, service_fn};
 
 use crate::{
     client::request_client::RequestClientExt,
-    common::{HyperReq, Res},
+    common::HyperReq,
     gateway_service::gatetway_proxy_service_fn,
     layers::{
-        connect_req_patch_layer::service::ConnectReqPatchLayer,
-        log_layer::LogLayer,
-        req_extension_layer::RequestExtensionLayer,
-        trace_id_layer::TraceIdLayer,
+        connect_req_patch_layer::service::ConnectReqPatchLayer, log_layer::LogLayer,
+        req_extension_layer::RequestExtensionLayer, trace_id_layer::TraceIdLayer,
     },
     proxy::proxy_ws_request::proxy_ws_request,
     proxy_server::ClientAddrRequestExt,
     server_context::get_ca_manager,
-    utils::empty,
 };
 
 use super::{
     connect_upgraded::{ConnectStreamType, ConnectUpgraded},
-    proxy_tunnel_request::{tunnel_proxy_by_stream},
+    proxy_tunnel_request::tunnel_proxy_by_stream,
 };
 
 pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
@@ -108,7 +105,7 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
     Ok(())
 }
 
-pub async fn proxy_connect_request(req: HyperReq) -> Result<Res> {
+pub async fn proxy_connect_request(req: HyperReq) -> Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
     spawn(async move {
@@ -117,5 +114,5 @@ pub async fn proxy_connect_request(req: HyperReq) -> Result<Res> {
         };
     });
 
-    Ok(Response::new(empty()))
+    Ok(Response::new(Body::empty()))
 }

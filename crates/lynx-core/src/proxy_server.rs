@@ -109,9 +109,9 @@ impl ProxyServer {
                 let (stream, client_addr) = listener.accept().await.expect("accept failed");
                 let io = TokioIo::new(stream);
                 let client_custome_certs = client_custome_certs.clone();
-                tokio::task::spawn(async move {
-                    let svc = service_fn(gateway_service_fn);
+                let svc = service_fn(gateway_service_fn);
 
+                tokio::task::spawn(async move {
                     let request_client = RequestClientBuilder::default()
                         .custom_certs(client_custome_certs)
                         .build()

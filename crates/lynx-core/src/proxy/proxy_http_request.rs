@@ -1,15 +1,16 @@
 use anyhow::Result;
+use axum::response::{IntoResponse, Response};
 
 use crate::{
     client::request_client::RequestClientExt,
-    common::{HyperReq, HyperReqExt, HyperResExt, Res},
+    common::{HyperReq, HyperReqExt},
 };
 
 pub fn is_http_req(req: &HyperReq) -> bool {
     req.headers().get("Upgrade").is_none()
 }
 
-pub async fn proxy_http_request(req: HyperReq) -> Result<Res> {
+pub async fn proxy_http_request(req: HyperReq) -> Result<Response> {
     tracing::debug!("proxy_http_request: {:?}", req);
     let http_client = req.extensions().get_http_client();
 
@@ -18,5 +19,5 @@ pub async fn proxy_http_request(req: HyperReq) -> Result<Res> {
         .await
         .map_err(|e| e.context("http request failed"))?;
     tracing::debug!("proxy_http_request response: {:?}", res);
-    Ok(res.into_box_res())
+    Ok(res.into_response())
 }
