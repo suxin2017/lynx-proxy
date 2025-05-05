@@ -3,7 +3,6 @@ use std::task::{Context, Poll};
 use http::Request;
 use tower::Service;
 
-
 #[derive(Debug, Clone)]
 pub struct RequestExtensionService<S, V> {
     pub service: S,

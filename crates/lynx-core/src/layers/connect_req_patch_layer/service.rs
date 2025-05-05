@@ -5,13 +5,13 @@ use http::{
     uri::{Authority, Scheme},
 };
 use tower::Service;
-
+use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct ConnectReqPatchService<S> {
     pub service: S,
     pub authority: Authority,
-    pub version: Version,
+    pub schema: Scheme,
 }
 
 impl<S, Body> Service<Request<Body>> for ConnectReqPatchService<S>
@@ -27,15 +27,17 @@ where
     }
 
     fn call(&mut self, request: Request<Body>) -> Self::Future {
-        let req = if matches!(self.version, Version::HTTP_10 | Version::HTTP_11) {
+        let req = if matches!(request.version(), Version::HTTP_10 | Version::HTTP_11) {
             let (mut parts, body) = request.into_parts();
-
             parts.uri = {
                 let mut parts = parts.uri.into_parts();
-                parts.scheme = Some(Scheme::HTTP);
+                info!("authority: {:?}", self.authority);
+                info!("schema: {:?}", self.schema);
+                parts.scheme = Some(self.schema.clone());
                 parts.authority = Some(self.authority.clone());
                 Uri::from_parts(parts).expect("Failed to build URI")
             };
+            info!("req uri {:#?}", parts.uri.to_string());
             Request::from_parts(parts, body)
         } else {
             request
@@ -47,12 +49,12 @@ where
 
 pub struct ConnectReqPatchLayer {
     authority: Authority,
-    version: Version,
+    schema: Scheme,
 }
 
 impl ConnectReqPatchLayer {
-    pub fn new(authority: Authority, version: Version) -> Self {
-        Self { authority, version }
+    pub fn new(authority: Authority, schema: Scheme) -> Self {
+        Self { authority, schema }
     }
 }
 
@@ -63,7 +65,7 @@ impl<S> tower::Layer<S> for ConnectReqPatchLayer {
         ConnectReqPatchService {
             service,
             authority: self.authority.clone(),
-            version: self.version.clone(),
+            schema: self.schema.clone(),
         }
     }
 }

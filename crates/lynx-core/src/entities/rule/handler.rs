@@ -5,7 +5,7 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize,TS)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[sea_orm(table_name = "rule_handle")]
 #[ts(export, export_to = "HandlerModel.ts")]
@@ -19,7 +19,7 @@ pub struct Model {
 }
 
 #[derive(
-    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema,TS
+    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema, TS,
 )]
 #[sea_orm(
     rs_type = "String",

@@ -1,6 +1,4 @@
-
 use tower::Layer;
-
 
 use super::TraceIdService;
 

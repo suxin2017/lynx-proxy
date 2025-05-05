@@ -1,4 +1,3 @@
-
 use anyhow::{Ok, Result};
 use lynx_mock::{client::MockClient, server::MockServer};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
@@ -7,10 +6,7 @@ use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberI
 async fn main() -> Result<()> {
     tracing_subscriber::registry()
         .with(fmt::layer())
-        .with(
-            EnvFilter::from_default_env()
-                .add_directive("lynx_mock=trace".parse()?),
-        )
+        .with(EnvFilter::from_default_env().add_directive("lynx_mock=trace".parse()?))
         .init();
     let mut server = MockServer::new(Some(3000));
     server.write_cert_to_file()?;

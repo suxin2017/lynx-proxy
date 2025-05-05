@@ -12,7 +12,6 @@ pub mod proxy_server;
 pub mod schedular;
 pub mod self_service;
 pub mod server;
-pub mod server_ca_manage;
 pub mod server_context;
 pub mod tunnel_proxy;
 pub mod utils;

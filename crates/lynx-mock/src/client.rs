@@ -220,8 +220,6 @@ async fn send_message(
         reason: "".into(),
     })
     .await?;
-    let msg = st.next().await;
-    res.push(msg);
 
     Ok(res
         .into_iter()

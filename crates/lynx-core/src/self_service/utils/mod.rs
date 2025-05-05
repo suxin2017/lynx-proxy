@@ -48,7 +48,7 @@ pub fn parse_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
     params
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize,TS)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, TS)]
 #[ts(export)]
 pub struct ResponseBox<T> {
     pub code: ResponseCode,
@@ -56,7 +56,7 @@ pub struct ResponseBox<T> {
     pub data: Option<T>,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize,TS)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, TS)]
 #[ts(export)]
 pub enum ResponseCode {
     Ok,
@@ -65,7 +65,7 @@ pub enum ResponseCode {
     InternalServerError,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize,TS)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, TS)]
 #[ts(export)]
 pub struct ValidateError {
     message: String,

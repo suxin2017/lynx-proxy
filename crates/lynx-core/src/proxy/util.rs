@@ -1,7 +1,6 @@
 use http::HeaderMap;
 use serde_json::Value;
 
-
 /// Get headers and their size from a HeaderMap
 pub fn get_header_and_size(header_map: &HeaderMap) -> (Value, usize) {
     let headers = header_map
