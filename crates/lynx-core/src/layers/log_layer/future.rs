@@ -1,10 +1,9 @@
 use std::task::{Context, Poll, ready};
 
 use anyhow::Result;
+use axum::response::Response;
 use pin_project_lite::pin_project;
 use tracing::{Span, info};
-
-use crate::common::Res;
 
 pin_project! {
     pub struct LogFuture<F> {
@@ -16,7 +15,7 @@ pin_project! {
 
 impl<F> Future for LogFuture<F>
 where
-    F: Future<Output = Result<Res>>,
+    F: Future<Output = Result<Response>>,
 {
     type Output = F::Output;
 

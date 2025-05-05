@@ -10,7 +10,7 @@ use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn};
 
 use crate::{
-    common::{HyperReq, Res},
+    common::HyperReq,
     gateway_service::proxy_gateway_service_fn,
     layers::{
         connect_req_patch_layer::service::ConnectReqPatchLayer,
@@ -21,7 +21,6 @@ use crate::{
     },
     proxy::proxy_ws_request::proxy_ws_request,
     proxy_server::server_ca_manage::ServerCaManagerExtensionsExt,
-    utils::empty,
 };
 
 use super::{

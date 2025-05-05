@@ -14,7 +14,7 @@ use crate::{
     self_service::is_self_service,
 };
 
-pub async fn proxy_gateway_service_fn(req: HyperReq) -> Result<Res> {
+pub async fn proxy_gateway_service_fn(req: HyperReq) -> Result<Response> {
     if is_websocket_req(&req) {
         return proxy_ws_request(req).await;
     }

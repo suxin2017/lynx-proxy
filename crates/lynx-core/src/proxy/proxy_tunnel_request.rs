@@ -7,8 +7,8 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tracing::{error, trace};
 
-use crate::common::{HyperReq, Res};
-use crate::utils::{empty, host_addr};
+use crate::common::HyperReq;
+use crate::utils::host_addr;
 
 fn handle_tunnel_error(err: anyhow::Error) {
     error!("Error handling tunnel: {}", err);
