@@ -1,5 +1,6 @@
 use anyhow::{Ok, Result, anyhow};
-use http::{Method, Request, Response};
+use axum::{body::Body, extract::Request, response::Response};
+use http::Method;
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     service::TowerToHyperService,
@@ -9,7 +10,7 @@ use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn};
 
 use crate::{
-    common::{HyperReq, Res},
+    common::HyperReq,
     gateway_service::proxy_gateway_service_fn,
     layers::{
         connect_req_patch_layer::service::ConnectReqPatchLayer,
@@ -20,7 +21,6 @@ use crate::{
     },
     proxy::proxy_ws_request::proxy_ws_request,
     proxy_server::server_ca_manage::ServerCaManagerExtensionsExt,
-    utils::empty,
 };
 
 use super::{
@@ -77,7 +77,7 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
                 .get_server_config(&authority)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to get server config"))?;
-                vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
+            vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
             let tls_stream = TlsAcceptor::from(server_config)
                 .accept(upgraded)
                 .await
@@ -105,7 +105,7 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
     Ok(())
 }
 
-pub async fn proxy_connect_request(req: HyperReq) -> Result<Res> {
+pub async fn proxy_connect_request(req: HyperReq) -> Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
     spawn(async move {
@@ -114,5 +114,5 @@ pub async fn proxy_connect_request(req: HyperReq) -> Result<Res> {
         };
     });
 
-    Ok(Response::new(empty()))
+    Ok(Response::new(Body::empty()))
 }

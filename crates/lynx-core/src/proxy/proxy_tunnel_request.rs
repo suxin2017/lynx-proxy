@@ -1,18 +1,20 @@
 use anyhow::{Ok, Result};
-use hyper::{Method, Response};
+use axum::body::Body;
+use axum::response::Response;
+use hyper::Method;
 use hyper_util::rt::TokioIo;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tracing::{error, trace};
 
-use crate::common::{HyperReq, Res};
-use crate::utils::{empty, host_addr};
+use crate::common::HyperReq;
+use crate::utils::host_addr;
 
 fn handle_tunnel_error(err: anyhow::Error) {
     error!("Error handling tunnel: {}", err);
 }
 
-pub async fn proxy_tunnel_proxy(req: HyperReq) -> anyhow::Result<Res> {
+pub async fn proxy_tunnel_proxy(req: HyperReq) -> anyhow::Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
     tokio::task::spawn(async move {
@@ -22,7 +24,7 @@ pub async fn proxy_tunnel_proxy(req: HyperReq) -> anyhow::Result<Res> {
         }
     });
 
-    Ok(Response::new(empty()))
+    Ok(Response::new(Body::empty()))
 }
 
 pub async fn tunnel(req: HyperReq) -> Result<()> {

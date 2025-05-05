@@ -1,10 +1,11 @@
 use std::task::{Context, Poll};
 
+use axum::response::Response;
 use tower::Service;
 use tracing::{info, info_span};
 
 use crate::{
-    common::{HyperReq, Res},
+    common::HyperReq,
     layers::log_layer::LogFuture,
 };
 
@@ -15,7 +16,7 @@ pub struct LogService<S> {
 
 impl<S> Service<HyperReq> for LogService<S>
 where
-    S: Service<HyperReq, Response = Res, Error = anyhow::Error>,
+    S: Service<HyperReq, Response = Response, Error = anyhow::Error>,
 {
     type Response = S::Response;
     type Error = S::Error;

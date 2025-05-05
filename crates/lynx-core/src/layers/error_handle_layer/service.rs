@@ -1,8 +1,9 @@
 use std::task::{Context, Poll};
 
+use axum::response::Response;
 use tower::Service;
 
-use crate::common::{HyperReq, Res};
+use crate::common::HyperReq;
 
 use super::ErrorHandleFuture;
 
@@ -13,7 +14,7 @@ pub struct ErrorHandlerService<S> {
 
 impl<S> Service<HyperReq> for ErrorHandlerService<S>
 where
-    S: Service<HyperReq, Response = Res, Error = anyhow::Error>,
+    S: Service<HyperReq, Response = Response, Error = anyhow::Error>,
 {
     type Response = S::Response;
     type Error = S::Error;

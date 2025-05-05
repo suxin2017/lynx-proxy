@@ -1,4 +1,5 @@
 use anyhow::Result;
+use axum::response::{IntoResponse, Response};
 use tower::{ServiceBuilder, ServiceExt, service_fn};
 use tracing::info;
 
@@ -22,7 +23,7 @@ async fn proxy_http_request_inner(req: Req) -> Result<Res> {
         .map(|res| res.into_box_res())
 }
 
-pub async fn proxy_http_request(req: HyperReq) -> Result<Res> {
+pub async fn proxy_http_request(req: HyperReq) -> Result<Response> {
     let svc = service_fn(proxy_http_request_inner);
 
     let svc = ServiceBuilder::new()
@@ -30,5 +31,5 @@ pub async fn proxy_http_request(req: HyperReq) -> Result<Res> {
         .service(svc);
 
     let res = svc.oneshot(req.into_box_req()).await?;
-    Ok(res)
+    Ok(res.into_response())
 }

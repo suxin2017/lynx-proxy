@@ -4,11 +4,11 @@ use std::{
 };
 
 use anyhow::Result;
-use http::{Response, StatusCode};
+use axum::response::{IntoResponse, Response};
+use http::StatusCode;
 use pin_project_lite::pin_project;
 use tracing::error;
 
-use crate::{common::Res, utils::full};
 
 pin_project! {
     pub struct ErrorHandleFuture<F> {
@@ -19,7 +19,7 @@ pin_project! {
 
 impl<F> Future for ErrorHandleFuture<F>
 where
-    F: Future<Output = Result<Res>>,
+    F: Future<Output = Result<Response>>,
 {
     type Output = F::Output;
 
@@ -43,7 +43,8 @@ where
 
             let res = Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(full(error_reason))
+                .body(error_reason)
+                .map(|r| r.into_response())
                 .map_err(|e| anyhow::anyhow!(e));
 
             return Poll::Ready(res);

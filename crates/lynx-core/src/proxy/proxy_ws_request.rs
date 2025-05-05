@@ -1,4 +1,5 @@
 use anyhow::{Result, anyhow};
+use axum::response::{IntoResponse, Response};
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use http::{Request, Uri, uri::Scheme};
 use hyper_tungstenite::HyperWebsocket;
@@ -13,7 +14,7 @@ use ts_rs::TS;
 
 use crate::{
     client::request_client::RequestClientExt,
-    common::{HyperReq, Res},
+    common::HyperReq,
     utils::{empty, full},
 };
 
@@ -51,7 +52,7 @@ pub fn is_websocket_req(req: &HyperReq) -> bool {
     hyper_tungstenite::is_upgrade_request(req)
 }
 
-pub async fn proxy_ws_request(mut req: HyperReq) -> anyhow::Result<Res> {
+pub async fn proxy_ws_request(mut req: HyperReq) -> anyhow::Result<Response> {
     assert!(hyper_tungstenite::is_upgrade_request(&req));
     let (_res, hyper_ws) = hyper_tungstenite::upgrade(&mut req, None)?;
 
@@ -64,7 +65,7 @@ pub async fn proxy_ws_request(mut req: HyperReq) -> anyhow::Result<Res> {
     });
 
     let res = res.map(|body| body.map(|b| full(b)).unwrap_or(empty()));
-    Ok(res)
+    Ok(res.into_response())
 }
 
 async fn handle_hyper_and_client_websocket<S>(
