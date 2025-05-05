@@ -90,7 +90,7 @@ fn copy_body_stream(
     (new_data_stream, old_body)
 }
 
-fn vec_to_bytes(vec: &Vec<Bytes>) -> Bytes {
+fn vec_to_bytes(vec: &[Bytes]) -> Bytes {
     let mut bytes_mut = BytesMut::new();
 
     for b in vec {
