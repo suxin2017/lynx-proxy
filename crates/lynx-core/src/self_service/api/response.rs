@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::config::RES_DIR;
 use crate::entities::response;
 use crate::self_service::utils::{OperationError, ValidateError, response_ok};
-use crate::server_context::{get_db_connect, APP_CONFIG};
+use crate::server_context::{APP_CONFIG, get_db_connect};
 use anyhow::{Error, Result, anyhow};
 use bytes::Bytes;
 use futures_util::TryStreamExt;

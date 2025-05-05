@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
-use http::uri::Authority;
+use http::{Extensions, uri::Authority};
 use lynx_cert::{
     gen_cert_by_ca, gen_root_ca_cert, gen_server_config_by_ca, read_cert_and_key_by_file,
 };
@@ -14,7 +14,7 @@ use crate::config::AppConfig;
 const TTL_SECS: i64 = 365 * 24 * 60 * 60;
 const CACHE_TTL: u64 = TTL_SECS as u64 / 2;
 
-struct ServerCaManagerBuilder {
+pub struct ServerCaManagerBuilder {
     root_cert_file_path: PathBuf,
     root_key_file_path: PathBuf,
 }
@@ -90,6 +90,18 @@ pub fn set_up_ca_manager(app_config: &AppConfig) -> ServerCaManager {
     ServerCaManagerBuilder::new(ca_cert_file, private_key_file)
         .build()
         .expect("Failed to create CA manager")
+}
+
+pub trait ServerCaManagerExtensionsExt {
+    fn get_server_ca_manager(&self) -> Arc<ServerCaManager>;
+}
+
+impl ServerCaManagerExtensionsExt for Extensions {
+    fn get_server_ca_manager(&self) -> Arc<ServerCaManager> {
+        self.get::<Arc<ServerCaManager>>()
+            .expect("proxy server ca manager not found")
+            .clone()
+    }
 }
 
 #[cfg(test)]

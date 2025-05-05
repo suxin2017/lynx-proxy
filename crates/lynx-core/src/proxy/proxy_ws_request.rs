@@ -9,7 +9,7 @@ use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream,
     tungstenite::{self, client::IntoClientRequest},
 };
-use tracing::debug;
+use tracing::{debug, warn};
 use ts_rs::TS;
 
 use crate::{
@@ -83,13 +83,13 @@ where
     spawn(async move {
         let e = serve_websocket(hyper_sink, client_stream, SendType::ClientToServer).await;
         if let Err(e) = e {
-            debug!("Error in client to server websocket: {:?}", e);
+            warn!("Error in client to server websocket: {}", e);
         }
     });
     spawn(async move {
         let e = serve_websocket(client_sink, hyper_stream, SendType::ServerToClient).await;
         if let Err(e) = e {
-            debug!("Error in server to client websocket: {:?}", e);
+            warn!("Error in server to client websocket: {}", e);
         }
     });
 
@@ -106,10 +106,10 @@ enum SendType {
 async fn serve_websocket(
     mut sink: impl Sink<tungstenite::Message, Error = tungstenite::Error> + Unpin + Send,
     mut stream: impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>> + Unpin + Send,
-    _send_type: SendType,
+    send_type: SendType,
 ) -> Result<()> {
     while let Some(message) = stream.next().await {
-        debug!("Received message: {:?}", message);
+        debug!("Received message {:?} {:?}", send_type, message);
         let message = message.map_err(|e| anyhow!(e).context("Failed to receive message"))?;
 
         sink.send(message)

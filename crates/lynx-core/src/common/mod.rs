@@ -1,13 +1,14 @@
 use anyhow::anyhow;
 use http::{Request, Response};
-use http_body_util::{BodyExt, combinators::BoxBody};
+use http_body_util::{BodyExt, combinators::BoxBody as HttpBoxBody};
 use hyper::body::Incoming;
 
 pub type HyperReq = hyper::Request<Incoming>;
 pub type HyperRes = hyper::Response<Incoming>;
 
-pub type Req = Request<BoxBody<bytes::Bytes, anyhow::Error>>;
-pub type Res = Response<BoxBody<bytes::Bytes, anyhow::Error>>;
+pub type BoxBody = HttpBoxBody<bytes::Bytes, anyhow::Error>;
+pub type Req = Request<BoxBody>;
+pub type Res = Response<BoxBody>;
 
 pub trait HyperReqExt {
     fn into_box_req(self) -> Req;

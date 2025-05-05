@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::response::Response;
- // 添加这一行来获取 oneshot 方法
+// 添加这一行来获取 oneshot 方法
 
 use crate::self_service::self_service_router;
 use crate::{
@@ -14,14 +14,14 @@ use crate::{
     self_service::is_self_service,
 };
 
-pub async fn gatetway_proxy_service_fn(req: HyperReq) -> Result<Response> {
+pub async fn proxy_gateway_service_fn(req: HyperReq) -> Result<Res> {
     if is_websocket_req(&req) {
         return proxy_ws_request(req).await;
     }
     if is_http_req(&req) {
         return proxy_http_request(req).await;
     }
-    return proxy_tunnel_proxy(req).await;
+    proxy_tunnel_proxy(req).await
 }
 
 pub async fn gateway_service_fn(req: HyperReq) -> Result<Response> {
@@ -31,5 +31,5 @@ pub async fn gateway_service_fn(req: HyperReq) -> Result<Response> {
     if is_connect_req(&req) {
         return proxy_connect_request(req).await;
     }
-    gatetway_proxy_service_fn(req).await
+    proxy_gateway_service_fn(req).await
 }

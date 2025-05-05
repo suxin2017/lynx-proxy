@@ -1,10 +1,8 @@
-
 use tower::Layer;
-
 
 use super::LogService;
 
-pub struct LogLayer {}
+pub struct LogLayer;
 
 impl<S> Layer<S> for LogLayer {
     type Service = LogService<S>;

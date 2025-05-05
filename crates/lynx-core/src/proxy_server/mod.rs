@@ -12,13 +12,20 @@ use local_ip_address::list_afinet_netifas;
 use rcgen::Certificate;
 use tokio::net::TcpListener;
 use tower::{ServiceBuilder, service_fn};
-use tracing::{trace, warn};
+use tracing::{debug, trace, warn};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::gateway_service::gateway_service_fn;
+use crate::layers::error_handle_layer::ErrorHandlerLayer;
 use crate::layers::log_layer::LogLayer;
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
+
+pub mod server_ca_manage;
+pub mod server_config;
+
+use server_ca_manage::ServerCaManager;
+use server_config::ProxyServerConfig;
 
 #[derive(Builder)]
 #[builder(build_fn(skip))]
@@ -29,6 +36,10 @@ pub struct ProxyServer {
     pub access_addr_list: Vec<SocketAddr>,
     #[builder(setter(strip_option))]
     pub custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
+
+    pub config: Arc<ProxyServerConfig>,
+
+    pub server_ca_manager: Arc<ServerCaManager>,
 }
 
 impl ProxyServerBuilder {
@@ -48,6 +59,11 @@ impl ProxyServerBuilder {
             port: self.port.flatten(),
             access_addr_list,
             custom_certs,
+            config: self.config.clone().expect("config is required"),
+            server_ca_manager: self
+                .server_ca_manager
+                .clone()
+                .expect("server_ca_manager is required"),
         })
     }
 }
@@ -93,7 +109,7 @@ impl ProxyServer {
             .iter()
             .map(|addr| async move {
                 let listener = TcpListener::bind(*addr).await?;
-                trace!("Server started on: http://{}", addr);
+                trace!("Server started on: http://{}", listener.local_addr()?);
                 Ok(listener)
             })
             .collect::<Vec<_>>();
@@ -103,32 +119,46 @@ impl ProxyServer {
     }
 
     async fn bind_hyper(&self, listener: TcpListener) -> Result<()> {
-        let client_custome_certs = self.custom_certs.clone();
+        let client_custom_certs = self.custom_certs.clone();
+        let server_ca_manager = self.server_ca_manager.clone();
+        let server_config = self.config.clone();
+
         tokio::spawn(async move {
             loop {
                 let (stream, client_addr) = listener.accept().await.expect("accept failed");
                 let io = TokioIo::new(stream);
-                let client_custome_certs = client_custome_certs.clone();
-                let svc = service_fn(gateway_service_fn);
+
+                let request_client = Arc::new(
+                    RequestClientBuilder::default()
+                        .custom_certs(client_custom_certs.clone())
+                        .build()
+                        .expect("build request client error"),
+                );
+
+                let server_ca_manager = server_ca_manager.clone();
+                let server_config = server_config.clone();
 
                 tokio::task::spawn(async move {
-                    let request_client = RequestClientBuilder::default()
-                        .custom_certs(client_custome_certs)
-                        .build()
-                        .expect("build request client error");
+                    let svc = service_fn(gateway_service_fn);
 
                     let svc = ServiceBuilder::new()
-                        .layer(LogLayer {})
+                        .layer(ErrorHandlerLayer)
+                        .layer(LogLayer)
                         .layer(TraceIdLayer)
-                        .layer(RequestExtensionLayer::new(Arc::new(request_client)))
+                        .layer(RequestExtensionLayer::new(request_client))
                         .layer(RequestExtensionLayer::new(ClientAddr(client_addr)))
+                        .layer(RequestExtensionLayer::new(server_ca_manager))
+                        .layer(RequestExtensionLayer::new(server_config))
                         .service(svc);
+
                     let svc = TowerToHyperService::new(svc);
                     let connection = auto::Builder::new(TokioExecutor::new())
                         .serve_connection_with_upgrades(io, svc)
                         .await;
+
                     if let Err(err) = connection {
-                        warn!("Error serving connection: {:?}", err);
+                        warn!("Error serving connection: {}", err);
+                        debug!("Error serving connection: {:?}", err);
                     }
                 });
             }
