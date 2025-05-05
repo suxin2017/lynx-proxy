@@ -85,6 +85,10 @@ lynx-cert = { path = "../lynx-cert" }
 pin-project-lite = { workspace = true }
 http-serde = "2.1.1"
 serde_bytes = "0.11.17"
+axum = "0.8.4"
+utoipa-swagger-ui = { version = "9.0.1", features = ["axum"] }
+utoipa-axum = "0.2.0"
+utoipa = { version = "5.3.1", features = ["axum_extras"] }
 
 [dev-dependencies]
 dotenv = "0.15.0"

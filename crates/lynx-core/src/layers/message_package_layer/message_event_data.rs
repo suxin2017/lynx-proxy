@@ -7,7 +7,6 @@ use url::Url;
 
 use crate::common::{BoxBody, Req};
 
-
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct MessageHeaderSize(pub usize);
 
@@ -117,7 +116,7 @@ mod tests {
         let test_body = full("test");
 
         let (data_stream, frame_stream) = copy_body_stream(test_body);
-        let data = data_stream.collect().await;
+        let data: Vec<Bytes> = data_stream.collect().await;
         let collected_data: Bytes = vec_to_bytes(&data);
         let extracted_data = frame_stream
             .collect()
