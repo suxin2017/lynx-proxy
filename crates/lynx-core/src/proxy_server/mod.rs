@@ -11,13 +11,14 @@ use hyper_util::service::TowerToHyperService;
 use local_ip_address::list_afinet_netifas;
 use rcgen::Certificate;
 use tokio::net::TcpListener;
-use tower::{ServiceBuilder, service_fn};
+use tower::{ServiceBuilder, ServiceExt, service_fn};
 use tracing::{debug, trace, warn};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::gateway_service::gateway_service_fn;
 use crate::layers::error_handle_layer::ErrorHandlerLayer;
 use crate::layers::log_layer::LogLayer;
+use crate::layers::message_package_layer::{MessageEventCannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
 
@@ -122,6 +123,7 @@ impl ProxyServer {
         let client_custom_certs = self.custom_certs.clone();
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
+        let message_event_cannel = Arc::new(MessageEventCannel::new());
 
         tokio::spawn(async move {
             loop {
@@ -137,18 +139,20 @@ impl ProxyServer {
 
                 let server_ca_manager = server_ca_manager.clone();
                 let server_config = server_config.clone();
+                let message_event_cannel = message_event_cannel.clone();
 
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
-
                     let svc = ServiceBuilder::new()
-                        .layer(ErrorHandlerLayer)
-                        .layer(LogLayer)
-                        .layer(TraceIdLayer)
                         .layer(RequestExtensionLayer::new(request_client))
                         .layer(RequestExtensionLayer::new(ClientAddr(client_addr)))
                         .layer(RequestExtensionLayer::new(server_ca_manager))
                         .layer(RequestExtensionLayer::new(server_config))
+                        .layer(RequestExtensionLayer::new(message_event_cannel))
+                        .layer(TraceIdLayer)
+                        .layer_fn(|inner| RequestMessageEventService { inner })
+                        .layer(LogLayer)
+                        .layer(ErrorHandlerLayer)
                         .service(svc);
 
                     let svc = TowerToHyperService::new(svc);

@@ -6,7 +6,7 @@ use tracing::{info, info_span};
 
 use crate::{
     common::HyperReq,
-    layers::log_layer::LogFuture,
+    layers::{log_layer::LogFuture, message_package_layer::MessageEventLayerExt},
 };
 
 #[derive(Debug, Clone)]
