@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::common::Req;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
 use anyhow::Result;
+use api::net_request;
 use axum::Json;
 use axum::Router;
 use axum::extract::State;
@@ -12,7 +13,9 @@ use utoipa::openapi::OpenApi;
 use utoipa::openapi::Server;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
-use utoipa_swagger_ui::SwaggerUi; // 添加这一行来获取 oneshot 方法
+use utoipa_swagger_ui::SwaggerUi;
+pub mod api;
+pub mod utils;
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
 
@@ -44,7 +47,8 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
 
     let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
         .routes(routes!(get_user))
-        .with_state(state)
+        .with_state(state.clone())
+        .nest("/net_request", net_request::router(state))
         .split_for_parts();
     openapi.servers = Some(vec![Server::new(SELF_SERVICE_PATH_PREFIX)]);
     let swagger_path = format!("{}/swagger-ui", SELF_SERVICE_PATH_PREFIX);

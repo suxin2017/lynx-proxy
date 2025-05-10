@@ -10,8 +10,10 @@ use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use local_ip_address::list_afinet_netifas;
+use lynx_db::migration::Migrator;
 use rcgen::Certificate;
 use sea_orm::{ConnectOptions, Database};
+use sea_orm_migration::MigratorTrait;
 use tokio::net::TcpListener;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
@@ -134,6 +136,7 @@ impl ProxyServer {
         let message_event_store = MessageEventCache::default();
         let message_event_cannel = Arc::new(MessageEventCannel::new(Arc::new(message_event_store)));
         let db_connect = Arc::new(Database::connect(self.db_config.clone()).await?);
+        Migrator::up(db_connect.as_ref(), None).await?;
 
         tokio::spawn(async move {
             loop {

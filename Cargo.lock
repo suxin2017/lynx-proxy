@@ -2022,6 +2022,7 @@ dependencies = [
  "jsonschema",
  "local-ip-address",
  "lynx-cert",
+ "lynx-db",
  "lynx-mock",
  "mime_guess",
  "moka",
@@ -2073,6 +2074,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ts-rs",
+ "utoipa",
 ]
 
 [[package]]
