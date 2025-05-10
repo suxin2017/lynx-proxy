@@ -2061,6 +2061,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "lynx-db"
+version = "0.1.4"
+dependencies = [
+ "anyhow",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs",
+]
+
+[[package]]
 name = "lynx-mock"
 version = "0.1.4"
 dependencies = [

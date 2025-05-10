@@ -11,6 +11,7 @@ use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use local_ip_address::list_afinet_netifas;
 use rcgen::Certificate;
+use sea_orm::{ConnectOptions, Database};
 use tokio::net::TcpListener;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
@@ -45,6 +46,8 @@ pub struct ProxyServer {
     pub config: Arc<ProxyServerConfig>,
 
     pub server_ca_manager: Arc<ServerCaManager>,
+
+    pub db_config: ConnectOptions,
 }
 
 impl ProxyServerBuilder {
@@ -65,6 +68,7 @@ impl ProxyServerBuilder {
             access_addr_list,
             custom_certs,
             config: self.config.clone().expect("config is required"),
+            db_config: self.db_config.clone().expect("db_config is required"),
             server_ca_manager: self
                 .server_ca_manager
                 .clone()
@@ -129,6 +133,7 @@ impl ProxyServer {
         let server_config = self.config.clone();
         let message_event_store = MessageEventCache::default();
         let message_event_cannel = Arc::new(MessageEventCannel::new(Arc::new(message_event_store)));
+        let db_connect = Arc::new(Database::connect(self.db_config.clone()).await?);
 
         tokio::spawn(async move {
             loop {
@@ -145,10 +150,12 @@ impl ProxyServer {
                 let server_ca_manager = server_ca_manager.clone();
                 let server_config = server_config.clone();
                 let message_event_cannel = message_event_cannel.clone();
+                let db_connect = db_connect.clone();
 
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
                     let svc = ServiceBuilder::new()
+                        .layer(RequestExtensionLayer::new(db_connect.clone()))
                         .layer(RequestExtensionLayer::new(request_client))
                         .layer(RequestExtensionLayer::new(ClientAddr(client_addr)))
                         .layer(RequestExtensionLayer::new(server_ca_manager))

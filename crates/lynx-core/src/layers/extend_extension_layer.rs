@@ -1,4 +1,7 @@
-use std::task::{Context, Poll};
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+};
 
 use anyhow::Result;
 use http::{Extensions, Request};
@@ -54,6 +57,18 @@ impl<S> tower::Layer<S> for ExtendExtensionsLayer {
             service,
             old_extensions: self.old_extensions.clone(),
         }
+    }
+}
+
+pub trait DbExtensionsExt {
+    fn get_db(&self) -> Arc<sea_orm::DatabaseConnection>;
+}
+
+impl DbExtensionsExt for Extensions {
+    fn get_db(&self) -> Arc<sea_orm::DatabaseConnection> {
+        self.get::<Arc<sea_orm::DatabaseConnection>>()
+            .expect("Missing database connection in request")
+            .clone()
     }
 }
 

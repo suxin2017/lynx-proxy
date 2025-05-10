@@ -5,6 +5,7 @@ use lynx_core::proxy_server::{
     ProxyServerBuilder, server_ca_manage::ServerCaManagerBuilder,
     server_config::ProxyServerConfigBuilder,
 };
+use sea_orm::ConnectOptions;
 use tempdir::TempDir;
 use tokio::signal;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
@@ -36,6 +37,7 @@ async fn main() -> Result<()> {
         .config(Arc::new(server_config))
         .port(3000)
         .server_ca_manager(Arc::new(server_ca_manager))
+        .db_config(ConnectOptions::new("sqlite::memory:"))
         .build()
         .await?;
     proxy_server.run().await?;
