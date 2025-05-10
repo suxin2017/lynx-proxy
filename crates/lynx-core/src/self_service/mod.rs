@@ -1,4 +1,4 @@
-use crate::common::HyperReq;
+use crate::common::Req;
 use crate::utils::empty;
 use anyhow::{Error, Result};
 use axum::Json;
@@ -21,7 +21,7 @@ pub mod utils;
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
 
-pub fn is_self_service(req: &Request<Incoming>) -> bool {
+pub fn is_self_service(req: &Req) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
 }
 
@@ -157,7 +157,7 @@ async fn get_user() -> Json<User> {
     Json(User { id: 1 })
 }
 
-pub async fn self_service_router(req: HyperReq) -> Result<Response> {
+pub async fn self_service_router(req: Req) -> Result<Response> {
     let start_time = std::time::Instant::now();
     let (router, openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
         .routes(routes!(get_user))

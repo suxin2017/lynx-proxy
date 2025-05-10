@@ -14,16 +14,16 @@ use ts_rs::TS;
 
 use crate::{
     client::request_client::RequestClientExt,
-    common::HyperReq,
+    common::Req,
     utils::{empty, full},
 };
 
 struct WebSocketReq(Request<()>);
 
-impl TryFrom<HyperReq> for WebSocketReq {
+impl TryFrom<Req> for WebSocketReq {
     type Error = anyhow::Error;
 
-    fn try_from(req: HyperReq) -> Result<Self, Self::Error> {
+    fn try_from(req: Req) -> Result<Self, Self::Error> {
         let (mut parts, _) = req.into_parts();
         parts.uri = {
             let mut parts = parts.uri.into_parts();
@@ -48,11 +48,11 @@ impl IntoClientRequest for WebSocketReq {
     }
 }
 
-pub fn is_websocket_req(req: &HyperReq) -> bool {
+pub fn is_websocket_req(req: &Req) -> bool {
     hyper_tungstenite::is_upgrade_request(req)
 }
 
-pub async fn proxy_ws_request(mut req: HyperReq) -> anyhow::Result<Response> {
+pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
     assert!(hyper_tungstenite::is_upgrade_request(&req));
     let (_res, hyper_ws) = hyper_tungstenite::upgrade(&mut req, None)?;
 

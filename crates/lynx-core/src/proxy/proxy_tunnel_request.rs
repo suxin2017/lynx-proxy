@@ -7,14 +7,14 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpStream, ToSocketAddrs};
 use tracing::{error, trace};
 
-use crate::common::HyperReq;
+use crate::common::Req;
 use crate::utils::host_addr;
 
 fn handle_tunnel_error(err: anyhow::Error) {
     error!("Error handling tunnel: {}", err);
 }
 
-pub async fn proxy_tunnel_proxy(req: HyperReq) -> anyhow::Result<Response> {
+pub async fn proxy_tunnel_proxy(req: Req) -> anyhow::Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
     tokio::task::spawn(async move {
@@ -27,7 +27,7 @@ pub async fn proxy_tunnel_proxy(req: HyperReq) -> anyhow::Result<Response> {
     Ok(Response::new(Body::empty()))
 }
 
-pub async fn tunnel(req: HyperReq) -> Result<()> {
+pub async fn tunnel(req: Req) -> Result<()> {
     let addr = host_addr(req.uri()).ok_or_else(|| anyhow::anyhow!("Invalid URI: {}", req.uri()))?;
 
     let upgraded = hyper::upgrade::on(req).await?;
@@ -48,7 +48,7 @@ pub async fn tunnel(req: HyperReq) -> Result<()> {
     Ok(())
 }
 
-pub async fn tunnel_proxy_by_req(req: HyperReq) -> Result<()> {
+pub async fn tunnel_proxy_by_req(req: Req) -> Result<()> {
     let addr = host_addr(req.uri()).ok_or_else(|| anyhow::anyhow!("Invalid URI: {}", req.uri()))?;
 
     let upgraded = hyper::upgrade::on(req).await?;

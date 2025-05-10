@@ -1,17 +1,9 @@
 use std::fmt::Display;
 use std::path::Path;
-use std::path::PathBuf;
 use std::str::FromStr;
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
-use console::style;
-use directories::ProjectDirs;
-use include_dir::include_dir;
-use lynx_core::config::InitAppConfigParams;
-use lynx_core::self_service::SELF_SERVICE_PATH_PREFIX;
-use lynx_core::server::{Server, ServerConfig};
-use lynx_core::server_context::{InitContextParams, set_up_context};
 use tracing::{Level, info};
 use tracing_subscriber::filter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
@@ -57,6 +49,7 @@ impl Display for LogLevel {
     }
 }
 
+#[allow(dead_code)]
 fn escape_spaces_in_path(path: &Path) -> String {
     path.to_string_lossy()
         .chars()
@@ -88,53 +81,52 @@ async fn main() -> Result<()> {
     }
 
     // init data dir
-    let data_dir = if let Some(data_dir) = args.data_dir {
-        PathBuf::from(data_dir)
-    } else {
-        let project = ProjectDirs::from("cc", "suxin2017", "lynx").expect("get project dir error");
-        project.data_dir().to_path_buf()
-    };
-    let data_dir_path = escape_spaces_in_path(&data_dir);
+    // let data_dir = if let Some(data_dir) = args.data_dir {
+    //     PathBuf::from(data_dir)
+    // } else {
+    //     let project = ProjectDirs::from("cc", "suxin2017", "lynx").expect("get project dir error");
+    //     project.data_dir().to_path_buf()
+    // };
+    // let data_dir_path = escape_spaces_in_path(&data_dir);
 
     info!("Starting proxy server");
-    let dir = include_dir!("$CARGO_MANIFEST_DIR/assets");
+    todo!();
+    // let dir = include_dir!("$CARGO_MANIFEST_DIR/assets");
 
-    set_up_context(InitContextParams {
-        init_app_config_params: InitAppConfigParams {
-            assets_ui_root_dir: Some(dir),
-            root_dir: Some(data_dir),
-        },
-    })
-    .await;
+    // set_up_context(InitContextParams {
+    //     init_app_config_params: InitAppConfigParams {
+    //         assets_ui_root_dir: Some(dir),
+    //         root_dir: Some(data_dir),
+    //     },
+    // })
+    // .await;
 
-    let mut server = Server::new(ServerConfig {
-        port: args.port,
-        only_localhost: args.only_localhost,
-    });
-    server.run().await?;
-    let addrs = server
-        .access_addr_list
-        .iter()
-        .map(|addr| format!("  http://{}", addr))
-        .collect::<Vec<String>>()
-        .join("\n");
-    println!("The proxy service was started");
-    println!("{}{}", style("Available on: \n").green(), addrs);
+    // let mut server = Server::new(ServerConfig {
+    //     port: args.port,
+    //     only_localhost: args.only_localhost,
+    // });
+    // server.run().await?;
+    // let addrs = server
+    //     .access_addr_list
+    //     .iter()
+    //     .map(|addr| format!("  http://{}", addr))
+    //     .collect::<Vec<String>>()
+    //     .join("\n");
+    // println!("The proxy service was started");
+    // println!("{}{}", style("Available on: \n").green(), addrs);
 
-    let web_path = server
-        .access_addr_list
-        .iter()
-        .map(|addr| format!("  http://{}{}", addr, SELF_SERVICE_PATH_PREFIX))
-        .collect::<Vec<String>>()
-        .join("\n");
-    println!("{}{}", style("Web UI is available on:\n").green(), web_path);
-    println!(
-        "\nThe proxy service data directory: \n{}",
-        style(data_dir_path).yellow()
-    );
-    println!("\nPress {} to stop the service", style("Ctrl+C").yellow());
+    // let web_path = server
+    //     .access_addr_list
+    //     .iter()
+    //     .map(|addr| format!("  http://{}{}", addr, SELF_SERVICE_PATH_PREFIX))
+    //     .collect::<Vec<String>>()
+    //     .join("\n");
+    // println!("{}{}", style("Web UI is available on:\n").green(), web_path);
+    // println!(
+    //     "\nThe proxy service data directory: \n{}",
+    //     style(data_dir_path).yellow()
+    // );
+    // println!("\nPress {} to stop the service", style("Ctrl+C").yellow());
 
-    let _ = tokio::signal::ctrl_c().await;
-
-    Ok(())
+    // let _ = tokio::signal::ctrl_c().await;
 }

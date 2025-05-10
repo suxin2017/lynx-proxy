@@ -1,23 +1,27 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use anyhow::{Ok, Result};
+use anyhow::{Ok, Result, anyhow};
 use derive_builder::Builder;
 use futures_util::future::join_all;
 use http::Extensions;
+use http_body_util::BodyExt;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use local_ip_address::list_afinet_netifas;
 use rcgen::Certificate;
 use tokio::net::TcpListener;
-use tower::{ServiceBuilder, ServiceExt, service_fn};
+use tower::util::Oneshot;
+use tower::{ServiceBuilder, service_fn};
 use tracing::{debug, trace, warn};
 
 use crate::client::request_client::RequestClientBuilder;
+use crate::common::HyperReq;
 use crate::gateway_service::gateway_service_fn;
 use crate::layers::error_handle_layer::ErrorHandlerLayer;
 use crate::layers::log_layer::LogLayer;
+use crate::layers::message_package_layer::message_event_store::MessageEventCache;
 use crate::layers::message_package_layer::{MessageEventCannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
@@ -123,7 +127,8 @@ impl ProxyServer {
         let client_custom_certs = self.custom_certs.clone();
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
-        let message_event_cannel = Arc::new(MessageEventCannel::new());
+        let message_event_store = MessageEventCache::default();
+        let message_event_cannel = Arc::new(MessageEventCannel::new(Arc::new(message_event_store)));
 
         tokio::spawn(async move {
             loop {
@@ -150,12 +155,19 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(server_config))
                         .layer(RequestExtensionLayer::new(message_event_cannel))
                         .layer(TraceIdLayer)
-                        .layer_fn(|inner| RequestMessageEventService { inner })
+                        .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)
                         .layer(ErrorHandlerLayer)
                         .service(svc);
+                    let transform_svc = service_fn(move |req: HyperReq| {
+                        let svc = svc.clone();
+                        async move {
+                            let req = req.map(|b| b.map_err(|e| anyhow!(e)).boxed());
+                            Oneshot::new(svc, req).await
+                        }
+                    });
 
-                    let svc = TowerToHyperService::new(svc);
+                    let svc = TowerToHyperService::new(transform_svc);
                     let connection = auto::Builder::new(TokioExecutor::new())
                         .serve_connection_with_upgrades(io, svc)
                         .await;

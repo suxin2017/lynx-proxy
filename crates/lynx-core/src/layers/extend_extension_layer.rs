@@ -9,7 +9,7 @@ use crate::{
     proxy_server::{ClientAddrRequestExt, server_config::ProxyServerConfigExtensionsExt},
 };
 
-use super::trace_id_layer::service::TraceIdExt;
+use super::{message_package_layer::MessageEventLayerExt, trace_id_layer::service::TraceIdExt};
 
 #[derive(Debug, Clone)]
 pub struct ExtendExtensionsService<S> {
@@ -65,6 +65,8 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
         .get_client_addr()
         .ok_or_else(|| anyhow::anyhow!("Missing client address in request"))?;
     let server_config = ex.get_proxy_server_config();
+    let message_event_cannel = ex.get_message_event_cannel();
+
     let trace_id = ex.get_trace_id();
 
     let mut nex = Extensions::new();
@@ -72,5 +74,6 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     nex.insert(client_addr);
     nex.insert(server_config);
     nex.insert(trace_id);
+    nex.insert(message_event_cannel);
     Ok(nex)
 }

@@ -5,31 +5,40 @@ use tracing::info;
 
 use crate::{
     client::request_client::RequestClientExt,
-    common::{HyperReq, HyperReqExt, HyperResExt, Req, Res},
-    layers::build_proxy_request::BuildProxyRequestService,
+    common::{HyperResExt, Req, Res},
+    layers::{
+        build_proxy_request::BuildProxyRequestService,
+        message_package_layer::ProxyMessageEventService, trace_id_layer::service::TraceIdExt,
+    },
 };
 
-pub fn is_http_req(req: &HyperReq) -> bool {
+pub fn is_http_req(req: &Req) -> bool {
     req.headers().get("Upgrade").is_none()
 }
 
 async fn proxy_http_request_inner(req: Req) -> Result<Res> {
     info!("req {:#?}", req);
+    let trace_id = req.extensions().get_trace_id().clone();
     let http_client = req.extensions().get_http_client();
     http_client
         .request(req)
         .await
         .map_err(|e| e.context("http request failed"))
+        .and_then(|mut res| {
+            res.extensions_mut().insert(trace_id);
+            Ok(res)
+        })
         .map(|res| res.into_box_res())
 }
 
-pub async fn proxy_http_request(req: HyperReq) -> Result<Response> {
+pub async fn proxy_http_request(req: Req) -> Result<Response> {
     let svc = service_fn(proxy_http_request_inner);
 
     let svc = ServiceBuilder::new()
         .layer_fn(|s| BuildProxyRequestService { service: s })
+        .layer_fn(|s| ProxyMessageEventService { service: s })
         .service(svc);
 
-    let res = svc.oneshot(req.into_box_req()).await?;
+    let res = svc.oneshot(req).await?;
     Ok(res.into_response())
 }

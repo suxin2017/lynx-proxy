@@ -14,7 +14,6 @@ use crate::entities::app_config::{SSLConfigRule, get_app_config, get_enabled_ssl
 use crate::proxy::http_proxy::proxy_http_request;
 use crate::proxy::https_proxy::https_proxy;
 use crate::proxy::websocket_proxy::websocket_proxy;
-use crate::self_service::{handle_self_service, is_self_service};
 use crate::tunnel_proxy::tunnel_proxy;
 use crate::utils::{full, is_http};
 
@@ -73,9 +72,9 @@ pub async fn capture_ssl(req: &Request<Incoming>) -> Result<bool> {
 pub async fn dispatch(
     mut req: Request<hyper::body::Incoming>,
 ) -> Result<Response<BoxBody<Bytes, Error>>> {
-    if is_self_service(&req) {
-        return handle_self_service(req).await;
-    }
+    // if is_self_service(&req) {
+    //     return handle_self_service(req).await;
+    // }
 
     info!("dispatching request {:?}", req.uri());
     debug!("dispatching request {:?}", req);

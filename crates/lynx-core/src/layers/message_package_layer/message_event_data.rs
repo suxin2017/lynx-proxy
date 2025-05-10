@@ -1,16 +1,16 @@
-use bytes::{Bytes, BytesMut};
-use http::{HeaderMap, Version};
+use http::{HeaderMap, Request, Response, Version};
 use http_body_util::{BodyExt, StreamBody};
+use hyper::body::Body;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 use url::Url;
 
-use crate::common::{BoxBody, Req};
+use crate::common::BoxBody;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 pub struct MessageHeaderSize(pub usize);
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 pub struct MessageEventRequest {
     pub method: String,
     pub url: String,
@@ -23,8 +23,35 @@ pub struct MessageEventRequest {
     pub body: Vec<u8>,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct MessageEventResponse {}
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
+pub struct MessageEventResponse {
+    pub status: u16,
+    #[serde(with = "http_serde::header_map")]
+    pub headers: HeaderMap,
+    #[serde(with = "http_serde::version")]
+    pub version: Version,
+    pub header_size: MessageHeaderSize,
+    #[serde(with = "serde_bytes")]
+    pub body: Vec<u8>,
+}
+
+impl<B: Body> From<&Response<B>> for MessageEventResponse {
+    fn from(res: &Response<B>) -> Self {
+        let status = res.status().as_u16();
+        let headers = res.headers().clone();
+        let version = res.version();
+        let header_size = MessageHeaderSize::from(res.headers().clone());
+        let body = Vec::new();
+
+        MessageEventResponse {
+            status,
+            headers,
+            version,
+            header_size,
+            body,
+        }
+    }
+}
 
 impl From<HeaderMap> for MessageHeaderSize {
     fn from(header_map: HeaderMap) -> Self {
@@ -36,8 +63,8 @@ impl From<HeaderMap> for MessageHeaderSize {
     }
 }
 
-impl From<Req> for MessageEventRequest {
-    fn from(req: Req) -> Self {
+impl<B: Body> From<&Request<B>> for MessageEventRequest {
+    fn from(req: &Request<B>) -> Self {
         let method = req.method().to_string();
         let url = Url::parse(&req.uri().to_string())
             .map(|url| url.to_string())
@@ -58,7 +85,7 @@ impl From<Req> for MessageEventRequest {
     }
 }
 
-fn copy_body_stream(
+pub fn copy_body_stream(
     mut body: BoxBody,
 ) -> (
     tokio_stream::wrappers::ReceiverStream<bytes::Bytes>,
@@ -89,20 +116,10 @@ fn copy_body_stream(
     (new_data_stream, old_body)
 }
 
-fn vec_to_bytes(vec: &[Bytes]) -> Bytes {
-    let mut bytes_mut = BytesMut::new();
-
-    for b in vec {
-        bytes_mut.extend_from_slice(b);
-    }
-
-    bytes_mut.freeze()
-}
-
 #[cfg(test)]
 mod tests {
 
-    use bytes::Bytes;
+    use bytes::{Bytes, BytesMut};
     use futures_util::StreamExt;
     use http::Request;
     use http_body_util::BodyExt;
@@ -110,6 +127,16 @@ mod tests {
     use crate::utils::full;
 
     use super::*;
+
+    fn vec_to_bytes(vec: &[Bytes]) -> Bytes {
+        let mut bytes_mut = BytesMut::new();
+
+        for b in vec {
+            bytes_mut.extend_from_slice(b);
+        }
+
+        bytes_mut.freeze()
+    }
 
     #[tokio::test]
     async fn copy_body_test() {
@@ -136,7 +163,7 @@ mod tests {
             .body(full("test body"))
             .unwrap();
 
-        let message_event_request: MessageEventRequest = req.into();
+        let message_event_request: MessageEventRequest = MessageEventRequest::from(&req);
 
         assert_eq!(message_event_request.method, "POST");
         assert_eq!(message_event_request.url, "http://example.com/");

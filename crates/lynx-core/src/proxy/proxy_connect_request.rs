@@ -1,16 +1,17 @@
 use anyhow::{Ok, Result, anyhow};
 use axum::{body::Body, extract::Request, response::Response};
 use http::Method;
+use http_body_util::BodyExt;
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     service::TowerToHyperService,
 };
 use tokio::spawn;
 use tokio_rustls::TlsAcceptor;
-use tower::{ServiceBuilder, service_fn};
+use tower::{ServiceBuilder, service_fn, util::Oneshot};
 
 use crate::{
-    common::HyperReq,
+    common::{HyperReq, Req},
     gateway_service::proxy_gateway_service_fn,
     layers::{
         connect_req_patch_layer::service::ConnectReqPatchLayer,
@@ -32,7 +33,7 @@ pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
     req.method() == Method::CONNECT
 }
 
-async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
+async fn proxy_connect_request_future(req: Req) -> Result<()> {
     let new_extension = clone_extensions(req.extensions())?;
 
     let uri = req.uri().clone();
@@ -66,7 +67,14 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
                     http::uri::Scheme::HTTP,
                 ))
                 .service(svc);
-            let svc = TowerToHyperService::new(svc);
+            let transform_svc = service_fn(move |req: HyperReq| {
+                let svc = svc.clone();
+                async move {
+                    let req = req.map(|b| b.map_err(|e| anyhow!(e)).boxed());
+                    Oneshot::new(svc, req).await
+                }
+            });
+            let svc = TowerToHyperService::new(transform_svc);
             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                 .serve_connection_with_upgrades(TokioIo::new(upgraded), svc)
                 .await
@@ -77,7 +85,6 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
                 .get_server_config(&authority)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to get server config"))?;
-            vec![b"h2".to_vec(), b"http/1.1".to_vec(), b"http/1.0".to_vec()];
             let tls_stream = TlsAcceptor::from(server_config)
                 .accept(upgraded)
                 .await
@@ -91,7 +98,15 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
                     http::uri::Scheme::HTTPS,
                 ))
                 .service(svc);
-            let svc = TowerToHyperService::new(svc);
+
+            let transform_svc = service_fn(move |req: HyperReq| {
+                let svc = svc.clone();
+                async move {
+                    let req = req.map(|b| b.map_err(|e| anyhow!(e)).boxed());
+                    Oneshot::new(svc, req).await
+                }
+            });
+            let svc = TowerToHyperService::new(transform_svc);
 
             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                 .serve_connection_with_upgrades(TokioIo::new(tls_stream), svc)
@@ -105,7 +120,7 @@ async fn proxy_connect_request_future(req: HyperReq) -> Result<()> {
     Ok(())
 }
 
-pub async fn proxy_connect_request(req: HyperReq) -> Result<Response> {
+pub async fn proxy_connect_request(req: Req) -> Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
     spawn(async move {
