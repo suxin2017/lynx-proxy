@@ -1,7 +1,12 @@
+use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::{Json, extract::State};
+use tracing::info;
+use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
+use crate::layers::message_package_layer::message_event_data::{MessageEventRequest, MessageEventResponse};
+use crate::layers::message_package_layer::message_event_store::{MessageEventStatus, MessageEventStoreValue, MessageEventTimings};
 use crate::self_service::RouteState;
 use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
 use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
@@ -9,14 +14,14 @@ use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingSt
 #[utoipa::path(
     get,
     path = "/capture/status",
-    tags = ["Capture"],
+    tags = ["Net Request"],
     responses(
         (status = 200, description = "Successfully retrieved capture status", body = ResponseDataWrapper<CaptureSwitch>),
         (status = 500, description = "Failed to get capture status")
     )
 )]
 async fn get_capture_status(
-    State(RouteState { db }): State<RouteState>,
+    State(RouteState { db, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<CaptureSwitch>>, StatusCode> {
     let dao = CaptureSwitchDao::new(db);
     let status = dao
@@ -29,14 +34,14 @@ async fn get_capture_status(
 #[utoipa::path(
     post,
     path = "/capture/toggle",
-    tags = ["Capture"],
+    tags = ["Net Request"],
     responses(
         (status = 200, description = "Capture status changed successfully", body = EmptyOkResponse),
         (status = 500, description = "Failed to change capture status")
     )
 )]
 async fn toggle_capture(
-    State(RouteState { db }): State<RouteState>,
+    State(RouteState { db, .. }): State<RouteState>,
 ) -> Result<Json<EmptyOkResponse>, StatusCode> {
     let dao = CaptureSwitchDao::new(db.clone());
     let current_status = dao
@@ -58,8 +63,53 @@ async fn toggle_capture(
     Ok(Json(empty_ok()))
 }
 
+#[derive(ToSchema, serde::Deserialize, serde::Serialize,Default)]
+#[serde(rename_all = "camelCase")]
+struct RecordRequests {
+    new_requests: Vec<MessageEventStoreValue>,
+    patch_requests: Option<Vec<MessageEventStoreValue>>,
+}
+
+
+#[derive(ToSchema, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GetRequestsData{
+    trace_ids: Option<Vec<String>>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/requests",
+    tags = ["Net Request"],
+    responses(
+        (status = 200, description = "Successfully retrieved cached requests", body = ResponseDataWrapper<RecordRequests>),
+        (status = 500, description = "Failed to get cached requests")
+    ),
+    request_body = GetRequestsData,
+  
+)]
+async fn get_cached_requests(
+    State(RouteState { db: _ ,net_request_cache }): State<RouteState>,
+    Json(_params): Json<GetRequestsData>,
+) -> Result<Json<ResponseDataWrapper<RecordRequests>>, StatusCode> {
+    println!("get_cached_requests called");
+    let new_requests = net_request_cache
+        .get_new_requests()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    // let patch_requests = net_request_cache.get_request_by_keys(params.trace_ids.unwrap_or_default()).await;
+    info!("get_cached_requests new_requests: {:?}", new_requests);
+    Ok(Json(ok(
+        RecordRequests { 
+            new_requests, 
+            patch_requests: None
+        }
+    )))
+}
+
 pub fn router(state: RouteState) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(toggle_capture, get_capture_status))
+        .routes(routes!(get_cached_requests))
         .with_state(state)
 }

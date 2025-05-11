@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{fs, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use lynx_core::proxy_server::{
@@ -6,7 +6,6 @@ use lynx_core::proxy_server::{
     server_config::ProxyServerConfigBuilder,
 };
 use sea_orm::ConnectOptions;
-use tempdir::TempDir;
 use tokio::signal;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -16,15 +15,18 @@ async fn main() -> Result<()> {
         .with(fmt::layer())
         .with(EnvFilter::from_default_env().add_directive("lynx_core=trace".parse()?))
         .init();
-    let temp_dir = TempDir::new_in(
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples"),
-        "temp",
-    )?;
-    let temp_dir_path = temp_dir.path();
+
+    let fixed_temp_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/temp");
+
+    if fixed_temp_dir_path.exists() {
+        fs::remove_dir_all(&fixed_temp_dir_path)?;
+    }
+
+    fs::create_dir_all(&fixed_temp_dir_path)?;
 
     let server_config = ProxyServerConfigBuilder::default()
-        .root_cert_file_path(temp_dir_path.join("root.pem"))
-        .root_key_file_path(temp_dir_path.join("key.pem"))
+        .root_cert_file_path(fixed_temp_dir_path.join("root.pem"))
+        .root_key_file_path(fixed_temp_dir_path.join("key.pem"))
         .build()?;
 
     let server_ca_manager = ServerCaManagerBuilder::new(

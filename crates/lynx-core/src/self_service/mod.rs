@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use crate::common::Req;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
+use crate::layers::message_package_layer::message_event_store::MessageEventCache;
+use crate::layers::message_package_layer::message_event_store::MessageEventStoreExtensionsExt;
 use anyhow::Result;
 use api::net_request;
 use axum::Json;
@@ -37,12 +39,14 @@ async fn get_user(State(state): State<RouteState>) -> Json<User> {
 #[derive(Clone, Debug)]
 pub struct RouteState {
     pub db: Arc<sea_orm::DatabaseConnection>,
+    pub net_request_cache: Arc<MessageEventCache>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
     let start_time = std::time::Instant::now();
     let state = RouteState {
         db: req.extensions().get_db(),
+        net_request_cache: req.extensions().get_message_event_store(),
     };
 
     let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()

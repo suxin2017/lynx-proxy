@@ -1,4 +1,6 @@
+use std::iter::Extend;
 use std::{
+    io::Write,
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
@@ -11,13 +13,16 @@ use http::Extensions;
 use http_body_util::BodyExt;
 use hyper::body::Body;
 use message_event_data::{MessageEventRequest, MessageEventResponse, copy_body_stream};
-use message_event_store::{MessageEvent, MessageEventStoreValueBuilder, MessageEventTimings};
+use message_event_store::{MessageEvent, MessageEventStoreValue, MessageEventTimings};
 use tokio::{spawn, sync::mpsc::channel};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tower::Service;
 use tracing::info;
 
-use crate::common::{Req, Res};
+use crate::{
+    common::{Req, Res},
+    self_service::is_self_service,
+};
 
 use super::trace_id_layer::service::{TraceId, TraceIdExt};
 
@@ -41,13 +46,12 @@ pub async fn handle_message_event(
                 let mut timings = MessageEventTimings::default();
                 timings.set_request_start();
 
-                let value = MessageEventStoreValueBuilder::default()
-                    .trace_id(id.clone())
-                    .request(Some(req))
-                    .response(None)
-                    .status(message_event_store::MessageEventStatus::RequestStarted)
-                    .timings(timings)
-                    .build()?;
+                let mut value = MessageEventStoreValue::new(id.clone());
+
+                value.request = Some(req);
+                value.timings = timings;
+                value.status = message_event_store::MessageEventStatus::RequestStarted;
+
                 cache.insert(id, value.into()).await;
             }
             MessageEvent::OnRequestBody(id, data) => {
@@ -276,6 +280,9 @@ where
     }
 
     fn call(&mut self, request: Req) -> Self::Future {
+        if is_self_service(&request) {
+            return Box::pin(self.service.call(request));
+        }
         let message_event_channel = request.extensions().get_message_event_cannel();
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();

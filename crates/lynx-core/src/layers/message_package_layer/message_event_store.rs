@@ -1,3 +1,4 @@
+use anyhow::Result;
 use bytes::Bytes;
 use derive_builder::Builder;
 use http::Extensions;
@@ -6,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
+use utoipa::ToSchema;
 
 use super::message_event_data::{MessageEventRequest, MessageEventResponse};
 use crate::layers::trace_id_layer::service::TraceId;
@@ -31,20 +33,12 @@ pub enum MessageEvent {
     OnError(TraceId, String),
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, PartialEq)]
 pub enum MessageEventStatus {
     // Initial state, request just created
     Initial,
     // Request processing has started
     RequestStarted,
-    // Request body is being processed
-    RequestBodyInProgress,
-    // Request completed, waiting for response
-    WaitingForResponse,
-    // Currently receiving response
-    ReceivingResponse,
-    // Response body is being processed
-    ResponseBodyInProgress,
     // Request-response fully completed
     Completed,
     // An error occurred
@@ -59,7 +53,8 @@ impl Default for MessageEventStatus {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct MessageEventTimings {
     // The time when the request was received
     pub request_start: Option<u64>,
@@ -145,10 +140,12 @@ impl MessageEventTimings {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Builder)]
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MessageEventStoreValue {
     pub status: MessageEventStatus,
-    pub trace_id: TraceId,
+    pub trace_id: String,
+    pub is_new: bool,
     pub request: Option<MessageEventRequest>,
     pub response: Option<MessageEventResponse>,
     pub timings: MessageEventTimings,
@@ -158,7 +155,8 @@ impl MessageEventStoreValue {
     pub fn new(trace_id: TraceId) -> Self {
         Self {
             status: MessageEventStatus::Initial,
-            trace_id,
+            trace_id: trace_id.to_string(),
+            is_new: true,
             request: None,
             response: None,
             timings: MessageEventTimings::default(),
@@ -207,17 +205,6 @@ impl MessageEventStoreValue {
     pub fn is_cancelled(&self) -> bool {
         matches!(self.status, MessageEventStatus::Cancelled)
     }
-
-    pub fn is_in_progress(&self) -> bool {
-        matches!(
-            self.status,
-            MessageEventStatus::RequestStarted
-                | MessageEventStatus::RequestBodyInProgress
-                | MessageEventStatus::WaitingForResponse
-                | MessageEventStatus::ReceivingResponse
-                | MessageEventStatus::ResponseBodyInProgress
-        )
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -255,6 +242,41 @@ impl MessageEventCache {
     pub async fn invalidate(&self, request_id: &TraceId) {
         self.cache.invalidate(request_id).await;
     }
+
+    pub async fn get_new_requests(&self) -> Result<Vec<MessageEventStoreValue>> {
+        let mut new_requests = Vec::new();
+        for (_, value) in self.cache.iter() {
+            let rv = value.try_read().map_err(|e| {
+                anyhow::anyhow!(e).context("Failed to acquire read lock on cache value")
+            })?;
+
+            if rv.is_new {
+                new_requests.push(rv.clone());
+                let mut wv = value.try_write().map_err(|e| {
+                    anyhow::anyhow!(e).context("Failed to acquire write lock on cache value")
+                })?;
+                wv.is_new = false;
+            }
+        }
+        Ok(new_requests)
+    }
+
+    pub async fn get_request_by_keys(&self, keys: Vec<String>) -> Vec<MessageEventStoreValue> {
+        let mut requests = Vec::new();
+
+        for key in keys {
+            if let Some(value) = self.cache.get(&key).await {
+                let read = value.read().await;
+                let filter_flag =
+                    read.is_new || read.is_completed() || read.is_error() || read.is_cancelled();
+
+                if filter_flag {
+                    requests.push(read.clone());
+                }
+            }
+        }
+        requests
+    }
 }
 
 impl Default for MessageEventCache {
@@ -263,8 +285,7 @@ impl Default for MessageEventCache {
     }
 }
 
-#[allow(dead_code)]
-trait MessageEventStoreExtensionsExt {
+pub trait MessageEventStoreExtensionsExt {
     fn get_message_event_store(&self) -> Arc<MessageEventCache>;
 }
 

@@ -4,10 +4,7 @@ use axum::response::Response;
 use tower::Service;
 use tracing::{info, info_span};
 
-use crate::{
-    common::Req,
-    layers::log_layer::LogFuture,
-};
+use crate::{common::Req, layers::log_layer::LogFuture};
 
 #[derive(Debug, Clone)]
 pub struct LogService<S> {
@@ -28,7 +25,7 @@ where
 
     fn call(&mut self, request: Req) -> Self::Future {
         // Insert log statement here or other functionality
-        let span = info_span!("log_service", request = ?request);
+        let span = info_span!("log_service");
         let future = {
             let _guard = span.enter();
             info!("handling request");

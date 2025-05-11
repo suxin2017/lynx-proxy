@@ -1,13 +1,15 @@
 use utoipa::{PartialSchema, ToSchema, TupleUnit};
 
 #[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ResponseCode {
     Ok,
     ValidateError,
 }
 
 #[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
-pub struct ResponseDataWrapper<T> {
+#[serde(rename_all = "camelCase")]
+pub struct ResponseDataWrapper<T: PartialSchema> {
     pub code: ResponseCode,
     pub message: Option<String>,
     pub data: T,

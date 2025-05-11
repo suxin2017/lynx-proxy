@@ -6,6 +6,7 @@ use std::{
 use http::{Extensions, Request};
 use nanoid::nanoid;
 use tower::Service;
+use utoipa::ToSchema;
 
 #[derive(Debug, Clone)]
 pub struct TraceIdService<S> {

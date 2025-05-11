@@ -133,8 +133,8 @@ impl ProxyServer {
         let client_custom_certs = self.custom_certs.clone();
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
-        let message_event_store = MessageEventCache::default();
-        let message_event_cannel = Arc::new(MessageEventCannel::new(Arc::new(message_event_store)));
+        let message_event_store = Arc::new(MessageEventCache::default());
+        let message_event_cannel = Arc::new(MessageEventCannel::new(message_event_store.clone()));
         let db_connect = Arc::new(Database::connect(self.db_config.clone()).await?);
         Migrator::up(db_connect.as_ref(), None).await?;
 
@@ -154,6 +154,7 @@ impl ProxyServer {
                 let server_config = server_config.clone();
                 let message_event_cannel = message_event_cannel.clone();
                 let db_connect = db_connect.clone();
+                let message_event_store = message_event_store.clone();
 
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
@@ -163,6 +164,7 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(ClientAddr(client_addr)))
                         .layer(RequestExtensionLayer::new(server_ca_manager))
                         .layer(RequestExtensionLayer::new(server_config))
+                        .layer(RequestExtensionLayer::new(message_event_store))
                         .layer(RequestExtensionLayer::new(message_event_cannel))
                         .layer(TraceIdLayer)
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
