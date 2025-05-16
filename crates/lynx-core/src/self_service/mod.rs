@@ -68,5 +68,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
     return router
         .oneshot(req)
         .await
-        .map_err(|_| anyhow::anyhow!("Error handling request"));
+        .map_err(|_| {
+            anyhow::anyhow!("Error handling request")
+        });
 }

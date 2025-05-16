@@ -246,15 +246,11 @@ impl MessageEventCache {
     pub async fn get_new_requests(&self) -> Result<Vec<MessageEventStoreValue>> {
         let mut new_requests = Vec::new();
         for (_, value) in self.cache.iter() {
-            let rv = value.try_read().map_err(|e| {
-                anyhow::anyhow!(e).context("Failed to acquire read lock on cache value")
+            let mut wv = value.try_write().map_err(|e| {
+                anyhow::anyhow!(e).context("Failed to acquire write lock on cache value")
             })?;
-
-            if rv.is_new {
-                new_requests.push(rv.clone());
-                let mut wv = value.try_write().map_err(|e| {
-                    anyhow::anyhow!(e).context("Failed to acquire write lock on cache value")
-                })?;
+            if wv.is_new {
+                new_requests.push(wv.clone());
                 wv.is_new = false;
             }
         }

@@ -61,14 +61,9 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
   isLoading,
 }) => {
   const [activeKey, setActiveKey] = React.useState<string>('0');
-  useEffect(() => {}, [body]);
+  const contentIsEmpty = useMemo(() => body?.byteLength != null, [body]);
 
-  const websocketBodyArrayBuffer = useAsyncMemo(async () => {
-    const blob = new Blob(websocketBody?.map((item) => atob(item.data)));
-    return blob.arrayBuffer();
-  }, [websocketBody]);
   // new TextEncoder().encode
-  console.log(websocketBodyArrayBuffer, 'websocketBodyArrayBuffer');
   const contentTypeCheck = useMemo(() => {
     const contentTypeJson = !!contentType?.includes('application/json');
     const contentTypeImage = !!contentType?.includes('image');
@@ -166,12 +161,12 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
           label: 'Headers',
           children: <Headers data={headers} />,
         },
-        ifTrue(contentTypeJson, {
+        ifTrue(contentTypeJson && contentIsEmpty, {
           key: ContentPreviewType.Json,
           label: 'Json',
           children: <JsonPreview arrayBuffer={body} />,
         }),
-        ifTrue(contentTypeMedia, {
+        ifTrue(contentTypeMedia && contentIsEmpty, {
           key: ContentPreviewType.Media,
           label: mediaLabel,
           children: (
@@ -205,7 +200,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
         ifTrue(!contentTypeJson && !contentTypeMedia && !contentTypeCode, {
           key: ContentPreviewType.Text,
           label: 'Text',
-          children: <TextView arrayBuffer={websocketBodyArrayBuffer ?? body} />,
+          children: <TextView arrayBuffer={body} />,
         }),
         ifTrue(contentTypeMultiForm || contentTypeForm, {
           key: ContentPreviewType.Form,
@@ -221,14 +216,12 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
         {
           key: ContentPreviewType.Hex,
           label: 'Hex',
-          children: (
-            <HexViewer arrayBuffer={websocketBodyArrayBuffer ?? body} />
-          ),
+          children: <HexViewer arrayBuffer={body} />,
         },
       ],
       (item) => item != null,
     );
-  }, [body, contentType, contentTypeCheck, headers, websocketBodyArrayBuffer]);
+  }, [body, contentType, contentTypeCheck, headers]);
 
   return (
     <Tabs

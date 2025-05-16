@@ -1,50 +1,91 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Table } from 'antd';
+import { Button, Spin, Table } from 'antd';
 import type { TableProps } from 'antd';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { IRequestModel } from '@/api/models';
 import { useSize } from 'ahooks';
 import { useSelectRequest } from '../store/selectRequestStore';
 import { TableFilter } from '../TableFilter';
 import { useFilteredTableData } from '@/store/requestTableStore';
+import {
+  MessageEventStoreValue,
+  MessageEventTimings,
+} from '@/services/generated/utoipaAxum.schemas';
+import prettyMs from 'pretty-ms';
 
 dayjs.extend(duration);
+dayjs.extend(relativeTime);
 
 type ColumnsType<T extends object> = TableProps<T>['columns'];
 
-const columns: ColumnsType<IRequestModel> = [
+const columns: ColumnsType<MessageEventStoreValue> = [
   {
     title: '#',
     width: 50,
-    dataIndex: 'id',
+    dataIndex: 'traceId',
     align: 'center',
+    ellipsis: true,
   },
   {
-    title: 'Code',
+    title: 'Status',
     width: 80,
-    dataIndex: 'statusCode',
+    dataIndex: ['response', 'status'],
   },
-  { title: 'Status', width: 80, dataIndex: 'statusCode' },
-  { title: 'Schema', width: 80, dataIndex: 'schema' },
-  { title: 'Version', width: 80, dataIndex: 'version' },
+  {
+    title: 'Schema',
+    width: 80,
+    dataIndex: ['request', 'url'],
+    render: (url: string) => {
+      const protocol = new URL(url).protocol;
+      return <span>{protocol}</span>;
+    },
+  },
+  { title: 'Version', width: 80, dataIndex: ['request', 'version'] },
   {
     title: 'Method',
     width: 80,
-    dataIndex: 'method',
+    dataIndex: ['request', 'method'],
     key: 'method',
   },
   {
     title: 'Path',
     key: 'uri',
-    dataIndex: 'uri',
+    dataIndex: ['request', 'url'],
     ellipsis: { showTitle: true },
+  },
+  {
+    title: 'Path',
+    key: 'uri',
+    dataIndex: ['request', 'url'],
+    ellipsis: { showTitle: true },
+  },
+  {
+    title: 'type',
+    key: 'type',
+    dataIndex: ['response', 'headers', 'content-type'],
+  },
+  {
+    title: 'Time',
+    key: 'time',
+    dataIndex: ['timings'],
+    render: (timings: MessageEventTimings) => {
+      const { requestStart, requestEnd } = timings;
+
+      if (!requestStart || !requestEnd) {
+        return <Spin />;
+      }
+      const formattedDuration = prettyMs(requestEnd - requestStart);
+
+      return <span>{formattedDuration}</span>;
+    },
   },
 ];
 export const RequestTable: React.FC = () => {
-  const requestTable = useFilteredTableData()
+  const requestTable = useFilteredTableData();
   const { selectRequest, setSelectRequest } = useSelectRequest();
-
+  console.log('requestTable', requestTable);
   const ref = useRef(null);
   const size = useSize(ref);
   const tblRef: Parameters<typeof Table>[0]['ref'] = React.useRef(null);
@@ -54,7 +95,7 @@ export const RequestTable: React.FC = () => {
   useEffect(() => {
     if (autoScroll) {
       tblRef.current?.scrollTo({
-        key: requestTable[requestTable.length - 1]?.id,
+        key: requestTable[requestTable.length - 1]?.traceId,
       });
     }
   }, [autoScroll, requestTable]);
@@ -81,7 +122,7 @@ export const RequestTable: React.FC = () => {
           </div>
         )}
 
-        <Table<IRequestModel>
+        <Table<MessageEventStoreValue>
           ref={tblRef}
           sticky
           className="flex-1"
@@ -89,7 +130,7 @@ export const RequestTable: React.FC = () => {
           rowKey="id"
           size="small"
           rowClassName={(record) => {
-            if (selectRequest?.id === record.id) {
+            if (selectRequest?.traceId === record.traceId) {
               return 'cursor-pointer ant-table-row-selected';
             }
             return 'cursor-pointer';

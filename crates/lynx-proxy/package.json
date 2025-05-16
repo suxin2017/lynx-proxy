@@ -8,7 +8,8 @@
     "dev:mock": "cross-env MOCK=true rsbuild dev --open",
     "format": "prettier --write .",
     "lint": "eslint .",
-    "preview": "rsbuild preview"
+    "preview": "rsbuild preview",
+    "api": "orval"
   },
   "dependencies": {
     "@ant-design/cssinjs": "^1.22.1",
@@ -33,6 +34,7 @@
     "material-file-icons": "^2.4.0",
     "monaco-editor": "^0.52.2",
     "pretty-bytes": "^6.1.1",
+    "pretty-ms": "^9.2.0",
     "pretty-time": "^1.1.0",
     "prismjs": "^1.30.0",
     "query-string": "^9.1.1",
@@ -53,6 +55,7 @@
   "devDependencies": {
     "@eslint/compat": "^1.2.0",
     "@eslint/js": "^9.12.0",
+    "@faker-js/faker": "^9.8.0",
     "@rsbuild/core": "^1.2.7",
     "@rsbuild/plugin-react": "^1.0.7",
     "@tailwindcss/postcss": "^4.0.9",
@@ -62,6 +65,7 @@
     "@types/mockjs": "^1.0.10",
     "@types/node": "^22.10.8",
     "@types/pretty-time": "^1.1.5",
+    "@types/prismjs": "^1.26.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/react-virtualized": "^9.22.0",
@@ -71,6 +75,8 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "globals": "^15.11.0",
     "mockjs": "^1.1.0",
+    "msw": "^2.8.2",
+    "orval": "^7.9.0",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "rspack-plugin-mock": "^1.0.1",

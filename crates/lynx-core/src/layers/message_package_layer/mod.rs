@@ -65,6 +65,7 @@ pub async fn handle_message_event(
                     continue;
                 }
                 let value = value.unwrap();
+
                 let mut value = value.write().await;
                 if let Some(data) = data {
                     if let Some(req) = value.request_mut() {

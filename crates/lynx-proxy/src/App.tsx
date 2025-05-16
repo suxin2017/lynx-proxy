@@ -38,13 +38,15 @@ const App = () => {
       <StyleProvider layer>
         <ConfigProvider
           theme={{
+            cssVar: true,
+            hashed: false,
             token: {
               borderRadius: 2,
             },
-            algorithm: [theme.compactAlgorithm],
+            algorithm: [theme.compactAlgorithm, theme.darkAlgorithm],
           }}
         >
-          <AntdApp className='h-full w-full'>
+          <AntdApp className="h-full w-full">
             <RouterProvider router={router} />
           </AntdApp>
         </ConfigProvider>

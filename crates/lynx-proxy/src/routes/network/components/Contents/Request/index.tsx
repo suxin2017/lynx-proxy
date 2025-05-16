@@ -13,13 +13,9 @@ export const Request: React.FC<IContentsProps> = (_props) => {
     isWebsocketRequest ? selectRequest?.traceId : undefined,
   );
 
-  const { data, isLoading } = useGetRequestBodyQuery({
-    id: isWebsocketRequest ? undefined : selectRequest?.id,
-  });
-
-  const headers = get(selectRequest, 'header', {} as Record<string, string>);
+  const headers = selectRequest?.request?.headers;
   const contentType = !isWebsocketRequest
-    ? get(headers, 'Content-Type', '')
+    ? get(headers, 'content-type', '')
     : 'websocket';
 
   const websocketBody = websocketResource.filter(
@@ -27,11 +23,14 @@ export const Request: React.FC<IContentsProps> = (_props) => {
   );
   return (
     <ContentPreviewTabs
-      isLoading={isLoading}
+      isLoading={
+        selectRequest?.status !== 'Initial' &&
+        selectRequest?.status !== 'RequestStarted'
+      }
       title={'Request'}
       headers={headers}
       contentType={contentType}
-      body={data}
+      body={selectRequest?.request?.body as ArrayBuffer | undefined}
       websocketBody={websocketBody}
     />
   );

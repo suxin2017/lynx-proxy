@@ -2,11 +2,15 @@ use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::{Json, extract::State};
 use tracing::info;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::layers::message_package_layer::message_event_data::{MessageEventRequest, MessageEventResponse};
-use crate::layers::message_package_layer::message_event_store::{MessageEventStatus, MessageEventStoreValue, MessageEventTimings};
+use crate::layers::message_package_layer::message_event_data::{
+    MessageEventRequest, MessageEventResponse,
+};
+use crate::layers::message_package_layer::message_event_store::{
+    MessageEventStatus, MessageEventStoreValue, MessageEventTimings,
+};
 use crate::self_service::RouteState;
 use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
 use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
@@ -63,48 +67,47 @@ async fn toggle_capture(
     Ok(Json(empty_ok()))
 }
 
-#[derive(ToSchema, serde::Deserialize, serde::Serialize,Default)]
+#[derive(ToSchema, serde::Deserialize, serde::Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 struct RecordRequests {
     new_requests: Vec<MessageEventStoreValue>,
     patch_requests: Option<Vec<MessageEventStoreValue>>,
 }
 
-
-#[derive(ToSchema, serde::Deserialize, serde::Serialize)]
+#[derive(ToSchema, serde::Deserialize, serde::Serialize, IntoParams)]
 #[serde(rename_all = "camelCase")]
-struct GetRequestsData{
+struct GetRequestsData {
     trace_ids: Option<Vec<String>>,
 }
 
 #[utoipa::path(
-    post,
+    get,
     path = "/requests",
     tags = ["Net Request"],
     responses(
         (status = 200, description = "Successfully retrieved cached requests", body = ResponseDataWrapper<RecordRequests>),
         (status = 500, description = "Failed to get cached requests")
     ),
-    request_body = GetRequestsData,
-  
+   params(GetRequestsData),
 )]
 async fn get_cached_requests(
-    State(RouteState { db: _ ,net_request_cache }): State<RouteState>,
-    Json(_params): Json<GetRequestsData>,
+    State(RouteState {
+        db: _,
+        net_request_cache,
+    }): State<RouteState>,
+    Query(_params): Query<GetRequestsData>,
 ) -> Result<Json<ResponseDataWrapper<RecordRequests>>, StatusCode> {
     println!("get_cached_requests called");
-    let new_requests = net_request_cache
-        .get_new_requests()
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let new_requests = net_request_cache.get_new_requests().await.map_err(|e| {
+        tracing::error!("Failed to get new requests: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     // let patch_requests = net_request_cache.get_request_by_keys(params.trace_ids.unwrap_or_default()).await;
     info!("get_cached_requests new_requests: {:?}", new_requests);
-    Ok(Json(ok(
-        RecordRequests { 
-            new_requests, 
-            patch_requests: None
-        }
-    )))
+    Ok(Json(ok(RecordRequests {
+        new_requests,
+        patch_requests: None,
+    })))
 }
 
 pub fn router(state: RouteState) -> OpenApiRouter {

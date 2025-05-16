@@ -6,6 +6,7 @@ interface HexViewerProps {
 }
 
 const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
+  console.log('HexViewer', arrayBuffer);
   const data = useMemo(() => {
     if (!arrayBuffer) return null;
     return new Uint8Array(arrayBuffer);
@@ -45,14 +46,14 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
   const renderHeader = () => {
     const headers = Array.from({ length: 16 }, (_, i) => formatHex(i));
     return (
-      <div className="flex items-center border-b border-gray-300 text-gray-600 font-bold">
-        <span className="w-[8ch] text-right mr-4"></span>
+      <div className="flex items-center border-b border-gray-300 font-bold text-gray-600">
+        <span className="mr-4 w-[8ch] text-right"></span>
         {headers.map((header, idx) => (
           <span key={idx} className="w-6 text-center">
             {header}
           </span>
         ))}
-        <span className="flex-1 text-left pl-4">Decoded Text</span>
+        <span className="flex-1 pl-4 text-left">Decoded Text</span>
       </div>
     );
   };
@@ -71,13 +72,15 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
 
     return (
       <div key={key} style={style} className="flex items-center">
-        <span className="w-[8ch] text-right text-gray-500 mr-4 select-none">{offset}</span>
+        <span className="mr-4 w-[8ch] text-right text-gray-500 select-none">
+          {offset}
+        </span>
         {hexBytes.map((byte, idx) => {
           const globalIndex = index * 16 + idx;
           return (
             <span
               key={idx}
-              className={`w-6 text-center cursor-pointer `}
+              className={`w-6 cursor-pointer text-center`}
               onMouseDown={() => startSelection(globalIndex)}
               onMouseEnter={() => updateSelection(globalIndex)}
             >
@@ -113,7 +116,7 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
 
   return (
     <div
-      className="border border-gray-300 rounded-sm p-1 font-mono text-xs flex h-full flex-col"
+      className="flex h-full flex-col rounded-sm border border-gray-300 p-1 font-mono text-xs"
       onMouseUp={endSelection} // Finish selection
     >
       {renderHeader()}

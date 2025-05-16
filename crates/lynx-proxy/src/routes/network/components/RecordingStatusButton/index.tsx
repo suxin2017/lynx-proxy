@@ -1,53 +1,52 @@
 import React from 'react';
-import { RiRecordCircleFill } from '@remixicon/react';
+import {
+  RiPauseCircleFill,
+  RiPauseFill,
+  RiPlayCircleFill,
+  RiPlayFill,
+  RiRecordCircleFill,
+} from '@remixicon/react';
 import { Button } from 'antd';
 import { useChangeRecordStatus, useGetAppConfig } from '@/api/app';
 import { RecordStatusEnum } from '@/api/models';
+import {
+  useGetCaptureStatus,
+  useToggleCapture,
+} from '@/services/generated/net-request/net-request';
+import { RecordingStatus } from '@/services/generated/utoipaAxum.schemas';
 
-interface IRecordingStatusButtonProps { }
+interface IRecordingStatusButtonProps {}
 
 export const RecordingStatusButton: React.FC<
   IRecordingStatusButtonProps
 > = () => {
-  const { data: appConfigData } = useGetAppConfig();
-  const changeRecordStatus = useChangeRecordStatus();
-  const recordingStatus = appConfigData?.data?.recordingStatus;
+  const { data: netWorkCaptureStatusData, refetch } = useGetCaptureStatus();
+  const toggleCapture = useToggleCapture();
+  const recordingStatus = netWorkCaptureStatusData?.data.recordingStatus;
   return (
-    <div>
-      <Button
-        type="text"
-        size='small'
-        onClick={() => {
-          if (recordingStatus === RecordStatusEnum.StartRecording) {
-            changeRecordStatus.mutateAsync({
-              status: RecordStatusEnum.PauseRecording,
-            });
-          } else {
-            changeRecordStatus.mutateAsync({
-              status: RecordStatusEnum.StartRecording,
-            });
-          }
-        }}
-        icon={
-          <RiRecordCircleFill
-            size={16}
-            color={
-              recordingStatus === RecordStatusEnum.StartRecording
-                ? 'red'
-                : 'gray'
-            }
-          />
-        }
-        title={
-          recordingStatus === RecordStatusEnum.StartRecording
-            ? 'Stop Recording'
-            : 'Start Recording'
-        }
-      >
-        {recordingStatus === RecordStatusEnum.StartRecording
-          ? 'Recording'
-          : 'Paused'}
-      </Button>
-    </div>
+    <Button
+      type="text"
+      size="small"
+      onClick={async () => {
+        await toggleCapture.mutateAsync();
+        await refetch();
+      }}
+      icon={
+        recordingStatus === RecordingStatus.startRecording ? (
+          <RiPlayCircleFill size={16} color={'green'} />
+        ) : (
+          <RiPauseCircleFill size={16} color={'red'} />
+        )
+      }
+      title={
+        recordingStatus === RecordingStatus.startRecording
+          ? 'Stop Recording'
+          : 'Start Recording'
+      }
+    >
+      {recordingStatus === RecordingStatus.startRecording
+        ? 'Recording'
+        : 'Paused'}
+    </Button>
   );
 };

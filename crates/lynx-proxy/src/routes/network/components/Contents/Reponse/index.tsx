@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useGetResponseBodyQuery, useGetResponseQuery } from '@/api/request';
 import { ContentPreviewTabs } from '../ContentPreviewTabs';
 import { get } from 'lodash';
@@ -9,21 +9,16 @@ interface IContentsProps {}
 
 export const Response: React.FC<IContentsProps> = (_props) => {
   const { selectRequest, isWebsocketRequest } = useSelectRequest();
-  const { data: res, isLoading: responseDataLoading } = useGetResponseQuery({
-    requestId: selectRequest?.id,
-  });
+
   const websocketResource = useWebSocketResourceByTraceId(
     isWebsocketRequest ? selectRequest?.traceId : undefined,
   );
 
-  const { data: responseData } = res ?? {};
-  const { data: body, isLoading: bodyDataLoading } = useGetResponseBodyQuery({
-    requestId: isWebsocketRequest ? undefined : selectRequest?.id,
-  });
+  const responseData = selectRequest?.response;
 
-  const headers = get(responseData, 'header', {} as Record<string, string>);
+  const headers = responseData?.headers;
   const contentType = !isWebsocketRequest
-    ? get(headers, 'Content-Type', '')
+    ? get(headers, 'content-type', '')
     : 'websocket';
 
   const websocketBody = websocketResource.filter(
@@ -34,8 +29,11 @@ export const Response: React.FC<IContentsProps> = (_props) => {
       title={'Response'}
       headers={headers}
       contentType={contentType}
-      body={body}
-      isLoading={bodyDataLoading || responseDataLoading}
+      body={responseData?.body as ArrayBuffer | undefined}
+      isLoading={
+        selectRequest?.status !== 'Initial' &&
+        selectRequest?.status !== 'RequestStarted'
+      }
       websocketBody={websocketBody}
     />
   );
