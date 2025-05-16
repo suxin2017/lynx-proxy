@@ -8,6 +8,7 @@ import { StyleProvider } from '@ant-design/cssinjs';
 import { routeTree } from './routeTree.gen';
 import { ConfigProvider, theme, App as AntdApp } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const hashHistory = createHashHistory();
 // Set up a Router instance
@@ -32,7 +33,33 @@ const queryClient = new QueryClient({
   },
 });
 
+const getIsDark = () => {
+  if (typeof window !== 'undefined') {
+    return document.documentElement.classList.contains('dark');
+  }
+  return false;
+};
+
 const App = () => {
+  const [isDark, setIsDark] = useState(getIsDark());
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(getIsDark());
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const antdAlgorithm = useMemo(() => {
+    return isDark
+      ? [theme.compactAlgorithm, theme.darkAlgorithm]
+      : [theme.compactAlgorithm];
+  }, [isDark]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <StyleProvider layer>
@@ -42,8 +69,9 @@ const App = () => {
             hashed: false,
             token: {
               borderRadius: 2,
+              colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
             },
-            algorithm: [theme.compactAlgorithm, theme.darkAlgorithm],
+            algorithm: antdAlgorithm,
           }}
         >
           <AntdApp className="h-full w-full">

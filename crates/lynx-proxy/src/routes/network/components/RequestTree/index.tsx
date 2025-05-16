@@ -23,12 +23,13 @@ export const RequestTree: React.FC = () => {
 
   const { setSelectRequest } = useSelectRequest();
   return (
-    <div ref={ref} className="h-full w-full bg-white">
+    <div ref={ref} className="h-full w-full dark:bg-zinc-900">
       <Tree
         height={size?.height}
         width={size?.width}
         data={treeData}
         indent={24}
+        rowHeight={24}
         disableDrag
         openByDefault={false}
         onSelect={(node) => {
@@ -70,9 +71,9 @@ const Node = ({
       {!isLeaf && (
         <span className="flex items-center">
           {node.isClosed ? (
-            <RiArrowDropRightLine size={14} />
+            <RiArrowDropRightLine size={18} />
           ) : (
-            <RiArrowDropDownLine size={14} />
+            <RiArrowDropDownLine size={18} />
           )}
         </span>
       )}
@@ -81,8 +82,8 @@ const Node = ({
           <MimeTypeIcon
             size={14}
             mimeType={get(
-              node?.data?.record?.header,
-              keys(node?.data?.record?.header).find(
+              node?.data?.record?.request?.headers,
+              keys(node?.data?.record?.request?.headers).find(
                 (item) => item.toLowerCase() === 'content-type',
               ) ?? 'un-content-type',
             )}

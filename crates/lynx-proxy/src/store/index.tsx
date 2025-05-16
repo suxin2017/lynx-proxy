@@ -110,10 +110,13 @@ export const useUpdateRequestLog = () => {
       );
     }
     if (chacheNewData.data?.data.newRequests) {
+      // @ts-expect-error
       dispatch(appendRequest(chacheNewData.data?.data?.newRequests));
+      // @ts-expect-error
       dispatch(appendTreeNode(chacheNewData.data?.data?.newRequests));
     }
     if (chacheNewData.data?.data.patchRequests) {
+      // @ts-expect-error
       dispatch(replaceRequest(chacheNewData.data?.data?.patchRequests));
     }
   };

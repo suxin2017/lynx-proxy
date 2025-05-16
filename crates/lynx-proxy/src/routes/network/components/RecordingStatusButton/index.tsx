@@ -26,16 +26,21 @@ export const RecordingStatusButton: React.FC<
   return (
     <Button
       type="text"
-      size="small"
       onClick={async () => {
         await toggleCapture.mutateAsync();
         await refetch();
       }}
       icon={
         recordingStatus === RecordingStatus.startRecording ? (
-          <RiPlayCircleFill size={16} color={'green'} />
+          <RiPlayCircleFill
+            size={16}
+            className="align-bottom text-emerald-500 dark:text-emerald-400"
+          />
         ) : (
-          <RiPauseCircleFill size={16} color={'red'} />
+          <RiPauseCircleFill
+            size={16}
+            className="align-bottom text-gray-400 dark:text-gray-500"
+          />
         )
       }
       title={

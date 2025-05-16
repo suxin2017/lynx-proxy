@@ -21,13 +21,33 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-}
+    scrollbar-width: thin;
+  }
 
 body {
   margin: 0;
+  background-color: #f8fafc;
+  color: #222;
+  --ant-color-bg-base: #fff;
+}
+
+html.dark body {
+  color: #e5e7eb;
+  background-color: #0d0d0d;
+
 }
 
 .ant-table-tbody-virtual-scrollbar,
 .ant-tree-list-scrollbar {
   width: 4px !important;
+}
+
+
+
+body, #root {
+  scrollbar-color: #c1c1c1 #f1f1f1;
+  transition: background-color 0.3s, color 0.3s;
+}
+html.dark body, html.dark #root  {
+  scrollbar-color: #444857 #23272e;
 }

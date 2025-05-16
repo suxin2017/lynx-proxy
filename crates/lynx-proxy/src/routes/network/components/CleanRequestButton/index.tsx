@@ -5,23 +5,24 @@ import { RiBrush2Line } from '@remixicon/react';
 import { Button } from 'antd';
 import React from 'react';
 import { useDispatch } from 'react-redux';
+import { useSelectRequest } from '../store/selectRequestStore';
 
 export const CleanRequestButton: React.FC = () => {
-  const { mutateAsync: clearRequestLog, isPending } = useClearRequestLog();
   const dispatch = useDispatch();
+
+  const { setSelectRequest } = useSelectRequest();
 
   return (
     <Button
       type="text"
-      loading={isPending}
-      disabled={isPending}
       size="small"
+      className="text-orange-500 hover:text-orange-600 dark:text-yellow-400 dark:hover:text-yellow-300"
       onClick={async () => {
-        await clearRequestLog();
-        dispatch(clearRequestTree())
-        dispatch(clearRequestTable())
+        setSelectRequest(null);
+        dispatch(clearRequestTree());
+        dispatch(clearRequestTable());
       }}
-      icon={<RiBrush2Line size={16} className="text-yellow-700" />}
+      icon={<RiBrush2Line size={16} />}
     >
       Clear
     </Button>

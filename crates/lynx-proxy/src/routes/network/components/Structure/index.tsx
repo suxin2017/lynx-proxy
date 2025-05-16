@@ -20,8 +20,8 @@ export const Structure: React.FC<IStructureProps> = () => {
   }, [size?.width]);
 
   return (
-    <div className="flex-1 animate-fade-in">
-      <div ref={ref} className="h-full bg-white">
+    <div className="animate-fade-in flex-1">
+      <div ref={ref} className="h-full">
         {size && (
           <Splitter
             onResize={(sizes) => {
@@ -30,7 +30,7 @@ export const Structure: React.FC<IStructureProps> = () => {
               }
               setSizes(sizes);
             }}
-            className="h-full max-h-screen bg-white"
+            className="h-full max-h-screen"
             layout="horizontal"
           >
             <Splitter.Panel
@@ -43,7 +43,7 @@ export const Structure: React.FC<IStructureProps> = () => {
               <RequestTree />
             </Splitter.Panel>
             <Splitter.Panel size={sizes[1]} min={'40%'} max="90%">
-              <div className='flex flex-col h-full'>
+              <div className="flex h-full flex-col">
                 <Toolbar />
                 <Detail />
               </div>

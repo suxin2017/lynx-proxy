@@ -25,16 +25,15 @@ export function ShowTypeSegmented() {
   );
 
   return (
-    <div className='flex items-center min-w-56'>
+    <div className="flex min-w-56 items-center">
       <Segmented
-        className="bg-white"
         options={options}
         value={state}
         onChange={(value) => {
           setState(value);
         }}
       />
-      <div className='text-xs font-light'>
+      <div className="text-xs font-light">
         <Tag color="blue">Requests: {requestLogLength}</Tag>
       </div>
     </div>
