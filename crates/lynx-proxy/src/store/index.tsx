@@ -11,6 +11,7 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { appendLog, websocketResourceReducer } from './websocketResourceStore';
 import { useGetCachedRequests } from '@/services/generated/net-request/net-request';
+import { useInterval } from 'ahooks';
 
 export const store = configureStore({
   reducer: {
@@ -102,7 +103,6 @@ export const useUpdateRequestLog = () => {
       dispatch(
         removeOldRequest({
           maxLogSize,
-          clearLogSize,
         }),
       );
     }

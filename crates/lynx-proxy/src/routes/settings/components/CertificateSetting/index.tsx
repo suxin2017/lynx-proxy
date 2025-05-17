@@ -60,13 +60,12 @@ export const CertificatesSetting: React.FC = () => {
           showIcon
         />
       )}
-      <Typography.Title level={4} className="mt-3">
+      <Typography.Title level={5} className="mt-3">
         {t('settings.certificate.certPath')}
       </Typography.Title>
-      <Space size={8}>
-        <Input size="large" value={certPathData?.data} disabled />
+      <div className="flex w-full items-center gap-4">
+        <Input className="flex-1" value={certPathData?.data} disabled />
         <Button
-          size="large"
           icon={<RiFileCopyLine size={16} />}
           onClick={() => {
             if (certPathData?.data) {
@@ -76,7 +75,6 @@ export const CertificatesSetting: React.FC = () => {
           }}
         />
         <Button
-          size="large"
           onClick={() => {
             refetch();
           }}
@@ -84,12 +82,13 @@ export const CertificatesSetting: React.FC = () => {
         >
           {t('settings.certificate.checkStatus')}
         </Button>
-      </Space>
-      <Typography.Title level={4} className="mt-3">
+      </div>
+      <Typography.Title level={5} className="mt-3">
         {t('settings.certificate.installCert')}
       </Typography.Title>
       <Space size={8} direction="vertical" className="flex w-full items-center">
         <QRCode
+          size={256}
           value={AXIOS_INSTANCE.getUri() + getDownloadCertificateQueryKey()[0]}
         />
         <Button type="link">

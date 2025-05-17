@@ -10,8 +10,6 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
 
-import { LanguageSelector } from '../LanguageSelector';
-
 export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -28,11 +26,6 @@ export const SideBar: React.FC = (_props) => {
       key: '/network',
       title: t('sideBar.network'),
       icon: <RiPlanetFill className="text-slate-600" size={24} />,
-    },
-    {
-      key: '/certificates',
-      title: t('sideBar.certificates'),
-      icon: <RiMedalFill className="text-slate-600" size={24} />,
     },
   ];
   const bottomMenuConfig = [
@@ -80,7 +73,6 @@ export const SideBar: React.FC = (_props) => {
         ))}
       </div>
       <div className="flex flex-col">
-        <LanguageSelector />
         <Button
           type="text"
           className="flex h-14 w-full items-center justify-items-center"

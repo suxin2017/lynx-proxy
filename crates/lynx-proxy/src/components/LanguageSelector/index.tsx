@@ -15,9 +15,7 @@ export const LanguageSelector: React.FC = () => {
     <Select
       value={i18n.language}
       onChange={handleLanguageChange}
-      className="w-20"
-      size="small"
-      bordered={false}
+      className="w-full"
     >
       <Option value="en">EN</Option>
       <Option value="zh-CN">中文</Option>

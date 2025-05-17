@@ -42,56 +42,66 @@ export const RequestTable: React.FC = () => {
       title: t('network.table.status'),
       width: 80,
       dataIndex: ['response', 'status'],
+      ellipsis: true,
+    },
+    {
+      title: t('network.table.path'),
+      key: 'uri',
+      ellipsis: true,
+      dataIndex: ['request', 'url'],
     },
     {
       title: t('network.table.schema'),
       width: 80,
       dataIndex: ['request', 'url'],
+      ellipsis: true,
       render: (url: string, raw) => {
         if (!url) {
           return '-';
         }
-        const protocol = new URL(url).protocol;
+        try {
+          const protocol = new URL(url).protocol;
 
-        if (
-          raw.request?.headers['connection'] === 'Upgrade' &&
-          raw.request?.headers['upgrade'] === 'websocket' &&
-          raw.request?.headers['sec-websocket-key'] !== undefined
-        ) {
-          if (protocol === 'http:') {
-            return <span>ws</span>;
+          if (
+            raw.request?.headers['connection'] === 'Upgrade' &&
+            raw.request?.headers['upgrade'] === 'websocket' &&
+            raw.request?.headers['sec-websocket-key'] !== undefined
+          ) {
+            if (protocol === 'http:') {
+              return <span>ws</span>;
+            }
+            if (protocol === 'https:') {
+              return <span>wss</span>;
+            }
           }
-          if (protocol === 'https:') {
-            return <span>wss</span>;
-          }
+
+          return <span>{protocol}</span>;
+        } catch (e) {
+          return '-';
         }
-
-        return <span>{protocol}</span>;
       },
     },
     {
       title: t('network.table.version'),
       width: 80,
+      ellipsis: true,
       dataIndex: ['request', 'version'],
     },
     {
       title: t('network.table.method'),
       width: 80,
+      ellipsis: true,
       dataIndex: ['request', 'method'],
       key: 'method',
     },
-    {
-      title: t('network.table.path'),
-      key: 'uri',
-      dataIndex: ['request', 'url'],
-      ellipsis: { showTitle: true },
-    },
+
     {
       title: t('network.table.type'),
       key: 'type',
+      ellipsis: true,
       dataIndex: ['response', 'headers', 'content-type'],
       render: (type: string, raw) => {
-        if (raw.request?.headers['connection'] === 'Upgrade') {
+        if (raw.request?.headers?.['connection'] === 'Upgrade') {
           return <span>Upgrade</span>;
         }
         if (!type) {
@@ -110,7 +120,7 @@ export const RequestTable: React.FC = () => {
         const { requestStart, requestEnd } = timings;
 
         if (!requestStart || !requestEnd) {
-          return <Spin />;
+          return <Spin size="small" />;
         }
         const formattedDuration = prettyMs(requestEnd - requestStart);
 
@@ -167,8 +177,7 @@ export const RequestTable: React.FC = () => {
               setSelectRequest(record);
             },
           })}
-          virtual
-          scroll={{ x: 800, y: size?.height ? size.height - 66 : 400 }}
+          scroll={{ x: 800, y: size?.height ? size.height - 80 : 400 }}
           pagination={false}
           dataSource={requestTable}
         />

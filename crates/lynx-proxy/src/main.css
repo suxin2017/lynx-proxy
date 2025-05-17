@@ -37,11 +37,6 @@ html.dark body {
 
 }
 
-.ant-table-tbody-virtual-scrollbar,
-.ant-tree-list-scrollbar {
-  width: 4px !important;
-}
-
 
 
 body, #root {

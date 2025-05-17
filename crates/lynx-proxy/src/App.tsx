@@ -55,24 +55,24 @@ const App = () => {
   }, []);
 
   const antdAlgorithm = useMemo(() => {
-    return isDark
-      ? [theme.compactAlgorithm, theme.darkAlgorithm]
-      : [theme.compactAlgorithm];
+    return isDark ? [theme.darkAlgorithm] : [];
   }, [isDark]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <StyleProvider layer>
         <ConfigProvider
-          theme={{
-            cssVar: true,
-            hashed: false,
-            token: {
-              borderRadius: 6,
-              colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
-            },
-            algorithm: antdAlgorithm,
-          }}
+          theme={
+            {
+              // cssVar: true,
+              // hashed: false,
+              // token: {
+              //   borderRadius: 6,
+              //   colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
+              // },
+              // algorithm: antdAlgorithm,
+            }
+          }
         >
           <AntdApp className="h-full w-full">
             <RouterProvider router={router} />

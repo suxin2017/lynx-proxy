@@ -22,7 +22,6 @@ export const CertInstallDesc = () => {
     <Space direction="vertical" size="large" className="w-full">
       <Segmented
         block
-        size="large"
         value={platform}
         onChange={(value) => setPlatform(value as Platform)}
         options={[
@@ -58,11 +57,12 @@ export const CertInstallDesc = () => {
         ]}
       />
       <div>
-        <Typography.Title level={4} className="m-0">
+        <Typography.Title level={5} className="m-0">
           {t('settings.certificate.install.title')}
         </Typography.Title>
         <Steps
           direction="vertical"
+          size="small"
           items={getSteps(platform)}
           className="mt-4"
         />

@@ -6,6 +6,7 @@
       "certificates": "证书",
       "network": "网络"
     },
+
     "certificate": {
       "title": "证书管理",
       "subtitle": "管理HTTPS抓包所需的SSL证书",
@@ -79,6 +80,28 @@
             "description": "打开\"设置\" → \"安全\" → \"更多安全设置\" → \"加密和凭据\" → \"安装证书\" → \"CA证书\"，选择下载的证书文件进行安装"
           }
         }
+      }
+    }
+  },
+  "networkSetting": {
+    "title": "网络设置",
+    "subTitle": "配置应用程序的网络设置",
+    "switch": "开关",
+    "host": "主机地址",
+    "port": "端口",
+    "operation": "操作",
+    "add": "添加",
+    "save": "保存设置",
+    "reset": "重置",
+    "captureHttps": {
+      "title": "捕获HTTPS请求",
+      "description": "捕获HTTPS请求需要安装证书，请确保已经安装证书",
+      "status": "当前状态",
+      "filter": {
+        "title": "捕获过滤器",
+        "description": "捕获过滤器用于设置捕获请求的规则，可以使用Glob默认来匹配请求的URL",
+        "includeDomains": "包含的域名",
+        "excludeDomains": "排除的域名"
       }
     }
   },

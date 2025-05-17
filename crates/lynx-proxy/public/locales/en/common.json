@@ -1,4 +1,28 @@
 {
+  "networkSetting": {
+    "title": "Network Settings",
+    "subTitle": "Configure network settings for the application",
+    "switch": "Switch",
+    "host": "Host Address",
+    "port": "Port",
+    "operation": "Action",
+    "add": "Add",
+    "save": "Save Settings",
+    "reset": "Reset",
+    "captureHttps": {
+      "title": "Capture HTTPS Requests",
+      "description": "Capturing HTTPS requests requires a certificate. Please ensure it's installed",
+      "status": "Current Status",
+      "filter": {
+        "title": "Capture Filter",
+        "description": "Capture filters are used to set rules for capturing requests. You can use Glob patterns to match request URLs",
+        "includeDomains": "Include Domains",
+        "excludeDomains": "Exclude Domains",
+        "invalidHost": "Invalid host",
+        "invalidPort": "Invalid port"
+      }
+    }
+  },
   "settings": {
     "title": "Settings",
     "menu": {
@@ -79,6 +103,23 @@
             "description": "Go to \"Settings\" → \"Security\" → \"More Security Settings\" → \"Encryption & Credentials\" → \"Install Certificate\" → \"CA Certificate\", select the downloaded certificate file"
           }
         }
+      }
+    },
+    "general": {
+      "title": "General Settings",
+      "subTitle": "Configure basic behavior and appearance of the application",
+      "language": "Language Selection",
+      "maxLogSize": {
+        "title": "Maximum Log Size",
+        "description": "Set the maximum number of logs. When exceeded, the oldest logs will be removed",
+        "validation": {
+          "required": "Please enter the maximum log size",
+          "range": "Maximum log size must be between 60 and 6000"
+        }
+      },
+      "actions": {
+        "save": "Save Settings",
+        "reset": "Reset"
       }
     }
   },

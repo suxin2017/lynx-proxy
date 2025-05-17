@@ -46,12 +46,9 @@ const requestTableSlice = createSlice({
       state,
       action: PayloadAction<{
         maxLogSize: number;
-        clearLogSize: number;
       }>,
     ) => {
-      state.requests = state.requests.slice(
-        -(action.payload.maxLogSize - action.payload.clearLogSize),
-      );
+      state.requests = state.requests.slice(-action.payload.maxLogSize);
     },
   },
 });
