@@ -134,6 +134,7 @@ impl ProxyServer {
     }
 
     async fn bind_hyper(&self, listener: TcpListener) -> Result<()> {
+        let access_addr_list = Arc::new(self.access_addr_list.clone());
         let client_custom_certs = self.custom_certs.clone();
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
@@ -166,7 +167,7 @@ impl ProxyServer {
                 let message_event_cannel = message_event_cannel.clone();
                 let db_connect = db_connect.clone();
                 let message_event_store = message_event_store.clone();
-
+                let access_addr_list = access_addr_list.clone();
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
                     let svc = ServiceBuilder::new()
@@ -177,6 +178,7 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(server_config))
                         .layer(RequestExtensionLayer::new(message_event_store))
                         .layer(RequestExtensionLayer::new(message_event_cannel))
+                        .layer(RequestExtensionLayer::new(access_addr_list))
                         .layer(TraceIdLayer)
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)

@@ -7,10 +7,8 @@ import {
   requestTableReducer,
   useRequestLogCount,
 } from './requestTableStore';
-import { fetchRequest } from '@/api/request';
 import { useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
-import { useGetAppConfig } from '@/api/app';
 import { appendLog, websocketResourceReducer } from './websocketResourceStore';
 import { useGetCachedRequests } from '@/services/generated/net-request/net-request';
 
@@ -40,7 +38,6 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
 }
 
 export const useUpdateRequestLog = () => {
-  const { data: appConfigData } = useGetAppConfig();
   const cacheRequests = useGetCachedRequests({});
 
   const chacheNewData = useMemo(() => {
@@ -98,7 +95,7 @@ export const useUpdateRequestLog = () => {
   }, [cacheRequests.data?.data]);
   const dispatch = useDispatch();
   const requestLogCount = useRequestLogCount();
-  const { maxLogSize = 1000, clearLogSize = 100 } = appConfigData?.data ?? {};
+  const { maxLogSize = 1000, clearLogSize = 100 } = {};
 
   const handleCacheRequests = () => {
     if (requestLogCount >= maxLogSize) {
@@ -110,12 +107,15 @@ export const useUpdateRequestLog = () => {
       );
     }
     if (chacheNewData.data?.data.newRequests) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       dispatch(appendRequest(chacheNewData.data?.data?.newRequests));
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       dispatch(appendTreeNode(chacheNewData.data?.data?.newRequests));
     }
     if (chacheNewData.data?.data.patchRequests) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       dispatch(replaceRequest(chacheNewData.data?.data?.patchRequests));
     }

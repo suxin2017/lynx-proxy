@@ -1,4 +1,3 @@
-import { useClearRequestLog } from '@/api/request';
 import { clearRequestTable } from '@/store/requestTableStore';
 import { clearRequestTree } from '@/store/requestTreeStore';
 import { RiBrush2Line } from '@remixicon/react';

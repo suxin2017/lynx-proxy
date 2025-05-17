@@ -18,57 +18,63 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
+import type { ResponseDataWrapperBaseInfo } from '../utoipaAxum.schemas';
+
 import { customInstance } from '../../customInstance';
 
-export const getHealth = (signal?: AbortSignal) => {
-  return customInstance<string>({ url: `/health`, method: 'GET', signal });
+export const getBaseInfo = (signal?: AbortSignal) => {
+  return customInstance<ResponseDataWrapperBaseInfo>({
+    url: `/base_info/base_info`,
+    method: 'GET',
+    signal,
+  });
 };
 
-export const getGetHealthQueryKey = () => {
-  return [`/health`] as const;
+export const getGetBaseInfoQueryKey = () => {
+  return [`/base_info/base_info`] as const;
 };
 
-export const getGetHealthQueryOptions = <
-  TData = Awaited<ReturnType<typeof getHealth>>,
-  TError = unknown,
+export const getGetBaseInfoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBaseInfo>>,
+  TError = void,
 >(options?: {
   query?: Partial<
-    UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>
+    UseQueryOptions<Awaited<ReturnType<typeof getBaseInfo>>, TError, TData>
   >;
 }) => {
   const { query: queryOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetHealthQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getGetBaseInfoQueryKey();
 
-  const queryFn: QueryFunction<Awaited<ReturnType<typeof getHealth>>> = ({
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getBaseInfo>>> = ({
     signal,
-  }) => getHealth(signal);
+  }) => getBaseInfo(signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getHealth>>,
+    Awaited<ReturnType<typeof getBaseInfo>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type GetHealthQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getHealth>>
+export type GetBaseInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBaseInfo>>
 >;
-export type GetHealthQueryError = unknown;
+export type GetBaseInfoQueryError = void;
 
-export function useGetHealth<
-  TData = Awaited<ReturnType<typeof getHealth>>,
-  TError = unknown,
+export function useGetBaseInfo<
+  TData = Awaited<ReturnType<typeof getBaseInfo>>,
+  TError = void,
 >(
   options: {
     query: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getBaseInfo>>, TError, TData>
     > &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getHealth>>,
+          Awaited<ReturnType<typeof getBaseInfo>>,
           TError,
-          Awaited<ReturnType<typeof getHealth>>
+          Awaited<ReturnType<typeof getBaseInfo>>
         >,
         'initialData'
       >;
@@ -77,19 +83,19 @@ export function useGetHealth<
 ): DefinedUseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetHealth<
-  TData = Awaited<ReturnType<typeof getHealth>>,
-  TError = unknown,
+export function useGetBaseInfo<
+  TData = Awaited<ReturnType<typeof getBaseInfo>>,
+  TError = void,
 >(
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getBaseInfo>>, TError, TData>
     > &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getHealth>>,
+          Awaited<ReturnType<typeof getBaseInfo>>,
           TError,
-          Awaited<ReturnType<typeof getHealth>>
+          Awaited<ReturnType<typeof getBaseInfo>>
         >,
         'initialData'
       >;
@@ -98,13 +104,13 @@ export function useGetHealth<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useGetHealth<
-  TData = Awaited<ReturnType<typeof getHealth>>,
-  TError = unknown,
+export function useGetBaseInfo<
+  TData = Awaited<ReturnType<typeof getBaseInfo>>,
+  TError = void,
 >(
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getBaseInfo>>, TError, TData>
     >;
   },
   queryClient?: QueryClient,
@@ -112,20 +118,20 @@ export function useGetHealth<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 
-export function useGetHealth<
-  TData = Awaited<ReturnType<typeof getHealth>>,
-  TError = unknown,
+export function useGetBaseInfo<
+  TData = Awaited<ReturnType<typeof getBaseInfo>>,
+  TError = void,
 >(
   options?: {
     query?: Partial<
-      UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>
+      UseQueryOptions<Awaited<ReturnType<typeof getBaseInfo>>, TError, TData>
     >;
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getGetHealthQueryOptions(options);
+  const queryOptions = getGetBaseInfoQueryOptions(options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

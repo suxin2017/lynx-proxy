@@ -1,9 +1,9 @@
-import { useGetAppConfig, useSaveSSLConfig } from '@/api/app';
 import { IAppConfigModel } from '@/api/models';
 import { RiAddLine, RiDeleteBinLine } from '@remixicon/react';
 import { Form, Switch, Input, Button, Typography, InputNumber } from 'antd';
 import { FormListProps } from 'antd/es/form';
 import React from 'react';
+import { CommonCard } from '../CommonCard';
 
 const defaultSSLConfig = {
   switch: true,
@@ -100,59 +100,47 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
   );
 };
 
-export const SSLProxySetting: React.FC = () => {
-  const { data: appConfig, isLoading } = useGetAppConfig();
-  const { captureSSL, sslConfig } = appConfig?.data || ({} as IAppConfigModel);
-
-  const { mutateAsync: saveSSLConfig, isPending } = useSaveSSLConfig();
-
+export const NetworkSetting: React.FC = () => {
   const [form] = Form.useForm<IAppConfigModel>();
 
-  if (isLoading) {
-    return null;
-  }
   return (
-    <Form
-      className="w-full px-6"
-      layout="vertical"
-      form={form}
-      initialValues={{
-        sslConfig,
-        captureSSL,
-      }}
-      onFinish={async ({ captureSSL, sslConfig }) => {
-        await saveSSLConfig({
-          captureSSL,
-          includeDomains: sslConfig.includeDomains ?? [],
-          excludeDomains: sslConfig.excludeDomains ?? [],
-        });
-      }}
+    <CommonCard
+      title="Network Setting"
+      subTitle="Configure network settings for the application"
     >
-      <Typography.Title level={4}>SSL Proxying Setting</Typography.Title>
-      <Form.Item
-        layout="horizontal"
-        colon={false}
-        name={'captureSSL'}
-        valuePropName="checked"
-        label={<span>Enable SSL Proxying</span>}
+      <Form
+        className="w-full px-6"
+        layout="vertical"
+        form={form}
+        initialValues={{}}
+        // onFinish={async ({ captureSSL, sslConfig }) => {}}
       >
-        <Switch className="w-8" size="small" />
-      </Form.Item>
-      <Form.Item
-        label={<Typography.Title level={5}>Include Domain</Typography.Title>}
-      >
-        <IncludeDomainList name={['sslConfig', 'includeDomains']} />
-      </Form.Item>
-      <Form.Item
-        label={<Typography.Title level={5}>Exclude Domain</Typography.Title>}
-      >
-        <IncludeDomainList name={['sslConfig', 'excludeDomains']} />
-      </Form.Item>
-      <Form.Item className="flex justify-end">
-        <Button disabled={isPending} type="primary" htmlType="submit">
-          Save
-        </Button>
-      </Form.Item>
-    </Form>
+        <Typography.Title level={4}>SSL Proxying Setting</Typography.Title>
+        <Form.Item
+          layout="horizontal"
+          colon={false}
+          name={'captureSSL'}
+          valuePropName="checked"
+          label={<span>Enable SSL Proxying</span>}
+        >
+          <Switch className="w-8" size="small" />
+        </Form.Item>
+        <Form.Item
+          label={<Typography.Title level={5}>Include Domain</Typography.Title>}
+        >
+          <IncludeDomainList name={['sslConfig', 'includeDomains']} />
+        </Form.Item>
+        <Form.Item
+          label={<Typography.Title level={5}>Exclude Domain</Typography.Title>}
+        >
+          <IncludeDomainList name={['sslConfig', 'excludeDomains']} />
+        </Form.Item>
+        <Form.Item className="flex justify-end">
+          <Button type="primary" htmlType="submit">
+            Save
+          </Button>
+        </Form.Item>
+      </Form>
+    </CommonCard>
   );
 };

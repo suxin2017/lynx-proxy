@@ -1,0 +1,110 @@
+{
+  "settings": {
+    "title": "Settings",
+    "menu": {
+      "general": "General Settings",
+      "certificates": "Certificates",
+      "network": "Network"
+    },
+    "certificate": {
+      "title": "Certificate Management",
+      "subtitle": "Manage SSL certificates required for HTTPS capturing",
+      "installed": {
+        "title": "Certificate Installed Successfully",
+        "description": "Your system trusts this certificate and can now capture HTTPS requests."
+      },
+      "notInstalled": {
+        "title": "Certificate Installation Required",
+        "description": "To capture HTTPS requests, you need to install and trust this certificate in your system or browser."
+      },
+      "certPath": "Certificate Path",
+      "copySuccess": "Certificate path copied",
+      "checkStatus": "Check Status",
+      "installCert": "Install Certificate",
+      "downloadCert": "Download Certificate",
+      "install": {
+        "title": "Certificate Installation Steps",
+        "platform": {
+          "windows": "Windows",
+          "macos": "MacOS",
+          "mobile": "Mobile Devices"
+        },
+        "windows": {
+          "step1": {
+            "title": "Open Certificate",
+            "description": "Double-click the downloaded certificate file (.crt)"
+          },
+          "step2": {
+            "title": "Select Certificate Store",
+            "description": "Click \"Install Certificate\" → Select \"Local Machine\" → Click \"Next\""
+          },
+          "step3": {
+            "title": "Import Root Certificate",
+            "description": "Select \"Place all certificates in the following store\" → Click \"Browse\" → Select \"Trusted Root Certification Authorities\" → Click \"Next\""
+          },
+          "step4": {
+            "title": "Complete Installation",
+            "description": "Click \"Finish\", then click \"Yes\" in the security warning dialog"
+          }
+        },
+        "macos": {
+          "step1": {
+            "title": "Open Keychain Access",
+            "description": "Search for and open \"Keychain Access\" in Launchpad"
+          },
+          "step2": {
+            "title": "Import Certificate",
+            "description": "Select \"File\" → \"Import Items\", choose the downloaded certificate"
+          },
+          "step3": {
+            "title": "Trust Certificate",
+            "description": "Double-click the imported certificate → Expand \"Trust\" → Set \"When using this certificate\" to \"Always Trust\""
+          },
+          "step4": {
+            "title": "Confirm Changes",
+            "description": "Enter your administrator password to confirm changes"
+          }
+        },
+        "mobile": {
+          "step1": {
+            "title": "Download Certificate",
+            "description": "Open the certificate download link on your mobile device"
+          },
+          "step2": {
+            "title": "iOS Devices",
+            "description": "Go to \"Settings\" → \"General\" → \"Profile\" → Select downloaded certificate → Tap \"Install\", then enable it in \"Settings\" → \"General\" → \"About\" → \"Certificate Trust Settings\""
+          },
+          "step3": {
+            "title": "Android Devices",
+            "description": "Go to \"Settings\" → \"Security\" → \"More Security Settings\" → \"Encryption & Credentials\" → \"Install Certificate\" → \"CA Certificate\", select the downloaded certificate file"
+          }
+        }
+      }
+    }
+  },
+  "network": {
+    "title": "Network",
+    "sequence": "Sequence",
+    "structure": "Structure",
+    "overview": "Overview",
+    "contents": "Contents",
+    "websocket": "Websocket",
+    "toolbar": {
+      "backToBottom": "Back to bottom"
+    },
+    "table": {
+      "status": "Status",
+      "schema": "Schema",
+      "version": "Version",
+      "method": "Method",
+      "path": "Path",
+      "type": "Type",
+      "time": "Time"
+    }
+  },
+  "sideBar": {
+    "network": "Network",
+    "certificates": "Certificates",
+    "settings": "Settings"
+  }
+}

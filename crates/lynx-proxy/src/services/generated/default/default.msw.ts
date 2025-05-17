@@ -9,35 +9,22 @@ import { faker } from '@faker-js/faker';
 
 import { HttpResponse, delay, http } from 'msw';
 
-import type { User } from '../utoipaAxum.schemas';
+export const getGetHealthResponseMock = (): string => faker.word.sample();
 
-export const getGetUserResponseMock = (
-  overrideResponse: Partial<User> = {},
-): User => ({
-  id: faker.number.int({ min: undefined, max: undefined }),
-  ...overrideResponse,
-});
-
-export const getGetUserMockHandler = (
+export const getGetHealthMockHandler = (
   overrideResponse?:
-    | User
+    | string
     | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Promise<User> | User),
+      ) => Promise<string> | string),
 ) => {
-  return http.get('*/user', async (info) => {
+  return http.get('*/health', async (info) => {
     await delay(1000);
 
-    return new HttpResponse(
-      JSON.stringify(
-        overrideResponse !== undefined
-          ? typeof overrideResponse === 'function'
-            ? await overrideResponse(info)
-            : overrideResponse
-          : getGetUserResponseMock(),
-      ),
-      { status: 200, headers: { 'Content-Type': 'application/json' } },
-    );
+    return new HttpResponse(getGetHealthResponseMock(), {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
+    });
   });
 };
-export const getDefaultMock = () => [getGetUserMockHandler()];
+export const getDefaultMock = () => [getGetHealthMockHandler()];

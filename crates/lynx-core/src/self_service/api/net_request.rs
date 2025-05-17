@@ -92,8 +92,7 @@ struct GetRequestsData {
 )]
 async fn get_cached_requests(
     State(RouteState {
-        db: _,
-        net_request_cache,
+        net_request_cache, ..
     }): State<RouteState>,
     Query(_params): Query<GetRequestsData>,
 ) -> Result<Json<ResponseDataWrapper<RecordRequests>>, StatusCode> {

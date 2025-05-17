@@ -5,6 +5,10 @@
  * Utoipa's axum bindings for seamless integration for the two
  * OpenAPI spec version: 0.2.0
  */
+export interface BaseInfo {
+  accessAddrList: string[];
+}
+
 export interface CaptureSwitch {
   recordingStatus: RecordingStatus;
 }
@@ -155,6 +159,18 @@ export const ResponseCode = {
   validateError: 'validateError',
 } as const;
 
+export type ResponseDataWrapperBaseInfoData = {
+  accessAddrList: string[];
+};
+
+export type ResponseDataWrapperBaseInfoMessage = string | null;
+
+export interface ResponseDataWrapperBaseInfo {
+  code: ResponseCode;
+  data: ResponseDataWrapperBaseInfoData;
+  message?: ResponseDataWrapperBaseInfoMessage;
+}
+
 export type ResponseDataWrapperCaptureSwitchData = {
   recordingStatus: RecordingStatus;
 };
@@ -184,16 +200,20 @@ export interface ResponseDataWrapperRecordRequests {
   message?: ResponseDataWrapperRecordRequestsMessage;
 }
 
+export type ResponseDataWrapperStringMessage = string | null;
+
+export interface ResponseDataWrapperString {
+  code: ResponseCode;
+  data: string;
+  message?: ResponseDataWrapperStringMessage;
+}
+
 export type ResponseDataWrapperTupleUnitMessage = string | null;
 
 export interface ResponseDataWrapperTupleUnit {
   code: ResponseCode;
   data: unknown;
   message?: ResponseDataWrapperTupleUnitMessage;
-}
-
-export interface User {
-  id: number;
 }
 
 export type WebSocketDirection =

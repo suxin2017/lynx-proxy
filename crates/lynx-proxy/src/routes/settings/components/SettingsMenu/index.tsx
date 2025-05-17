@@ -1,21 +1,22 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Segmented } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const menuConfig = [
   {
     key: 'general',
-    title: 'General Settings',
+    translationKey: 'settings.menu.general',
     path: '/settings/general',
   },
   {
-    key: 'ssl-proxy',
-    title: 'SSL Proxy',
-    path: '/settings/ssl-proxy',
+    key: 'network',
+    translationKey: 'settings.menu.network',
+    path: '/settings/network',
   },
   {
     key: 'certificates',
-    title: 'Certificates',
+    translationKey: 'settings.menu.certificates',
     path: '/settings/certificates',
   },
 ];
@@ -23,23 +24,27 @@ const menuConfig = [
 export const SettingsMenu: React.FC = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
   const currentMenu = menuConfig.find((item) =>
     pathname.includes(item.path),
-  )?.title;
+  )?.translationKey;
 
   return (
     <Segmented
       size="large"
       block
-      value={currentMenu}
+      value={currentMenu ? t(currentMenu) : undefined}
       className="w-full"
+      options={menuConfig.map((item) => t(item.translationKey))}
       onChange={(value) => {
-        const selectedMenu = menuConfig.find((item) => item.title === value);
+        const selectedMenu = menuConfig.find(
+          (item) => t(item.translationKey) === value,
+        );
         if (selectedMenu) {
           navigate({ to: selectedMenu.path });
         }
       }}
-      options={menuConfig.map((item) => item.title)}
     />
   );
 };

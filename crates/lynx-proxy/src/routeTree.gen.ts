@@ -18,7 +18,7 @@ import { Route as SettingsIndexImport } from './routes/settings/index'
 import { Route as NetworkIndexImport } from './routes/network/index'
 import { Route as HomeIndexImport } from './routes/home/index'
 import { Route as CertificatesIndexImport } from './routes/certificates/index'
-import { Route as SettingsSslProxyImport } from './routes/settings/ssl-proxy'
+import { Route as SettingsNetworkImport } from './routes/settings/network'
 import { Route as SettingsGeneralImport } from './routes/settings/general'
 import { Route as SettingsCertificatesImport } from './routes/settings/certificates'
 import { Route as RuleManagerDisableImport } from './routes/ruleManager/disable'
@@ -67,9 +67,9 @@ const CertificatesIndexRoute = CertificatesIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const SettingsSslProxyRoute = SettingsSslProxyImport.update({
-  id: '/ssl-proxy',
-  path: '/ssl-proxy',
+const SettingsNetworkRoute = SettingsNetworkImport.update({
+  id: '/network',
+  path: '/network',
   getParentRoute: () => SettingsRoute,
 } as any)
 
@@ -137,11 +137,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsGeneralImport
       parentRoute: typeof SettingsImport
     }
-    '/settings/ssl-proxy': {
-      id: '/settings/ssl-proxy'
-      path: '/ssl-proxy'
-      fullPath: '/settings/ssl-proxy'
-      preLoaderRoute: typeof SettingsSslProxyImport
+    '/settings/network': {
+      id: '/settings/network'
+      path: '/network'
+      fullPath: '/settings/network'
+      preLoaderRoute: typeof SettingsNetworkImport
       parentRoute: typeof SettingsImport
     }
     '/certificates/': {
@@ -180,14 +180,14 @@ declare module '@tanstack/react-router' {
 interface SettingsRouteChildren {
   SettingsCertificatesRoute: typeof SettingsCertificatesRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
-  SettingsSslProxyRoute: typeof SettingsSslProxyRoute
+  SettingsNetworkRoute: typeof SettingsNetworkRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsCertificatesRoute: SettingsCertificatesRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
-  SettingsSslProxyRoute: SettingsSslProxyRoute,
+  SettingsNetworkRoute: SettingsNetworkRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
 
@@ -202,7 +202,7 @@ export interface FileRoutesByFullPath {
   '/ruleManager/disable': typeof RuleManagerDisableRoute
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/general': typeof SettingsGeneralRoute
-  '/settings/ssl-proxy': typeof SettingsSslProxyRoute
+  '/settings/network': typeof SettingsNetworkRoute
   '/certificates': typeof CertificatesIndexRoute
   '/home': typeof HomeIndexRoute
   '/network': typeof NetworkIndexRoute
@@ -215,7 +215,7 @@ export interface FileRoutesByTo {
   '/ruleManager/disable': typeof RuleManagerDisableRoute
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/general': typeof SettingsGeneralRoute
-  '/settings/ssl-proxy': typeof SettingsSslProxyRoute
+  '/settings/network': typeof SettingsNetworkRoute
   '/certificates': typeof CertificatesIndexRoute
   '/home': typeof HomeIndexRoute
   '/network': typeof NetworkIndexRoute
@@ -230,7 +230,7 @@ export interface FileRoutesById {
   '/ruleManager/disable': typeof RuleManagerDisableRoute
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/general': typeof SettingsGeneralRoute
-  '/settings/ssl-proxy': typeof SettingsSslProxyRoute
+  '/settings/network': typeof SettingsNetworkRoute
   '/certificates/': typeof CertificatesIndexRoute
   '/home/': typeof HomeIndexRoute
   '/network/': typeof NetworkIndexRoute
@@ -246,7 +246,7 @@ export interface FileRouteTypes {
     | '/ruleManager/disable'
     | '/settings/certificates'
     | '/settings/general'
-    | '/settings/ssl-proxy'
+    | '/settings/network'
     | '/certificates'
     | '/home'
     | '/network'
@@ -258,7 +258,7 @@ export interface FileRouteTypes {
     | '/ruleManager/disable'
     | '/settings/certificates'
     | '/settings/general'
-    | '/settings/ssl-proxy'
+    | '/settings/network'
     | '/certificates'
     | '/home'
     | '/network'
@@ -271,7 +271,7 @@ export interface FileRouteTypes {
     | '/ruleManager/disable'
     | '/settings/certificates'
     | '/settings/general'
-    | '/settings/ssl-proxy'
+    | '/settings/network'
     | '/certificates/'
     | '/home/'
     | '/network/'
@@ -329,7 +329,7 @@ export const routeTree = rootRoute
       "children": [
         "/settings/certificates",
         "/settings/general",
-        "/settings/ssl-proxy",
+        "/settings/network",
         "/settings/"
       ]
     },
@@ -344,8 +344,8 @@ export const routeTree = rootRoute
       "filePath": "settings/general.tsx",
       "parent": "/settings"
     },
-    "/settings/ssl-proxy": {
-      "filePath": "settings/ssl-proxy.tsx",
+    "/settings/network": {
+      "filePath": "settings/network.tsx",
       "parent": "/settings"
     },
     "/certificates/": {

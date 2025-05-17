@@ -1,4 +1,3 @@
-import { useGetAppConfig, useSaveGeneralConfig } from '@/api/app';
 import { Button, Form, InputNumber, Typography } from 'antd';
 import React from 'react';
 import { Model as AppConfigModel } from '@/AppConfigModel';
@@ -6,8 +5,6 @@ import { Model as AppConfigModel } from '@/AppConfigModel';
 interface IGeneralSettingProps {}
 
 export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
-  const { mutateAsync: saveGeneralConfig } = useSaveGeneralConfig();
-
   const [form] = Form.useForm<AppConfigModel>();
 
   return (
@@ -22,7 +19,7 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
         }
       }
       onFinish={async ({ maxLogSize, clearLogSize }) => {
-        await saveGeneralConfig({ maxLogSize, clearLogSize });
+        // await saveGeneralConfig({ maxLogSize, clearLogSize });
       }}
     >
       <Typography.Title level={4}>General Setting</Typography.Title>

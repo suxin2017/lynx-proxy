@@ -8,7 +8,7 @@ export const Route = createFileRoute('/settings')({
 function RouteComponent() {
   return (
     <div className="animate-fade-in flex h-full w-full flex-col items-center">
-      <div className="flex w-[560px] flex-col gap-4">
+      <div className="flex w-full max-w-[1200px] flex-col gap-4 px-4">
         <SettingsMenu />
         <div className="flex-1">
           <Outlet />
