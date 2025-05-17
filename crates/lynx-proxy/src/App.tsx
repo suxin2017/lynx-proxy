@@ -1,14 +1,14 @@
-import './main.css';
+import { StyleProvider } from '@ant-design/cssinjs';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   createHashHistory,
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router';
-import { StyleProvider } from '@ant-design/cssinjs';
+import { App as AntdApp, ConfigProvider, theme } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import './main.css';
 import { routeTree } from './routeTree.gen';
-import { ConfigProvider, theme, App as AntdApp } from 'antd';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React, { useEffect, useMemo, useState } from 'react';
 
 const hashHistory = createHashHistory();
 // Set up a Router instance
@@ -62,17 +62,16 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <StyleProvider layer>
         <ConfigProvider
-          theme={
-            {
-              // cssVar: true,
-              // hashed: false,
-              // token: {
-              //   borderRadius: 6,
-              //   colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
-              // },
-              // algorithm: antdAlgorithm,
-            }
-          }
+          theme={{
+            cssVar: true,
+            hashed: false,
+            token: {
+              borderRadius: 6,
+              colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
+              colorBgContainer: isDark ? '#0d0d0d' : '#ffffff',
+            },
+            algorithm: antdAlgorithm,
+          }}
         >
           <AntdApp className="h-full w-full">
             <RouterProvider router={router} />

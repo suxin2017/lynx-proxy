@@ -72,7 +72,7 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
       styles={{ label: { width: 180, textAlign: 'right' } }}
       bordered
       className="h-full overflow-auto [&_p]:m-0"
-      size="middle"
+      size="small"
       column={1}
       items={descriptionItems}
     />

@@ -71,7 +71,7 @@ export const useFilteredTableData = () => {
         if (state.requestTable.filterMimeType.length === 0) {
           return true;
         }
-        const mimeType = request.response?.headers['context-type'] || '';
+        const mimeType = request.response?.headers?.['content-type'] || '';
         return state.requestTable.filterMimeType.some((type) =>
           mimeType.includes(type),
         );

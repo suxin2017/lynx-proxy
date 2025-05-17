@@ -20,11 +20,8 @@ export function ShowTypeSegmented() {
   const { t } = useTranslation();
   const { state, setState } = useShowTypeSegmentedStateContext();
   const requestCount = useRequestLogCount();
-  
-  const options = [
-    t('network.sequence'),
-    t('network.structure')
-  ];
+
+  const options = [t('network.sequence'), t('network.structure')];
 
   return (
     <div className="mb-2">

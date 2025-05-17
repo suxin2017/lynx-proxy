@@ -11,9 +11,9 @@ import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import prettyMs from 'pretty-ms';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSelectRequest } from '../store/selectRequestStore';
 import { TableFilter } from '../TableFilter';
-import { useTranslation } from 'react-i18next';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -77,6 +77,7 @@ export const RequestTable: React.FC = () => {
 
           return <span>{protocol}</span>;
         } catch (e) {
+          console.error(e);
           return '-';
         }
       },
@@ -139,7 +140,7 @@ export const RequestTable: React.FC = () => {
 
   return (
     <div
-      className="bg-red relative flex h-full w-full flex-1 flex-col overflow-hidden"
+      className="relative flex h-full w-full flex-1 flex-col overflow-hidden"
       ref={ref}
     >
       <div className="flex-1">

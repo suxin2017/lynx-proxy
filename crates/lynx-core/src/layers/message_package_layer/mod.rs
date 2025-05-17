@@ -23,6 +23,7 @@ use tokio_tungstenite::tungstenite;
 use tower::Service;
 use tracing::info;
 
+use crate::proxy::proxy_connect_request::is_connect_req;
 use crate::proxy::proxy_ws_request::SendType;
 use crate::{
     common::{Req, Res},
@@ -335,6 +336,9 @@ where
 
     fn call(&mut self, request: Req) -> Self::Future {
         if is_self_service(&request) {
+            return Box::pin(self.service.call(request));
+        }
+        if is_connect_req(&request) {
             return Box::pin(self.service.call(request));
         }
         let message_event_channel = request.extensions().get_message_event_cannel();

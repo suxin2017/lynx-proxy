@@ -14,6 +14,7 @@
   min-width: 800px;
   max-width: 100vw;
   width: 100vw;
+
 }
 
 * {
@@ -22,7 +23,9 @@
     'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
     scrollbar-width: thin;
+  
   }
+
 
 body {
   margin: 0;
@@ -34,7 +37,6 @@ body {
 html.dark body {
   color: #e5e7eb;
   background-color: #0d0d0d;
-
 }
 
 
