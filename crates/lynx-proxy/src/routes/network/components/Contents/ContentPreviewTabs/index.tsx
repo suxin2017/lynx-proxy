@@ -9,8 +9,9 @@ import { MediaViewer } from '../MediaViewer';
 import TextView from '../TextViewer';
 import CodeViewer from '../CodeViewer';
 import FormViewer from '../FormView';
-import { WebSocketLog } from '@/WebSocketLog';
 import Websocket from '../../Websocket';
+import { WebSocketLog } from '@/services/generated/utoipaAxum.schemas';
+import { base64ToArrayBuffer } from '@/store';
 
 interface IContentsProps {
   title: string;
@@ -62,7 +63,20 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
 }) => {
   const [activeKey, setActiveKey] = React.useState<string>('0');
   const contentIsEmpty = useMemo(() => body?.byteLength != null, [body]);
-
+  const websocketBodyArrayBuffer = useAsyncMemo(async () => {
+    const blob = new Blob(
+      websocketBody?.map(({ message: item }) => {
+        if ('text' in item && item.text) {
+          return base64ToArrayBuffer(item.text);
+        }
+        if ('binary' in item && item.binary) {
+          return base64ToArrayBuffer(item.binary);
+        }
+        return new Uint8Array();
+      }),
+    );
+    return blob.arrayBuffer();
+  }, [websocketBody]);
   // new TextEncoder().encode
   const contentTypeCheck = useMemo(() => {
     const contentTypeJson = !!contentType?.includes('application/json');
@@ -200,7 +214,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
         ifTrue(!contentTypeJson && !contentTypeMedia && !contentTypeCode, {
           key: ContentPreviewType.Text,
           label: 'Text',
-          children: <TextView arrayBuffer={body} />,
+          children: <TextView arrayBuffer={websocketBodyArrayBuffer ?? body} />,
         }),
         ifTrue(contentTypeMultiForm || contentTypeForm, {
           key: ContentPreviewType.Form,
@@ -216,12 +230,14 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
         {
           key: ContentPreviewType.Hex,
           label: 'Hex',
-          children: <HexViewer arrayBuffer={body} />,
+          children: (
+            <HexViewer arrayBuffer={websocketBodyArrayBuffer ?? body} />
+          ),
         },
       ],
       (item) => item != null,
     );
-  }, [body, contentType, contentTypeCheck, headers]);
+  }, [websocketBodyArrayBuffer, body, contentType, contentTypeCheck, headers]);
 
   return (
     <Tabs

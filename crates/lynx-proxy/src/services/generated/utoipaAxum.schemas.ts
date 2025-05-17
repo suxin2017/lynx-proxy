@@ -11,12 +11,6 @@ export interface CaptureSwitch {
 
 export type EmptyOkResponse = ResponseDataWrapperTupleUnit;
 
-export type GetRequestsDataTraceIds = string[] | null;
-
-export interface GetRequestsData {
-  traceIds?: GetRequestsDataTraceIds;
-}
-
 export type MessageEventBody = string;
 
 export type MessageEventRequestHeaders = { [key: string]: string };
@@ -52,12 +46,15 @@ export type MessageEventStatus =
   | MessageEventStatusOneOf
   | 'Cancelled';
 
+export type MessageEventStoreValueMessages = null | MessageEventWebSocket;
+
 export type MessageEventStoreValueRequest = null | MessageEventRequest;
 
 export type MessageEventStoreValueResponse = null | MessageEventResponse;
 
 export interface MessageEventStoreValue {
   isNew: boolean;
+  messages?: MessageEventStoreValueMessages;
   request?: MessageEventStoreValueRequest;
   response?: MessageEventStoreValueResponse;
   status: MessageEventStatus;
@@ -122,6 +119,11 @@ export interface MessageEventTimings {
   requestEnd?: MessageEventTimingsRequestEnd;
   /** @minimum 0 */
   requestStart?: MessageEventTimingsRequestStart;
+}
+
+export interface MessageEventWebSocket {
+  message: WebSocketLog[];
+  status: WebSocketStatus;
 }
 
 /**
@@ -193,3 +195,69 @@ export interface ResponseDataWrapperTupleUnit {
 export interface User {
   id: number;
 }
+
+export type WebSocketDirection =
+  (typeof WebSocketDirection)[keyof typeof WebSocketDirection];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WebSocketDirection = {
+  ClientToServer: 'ClientToServer',
+  ServerToClient: 'ServerToClient',
+} as const;
+
+export interface WebSocketLog {
+  direction: WebSocketDirection;
+  message: WebSocketMessage;
+  /** @minimum 0 */
+  timestamp: number;
+}
+
+export type WebSocketMessageOneOfText = null | MessageEventBody;
+
+export type WebSocketMessageOneOf = {
+  text: WebSocketMessageOneOfText;
+};
+
+export type WebSocketMessageOneOfThreeBinary = null | MessageEventBody;
+
+export type WebSocketMessageOneOfThree = {
+  binary: WebSocketMessageOneOfThreeBinary;
+};
+
+export type WebSocketMessageOneOfFivePing = null | MessageEventBody;
+
+export type WebSocketMessageOneOfFive = {
+  ping: WebSocketMessageOneOfFivePing;
+};
+
+export type WebSocketMessageOneOfSevenPong = null | MessageEventBody;
+
+export type WebSocketMessageOneOfSeven = {
+  pong: WebSocketMessageOneOfSevenPong;
+};
+
+export type WebSocketMessageOneOfNineClose = [number, string] | null;
+
+export type WebSocketMessageOneOfNine = {
+  close: WebSocketMessageOneOfNineClose;
+};
+
+export type WebSocketMessage =
+  | WebSocketMessageOneOf
+  | WebSocketMessageOneOfThree
+  | WebSocketMessageOneOfFive
+  | WebSocketMessageOneOfSeven
+  | WebSocketMessageOneOfNine;
+
+export type WebSocketStatus =
+  (typeof WebSocketStatus)[keyof typeof WebSocketStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WebSocketStatus = {
+  Connected: 'Connected',
+  Disconnected: 'Disconnected',
+} as const;
+
+export type GetCachedRequestsParams = {
+  traceIds?: string[] | null;
+};

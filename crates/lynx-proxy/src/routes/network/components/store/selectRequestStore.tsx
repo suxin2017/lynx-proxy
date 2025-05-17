@@ -12,6 +12,7 @@ export const [UseSelectRequestProvider, useSelectRequest] = constate(() => {
     selectRequest,
     isWebsocketRequest,
     setSelectRequest: (request: MessageEventStoreValue | null) => {
+      setIsWebsocketRequest(!!request?.messages?.message);
       setSelectRequest(request);
     },
   };

@@ -18,6 +18,7 @@ use crate::{
         error_handle_layer::ErrorHandlerLayer,
         extend_extension_layer::{ExtendExtensionsLayer, clone_extensions},
         log_layer::LogLayer,
+        message_package_layer::RequestMessageEventService,
         trace_id_layer::TraceIdLayer,
     },
     proxy::proxy_ws_request::proxy_ws_request,
@@ -66,6 +67,7 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                     authority.clone(),
                     http::uri::Scheme::HTTP,
                 ))
+                .layer_fn(|inner| RequestMessageEventService { service: inner })
                 .service(svc);
             let transform_svc = service_fn(move |req: HyperReq| {
                 let svc = svc.clone();
@@ -97,6 +99,7 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                     authority.clone(),
                     http::uri::Scheme::HTTPS,
                 ))
+                .layer_fn(|inner| RequestMessageEventService { service: inner })
                 .service(svc);
 
             let transform_svc = service_fn(move |req: HyperReq| {

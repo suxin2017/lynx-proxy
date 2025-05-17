@@ -68,7 +68,7 @@ const App = () => {
             cssVar: true,
             hashed: false,
             token: {
-              borderRadius: 2,
+              borderRadius: 6,
               colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
             },
             algorithm: antdAlgorithm,

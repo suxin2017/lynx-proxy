@@ -12,13 +12,18 @@ use bytes::Bytes;
 use http::Extensions;
 use http_body_util::BodyExt;
 use hyper::body::Body;
-use message_event_data::{MessageEventRequest, MessageEventResponse, copy_body_stream};
+use message_event_data::{
+    MessageEventRequest, MessageEventResponse, MessageEventWebSocket, WebSocketMessage,
+    WebSocketStatus, copy_body_stream,
+};
 use message_event_store::{MessageEvent, MessageEventStoreValue, MessageEventTimings};
 use tokio::{spawn, sync::mpsc::channel};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
+use tokio_tungstenite::tungstenite;
 use tower::Service;
 use tracing::info;
 
+use crate::proxy::proxy_ws_request::SendType;
 use crate::{
     common::{Req, Res},
     self_service::is_self_service,
@@ -149,6 +154,29 @@ pub async fn handle_message_event(
                 let mut value = value.write().await;
                 value.response_mut().replace(res);
             }
+            MessageEvent::OnWebSocketMessage(id, log) => {
+                tracing::trace!("Received OnWebSocketMessage event {}", id);
+                let value = cache.get(&id).await;
+                if value.is_none() {
+                    continue;
+                }
+                let value = value.unwrap();
+                let mut value = value.write().await;
+                let msg = value.messages_mut();
+
+                match msg {
+                    Some(msg) => {
+                        msg.status = WebSocketStatus::from(&log.message);
+                        msg.message.push(log);
+                    }
+                    None => {
+                        let mut msg = MessageEventWebSocket::default();
+                        msg.status = WebSocketStatus::from(&log.message);
+                        msg.message.push(log);
+                        value.messages = Some(msg);
+                    }
+                }
+            }
         }
     }
     Ok(())
@@ -244,6 +272,31 @@ impl MessageEventCannel {
                 res.extensions().get_trace_id().clone(),
                 MessageEventResponse::from(res),
             ))
+            .await;
+    }
+
+    pub async fn dispatch_on_websocket_message(
+        &self,
+        request_id: TraceId,
+        send_type: SendType,
+        message: &tungstenite::Message,
+    ) {
+        use crate::layers::message_package_layer::message_event_data::{
+            WebSocketDirection, WebSocketLog, WebSocketMessage,
+        };
+        let direction = match send_type {
+            SendType::ClientToServer => WebSocketDirection::ClientToServer,
+            SendType::ServerToClient => WebSocketDirection::ServerToClient,
+        };
+
+        let log = WebSocketLog {
+            direction,
+            timestamp: chrono::Utc::now().timestamp_millis() as u64,
+            message: WebSocketMessage::from(message),
+        };
+        let _ = self
+            .sender
+            .send(MessageEvent::OnWebSocketMessage(request_id, log))
             .await;
     }
 }

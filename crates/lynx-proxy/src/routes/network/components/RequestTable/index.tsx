@@ -1,19 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Spin, Table } from 'antd';
-import type { TableProps } from 'antd';
-import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { IRequestModel } from '@/api/models';
-import { useSize } from 'ahooks';
-import { useSelectRequest } from '../store/selectRequestStore';
-import { TableFilter } from '../TableFilter';
-import { useFilteredTableData } from '@/store/requestTableStore';
 import {
   MessageEventStoreValue,
   MessageEventTimings,
 } from '@/services/generated/utoipaAxum.schemas';
+import { useFilteredTableData } from '@/store/requestTableStore';
+import { useSize } from 'ahooks';
+import type { TableProps } from 'antd';
+import { Button, Spin, Table } from 'antd';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import prettyMs from 'pretty-ms';
+import React, { useEffect, useRef, useState } from 'react';
+import { useSelectRequest } from '../store/selectRequestStore';
+import { TableFilter } from '../TableFilter';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -37,8 +36,25 @@ const columns: ColumnsType<MessageEventStoreValue> = [
     title: 'Schema',
     width: 80,
     dataIndex: ['request', 'url'],
-    render: (url: string) => {
+    render: (url: string, raw) => {
+      if (!url) {
+        return '-';
+      }
       const protocol = new URL(url).protocol;
+
+      if (
+        raw.request?.headers['connection'] === 'Upgrade' &&
+        raw.request?.headers['upgrade'] === 'websocket' &&
+        raw.request?.headers['sec-websocket-key'] !== undefined
+      ) {
+        if (protocol === 'http:') {
+          return <span>ws</span>;
+        }
+        if (protocol === 'https:') {
+          return <span>wss</span>;
+        }
+      }
+
       return <span>{protocol}</span>;
     },
   },
@@ -65,6 +81,17 @@ const columns: ColumnsType<MessageEventStoreValue> = [
     title: 'type',
     key: 'type',
     dataIndex: ['response', 'headers', 'content-type'],
+    render: (type: string, raw) => {
+      if (raw.request?.headers['connection'] === 'Upgrade') {
+        return <span>Upgrade</span>;
+      }
+      if (!type) {
+        return '-';
+      }
+
+      const contentType = type.split(';')[0];
+      return <span>{contentType}</span>;
+    },
   },
   {
     title: 'Time',

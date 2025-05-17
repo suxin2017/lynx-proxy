@@ -7,7 +7,7 @@ import {
 } from './components/store';
 import { RuleContent } from './components/RuleContent';
 
-export const Route = createFileRoute('/ruleManager/')({
+export const Route = createFileRoute('/ruleManager/disable')({
   component: RouteComponent,
 });
 

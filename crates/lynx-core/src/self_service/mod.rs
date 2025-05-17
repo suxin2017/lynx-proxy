@@ -11,6 +11,7 @@ use axum::Router;
 use axum::extract::State;
 use axum::response::Response;
 use tower::ServiceExt;
+use utoipa::ToResponse;
 use utoipa::openapi::OpenApi;
 use utoipa::openapi::Server;
 use utoipa_axum::router::OpenApiRouter;
@@ -25,15 +26,9 @@ pub fn is_self_service(req: &Req) -> bool {
     req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
 }
 
-#[derive(utoipa::ToSchema, serde::Serialize)]
-struct User {
-    id: i32,
-}
-
-#[utoipa::path(get,  path = "/user", responses((status = OK, body = User)))]
-async fn get_user(State(state): State<RouteState>) -> Json<User> {
-    println!("get_user called {:?}", state);
-    Json(User { id: 1 })
+#[utoipa::path(get,  path = "/health", responses((status = OK, body = String)))]
+async fn get_health() -> &'static str {
+    "ok"
 }
 
 #[derive(Clone, Debug)]
@@ -50,7 +45,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
     };
 
     let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
-        .routes(routes!(get_user))
+        .routes(routes!(get_health))
         .with_state(state.clone())
         .nest("/net_request", net_request::router(state))
         .split_for_parts();
@@ -68,7 +63,5 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
     return router
         .oneshot(req)
         .await
-        .map_err(|_| {
-            anyhow::anyhow!("Error handling request")
-        });
+        .map_err(|_| anyhow::anyhow!("Error handling request"));
 }

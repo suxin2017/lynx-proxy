@@ -5,6 +5,7 @@ use http_body_util::{BodyExt, StreamBody};
 use hyper::body::Body;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tokio_tungstenite::tungstenite::Message;
 use tracing::warn;
 use url::Url;
 use utoipa::openapi::schema::Schema;
@@ -54,6 +55,79 @@ pub struct MessageEventRequest {
     pub version: String,
     pub header_size: MessageHeaderSize,
     pub body: MessageEventBody,
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub enum WebSocketStatus {
+    #[default]
+    Connected,
+    Disconnected,
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub struct MessageEventWebSocket {
+    pub status: WebSocketStatus,
+    pub message: Vec<WebSocketLog>,
+}
+
+impl From<&WebSocketMessage> for WebSocketStatus {
+    fn from(msg: &WebSocketMessage) -> Self {
+        match msg {
+            WebSocketMessage::Text(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Binary(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Ping(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Pong(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Close(_) => WebSocketStatus::Disconnected,
+        }
+    }
+}
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WebSocketLog {
+    pub direction: WebSocketDirection,
+    pub timestamp: u64,
+    pub message: WebSocketMessage,
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum WebSocketMessage {
+    Text(Option<MessageEventBody>),
+    Binary(Option<MessageEventBody>),
+    Ping(Option<MessageEventBody>),
+    Pong(Option<MessageEventBody>),
+    Close(Option<(u16, MessageEventBody)>),
+}
+
+impl From<&Message> for WebSocketMessage {
+    fn from(message: &Message) -> Self {
+        match message {
+            Message::Text(text) => {
+                WebSocketMessage::Text(Some(MessageEventBody::new(Bytes::from(text.clone()))))
+            }
+            Message::Binary(bin) => {
+                WebSocketMessage::Binary(Some(MessageEventBody::new(Bytes::from(bin.clone()))))
+            }
+            Message::Ping(ping) => {
+                WebSocketMessage::Ping(Some(MessageEventBody::new(Bytes::from(ping.clone()))))
+            }
+            Message::Pong(pong) => {
+                WebSocketMessage::Pong(Some(MessageEventBody::new(Bytes::from(pong.clone()))))
+            }
+            Message::Close(reason) => WebSocketMessage::Close(reason.as_ref().map(|frame| {
+                let code = frame.code.into();
+                let reason = MessageEventBody::new(Bytes::from(frame.reason.clone()));
+                (code, reason)
+            })),
+            _ => WebSocketMessage::Close(None),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+pub enum WebSocketDirection {
+    ClientToServer,
+    ServerToClient,
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]

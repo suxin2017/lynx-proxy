@@ -9,7 +9,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
-use super::message_event_data::{MessageEventRequest, MessageEventResponse};
+use super::message_event_data::{
+    MessageEventRequest, MessageEventResponse, MessageEventWebSocket, WebSocketLog,
+};
 use crate::layers::trace_id_layer::service::TraceId;
 
 #[derive(Debug, Clone)]
@@ -29,6 +31,8 @@ pub enum MessageEvent {
     OnProxyEnd(TraceId),
 
     OnResponseStart(TraceId, MessageEventResponse),
+
+    OnWebSocketMessage(TraceId, WebSocketLog),
 
     OnError(TraceId, String),
 }
@@ -148,6 +152,7 @@ pub struct MessageEventStoreValue {
     pub is_new: bool,
     pub request: Option<MessageEventRequest>,
     pub response: Option<MessageEventResponse>,
+    pub messages: Option<MessageEventWebSocket>,
     pub timings: MessageEventTimings,
 }
 
@@ -159,8 +164,13 @@ impl MessageEventStoreValue {
             is_new: true,
             request: None,
             response: None,
+            messages: None,
             timings: MessageEventTimings::default(),
         }
+    }
+
+    pub fn messages_mut(&mut self) -> &mut Option<MessageEventWebSocket> {
+        &mut self.messages
     }
     pub fn request_mut(&mut self) -> &mut Option<MessageEventRequest> {
         &mut self.request

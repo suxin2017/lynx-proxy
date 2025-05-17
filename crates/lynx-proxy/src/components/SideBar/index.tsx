@@ -6,7 +6,7 @@ import {
   RiSettings2Fill,
   RiSunLine,
 } from '@remixicon/react';
-import { useLocation, useNavigate, useRouter } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
 
@@ -16,11 +16,11 @@ const topMenuConfig = [
     title: 'Network',
     icon: <RiPlanetFill className="text-slate-600" size={24} />,
   },
-  {
-    key: '/ruleManager',
-    title: 'Rule Config',
-    icon: <RiEqualizer2Fill className="text-slate-600" size={24} />,
-  },
+  // {
+  //   key: '/ruleManager',
+  //   title: 'Rule Config',
+  //   icon: <RiEqualizer2Fill className="text-slate-600" size={24} />,
+  // },
   {
     key: '/certificates',
     title: 'Certificates',
@@ -29,8 +29,8 @@ const topMenuConfig = [
 ];
 const bottomMenuConfig = [
   {
-    key: 'setting',
-    title: 'Setting',
+    key: '/settings',
+    title: 'Settings',
     icon: <RiSettings2Fill className="text-slate-600" size={24} />,
   },
 ];

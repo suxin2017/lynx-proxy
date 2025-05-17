@@ -6,23 +6,21 @@ import { Model as AppConfigModel } from '@/AppConfigModel';
 interface IGeneralSettingProps {}
 
 export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
-  const { data: appConfig, isLoading } = useGetAppConfig();
   const { mutateAsync: saveGeneralConfig } = useSaveGeneralConfig();
 
   const [form] = Form.useForm<AppConfigModel>();
 
-  if (isLoading) {
-    return null;
-  }
   return (
     <Form
       className="w-full px-6"
       layout="vertical"
       form={form}
-      initialValues={{
-        maxLogSize: appConfig?.data?.maxLogSize ?? 1000,
-        clearLogSize: appConfig?.data?.clearLogSize ?? 100,
-      }}
+      initialValues={
+        {
+          // maxLogSize: appConfig?.data?.maxLogSize ?? 1000,
+          // clearLogSize: appConfig?.data?.clearLogSize ?? 100,
+        }
+      }
       onFinish={async ({ maxLogSize, clearLogSize }) => {
         await saveGeneralConfig({ maxLogSize, clearLogSize });
       }}

@@ -1,4 +1,8 @@
-import { WebSocketLog } from '@/WebSocketLog';
+import {
+  WebSocketDirection,
+  WebSocketLog,
+  WebSocketMessage,
+} from '@/services/generated/utoipaAxum.schemas';
 import { RiArrowDownLine, RiArrowUpLine } from '@remixicon/react';
 import { Table } from 'antd';
 import React from 'react';
@@ -7,6 +11,9 @@ interface TextViewProps {
   websocketLog?: WebSocketLog[];
 }
 
+function base64ToString(base64: string): string {
+  return decodeURIComponent(escape(window.atob(base64)));
+}
 const Websocket: React.FC<TextViewProps> = ({ websocketLog }) => {
   if (!websocketLog) return null;
 
@@ -17,10 +24,10 @@ const Websocket: React.FC<TextViewProps> = ({ websocketLog }) => {
         columns={[
           {
             title: 'type',
-            dataIndex: 'sendType',
+            dataIndex: 'direction',
             width: 20,
-            render: (text) => {
-              return text === 'ClientToServer' ? (
+            render: (text: WebSocketDirection) => {
+              return text === WebSocketDirection.ClientToServer ? (
                 <RiArrowUpLine className="text-green-700" size={14} />
               ) : (
                 <RiArrowDownLine className="text-red-700" size={14} />
@@ -29,8 +36,24 @@ const Websocket: React.FC<TextViewProps> = ({ websocketLog }) => {
           },
           {
             title: 'data',
-            dataIndex: 'data',
-            render: (text) => atob(text),
+            dataIndex: 'message',
+            render: (msg: WebSocketMessage) => {
+              if ('text' in msg && msg.text) {
+                return <span>{base64ToString(msg.text)}</span>;
+              }
+              if ('binary' in msg && msg.binary) {
+                return <span>{msg.binary}</span>;
+              }
+              if ('ping' in msg) {
+                return <span>ping</span>;
+              }
+              if ('pong' in msg) {
+                return <span>pong</span>;
+              }
+              if ('close' in msg) {
+                return <span>close</span>;
+              }
+            },
           },
         ]}
         dataSource={websocketLog}

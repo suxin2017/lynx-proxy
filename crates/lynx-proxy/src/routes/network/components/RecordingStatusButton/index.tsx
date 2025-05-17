@@ -1,19 +1,11 @@
-import React from 'react';
-import {
-  RiPauseCircleFill,
-  RiPauseFill,
-  RiPlayCircleFill,
-  RiPlayFill,
-  RiRecordCircleFill,
-} from '@remixicon/react';
-import { Button } from 'antd';
-import { useChangeRecordStatus, useGetAppConfig } from '@/api/app';
-import { RecordStatusEnum } from '@/api/models';
 import {
   useGetCaptureStatus,
   useToggleCapture,
 } from '@/services/generated/net-request/net-request';
 import { RecordingStatus } from '@/services/generated/utoipaAxum.schemas';
+import { RiPauseCircleFill, RiPlayCircleFill } from '@remixicon/react';
+import { Button } from 'antd';
+import React from 'react';
 
 interface IRecordingStatusButtonProps {}
 

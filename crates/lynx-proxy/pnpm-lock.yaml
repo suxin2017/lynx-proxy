@@ -35,6 +35,9 @@ importers:
       '@tanstack/react-virtual':
         specifier: ^3.11.2
         version: 3.13.5(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@tanstack/virtual-file-routes':
+        specifier: ^1.115.0
+        version: 1.115.0
       '@types/lodash':
         specifier: ^4.17.14
         version: 4.17.16
@@ -1233,8 +1236,8 @@ packages:
   '@tanstack/virtual-core@3.13.5':
     resolution: {integrity: sha512-gMLNylxhJdUlfRR1G3U9rtuwUh2IjdrrniJIDcekVJN3/3i+bluvdMi3+eodnxzJq5nKnxnigo9h0lIpaqV6HQ==}
 
-  '@tanstack/virtual-file-routes@1.114.29':
-    resolution: {integrity: sha512-DufKsQy/qxDpOTiggJCgshhJkpSyUygwHHfl2LA66CXOf3aUjZtlNu4io1UpmJNf8C/9lVlGARhkoq5fTRRk0w==}
+  '@tanstack/virtual-file-routes@1.115.0':
+    resolution: {integrity: sha512-XLUh1Py3AftcERrxkxC5Y5m5mfllRH3YR6YVlyjFgI2Tc2Ssy2NKmQFQIafoxfW459UJ8Dn81nWKETEIJifE4g==}
     engines: {node: '>=12'}
 
   '@types/babel__core@7.20.5':
@@ -5129,7 +5132,7 @@ snapshots:
 
   '@tanstack/router-generator@1.114.29(@tanstack/react-router@1.114.29(react-dom@19.0.0(react@19.0.0))(react@19.0.0))':
     dependencies:
-      '@tanstack/virtual-file-routes': 1.114.29
+      '@tanstack/virtual-file-routes': 1.115.0
       prettier: 3.5.3
       tsx: 4.19.3
       zod: 3.24.2
@@ -5147,7 +5150,7 @@ snapshots:
       '@tanstack/router-core': 1.114.29
       '@tanstack/router-generator': 1.114.29(@tanstack/react-router@1.114.29(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
       '@tanstack/router-utils': 1.114.29
-      '@tanstack/virtual-file-routes': 1.114.29
+      '@tanstack/virtual-file-routes': 1.115.0
       '@types/babel__core': 7.20.5
       '@types/babel__template': 7.4.4
       '@types/babel__traverse': 7.20.7
@@ -5174,7 +5177,7 @@ snapshots:
 
   '@tanstack/virtual-core@3.13.5': {}
 
-  '@tanstack/virtual-file-routes@1.114.29': {}
+  '@tanstack/virtual-file-routes@1.115.0': {}
 
   '@types/babel__core@7.20.5':
     dependencies:

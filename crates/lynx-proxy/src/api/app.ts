@@ -11,24 +11,6 @@ import { SaveGeneralConfigParams } from '@/SaveGeneralConfigParams';
 import { GetAppConfigResponse } from '@/GetAppConfigResponse';
 import { SaveGeneralConfigResponse } from '@/SaveGeneralConfigResponse';
 
-export const useChangeRecordStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ status }: { status: RecordStatusEnum }) => {
-      const response = await axiosInstance.post('/app_config/record_status', {
-        status,
-      });
-      return response.data as IAppConfigResponse;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['/app_config'],
-      });
-    },
-  });
-};
-
 export const useGetAppConfig = () => {
   return useQuery({
     queryKey: ['/app_config'],

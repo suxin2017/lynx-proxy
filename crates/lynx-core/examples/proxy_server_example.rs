@@ -18,11 +18,9 @@ async fn main() -> Result<()> {
 
     let fixed_temp_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/temp");
 
-    if fixed_temp_dir_path.exists() {
-        fs::remove_dir_all(&fixed_temp_dir_path)?;
+    if !fixed_temp_dir_path.exists() {
+        fs::create_dir_all(&fixed_temp_dir_path)?;
     }
-
-    fs::create_dir_all(&fixed_temp_dir_path)?;
 
     let server_config = ProxyServerConfigBuilder::default()
         .root_cert_file_path(fixed_temp_dir_path.join("root.pem"))

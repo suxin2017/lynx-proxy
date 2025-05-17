@@ -22,7 +22,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  GetRequestsData,
+  GetCachedRequestsParams,
   ResponseDataWrapperCaptureSwitch,
   ResponseDataWrapperRecordRequests,
   ResponseDataWrapperTupleUnit,
@@ -237,28 +237,28 @@ export const useToggleCapture = <TError = void, TContext = unknown>(
   return useMutation(mutationOptions, queryClient);
 };
 export const getCachedRequests = (
-  getRequestsData: GetRequestsData,
+  params?: GetCachedRequestsParams,
   signal?: AbortSignal,
 ) => {
   return customInstance<ResponseDataWrapperRecordRequests>({
     url: `/net_request/requests`,
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    params,
     signal,
   });
 };
 
 export const getGetCachedRequestsQueryKey = (
-  getRequestsData: GetRequestsData,
+  params?: GetCachedRequestsParams,
 ) => {
-  return [`/net_request/requests`, getRequestsData] as const;
+  return [`/net_request/requests`, ...(params ? [params] : [])] as const;
 };
 
 export const getGetCachedRequestsQueryOptions = <
   TData = Awaited<ReturnType<typeof getCachedRequests>>,
   TError = void,
 >(
-  getRequestsData: GetRequestsData,
+  params?: GetCachedRequestsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -272,11 +272,11 @@ export const getGetCachedRequestsQueryOptions = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getGetCachedRequestsQueryKey(getRequestsData);
+    queryOptions?.queryKey ?? getGetCachedRequestsQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof getCachedRequests>>
-  > = ({ signal }) => getCachedRequests(getRequestsData, signal);
+  > = ({ signal }) => getCachedRequests(params, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getCachedRequests>>,
@@ -294,7 +294,7 @@ export function useGetCachedRequests<
   TData = Awaited<ReturnType<typeof getCachedRequests>>,
   TError = void,
 >(
-  getRequestsData: GetRequestsData,
+  params: undefined | GetCachedRequestsParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -320,7 +320,7 @@ export function useGetCachedRequests<
   TData = Awaited<ReturnType<typeof getCachedRequests>>,
   TError = void,
 >(
-  getRequestsData: GetRequestsData,
+  params?: GetCachedRequestsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -346,7 +346,7 @@ export function useGetCachedRequests<
   TData = Awaited<ReturnType<typeof getCachedRequests>>,
   TError = void,
 >(
-  getRequestsData: GetRequestsData,
+  params?: GetCachedRequestsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -365,7 +365,7 @@ export function useGetCachedRequests<
   TData = Awaited<ReturnType<typeof getCachedRequests>>,
   TError = void,
 >(
-  getRequestsData: GetRequestsData,
+  params?: GetCachedRequestsParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -379,10 +379,7 @@ export function useGetCachedRequests<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getGetCachedRequestsQueryOptions(
-    getRequestsData,
-    options,
-  );
+  const queryOptions = getGetCachedRequestsQueryOptions(params, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

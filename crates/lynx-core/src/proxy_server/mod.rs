@@ -1,10 +1,12 @@
 use std::net::SocketAddr;
+use std::str::FromStr;
 use std::sync::Arc;
 
-use anyhow::{Ok, Result, anyhow};
+use anyhow::{Result, anyhow};
 use derive_builder::Builder;
 use futures_util::future::join_all;
 use http::Extensions;
+use http::uri::Authority;
 use http_body_util::BodyExt;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
@@ -15,12 +17,13 @@ use rcgen::Certificate;
 use sea_orm::{ConnectOptions, Database};
 use sea_orm_migration::MigratorTrait;
 use tokio::net::TcpListener;
+use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
 use tracing::{debug, trace, warn};
 
 use crate::client::request_client::RequestClientBuilder;
-use crate::common::HyperReq;
+use crate::common::{HyperReq, is_https_tcp_stream};
 use crate::gateway_service::gateway_service_fn;
 use crate::layers::error_handle_layer::ErrorHandlerLayer;
 use crate::layers::log_layer::LogLayer;
@@ -121,6 +124,7 @@ impl ProxyServer {
             .map(|addr| async move {
                 let listener = TcpListener::bind(*addr).await?;
                 trace!("Server started on: http://{}", listener.local_addr()?);
+                trace!("Server started on: https://{}", listener.local_addr()?);
                 Ok(listener)
             })
             .collect::<Vec<_>>();
@@ -135,13 +139,20 @@ impl ProxyServer {
         let server_config = self.config.clone();
         let message_event_store = Arc::new(MessageEventCache::default());
         let message_event_cannel = Arc::new(MessageEventCannel::new(message_event_store.clone()));
+
+        let addr_str = listener.local_addr()?.to_string();
+        let authority = Authority::from_str(&addr_str)?;
+        let self_ca = server_ca_manager.get_server_config(&authority).await?;
+        let tls_acceptor = TlsAcceptor::from(self_ca);
+
         let db_connect = Arc::new(Database::connect(self.db_config.clone()).await?);
         Migrator::up(db_connect.as_ref(), None).await?;
 
         tokio::spawn(async move {
             loop {
-                let (stream, client_addr) = listener.accept().await.expect("accept failed");
-                let io = TokioIo::new(stream);
+                let (tcp_stream, client_addr) = listener.accept().await.expect("accept failed");
+
+                let tls_acceptor = tls_acceptor.clone();
 
                 let request_client = Arc::new(
                     RequestClientBuilder::default()
@@ -180,13 +191,33 @@ impl ProxyServer {
                     });
 
                     let svc = TowerToHyperService::new(transform_svc);
-                    let connection = auto::Builder::new(TokioExecutor::new())
-                        .serve_connection_with_upgrades(io, svc)
-                        .await;
 
-                    if let Err(err) = connection {
-                        warn!("Error serving connection: {}", err);
-                        debug!("Error serving connection: {:?}", err);
+                    // TODO： refactor this code let it be more simple
+                    if is_https_tcp_stream(&tcp_stream).await {
+                        let tls_stream = match tls_acceptor.accept(tcp_stream).await {
+                            Ok(tls_stream) => tls_stream,
+                            Err(err) => {
+                                tracing::error!("failed to perform tls handshake: {:#}", err);
+                                return;
+                            }
+                        };
+                        let io = TokioIo::new(tls_stream);
+                        let connection = auto::Builder::new(TokioExecutor::new())
+                            .serve_connection_with_upgrades(io, svc)
+                            .await;
+                        if let Err(err) = connection {
+                            warn!("Error serving connection: {}", err);
+                            debug!("Error serving connection: {:?}", err);
+                        }
+                    } else {
+                        let io = TokioIo::new(tcp_stream);
+                        let connection = auto::Builder::new(TokioExecutor::new())
+                            .serve_connection_with_upgrades(io, svc)
+                            .await;
+                        if let Err(err) = connection {
+                            warn!("Error serving connection: {}", err);
+                            debug!("Error serving connection: {:?}", err);
+                        }
                     }
                 });
             }

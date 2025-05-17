@@ -132,6 +132,92 @@ export const getGetCachedRequestsResponseMock = (
             reponseBodyEnd: 1747399243290,
           },
         },
+        {
+          status: 'Completed',
+          traceId: 't_tZJzG6LlG9j2T9_DKTv',
+          isNew: true,
+          request: {
+            method: 'CONNECT',
+            url: '',
+            headers: {
+              host: '127.0.0.1:3001',
+              'proxy-connection': 'close',
+            },
+            version: 'HTTP/1.1',
+            headerSize: 39,
+            body: '',
+          },
+          response: null,
+          messages: null,
+          timings: {
+            requestStart: 1747442496140,
+            requestEnd: 1747442496140,
+            requestBodyStart: null,
+            requestBodyEnd: 1747442496140,
+            proxyStart: null,
+            proxyEnd: null,
+            reponseBodyStart: null,
+            reponseBodyEnd: null,
+          },
+        },
+        {
+          status: 'Completed',
+          traceId: 'hdZtDQjt0WIr1lhQyLr-I',
+          isNew: true,
+          request: {
+            method: 'GET',
+            url: 'http://127.0.0.1:3001/',
+            headers: {
+              'sec-websocket-version': '13',
+              upgrade: 'websocket',
+              'sec-websocket-extensions':
+                'permessage-deflate; client_max_window_bits',
+              'sec-websocket-key': 'MeByFGua8qD+2w88c5dMmQ==',
+              connection: 'Upgrade',
+              host: '127.0.0.1:3001',
+            },
+            version: 'HTTP/1.1',
+            headerSize: 181,
+            body: '',
+          },
+          response: null,
+          messages: {
+            status: 'Disconnected',
+            message: [
+              {
+                direction: 'ServerToClient',
+                timestamp: 1747442498157,
+                message: {
+                  text: '5bCx56uL5Yi75pW45pOa5bqr55qE5rWq6LK75pmC6ZaT6ICD5oWu5bCN5pa5',
+                },
+              },
+              {
+                direction: 'ClientToServer',
+                timestamp: 1747442498158,
+                message: {
+                  text: '5bCx56uL5Yi75pW45pOa5bqr55qE5rWq6LK75pmC6ZaT6ICD5oWu5bCN5pa5',
+                },
+              },
+              {
+                direction: 'ServerToClient',
+                timestamp: 1747442502203,
+                message: {
+                  close: null,
+                },
+              },
+            ],
+          },
+          timings: {
+            requestStart: 1747442496142,
+            requestEnd: 1747442496144,
+            requestBodyStart: null,
+            requestBodyEnd: 1747442496142,
+            proxyStart: null,
+            proxyEnd: null,
+            reponseBodyStart: null,
+            reponseBodyEnd: null,
+          },
+        },
       ],
       patchRequests: null,
     },

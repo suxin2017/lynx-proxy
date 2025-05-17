@@ -37,3 +37,11 @@ impl HyperResExt for HyperRes {
         Response::from_parts(parts, body)
     }
 }
+
+pub async fn is_https_tcp_stream(tcp_stream: &tokio::net::TcpStream) -> bool {
+    let mut buf = [0; 1];
+    match tcp_stream.peek(&mut buf).await {
+        Ok(n) => n == 1 && buf[0] == 0x16,
+        Err(_) => false,
+    }
+}

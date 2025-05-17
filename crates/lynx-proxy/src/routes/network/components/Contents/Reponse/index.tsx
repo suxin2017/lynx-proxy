@@ -1,18 +1,13 @@
-import React, { useMemo } from 'react';
-import { useGetResponseBodyQuery, useGetResponseQuery } from '@/api/request';
-import { ContentPreviewTabs } from '../ContentPreviewTabs';
+import { WebSocketDirection } from '@/services/generated/utoipaAxum.schemas';
 import { get } from 'lodash';
+import React from 'react';
 import { useSelectRequest } from '../../store/selectRequestStore';
-import { useWebSocketResourceByTraceId } from '@/store/websocketResourceStore';
+import { ContentPreviewTabs } from '../ContentPreviewTabs';
 
 interface IContentsProps {}
 
 export const Response: React.FC<IContentsProps> = (_props) => {
   const { selectRequest, isWebsocketRequest } = useSelectRequest();
-
-  const websocketResource = useWebSocketResourceByTraceId(
-    isWebsocketRequest ? selectRequest?.traceId : undefined,
-  );
 
   const responseData = selectRequest?.response;
 
@@ -21,8 +16,8 @@ export const Response: React.FC<IContentsProps> = (_props) => {
     ? get(headers, 'content-type', '')
     : 'websocket';
 
-  const websocketBody = websocketResource.filter(
-    (item) => item.sendType === 'ServerToClient',
+  const websocketBody = selectRequest?.messages?.message.filter(
+    (item) => item.direction === WebSocketDirection.ServerToClient,
   );
   return (
     <ContentPreviewTabs
@@ -31,8 +26,8 @@ export const Response: React.FC<IContentsProps> = (_props) => {
       contentType={contentType}
       body={responseData?.body as ArrayBuffer | undefined}
       isLoading={
-        selectRequest?.status !== 'Initial' &&
-        selectRequest?.status !== 'RequestStarted'
+        selectRequest?.status !== 'Completed' &&
+        selectRequest?.status !== 'Cancelled'
       }
       websocketBody={websocketBody}
     />
