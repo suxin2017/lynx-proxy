@@ -14,16 +14,14 @@ export const CleanRequestButton: React.FC = () => {
   return (
     <Button
       type="text"
-      size="small"
       className="text-orange-500 hover:text-orange-600 dark:text-yellow-400 dark:hover:text-yellow-300"
       onClick={async () => {
         setSelectRequest(null);
         dispatch(clearRequestTree());
         dispatch(clearRequestTable());
       }}
-      icon={<RiBrush2Line size={16} />}
-    >
-      Clear
-    </Button>
+      icon={<RiBrush2Line size={20} />}
+      title="Clear all requests"
+    />
   );
 };

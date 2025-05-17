@@ -1,4 +1,8 @@
 {
+  "common": {
+    "copySuccess": "Copied successfully",
+    "copyFailed": "Copy failed"
+  },
   "networkSetting": {
     "title": "Network Settings",
     "subTitle": "Configure network settings for the application",
@@ -124,6 +128,9 @@
     }
   },
   "network": {
+    "contextMenu": {
+      "copyCurl": "Copy as cURL"
+    },
     "title": "Network",
     "sequence": "Sequence",
     "structure": "Structure",

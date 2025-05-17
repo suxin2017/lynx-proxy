@@ -16,6 +16,7 @@ import React, { useRef } from 'react';
 import { NodeRendererProps, Tree } from 'react-arborist';
 import { useSelector } from 'react-redux';
 import { useSelectRequest } from '../store/selectRequestStore';
+import { RequestContextMenu } from '@/components/RequestContextMenu';
 
 export const RequestTree: React.FC = () => {
   const treeData = useSelector(
@@ -24,37 +25,54 @@ export const RequestTree: React.FC = () => {
 
   const ref = useRef(null);
   const size = useSize(ref);
-
   const { setSelectRequest } = useSelectRequest();
+
   return (
-    <div ref={ref} className="h-full w-full">
-      <Tree
-        height={size?.height}
-        width={size?.width}
-        data={treeData}
-        indent={24}
-        rowHeight={32}
-        disableDrag
-        openByDefault={false}
-        onSelect={(node) => {
-          const selectedNode = first(node);
-          if (selectedNode && selectedNode.data.record) {
-            setSelectRequest(selectedNode.data.record);
-          }
-        }}
-      >
-        {Node}
-      </Tree>
-    </div>
+    <RequestContextMenu>
+      {({ handleContextMenu }) => (
+        <div ref={ref} className="h-full w-full">
+          <Tree
+            height={size?.height}
+            width={size?.width}
+            data={treeData}
+            indent={24}
+            rowHeight={32}
+            disableDrag
+            openByDefault={false}
+            onSelect={(node) => {
+              const selectedNode = first(node);
+              if (selectedNode && selectedNode.data.record) {
+                setSelectRequest(selectedNode.data.record);
+              }
+            }}
+          >
+            {(props) => (
+              <TreeNode
+                {...props}
+                onContextMenu={(e) => {
+                  if (props.node.data.record) {
+                    handleContextMenu(props.node.data.record, e);
+                  }
+                }}
+              />
+            )}
+          </Tree>
+        </div>
+      )}
+    </RequestContextMenu>
   );
 };
 
-const Node = ({
+interface TreeNodeProps extends NodeRendererProps<IRequestTreeNode> {
+  onContextMenu?: (event: React.MouseEvent) => void;
+}
+
+const TreeNode = ({
   node,
   style,
   dragHandle,
-}: NodeRendererProps<IRequestTreeNode>) => {
-  /* This node instance can do many things. See the API reference. */
+  onContextMenu,
+}: TreeNodeProps) => {
   const isLeaf = !node.children?.length;
   const isRoot = !node.parent?.parent;
   const token = theme.useToken();
@@ -68,7 +86,6 @@ const Node = ({
       time = <Spin size="small" />;
     } else {
       const formattedDuration = prettyMilliseconds(requestEnd - requestStart);
-
       time = <span>{formattedDuration}</span>;
     }
   }
@@ -85,6 +102,7 @@ const Node = ({
         node.select();
         node.toggle();
       }}
+      onContextMenu={onContextMenu}
     >
       {!isLeaf && (
         <span className="flex items-center">

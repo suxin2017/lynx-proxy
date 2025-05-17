@@ -10,13 +10,13 @@ i18n
   .init({
     fallbackLng: 'en',
     supportedLngs: ['en', 'zh-CN'],
-    ns: ['common'],
     defaultNS: 'common',
-    backend: {
-      loadPath: '/locales/{{lng}}/{{ns}}.json',
-    },
     interpolation: {
       escapeValue: false,
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
     },
   });
 

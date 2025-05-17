@@ -1,4 +1,8 @@
 {
+  "common": {
+    "copySuccess": "复制成功",
+    "copyFailed": "复制失败"
+  },
   "settings": {
     "title": "设置",
     "menu": {
@@ -6,7 +10,23 @@
       "certificates": "证书",
       "network": "网络"
     },
-
+    "general": {
+      "title": "通用设置",
+      "subTitle": "配置应用程序的基本行为和外观",
+      "language": "语言选择",
+      "maxLogSize": {
+        "title": "最大日志数量",
+        "description": "设置最大日志数量。当超出限制时，最早的日志将被移除",
+        "validation": {
+          "required": "请输入最大日志数量",
+          "range": "最大日志数量必须在 60 到 6000 之间"
+        }
+      },
+      "actions": {
+        "save": "保存设置",
+        "reset": "重置"
+      }
+    },
     "certificate": {
       "title": "证书管理",
       "subtitle": "管理HTTPS抓包所需的SSL证书",
@@ -106,6 +126,9 @@
     }
   },
   "network": {
+    "contextMenu": {
+      "copyCurl": "复制为 cURL"
+    },
     "title": "网络",
     "sequence": "表格",
     "structure": "树形",

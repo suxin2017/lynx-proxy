@@ -3,7 +3,12 @@ import {
   useToggleCapture,
 } from '@/services/generated/net-request/net-request';
 import { RecordingStatus } from '@/services/generated/utoipaAxum.schemas';
-import { RiPauseCircleFill, RiPlayCircleFill } from '@remixicon/react';
+import {
+  RiPauseCircleFill,
+  RiPauseLargeFill,
+  RiPlayCircleFill,
+  RiPlayLargeFill,
+} from '@remixicon/react';
 import { Button } from 'antd';
 import React from 'react';
 
@@ -24,13 +29,13 @@ export const RecordingStatusButton: React.FC<
       }}
       icon={
         recordingStatus === RecordingStatus.startRecording ? (
-          <RiPlayCircleFill
-            size={16}
+          <RiPlayLargeFill
+            size={18}
             className="align-bottom text-emerald-500 dark:text-emerald-400"
           />
         ) : (
-          <RiPauseCircleFill
-            size={16}
+          <RiPauseLargeFill
+            size={18}
             className="align-bottom text-gray-400 dark:text-gray-500"
           />
         )
@@ -40,10 +45,6 @@ export const RecordingStatusButton: React.FC<
           ? 'Stop Recording'
           : 'Start Recording'
       }
-    >
-      {recordingStatus === RecordingStatus.startRecording
-        ? 'Recording'
-        : 'Paused'}
-    </Button>
+    ></Button>
   );
 };
