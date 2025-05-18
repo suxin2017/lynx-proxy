@@ -164,3 +164,91 @@
      background: -webkit-linear-gradient(left, rgba(193, 222, 241, 0.2) 70%, rgba(221, 222, 241, 0));
      background: linear-gradient(to right, rgba(193, 222, 241, 0.2) 70%, rgba(221, 222, 241, 0));
  }
+ 
+ /* 暗色模式下的高亮主题 */
+html.dark pre[class*="language-"],
+html.dark code[class*="language-"] {
+  color: #d4d4d4;
+  background-color: #18181b;
+}
+html.dark pre[class*="language-"] {
+  background-color: #18181b;
+}
+html.dark :not(pre) > code[class*="language-"] {
+  background: #23272e;
+  border: 1px solid #444857;
+}
+html.dark .token.comment,
+html.dark .token.prolog,
+html.dark .token.doctype,
+html.dark .token.cdata {
+  color: #6a9955;
+}
+html.dark .token.string {
+  color: #ce9178;
+}
+html.dark .token.punctuation,
+html.dark .token.operator {
+  color: #d4d4d4;
+}
+html.dark .token.url,
+html.dark .token.symbol,
+html.dark .token.number,
+html.dark .token.boolean,
+html.dark .token.variable,
+html.dark .token.constant,
+html.dark .token.inserted {
+  color: #b5cea8;
+}
+html.dark .token.atrule,
+html.dark .token.keyword,
+html.dark .token.attr-value,
+html.dark .language-autohotkey .token.selector,
+html.dark .language-json .token.boolean,
+html.dark .language-json .token.number,
+html.dark code[class*="language-css"] {
+  color: #569cd6;
+}
+html.dark .token.function {
+  color: #dcdcaa;
+}
+html.dark .token.deleted,
+html.dark .language-autohotkey .token.tag {
+  color: #f44747;
+}
+html.dark .token.selector,
+html.dark .language-autohotkey .token.keyword {
+  color: #d7ba7d;
+}
+html.dark .token.important {
+  color: #ffcb6b;
+}
+html.dark .token.class-name,
+html.dark .language-json .token.property {
+  color: #4ec9b0;
+}
+html.dark .token.tag,
+html.dark .token.selector {
+  color: #569cd6;
+}
+html.dark .token.attr-name,
+html.dark .token.property,
+html.dark .token.regex,
+html.dark .token.entity {
+  color: #9cdcfe;
+}
+html.dark .token.directive.tag .tag {
+  background: #fffbdd;
+  color: #18181b;
+}
+html.dark .line-numbers.line-numbers .line-numbers-rows {
+  border-right-color: #444857;
+}
+html.dark .line-numbers .line-numbers-rows > span:before {
+  color: #4ec9b0;
+}
+html.dark .line-highlight.line-highlight {
+  background: rgba(68, 72, 87, 0.2);
+  background: -webkit-linear-gradient(left, rgba(68, 72, 87, 0.2) 70%, rgba(24, 24, 27, 0));
+  background: linear-gradient(to right, rgba(68, 72, 87, 0.2) 70%, rgba(24, 24, 27, 0));
+ }

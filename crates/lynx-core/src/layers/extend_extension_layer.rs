@@ -1,4 +1,7 @@
-use std::task::{Context, Poll};
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+};
 
 use anyhow::Result;
 use http::{Extensions, Request};
@@ -9,7 +12,12 @@ use crate::{
     proxy_server::{ClientAddrRequestExt, server_config::ProxyServerConfigExtensionsExt},
 };
 
-use super::trace_id_layer::service::TraceIdExt;
+use super::{
+    message_package_layer::{
+        MessageEventLayerExt, message_event_store::MessageEventStoreExtensionsExt,
+    },
+    trace_id_layer::service::TraceIdExt,
+};
 
 #[derive(Debug, Clone)]
 pub struct ExtendExtensionsService<S> {
@@ -57,6 +65,18 @@ impl<S> tower::Layer<S> for ExtendExtensionsLayer {
     }
 }
 
+pub trait DbExtensionsExt {
+    fn get_db(&self) -> Arc<sea_orm::DatabaseConnection>;
+}
+
+impl DbExtensionsExt for Extensions {
+    fn get_db(&self) -> Arc<sea_orm::DatabaseConnection> {
+        self.get::<Arc<sea_orm::DatabaseConnection>>()
+            .expect("Missing database connection in request")
+            .clone()
+    }
+}
+
 pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     let request_client = ex
         .get_request_client()
@@ -65,6 +85,8 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
         .get_client_addr()
         .ok_or_else(|| anyhow::anyhow!("Missing client address in request"))?;
     let server_config = ex.get_proxy_server_config();
+    let message_event_cannel = ex.get_message_event_cannel();
+    let message_event_store = ex.get_message_event_store();
     let trace_id = ex.get_trace_id();
 
     let mut nex = Extensions::new();
@@ -72,5 +94,7 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     nex.insert(client_addr);
     nex.insert(server_config);
     nex.insert(trace_id);
+    nex.insert(message_event_cannel);
+    nex.insert(message_event_store);
     Ok(nex)
 }

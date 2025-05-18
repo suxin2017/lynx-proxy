@@ -1,20 +1,23 @@
+
 use anyhow::{Ok, Result};
 use axum::body::Body;
 use axum::response::Response;
 use hyper::Method;
 use hyper_util::rt::TokioIo;
-use tokio::io::{AsyncRead, AsyncWrite};
-use tokio::net::{TcpStream, ToSocketAddrs};
-use tracing::{error, trace};
+use tracing::error;
 
-use crate::common::HyperReq;
+use crate::common::Req;
+use crate::layers::message_package_layer::MessageEventLayerExt;
+use crate::layers::trace_id_layer::service::TraceIdExt;
 use crate::utils::host_addr;
+
+use super::tunnel_proxy_by_stream::tunnel_proxy_by_stream;
 
 fn handle_tunnel_error(err: anyhow::Error) {
     error!("Error handling tunnel: {}", err);
 }
 
-pub async fn proxy_tunnel_proxy(req: HyperReq) -> anyhow::Result<Response> {
+pub async fn proxy_tunnel_proxy(req: Req) -> anyhow::Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
     tokio::task::spawn(async move {
@@ -27,50 +30,14 @@ pub async fn proxy_tunnel_proxy(req: HyperReq) -> anyhow::Result<Response> {
     Ok(Response::new(Body::empty()))
 }
 
-pub async fn tunnel(req: HyperReq) -> Result<()> {
+pub async fn tunnel_proxy_by_req(req: Req) -> Result<()> {
+    let trace_id = req.extensions().get_trace_id();
+    let event_cannel = req.extensions().get_message_event_cannel();
     let addr = host_addr(req.uri()).ok_or_else(|| anyhow::anyhow!("Invalid URI: {}", req.uri()))?;
 
     let upgraded = hyper::upgrade::on(req).await?;
 
-    let mut server = TcpStream::connect(addr).await?;
-
-    let mut upgraded = TokioIo::new(upgraded);
-
-    // Proxying data
-    let (from_client, from_server) =
-        tokio::io::copy_bidirectional(&mut upgraded, &mut server).await?;
-
-    trace!(
-        "client wrote {} bytes and received {} bytes",
-        from_client, from_server
-    );
-
-    Ok(())
-}
-
-pub async fn tunnel_proxy_by_req(req: HyperReq) -> Result<()> {
-    let addr = host_addr(req.uri()).ok_or_else(|| anyhow::anyhow!("Invalid URI: {}", req.uri()))?;
-
-    let upgraded = hyper::upgrade::on(req).await?;
-    tunnel_proxy_by_stream(TokioIo::new(upgraded), addr).await?;
-    Ok(())
-}
-
-pub async fn tunnel_proxy_by_stream<S: AsyncRead + AsyncWrite + Unpin, A: ToSocketAddrs>(
-    mut stream: S,
-    addr: A,
-) -> Result<()> {
-    // let mut upgraded = TokioIo::new(stream);
-    let mut server = TcpStream::connect(addr).await?;
-
-    // Proxying data
-    let (from_client, from_server) =
-        tokio::io::copy_bidirectional(&mut stream, &mut server).await?;
-
-    trace!(
-        "client wrote {} bytes and received {} bytes",
-        from_client, from_server
-    );
+    tunnel_proxy_by_stream(TokioIo::new(upgraded), addr, trace_id, event_cannel).await?;
 
     Ok(())
 }

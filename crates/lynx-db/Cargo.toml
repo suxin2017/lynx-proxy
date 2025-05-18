@@ -1,0 +1,25 @@
+[package]
+name = "lynx-db"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+sea-orm = { workspace = true, features = ["mock"] }
+tracing-subscriber = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+sea-orm-migration = { version = "1.1.0", features = [
+    "sqlx-sqlite",
+    "runtime-tokio-rustls",
+] }
+ts-rs = { version = "10.1", features = ["serde-json-impl"] }
+serde_json = "1.0.135"
+serde = "1.0.217"
+utoipa = { version = "5.3.1" }

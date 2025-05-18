@@ -1,23 +1,19 @@
-import { useGetRuleTreeQuery } from '@/api/rule';
-import { Tree } from 'antd';
+import { useEventListener, useSize } from 'ahooks';
 import React, { Key } from 'react';
 import { useSelectedRuleContext } from '../store';
-import { IRuleGroupModel, IRuleModel } from '@/api/models';
+import {
+  SaveTreeNodeModal,
+  SaveTreeNodeModalContextProvider,
+} from './SaveTreeNodeModal';
 import {
   TreeContentMenu,
   TreeContentMenuContextProvider,
   useTreeContentMenuContext,
 } from './TreeContentMenu';
-import { useEventListener, useSize } from 'ahooks';
-import {
-  SaveTreeNodeModal,
-  SaveTreeNodeModalContextProvider,
-} from './SaveTreeNodeModal';
 
 interface IRuleTreeProps {}
 
 export const InnerRullTree: React.FC<IRuleTreeProps> = () => {
-  const { data } = useGetRuleTreeQuery();
   const [selectKeys, setSelectKeys] = React.useState<Key[]>([]);
   const { setSelectedRule } = useSelectedRuleContext();
   const { openBlankMenu, closeMenu, openGroupMenu, openRuleMenu } =
@@ -43,7 +39,7 @@ export const InnerRullTree: React.FC<IRuleTreeProps> = () => {
           e.preventDefault();
         }}
       >
-        {data && (
+        {/* {data && (
           <Tree.DirectoryTree
             height={height}
             treeData={data?.data}
@@ -70,8 +66,8 @@ export const InnerRullTree: React.FC<IRuleTreeProps> = () => {
                 setSelectedRule(info.node.record as unknown as IRuleModel);
               }
             }}
-          />
-        )}
+          /> */}
+        {/* )} */}
       </div>
     </TreeContentMenu>
   );

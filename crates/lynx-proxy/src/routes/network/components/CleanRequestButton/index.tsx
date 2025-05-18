@@ -1,29 +1,28 @@
-import { useClearRequestLog } from '@/api/request';
 import { clearRequestTable } from '@/store/requestTableStore';
 import { clearRequestTree } from '@/store/requestTreeStore';
-import { RiBrush2Line } from '@remixicon/react';
+import { RiDeleteBin7Line } from '@remixicon/react';
 import { Button } from 'antd';
 import React from 'react';
 import { useDispatch } from 'react-redux';
+import { useSelectRequest } from '../store/selectRequestStore';
+import { useTranslation } from 'react-i18next';
 
 export const CleanRequestButton: React.FC = () => {
-  const { mutateAsync: clearRequestLog, isPending } = useClearRequestLog();
+  const { t } = useTranslation();
   const dispatch = useDispatch();
+
+  const { setSelectRequest } = useSelectRequest();
 
   return (
     <Button
       type="text"
-      loading={isPending}
-      disabled={isPending}
-      size="small"
       onClick={async () => {
-        await clearRequestLog();
-        dispatch(clearRequestTree())
-        dispatch(clearRequestTable())
+        setSelectRequest(null);
+        dispatch(clearRequestTree());
+        dispatch(clearRequestTable());
       }}
-      icon={<RiBrush2Line size={16} className="text-yellow-700" />}
-    >
-      Clear
-    </Button>
+      icon={<RiDeleteBin7Line size={18} />}
+      title={t('clearRequests')}
+    />
   );
 };

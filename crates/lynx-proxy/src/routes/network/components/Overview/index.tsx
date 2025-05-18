@@ -6,56 +6,62 @@ import { useSelectRequest } from '../store/selectRequestStore';
 interface IOverviewProps {}
 
 export const Overview: React.FC<IOverviewProps> = (_props) => {
-  const {selectRequest} = useSelectRequest();
+  const { selectRequest } = useSelectRequest();
   const descriptionItems = useMemo(() => {
     const items = [];
-    if (selectRequest?.uri) {
+    if (selectRequest?.request?.url) {
       items.push({
         key: 'url',
         label: 'URL',
-        children: <p>{selectRequest.uri}</p>,
+        children: <p>{selectRequest.request.url}</p>,
       });
     }
-    if (selectRequest?.version) {
+    if (selectRequest?.request?.version) {
       items.push({
         key: 'version',
         label: 'Version',
-        children: <p>{selectRequest.version}</p>,
+        children: <p>{selectRequest.request.version}</p>,
       });
     }
-    if (selectRequest?.statusCode) {
+    if (selectRequest?.response?.status) {
       items.push({
         key: 'status',
         label: 'Status',
-        children: <p>{selectRequest.statusCode}</p>,
+        children: <p>{selectRequest.response.status}</p>,
       });
     }
 
-    if (selectRequest?.method) {
+    if (selectRequest?.request?.method) {
       items.push({
         key: 'method',
         label: 'Method',
-        children: <p>{selectRequest.method}</p>,
+        children: <p>{selectRequest.request.method}</p>,
       });
     }
 
-    if (selectRequest?.header) {
-      const headerItems = map(keys(selectRequest.header), (key) => {
+    if (selectRequest?.request?.headers) {
+      const headerItems = map(keys(selectRequest.request.headers), (key) => {
         return {
           key,
           label: key,
-          children: <p>{selectRequest.header[key]}</p>,
+          children: <p>{selectRequest.request?.headers[key]}</p>,
         };
       });
       items.push(...headerItems);
     }
     console.log(items, 'items');
     return items;
-  }, [selectRequest?.header, selectRequest?.method, selectRequest?.statusCode, selectRequest?.uri, selectRequest?.version]);
+  }, [
+    selectRequest?.request?.url,
+    selectRequest?.request?.version,
+    selectRequest?.response?.status,
+    selectRequest?.request?.method,
+    selectRequest?.request?.headers,
+  ]);
 
   if (!descriptionItems) {
     return (
-      <div className="h-full flex justify-center items-center">
+      <div className="flex h-full items-center justify-center">
         <Empty description={false} />
       </div>
     );
@@ -65,8 +71,8 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
     <Descriptions
       styles={{ label: { width: 180, textAlign: 'right' } }}
       bordered
-      className="[&_p]:m-0 h-full overflow-auto"
-      size="middle"
+      className="h-full overflow-auto [&_p]:m-0"
+      size="small"
       column={1}
       items={descriptionItems}
     />
