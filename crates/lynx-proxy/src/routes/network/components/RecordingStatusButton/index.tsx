@@ -3,20 +3,17 @@ import {
   useToggleCapture,
 } from '@/services/generated/net-request/net-request';
 import { RecordingStatus } from '@/services/generated/utoipaAxum.schemas';
-import {
-  RiPauseCircleFill,
-  RiPauseLargeFill,
-  RiPlayCircleFill,
-  RiPlayLargeFill,
-} from '@remixicon/react';
+import { RiPauseLargeFill, RiPlayLargeFill } from '@remixicon/react';
 import { Button } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface IRecordingStatusButtonProps {}
 
 export const RecordingStatusButton: React.FC<
   IRecordingStatusButtonProps
 > = () => {
+  const { t } = useTranslation();
   const { data: netWorkCaptureStatusData, refetch } = useGetCaptureStatus();
   const toggleCapture = useToggleCapture();
   const recordingStatus = netWorkCaptureStatusData?.data.recordingStatus;
@@ -36,14 +33,14 @@ export const RecordingStatusButton: React.FC<
         ) : (
           <RiPauseLargeFill
             size={18}
-            className="align-bottom text-gray-400 dark:text-gray-500"
+            className="align-bottom text-red-400 dark:text-red-500"
           />
         )
       }
       title={
         recordingStatus === RecordingStatus.startRecording
-          ? 'Stop Recording'
-          : 'Start Recording'
+          ? t('recording.stop')
+          : t('recording.start')
       }
     ></Button>
   );

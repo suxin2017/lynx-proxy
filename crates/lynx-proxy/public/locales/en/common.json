@@ -154,5 +154,10 @@
     "network": "Network",
     "certificates": "Certificates",
     "settings": "Settings"
-  }
+  },
+  "recording": {
+    "start": "Start Recording",
+    "stop": "Stop Recording"
+  },
+  "clearRequests": "Clear all requests"
 }

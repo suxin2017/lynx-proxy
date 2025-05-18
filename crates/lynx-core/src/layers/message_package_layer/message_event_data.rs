@@ -70,6 +70,17 @@ pub struct MessageEventWebSocket {
     pub message: Vec<WebSocketLog>,
 }
 
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub enum TunnelStatus {
+    #[default]
+    Connected,
+    Disconnected,
+}
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub struct MessageEventTunnel {
+    pub status: TunnelStatus,
+}
+
 impl From<&WebSocketMessage> for WebSocketStatus {
     fn from(msg: &WebSocketMessage) -> Self {
         match msg {

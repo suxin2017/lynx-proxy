@@ -33,15 +33,15 @@ impl Default for CaptureSwitch {
     }
 }
 
-impl From<CaptureSwitch> for Model {
+impl From<CaptureSwitch> for ActiveModel {
     fn from(switch: CaptureSwitch) -> Self {
-        Model {
-            id: 0,
-            key: "capture_switch".to_string(),
-            value: json!({
+        ActiveModel {
+            id: NotSet,
+            key: Set("capture_switch".to_string()),
+            value: Set(json!({
                 "recordingStatus": switch.recording_status,
-            }),
-            description: Some("Capture switch configuration".to_string()),
+            })),
+            description: Set(Some("Capture switch configuration".to_string())),
         }
     }
 }
@@ -89,7 +89,7 @@ impl CaptureSwitchDao {
                 Entity::update(update).exec(self.db.as_ref()).await?;
             }
             None => {
-                let model: ActiveModel = Model::from(switch).into();
+                let model: ActiveModel = switch.into();
                 Entity::insert(model).exec(self.db.as_ref()).await?;
             }
         }

@@ -10,7 +10,8 @@ use tokio::sync::RwLock;
 use utoipa::ToSchema;
 
 use super::message_event_data::{
-    MessageEventRequest, MessageEventResponse, MessageEventWebSocket, WebSocketLog,
+    MessageEventRequest, MessageEventResponse, MessageEventTunnel, MessageEventWebSocket,
+    WebSocketLog,
 };
 use crate::layers::trace_id_layer::service::TraceId;
 
@@ -33,6 +34,9 @@ pub enum MessageEvent {
     OnResponseStart(TraceId, MessageEventResponse),
 
     OnWebSocketMessage(TraceId, WebSocketLog),
+
+    OnTunnelStart(TraceId),
+    OnTunnelEnd(TraceId),
 
     OnError(TraceId, String),
 }
@@ -79,6 +83,9 @@ pub struct MessageEventTimings {
     pub reponse_body_start: Option<u64>,
     // The time when the response was sent to the client
     pub reponse_body_end: Option<u64>,
+
+    pub tunnel_start: Option<u64>,
+    pub tunnel_end: Option<u64>,
 }
 
 impl MessageEventTimings {
@@ -153,6 +160,7 @@ pub struct MessageEventStoreValue {
     pub request: Option<MessageEventRequest>,
     pub response: Option<MessageEventResponse>,
     pub messages: Option<MessageEventWebSocket>,
+    pub tunnel: Option<MessageEventTunnel>,
     pub timings: MessageEventTimings,
 }
 
@@ -165,6 +173,7 @@ impl MessageEventStoreValue {
             request: None,
             response: None,
             messages: None,
+            tunnel: None,
             timings: MessageEventTimings::default(),
         }
     }

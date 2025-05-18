@@ -13,15 +13,15 @@ use http::Extensions;
 use http_body_util::BodyExt;
 use hyper::body::Body;
 use message_event_data::{
-    MessageEventRequest, MessageEventResponse, MessageEventWebSocket, WebSocketMessage,
-    WebSocketStatus, copy_body_stream,
+    MessageEventRequest, MessageEventResponse, MessageEventTunnel, MessageEventWebSocket,
+    TunnelStatus, WebSocketMessage, WebSocketStatus, copy_body_stream,
 };
 use message_event_store::{MessageEvent, MessageEventStoreValue, MessageEventTimings};
 use tokio::{spawn, sync::mpsc::channel};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tokio_tungstenite::tungstenite;
 use tower::Service;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::proxy::proxy_connect_request::is_connect_req;
 use crate::proxy::proxy_ws_request::SendType;
@@ -178,6 +178,36 @@ pub async fn handle_message_event(
                     }
                 }
             }
+            MessageEvent::OnTunnelEnd(id) => {
+                tracing::trace!("Received OnTunnelEnd event {}", id);
+                let value = cache.get(&id).await;
+                if value.is_none() {
+                    continue;
+                }
+                let value = value.unwrap();
+                let mut value = value.write().await;
+                let msg = &mut value.tunnel;
+
+                match msg {
+                    Some(msg) => msg.status = TunnelStatus::Disconnected,
+                    None => {
+                        warn!("Tunnel not found for id: {}", id);
+                    }
+                }
+            }
+            MessageEvent::OnTunnelStart(id) => {
+                tracing::trace!("Received OnTunnelStart event {}", id);
+                let value = cache.get(&id).await;
+                if value.is_none() {
+                    continue;
+                }
+                let value = value.unwrap();
+                let mut value = value.write().await;
+                value.tunnel = Some(MessageEventTunnel {
+                    status: TunnelStatus::Connected,
+                    ..Default::default()
+                });
+            }
         }
     }
     Ok(())
@@ -241,6 +271,20 @@ impl MessageEventCannel {
 
     pub async fn dispatch_on_after_proxy(&self, request_id: TraceId) {
         let _ = self.sender.send(MessageEvent::OnProxyEnd(request_id)).await;
+    }
+
+    pub async fn dispatch_on_tunnel_start(&self, request_id: TraceId) {
+        let _ = self
+            .sender
+            .send(MessageEvent::OnTunnelStart(request_id))
+            .await;
+    }
+
+    pub async fn dispatch_on_tunnel_end(&self, request_id: TraceId) {
+        let _ = self
+            .sender
+            .send(MessageEvent::OnTunnelEnd(request_id))
+            .await;
     }
 
     pub async fn dispatch_on_error(&self, request_id: TraceId, error_reason: String) {
@@ -336,9 +380,6 @@ where
 
     fn call(&mut self, request: Req) -> Self::Future {
         if is_self_service(&request) {
-            return Box::pin(self.service.call(request));
-        }
-        if is_connect_req(&request) {
             return Box::pin(self.service.call(request));
         }
         let message_event_channel = request.extensions().get_message_event_cannel();

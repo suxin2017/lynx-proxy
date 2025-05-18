@@ -74,38 +74,39 @@ struct RecordRequests {
     patch_requests: Option<Vec<MessageEventStoreValue>>,
 }
 
-#[derive(ToSchema, serde::Deserialize, serde::Serialize, IntoParams)]
+#[derive(ToSchema, serde::Deserialize, Debug, serde::Serialize, IntoParams)]
 #[serde(rename_all = "camelCase")]
 struct GetRequestsData {
     trace_ids: Option<Vec<String>>,
 }
 
 #[utoipa::path(
-    get,
+    post,
     path = "/requests",
     tags = ["Net Request"],
     responses(
         (status = 200, description = "Successfully retrieved cached requests", body = ResponseDataWrapper<RecordRequests>),
         (status = 500, description = "Failed to get cached requests")
     ),
-   params(GetRequestsData),
+    request_body = GetRequestsData,
 )]
 async fn get_cached_requests(
     State(RouteState {
         net_request_cache, ..
     }): State<RouteState>,
-    Query(_params): Query<GetRequestsData>,
+    Json(params): Json<GetRequestsData>,
 ) -> Result<Json<ResponseDataWrapper<RecordRequests>>, StatusCode> {
-    println!("get_cached_requests called");
+    println!("get_cached_requests called {:?}", params);
     let new_requests = net_request_cache.get_new_requests().await.map_err(|e| {
         tracing::error!("Failed to get new requests: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
-    // let patch_requests = net_request_cache.get_request_by_keys(params.trace_ids.unwrap_or_default()).await;
-    info!("get_cached_requests new_requests: {:?}", new_requests);
+    let patch_requests = net_request_cache
+        .get_request_by_keys(params.trace_ids.unwrap_or_default())
+        .await;
     Ok(Json(ok(RecordRequests {
         new_requests,
-        patch_requests: None,
+        patch_requests: Some(patch_requests),
     })))
 }
 

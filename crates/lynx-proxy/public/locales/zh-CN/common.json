@@ -152,5 +152,10 @@
     "network": "网络",
     "certificates": "证书",
     "settings": "设置"
-  }
+  },
+  "recording": {
+    "start": "开始录制",
+    "stop": "停止录制"
+  },
+  "clearRequests": "清除所有请求"
 }
