@@ -18,6 +18,9 @@ i18n
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
     },
+    backend: {
+      loadPath: process.env.ASSET_PREFIX + '/locales/{{lng}}/{{ns}}.json', // 默认路径
+    },
   });
 
 export default i18n;

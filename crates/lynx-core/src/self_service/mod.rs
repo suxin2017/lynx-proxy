@@ -6,6 +6,7 @@ use crate::layers::error_handle_layer::ErrorHandlerLayer;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreExtensionsExt;
+use crate::proxy_server::StaticDir;
 use crate::proxy_server::server_config::ProxyServerConfig;
 use crate::proxy_server::server_config::ProxyServerConfigExtensionsExt;
 use anyhow::Result;
@@ -15,8 +16,13 @@ use axum::Router;
 use axum::extract::State;
 use axum::response::Response;
 use axum::routing::get;
+use axum::routing::get_service;
+use file_service::get_file;
 use http::Method;
 use tower::ServiceExt;
+use tower_http::services::ServeDir;
+use tracing::instrument::WithSubscriber;
+use tracing::trace;
 use utoipa::ToResponse;
 use utoipa::openapi::OpenApi;
 use utoipa::openapi::Server;
@@ -24,13 +30,39 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use utoipa_swagger_ui::SwaggerUi;
 pub mod api;
+pub mod file_service;
 pub mod utils;
 use tower_http::cors::{Any, CorsLayer};
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
 
 pub fn is_self_service(req: &Req) -> bool {
-    req.uri().path().starts_with(SELF_SERVICE_PATH_PREFIX)
+    let access_addr_list = req.extensions().get::<Arc<Vec<SocketAddr>>>();
+
+    access_addr_list
+        .map(|list| {
+            list.iter().any(|addr| {
+                req.headers().get("host").map_or(false, |host| {
+                    if let Ok(host) = host.to_str() {
+                        let host_ip = if host.starts_with("localhost") {
+                            "127.0.0.1"
+                        } else {
+                            host.split(':').next().unwrap_or(host)
+                        };
+                        let host_port = if host.contains(':') {
+                            host.split(':').nth(1).unwrap_or("80")
+                        } else {
+                            "80"
+                        };
+                        let host = format!("{}:{}", host_ip, host_port);
+                        host == addr.to_string()
+                    } else {
+                        false
+                    }
+                })
+            })
+        })
+        .unwrap_or(false)
 }
 
 #[utoipa::path(get,  path = "/health", responses((status = OK, body = String)))]
@@ -44,9 +76,12 @@ pub struct RouteState {
     pub net_request_cache: Arc<MessageEventCache>,
     pub proxy_config: Arc<ProxyServerConfig>,
     pub access_addr_list: Arc<Vec<SocketAddr>>,
+    pub static_dir: Option<Arc<StaticDir>>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
+    let static_dir = req.extensions().get::<Option<Arc<StaticDir>>>();
+
     let state = RouteState {
         db: req.extensions().get_db(),
         net_request_cache: req.extensions().get_message_event_store(),
@@ -56,6 +91,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
             .get::<Arc<Vec<SocketAddr>>>()
             .expect("access_addr_list not found")
             .clone(),
+        static_dir: static_dir.cloned().flatten(),
     };
     let cors = CorsLayer::new()
         .allow_methods([Method::GET])
@@ -63,6 +99,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
 
     let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
         .routes(routes!(get_health))
+        .fallback(get_file)
         .layer(cors)
         .with_state(state.clone())
         .nest("/net_request", net_request::router(state.clone()))
@@ -81,6 +118,8 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
     let router = Router::new()
         .nest(SELF_SERVICE_PATH_PREFIX, router)
         .merge(swagger_router);
+
+    let router = router;
 
     router
         .oneshot(req)

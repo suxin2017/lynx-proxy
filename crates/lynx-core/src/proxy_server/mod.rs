@@ -11,6 +11,7 @@ use http_body_util::BodyExt;
 use hyper_util::rt::{TokioExecutor, TokioIo};
 use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
+use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
 use lynx_db::migration::Migrator;
 use rcgen::Certificate;
@@ -38,6 +39,9 @@ pub mod server_config;
 use server_ca_manage::ServerCaManager;
 use server_config::ProxyServerConfig;
 
+#[derive(Debug, Clone)]
+pub struct StaticDir(pub Dir<'static>);
+
 #[derive(Builder)]
 #[builder(build_fn(skip))]
 pub struct ProxyServer {
@@ -47,6 +51,9 @@ pub struct ProxyServer {
     pub access_addr_list: Vec<SocketAddr>,
     #[builder(setter(strip_option))]
     pub custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
+
+    #[builder(setter(strip_option))]
+    pub static_dir: Option<Arc<StaticDir>>,
 
     pub config: Arc<ProxyServerConfig>,
 
@@ -74,6 +81,7 @@ impl ProxyServerBuilder {
             custom_certs,
             config: self.config.clone().expect("config is required"),
             db_config: self.db_config.clone().expect("db_config is required"),
+            static_dir: self.static_dir.clone().flatten(),
             server_ca_manager: self
                 .server_ca_manager
                 .clone()
@@ -134,13 +142,13 @@ impl ProxyServer {
     }
 
     async fn bind_hyper(&self, listener: TcpListener) -> Result<()> {
-        let access_addr_list = Arc::new(self.access_addr_list.clone());
+        let access_addr_list: Arc<Vec<SocketAddr>> = Arc::new(self.access_addr_list.clone());
         let client_custom_certs = self.custom_certs.clone();
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
         let message_event_store = Arc::new(MessageEventCache::default());
         let message_event_cannel = Arc::new(MessageEventCannel::new(message_event_store.clone()));
-
+        let static_dir = self.static_dir.clone();
         let addr_str = listener.local_addr()?.to_string();
         let authority = Authority::from_str(&addr_str)?;
         let self_ca = server_ca_manager.get_server_config(&authority).await?;
@@ -168,6 +176,7 @@ impl ProxyServer {
                 let db_connect = db_connect.clone();
                 let message_event_store = message_event_store.clone();
                 let access_addr_list = access_addr_list.clone();
+                let static_dir = static_dir.clone();
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
                     let svc = ServiceBuilder::new()
@@ -179,6 +188,7 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(message_event_store))
                         .layer(RequestExtensionLayer::new(message_event_cannel))
                         .layer(RequestExtensionLayer::new(access_addr_list))
+                        .layer(RequestExtensionLayer::new(static_dir))
                         .layer(TraceIdLayer)
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)
