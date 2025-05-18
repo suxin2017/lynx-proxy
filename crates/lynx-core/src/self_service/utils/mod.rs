@@ -1,152 +1,104 @@
 use core::fmt;
-use std::collections::HashMap;
 
-use anyhow::{Error, Result, anyhow};
-use bytes::{Buf, Bytes};
-use http::header::CONTENT_TYPE;
-use http_body_util::BodyExt;
-use http_body_util::combinators::BoxBody;
-use hyper::Response;
-use hyper::body::Incoming;
-use schemars::schema::RootSchema;
-use ts_rs::TS;
+use axum::{
+    Json,
+    response::{IntoResponse, Response},
+};
+use http::StatusCode;
+use serde::{Deserialize, Serialize};
+use utoipa::{PartialSchema, ToSchema, TupleUnit};
 
-use crate::utils::{empty, full};
-
-pub async fn parse_body_params<Value>(body: Incoming, schema: RootSchema) -> Result<Value>
-where
-    Value: serde::de::DeserializeOwned,
-{
-    let body = body
-        .collect()
-        .await
-        .map_err(|e| anyhow!(e).context("get body error"))?;
-
-    let aggregate = body.aggregate();
-
-    let json_value: serde_json::Value = serde_json::from_reader(aggregate.reader())
-        .map_err(|e| anyhow!(e).context("parse request body json error"))?;
-
-    let schema =
-        serde_json::to_value(&schema).map_err(|e| anyhow!(e).context("schema to json error"))?;
-
-    jsonschema::validate(&schema, &json_value)
-        .map_err(|e| anyhow!(ValidateError::new(format!("{}", e))))?;
-
-    serde_json::from_value::<Value>(json_value).map_err(|e| anyhow!(format!("{}", e)))
-}
-
-pub fn parse_query_params(uri: &hyper::Uri) -> HashMap<String, String> {
-    let params: HashMap<String, String> = uri
-        .query()
-        .map(|v| {
-            url::form_urlencoded::parse(v.as_bytes())
-                .into_owned()
-                .collect()
-        })
-        .unwrap_or_default();
-    params
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize, TS)]
-#[ts(export)]
-pub struct ResponseBox<T> {
-    pub code: ResponseCode,
-    pub message: Option<String>,
-    pub data: Option<T>,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize, TS)]
-#[ts(export)]
+#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ResponseCode {
     Ok,
     ValidateError,
-    OperationError,
+}
+
+#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResponseDataWrapper<T: PartialSchema> {
+    pub code: ResponseCode,
+    pub message: Option<String>,
+    pub data: T,
+}
+
+pub fn ok<T: ToSchema>(data: T) -> ResponseDataWrapper<T> {
+    ResponseDataWrapper {
+        code: ResponseCode::Ok,
+        message: None,
+        data,
+    }
+}
+
+#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+pub struct EmptyOkResponse(ResponseDataWrapper<utoipa::TupleUnit>);
+
+pub fn empty_ok() -> EmptyOkResponse {
+    EmptyOkResponse(ResponseDataWrapper {
+        code: ResponseCode::Ok,
+        message: None,
+        data: TupleUnit::default(),
+    })
+}
+
+pub fn validate_error<T: serde::Serialize>(message: String) -> EmptyOkResponse {
+    EmptyOkResponse(ResponseDataWrapper {
+        code: ResponseCode::ValidateError,
+        message: Some(message),
+        data: TupleUnit::default(),
+    })
+}
+
+#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+pub enum AppError {
+    DatabaseError(String),
+    ValidationError(String),
     InternalServerError,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize, TS)]
-#[ts(export)]
-pub struct ValidateError {
-    message: String,
-}
-
-impl ValidateError {
-    pub fn new(message: String) -> Self {
-        ValidateError { message }
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AppError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
+            AppError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+            AppError::InternalServerError => write!(f, "Internal server error"),
+        }
     }
 }
 
-impl fmt::Display for ValidateError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ValidateError: {}", self.message)
+impl std::error::Error for AppError {}
+impl AppError {
+    pub fn to_response(&self) -> ErrorResponse {
+        match self {
+            AppError::DatabaseError(msg) => ErrorResponse {
+                code: 500,
+                message: format!("Database error: {}", msg),
+            },
+            AppError::ValidationError(msg) => ErrorResponse {
+                code: 400,
+                message: format!("Validation error: {}", msg),
+            },
+            AppError::InternalServerError => ErrorResponse {
+                code: 500,
+                message: "Internal server error".to_string(),
+            },
+        }
     }
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct OperationError {
-    message: String,
-}
-
-impl OperationError {
-    pub fn new(message: String) -> Self {
-        OperationError { message }
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let error_response = self.to_response();
+        let status_code =
+            StatusCode::from_u16(error_response.code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        (status_code, Json(error_response)).into_response()
     }
 }
 
-impl fmt::Display for OperationError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Operation: {}", self.message)
-    }
-}
-
-pub fn ok<T>(data: T) -> ResponseBox<T> {
-    ResponseBox {
-        code: ResponseCode::Ok,
-        message: None,
-        data: Some(data),
-    }
-}
-
-pub fn internal_server_error(message: String) -> ResponseBox<Option<()>> {
-    ResponseBox {
-        code: ResponseCode::InternalServerError,
-        message: Some(message),
-        data: None,
-    }
-}
-
-pub fn operation_error(message: String) -> ResponseBox<Option<()>> {
-    ResponseBox {
-        code: ResponseCode::OperationError,
-        message: Some(message),
-        data: None,
-    }
-}
-
-pub fn validate_error<T>(message: String) -> ResponseBox<T> {
-    ResponseBox {
-        code: ResponseCode::ValidateError,
-        message: Some(message),
-        data: None,
-    }
-}
-
-pub fn response_ok<T>(data: T) -> Result<Response<BoxBody<Bytes, Error>>>
-where
-    T: serde::Serialize,
-{
-    let res = ok(data);
-    let json_str = serde_json::to_string(&res)?;
-
-    Ok(Response::builder()
-        .header(CONTENT_TYPE, "application/json")
-        .body(full(Bytes::from(json_str)))?)
-}
-
-pub fn not_found() -> Response<BoxBody<Bytes, Error>> {
-    Response::builder()
-        .status(http::status::StatusCode::NOT_FOUND)
-        .body(empty())
-        .unwrap()
+#[derive(Debug, ToSchema, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorResponse {
+    pub code: u16,
+    pub message: String,
 }

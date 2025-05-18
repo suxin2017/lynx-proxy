@@ -1,16 +1,14 @@
 import { Segmented, Tag } from 'antd';
 import { useState } from 'react';
 import constate from 'constate';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
-
-const options = ['Sequence', 'Structure'];
+import { useRequestLogCount } from '@/store/requestTableStore';
+import { useTranslation } from 'react-i18next';
 
 export const [
   ShowTypeSegmentedStateContextProvider,
   useShowTypeSegmentedStateContext,
 ] = constate(() => {
-  const [state, setState] = useState(options[0]);
+  const [state, setState] = useState('Sequence');
 
   return {
     state,
@@ -19,24 +17,22 @@ export const [
 });
 
 export function ShowTypeSegmented() {
+  const { t } = useTranslation();
   const { state, setState } = useShowTypeSegmentedStateContext();
-  const requestLogLength = useSelector(
-    (state: RootState) => state.requestTable.requests?.length,
-  );
+  const requestCount = useRequestLogCount();
+
+  const options = [t('network.sequence'), t('network.structure')];
 
   return (
-    <div className='flex items-center min-w-56'>
+    <div className="mb-2">
       <Segmented
-        className="bg-white"
         options={options}
-        value={state}
+        value={t(`network.${state.toLowerCase()}`)}
         onChange={(value) => {
-          setState(value);
+          setState(value === t('network.sequence') ? 'Sequence' : 'Structure');
         }}
       />
-      <div className='text-xs font-light'>
-        <Tag color="blue">Requests: {requestLogLength}</Tag>
-      </div>
+      <Tag className="ml-2">{requestCount}</Tag>
     </div>
   );
 }

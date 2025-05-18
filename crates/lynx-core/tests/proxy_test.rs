@@ -7,6 +7,7 @@ use lynx_core::proxy_server::{
     server_config::ProxyServerConfigBuilder,
 };
 use lynx_mock::{client::MockClient, server::MockServer};
+use sea_orm::ConnectOptions;
 use tempdir::TempDir;
 mod common;
 
@@ -36,6 +37,7 @@ async fn proxy_test() -> Result<()> {
         .custom_certs(Arc::new(vec![mock_server.cert.clone()]))
         .config(Arc::new(server_config))
         .server_ca_manager(Arc::new(server_ca_manager))
+        .db_config(ConnectOptions::new("sqlite::memory:"))
         .build()
         .await?;
 

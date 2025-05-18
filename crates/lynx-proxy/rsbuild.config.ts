@@ -2,15 +2,17 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
 import { env } from 'process';
-import { pluginMockServer } from 'rspack-plugin-mock/rsbuild';
+
+import { server } from './src/mock/node';
 
 const useMock = env.MOCK === 'true';
 
+if (useMock) {
+  server.listen();
+}
+
 export default defineConfig({
-  plugins: [
-    pluginReact(),
-    useMock && pluginMockServer(/* pluginOptions */),
-  ].filter(Boolean),
+  plugins: [pluginReact()].filter(Boolean),
   output: {
     assetPrefix: '/__self_service_path__/',
   },

@@ -1,30 +1,233 @@
-use bytes::{Bytes, BytesMut};
-use http::{HeaderMap, Version};
+use base64::{Engine as _, engine::general_purpose};
+use bytes::Bytes;
+use http::{HeaderMap, Request, Response, Version};
 use http_body_util::{BodyExt, StreamBody};
+use hyper::body::Body;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use tokio_tungstenite::tungstenite::Message;
 use tracing::warn;
 use url::Url;
+use utoipa::openapi::schema::Schema;
+use utoipa::openapi::{KnownFormat, ObjectBuilder, RefOr, SchemaFormat, Type};
+use utoipa::{PartialSchema, ToSchema};
 
-use crate::common::{BoxBody, Req};
+use crate::common::BoxBody;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]
 pub struct MessageHeaderSize(pub usize);
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+pub trait ToHashMap {
+    fn to_hash_map(&self) -> HashMap<String, String>;
+}
+
+impl ToHashMap for HeaderMap {
+    fn to_hash_map(&self) -> HashMap<String, String> {
+        self.iter()
+            .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or_default().to_string()))
+            .collect()
+    }
+}
+
+pub trait ToStringVersion {
+    fn to_string_version(&self) -> String;
+}
+
+impl ToStringVersion for Version {
+    fn to_string_version(&self) -> String {
+        match *self {
+            Version::HTTP_09 => "HTTP/0.9".to_string(),
+            Version::HTTP_10 => "HTTP/1.0".to_string(),
+            Version::HTTP_11 => "HTTP/1.1".to_string(),
+            Version::HTTP_2 => "HTTP/2.0".to_string(),
+            Version::HTTP_3 => "HTTP/3.0".to_string(),
+            _ => "Unknown".to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct MessageEventRequest {
     pub method: String,
     pub url: String,
-    #[serde(with = "http_serde::header_map")]
-    pub headers: HeaderMap,
-    #[serde(with = "http_serde::version")]
-    pub version: Version,
+    pub headers: HashMap<String, String>,
+    pub version: String,
     pub header_size: MessageHeaderSize,
-    #[serde(with = "serde_bytes")]
-    pub body: Vec<u8>,
+    pub body: MessageEventBody,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct MessageEventResponse {}
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub enum WebSocketStatus {
+    #[default]
+    Connected,
+    Disconnected,
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub struct MessageEventWebSocket {
+    pub status: WebSocketStatus,
+    pub message: Vec<WebSocketLog>,
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub enum TunnelStatus {
+    #[default]
+    Connected,
+    Disconnected,
+}
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+pub struct MessageEventTunnel {
+    pub status: TunnelStatus,
+}
+
+impl From<&WebSocketMessage> for WebSocketStatus {
+    fn from(msg: &WebSocketMessage) -> Self {
+        match msg {
+            WebSocketMessage::Text(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Binary(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Ping(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Pong(_) => WebSocketStatus::Connected,
+            WebSocketMessage::Close(_) => WebSocketStatus::Disconnected,
+        }
+    }
+}
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct WebSocketLog {
+    pub direction: WebSocketDirection,
+    pub timestamp: u64,
+    pub message: WebSocketMessage,
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum WebSocketMessage {
+    Text(Option<MessageEventBody>),
+    Binary(Option<MessageEventBody>),
+    Ping(Option<MessageEventBody>),
+    Pong(Option<MessageEventBody>),
+    Close(Option<(u16, MessageEventBody)>),
+}
+
+impl From<&Message> for WebSocketMessage {
+    fn from(message: &Message) -> Self {
+        match message {
+            Message::Text(text) => {
+                WebSocketMessage::Text(Some(MessageEventBody::new(Bytes::from(text.clone()))))
+            }
+            Message::Binary(bin) => {
+                WebSocketMessage::Binary(Some(MessageEventBody::new(Bytes::from(bin.clone()))))
+            }
+            Message::Ping(ping) => {
+                WebSocketMessage::Ping(Some(MessageEventBody::new(Bytes::from(ping.clone()))))
+            }
+            Message::Pong(pong) => {
+                WebSocketMessage::Pong(Some(MessageEventBody::new(Bytes::from(pong.clone()))))
+            }
+            Message::Close(reason) => WebSocketMessage::Close(reason.as_ref().map(|frame| {
+                let code = frame.code.into();
+                let reason = MessageEventBody::new(Bytes::from(frame.reason.clone()));
+                (code, reason)
+            })),
+            _ => WebSocketMessage::Close(None),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+pub enum WebSocketDirection {
+    ClientToServer,
+    ServerToClient,
+}
+
+#[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MessageEventResponse {
+    pub status: u16,
+    pub headers: HashMap<String, String>,
+    pub version: String,
+    pub header_size: MessageHeaderSize,
+    pub body: MessageEventBody,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct MessageEventBody(Bytes);
+
+impl MessageEventBody {
+    pub fn new(bytes: Bytes) -> Self {
+        MessageEventBody(bytes)
+    }
+}
+
+impl PartialSchema for MessageEventBody {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        RefOr::T(Schema::Object(
+            ObjectBuilder::new()
+                .schema_type(Type::String)
+                .format(Some(SchemaFormat::KnownFormat(KnownFormat::Byte)))
+                .build(),
+        ))
+    }
+}
+
+impl ToSchema for MessageEventBody {}
+
+impl Serialize for MessageEventBody {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let base64_encoded = general_purpose::STANDARD.encode(&self.0);
+        serializer.serialize_str(&base64_encoded)
+    }
+}
+
+impl<'de> Deserialize<'de> for MessageEventBody {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let base64_str = String::deserialize(deserializer)?;
+        let decoded_bytes = general_purpose::STANDARD
+            .decode(&base64_str)
+            .map(Bytes::from)
+            .map_err(serde::de::Error::custom)?;
+        Ok(MessageEventBody(decoded_bytes))
+    }
+}
+
+impl PartialEq for MessageEventBody {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Extend<u8> for MessageEventBody {
+    fn extend<T: IntoIterator<Item = u8>>(&mut self, iter: T) {
+        let mut bytes_vec = self.0.to_vec(); // Convert Bytes to Vec<u8>
+        bytes_vec.extend(iter); // Extend the Vec<u8>
+        self.0 = Bytes::from(bytes_vec); // Convert back to Bytes
+    }
+}
+
+impl<B: Body> From<&Response<B>> for MessageEventResponse {
+    fn from(res: &Response<B>) -> Self {
+        let status = res.status().as_u16();
+        let headers = res.headers().to_hash_map();
+        let version = res.version().to_string_version();
+        let header_size = MessageHeaderSize::from(res.headers().clone());
+        let body = MessageEventBody(Bytes::new());
+
+        MessageEventResponse {
+            status,
+            headers,
+            version,
+            header_size,
+            body,
+        }
+    }
+}
 
 impl From<HeaderMap> for MessageHeaderSize {
     fn from(header_map: HeaderMap) -> Self {
@@ -36,16 +239,16 @@ impl From<HeaderMap> for MessageHeaderSize {
     }
 }
 
-impl From<Req> for MessageEventRequest {
-    fn from(req: Req) -> Self {
+impl<B: Body> From<&Request<B>> for MessageEventRequest {
+    fn from(req: &Request<B>) -> Self {
         let method = req.method().to_string();
         let url = Url::parse(&req.uri().to_string())
             .map(|url| url.to_string())
             .unwrap_or_default();
-        let headers = req.headers().clone();
-        let version = req.version();
+        let headers = req.headers().to_hash_map();
+        let version = req.version().to_string_version();
         let header_size = MessageHeaderSize::from(req.headers().clone());
-        let body = Vec::new();
+        let body = MessageEventBody(Bytes::new());
 
         MessageEventRequest {
             method,
@@ -58,7 +261,7 @@ impl From<Req> for MessageEventRequest {
     }
 }
 
-fn copy_body_stream(
+pub fn copy_body_stream(
     mut body: BoxBody,
 ) -> (
     tokio_stream::wrappers::ReceiverStream<bytes::Bytes>,
@@ -89,20 +292,10 @@ fn copy_body_stream(
     (new_data_stream, old_body)
 }
 
-fn vec_to_bytes(vec: &[Bytes]) -> Bytes {
-    let mut bytes_mut = BytesMut::new();
-
-    for b in vec {
-        bytes_mut.extend_from_slice(b);
-    }
-
-    bytes_mut.freeze()
-}
-
 #[cfg(test)]
 mod tests {
 
-    use bytes::Bytes;
+    use bytes::{Bytes, BytesMut};
     use futures_util::StreamExt;
     use http::Request;
     use http_body_util::BodyExt;
@@ -110,6 +303,16 @@ mod tests {
     use crate::utils::full;
 
     use super::*;
+
+    fn vec_to_bytes(vec: &[Bytes]) -> Bytes {
+        let mut bytes_mut = BytesMut::new();
+
+        for b in vec {
+            bytes_mut.extend_from_slice(b);
+        }
+
+        bytes_mut.freeze()
+    }
 
     #[tokio::test]
     async fn copy_body_test() {
@@ -136,7 +339,7 @@ mod tests {
             .body(full("test body"))
             .unwrap();
 
-        let message_event_request: MessageEventRequest = req.into();
+        let message_event_request: MessageEventRequest = MessageEventRequest::from(&req);
 
         assert_eq!(message_event_request.method, "POST");
         assert_eq!(message_event_request.url, "http://example.com/");
@@ -144,7 +347,7 @@ mod tests {
             message_event_request.headers.get("Content-Type").unwrap(),
             "application/json"
         );
-        assert_eq!(message_event_request.body, Vec::<u8>::new());
+        assert_eq!(message_event_request.body, MessageEventBody(Bytes::new()));
     }
 
     #[tokio::test]

@@ -14,17 +14,19 @@ use url::Url;
 
 use crate::{common::Req, layers::extend_extension_layer::clone_extensions};
 
+#[derive(Clone)]
 pub struct BuildProxyRequestService<S> {
     pub service: S,
 }
 
 impl<S> Service<Req> for BuildProxyRequestService<S>
 where
-    S: Service<Req, Error = anyhow::Error, Future: Send + Sync> + Clone + Send + Sync + 'static,
+    S: Service<Req, Error = anyhow::Error, Future: Send> + Send + 'static + Clone,
+    S::Future: Send,
 {
     type Response = S::Response;
     type Error = S::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<S::Response, S::Error>> + Send + Sync>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)

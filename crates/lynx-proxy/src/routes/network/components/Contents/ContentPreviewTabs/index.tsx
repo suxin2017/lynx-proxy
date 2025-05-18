@@ -9,8 +9,9 @@ import { MediaViewer } from '../MediaViewer';
 import TextView from '../TextViewer';
 import CodeViewer from '../CodeViewer';
 import FormViewer from '../FormView';
-import { WebSocketLog } from '@/WebSocketLog';
 import Websocket from '../../Websocket';
+import { WebSocketLog } from '@/services/generated/utoipaAxum.schemas';
+import { base64ToArrayBuffer } from '@/store';
 
 interface IContentsProps {
   title: string;
@@ -61,14 +62,22 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
   isLoading,
 }) => {
   const [activeKey, setActiveKey] = React.useState<string>('0');
-  useEffect(() => {}, [body]);
-
+  const contentIsEmpty = useMemo(() => body?.byteLength != null, [body]);
   const websocketBodyArrayBuffer = useAsyncMemo(async () => {
-    const blob = new Blob(websocketBody?.map((item) => atob(item.data)));
+    const blob = new Blob(
+      websocketBody?.map(({ message: item }) => {
+        if ('text' in item && item.text) {
+          return base64ToArrayBuffer(item.text);
+        }
+        if ('binary' in item && item.binary) {
+          return base64ToArrayBuffer(item.binary);
+        }
+        return new Uint8Array();
+      }),
+    );
     return blob.arrayBuffer();
   }, [websocketBody]);
   // new TextEncoder().encode
-  console.log(websocketBodyArrayBuffer, 'websocketBodyArrayBuffer');
   const contentTypeCheck = useMemo(() => {
     const contentTypeJson = !!contentType?.includes('application/json');
     const contentTypeImage = !!contentType?.includes('image');
@@ -166,12 +175,12 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
           label: 'Headers',
           children: <Headers data={headers} />,
         },
-        ifTrue(contentTypeJson, {
+        ifTrue(contentTypeJson && contentIsEmpty, {
           key: ContentPreviewType.Json,
           label: 'Json',
           children: <JsonPreview arrayBuffer={body} />,
         }),
-        ifTrue(contentTypeMedia, {
+        ifTrue(contentTypeMedia && contentIsEmpty, {
           key: ContentPreviewType.Media,
           label: mediaLabel,
           children: (
@@ -228,7 +237,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       ],
       (item) => item != null,
     );
-  }, [body, contentType, contentTypeCheck, headers, websocketBodyArrayBuffer]);
+  }, [websocketBodyArrayBuffer, body, contentType, contentTypeCheck, headers]);
 
   return (
     <Tabs

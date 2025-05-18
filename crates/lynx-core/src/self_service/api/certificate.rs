@@ -1,44 +1,73 @@
-use crate::self_service::utils::parse_query_params;
-use crate::server_context::APP_CONFIG;
-use crate::utils::full;
-use anyhow::{Error, Result};
-use bytes::Bytes;
-use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
-use http_body_util::combinators::BoxBody;
-use hyper::body::Incoming;
-use hyper::{Request, Response};
+use axum::http::StatusCode;
+use axum::{Json, extract::State};
+use utoipa_axum::{router::OpenApiRouter, routes};
 
-pub async fn handle_certificate(req: Request<Incoming>) -> Result<Response<BoxBody<Bytes, Error>>> {
-    let query_params = parse_query_params(req.uri());
-    let ca_path = APP_CONFIG.get().unwrap().get_root_ca_path();
+use crate::self_service::RouteState;
+use crate::self_service::utils::{ResponseDataWrapper, ok};
+use axum::http::header;
+use axum::response::IntoResponse;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
-    let ca_content = tokio::fs::read(ca_path).await?;
+#[utoipa::path(
+    get,
+    path = "/path",
+    tags = ["Certificate"],
+    responses(
+        (status = 200, description = "Successfully retrieved certificate file path", body = ResponseDataWrapper<String>),
+        (status = 500, description = "Failed to get certificate path")
+    )
+)]
+async fn get_cert_path(
+    State(state): State<RouteState>,
+) -> Result<Json<ResponseDataWrapper<String>>, StatusCode> {
+    Ok(Json(ok(state
+        .proxy_config
+        .root_cert_file_path
+        .to_string_lossy()
+        .to_string())))
+}
 
-    let ca_type = query_params
-        .get("type")
-        .map(|s| s.as_str())
-        .unwrap_or("pem");
+#[utoipa::path(
+    get,
+    path = "/download",
+    tags = ["Certificate"],
+    responses(
+        (status = 200, description = "Successfully downloaded root certificate file", content_type = "application/x-x509-ca-cert"),
+        (status = 404, description = "Root certificate file not found"),
+        (status = 500, description = "Failed to read root certificate file")
+    )
+)]
+async fn download_certificate(
+    State(state): State<RouteState>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let cert_path = &state.proxy_config.root_cert_file_path;
 
-    let res = Response::builder();
+    // Try to open and read the certificate file
+    let mut file = File::open(&cert_path)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
 
-    let res = match ca_type {
-        "pem" => res.header(CONTENT_TYPE, "application/x-pem-file"),
-        "crt" => res.header(CONTENT_TYPE, "application/x-x509-ca-cert"),
-        _ => res.header(CONTENT_TYPE, "application/octet-stream"),
-    };
+    let mut contents = Vec::new();
+    file.read_to_end(&mut contents)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let res = match ca_type {
-        "pem" => res.header(
-            CONTENT_DISPOSITION,
-            "attachment; filename=\"lynx-proxy.pem\"",
+    // Create the response with appropriate headers
+    let headers = [
+        (header::CONTENT_TYPE, "application/x-x509-ca-cert"),
+        (
+            header::CONTENT_DISPOSITION,
+            "attachment; filename=\"certificate.crt\"",
         ),
-        "crt" => res.header(
-            CONTENT_DISPOSITION,
-            "attachment; filename=\"lynx-proxy.crt\"",
-        ),
-        _ => unreachable!(),
-    };
-    let res = res.body(full(ca_content))?;
+    ];
 
-    Ok(res)
+    Ok((headers, contents))
+}
+
+pub fn router(state: RouteState) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_cert_path))
+        .routes(routes!(download_certificate))
+        .with_state(state)
 }

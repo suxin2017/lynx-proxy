@@ -1,19 +1,20 @@
 use std::fmt::Display;
-use std::path::Path;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::Result;
 use clap::{Parser, ValueEnum};
 use console::style;
 use directories::ProjectDirs;
 use include_dir::include_dir;
-use lynx_core::config::InitAppConfigParams;
+use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
+use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
+use lynx_core::proxy_server::{ProxyServerBuilder, StaticDir};
 use lynx_core::self_service::SELF_SERVICE_PATH_PREFIX;
-use lynx_core::server::{Server, ServerConfig};
-use lynx_core::server_context::{InitContextParams, set_up_context};
-use tracing::{Level, info};
-use tracing_subscriber::filter;
+use sea_orm::ConnectOptions;
+use tokio::signal;
+use tracing::info;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser, Debug)]
@@ -57,6 +58,7 @@ impl Display for LogLevel {
     }
 }
 
+#[allow(dead_code)]
 fn escape_spaces_in_path(path: &Path) -> String {
     path.to_string_lossy()
         .chars()
@@ -76,52 +78,73 @@ async fn main() -> Result<()> {
 
     // init log level
     let log_level = args.log_level;
-    if !matches!(log_level, LogLevel::Silent) {
-        let level = Level::from_str(&log_level.to_string()).expect("log level error");
-        let lynx_cli_filter = filter::Targets::new()
-            .with_target("lynx_cli", level)
-            .with_target("lynx_core", level);
-        tracing_subscriber::registry()
-            .with(fmt::layer())
-            .with(lynx_cli_filter)
-            .init();
-    }
+    let env_filter = if !matches!(log_level, LogLevel::Silent) {
+        EnvFilter::from_default_env()
+            .add_directive(format!("lynx_cli={}", log_level.to_string()).parse()?)
+            .add_directive(format!("lynx_core={}", log_level.to_string()).parse()?)
+    } else {
+        EnvFilter::from_default_env()
+    };
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(env_filter)
+        .init();
+    info!("Starting proxy server");
 
-    // init data dir
     let data_dir = if let Some(data_dir) = args.data_dir {
         PathBuf::from(data_dir)
     } else {
         let project = ProjectDirs::from("cc", "suxin2017", "lynx").expect("get project dir error");
         project.data_dir().to_path_buf()
     };
+
+    if !data_dir.exists() {
+        std::fs::create_dir_all(&data_dir)?;
+    }
+
+    println!(
+        "The proxy service data directory: \n{}",
+        style(data_dir.to_string_lossy()).yellow()
+    );
+
     let data_dir_path = escape_spaces_in_path(&data_dir);
 
-    info!("Starting proxy server");
-    let dir = include_dir!("$CARGO_MANIFEST_DIR/assets");
+    let assets_dir = include_dir!("$CARGO_MANIFEST_DIR/assets");
 
-    set_up_context(InitContextParams {
-        init_app_config_params: InitAppConfigParams {
-            assets_ui_root_dir: Some(dir),
-            root_dir: Some(data_dir),
-        },
-    })
-    .await;
+    let server_config = ProxyServerConfigBuilder::default()
+        .root_cert_file_path(data_dir.join("root.pem"))
+        .root_key_file_path(data_dir.join("key.pem"))
+        .build()?;
 
-    let mut server = Server::new(ServerConfig {
-        port: args.port,
-        only_localhost: args.only_localhost,
-    });
-    server.run().await?;
-    let addrs = server
+    let server_ca_manager = ServerCaManagerBuilder::new(
+        server_config.root_cert_file_path.clone(),
+        server_config.root_key_file_path.clone(),
+    )
+    .build()?;
+
+    let db_connect = ConnectOptions::new(format!("sqlite://{}/lynx.db?mode=rwc", data_dir_path));
+
+    let mut proxy_server = ProxyServerBuilder::default()
+        .config(Arc::new(server_config))
+        .port(3000)
+        .server_ca_manager(Arc::new(server_ca_manager))
+        .db_config(db_connect)
+        .static_dir(Arc::new(StaticDir(assets_dir)))
+        .build()
+        .await?;
+
+    proxy_server.run().await?;
+
+    let addrs = proxy_server
         .access_addr_list
         .iter()
-        .map(|addr| format!("  http://{}", addr))
+        .map(|addr| format!("  http://{} and https://{}", addr, addr))
         .collect::<Vec<String>>()
         .join("\n");
     println!("The proxy service was started");
     println!("{}{}", style("Available on: \n").green(), addrs);
 
-    let web_path = server
+    let web_path = proxy_server
         .access_addr_list
         .iter()
         .map(|addr| format!("  http://{}{}", addr, SELF_SERVICE_PATH_PREFIX))
@@ -134,7 +157,8 @@ async fn main() -> Result<()> {
     );
     println!("\nPress {} to stop the service", style("Ctrl+C").yellow());
 
-    let _ = tokio::signal::ctrl_c().await;
-
+    signal::ctrl_c()
+        .await
+        .expect("Failed to install Ctrl+C signal handler");
     Ok(())
 }

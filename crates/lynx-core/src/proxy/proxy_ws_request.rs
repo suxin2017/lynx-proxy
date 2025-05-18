@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Result, anyhow};
 use axum::response::{IntoResponse, Response};
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
@@ -14,16 +16,20 @@ use ts_rs::TS;
 
 use crate::{
     client::request_client::RequestClientExt,
-    common::HyperReq,
+    common::Req,
+    layers::{
+        message_package_layer::{MessageEventCannel, MessageEventLayerExt},
+        trace_id_layer::service::{TraceId, TraceIdExt},
+    },
     utils::{empty, full},
 };
 
 struct WebSocketReq(Request<()>);
 
-impl TryFrom<HyperReq> for WebSocketReq {
+impl TryFrom<Req> for WebSocketReq {
     type Error = anyhow::Error;
 
-    fn try_from(req: HyperReq) -> Result<Self, Self::Error> {
+    fn try_from(req: Req) -> Result<Self, Self::Error> {
         let (mut parts, _) = req.into_parts();
         parts.uri = {
             let mut parts = parts.uri.into_parts();
@@ -48,20 +54,24 @@ impl IntoClientRequest for WebSocketReq {
     }
 }
 
-pub fn is_websocket_req(req: &HyperReq) -> bool {
+pub fn is_websocket_req(req: &Req) -> bool {
     hyper_tungstenite::is_upgrade_request(req)
 }
 
-pub async fn proxy_ws_request(mut req: HyperReq) -> anyhow::Result<Response> {
+pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
     assert!(hyper_tungstenite::is_upgrade_request(&req));
+    let message_cannel = req.extensions().get_message_event_cannel();
+    let trace_id = req.extensions().get_trace_id();
     let (_res, hyper_ws) = hyper_tungstenite::upgrade(&mut req, None)?;
 
     let ws_client = req.extensions().get_websocket_client();
     let ws_req: WebSocketReq = req.try_into()?;
     let (client_ws, res) = ws_client.request(ws_req).await?;
 
+    let mc = message_cannel.clone();
+    let tid = trace_id.clone();
     spawn(async move {
-        let _ = handle_hyper_and_client_websocket(hyper_ws, client_ws).await;
+        let _ = handle_hyper_and_client_websocket(hyper_ws, client_ws, mc, tid).await;
     });
 
     let res = res.map(|body| body.map(|b| full(b)).unwrap_or(empty()));
@@ -71,6 +81,8 @@ pub async fn proxy_ws_request(mut req: HyperReq) -> anyhow::Result<Response> {
 async fn handle_hyper_and_client_websocket<S>(
     hyper_ws: HyperWebsocket,
     client_ws: WebSocketStream<MaybeTlsStream<S>>,
+    mc: Arc<MessageEventCannel>,
+    trace_id: TraceId,
 ) -> anyhow::Result<()>
 where
     S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
@@ -80,14 +92,33 @@ where
     let (hyper_sink, hyper_stream) = hyper_ws_stream.split();
     let (client_sink, client_stream) = client_ws.split();
 
+    let mc1 = mc.clone();
+    let tid1 = trace_id.clone();
     spawn(async move {
-        let e = serve_websocket(hyper_sink, client_stream, SendType::ClientToServer).await;
+        let e = serve_websocket(
+            hyper_sink,
+            client_stream,
+            SendType::ClientToServer,
+            mc1,
+            tid1,
+        )
+        .await;
         if let Err(e) = e {
             warn!("Error in client to server websocket: {}", e);
         }
     });
+
+    let mc2 = mc.clone();
+    let tid2 = trace_id.clone();
     spawn(async move {
-        let e = serve_websocket(client_sink, hyper_stream, SendType::ServerToClient).await;
+        let e = serve_websocket(
+            client_sink,
+            hyper_stream,
+            SendType::ServerToClient,
+            mc2,
+            tid2,
+        )
+        .await;
         if let Err(e) = e {
             warn!("Error in server to client websocket: {}", e);
         }
@@ -98,7 +129,7 @@ where
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
-enum SendType {
+pub enum SendType {
     ClientToServer,
     ServerToClient,
 }
@@ -107,11 +138,14 @@ async fn serve_websocket(
     mut sink: impl Sink<tungstenite::Message, Error = tungstenite::Error> + Unpin + Send,
     mut stream: impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>> + Unpin + Send,
     send_type: SendType,
+    mc: Arc<MessageEventCannel>,
+    trace_id: TraceId,
 ) -> Result<()> {
     while let Some(message) = stream.next().await {
         debug!("Received message {:?} {:?}", send_type, message);
         let message = message.map_err(|e| anyhow!(e).context("Failed to receive message"))?;
-
+        mc.dispatch_on_websocket_message(trace_id.clone(), send_type.clone(), &message)
+            .await;
         sink.send(message)
             .await
             .map_err(|e| anyhow!(e).context("Failed to send message"))?;

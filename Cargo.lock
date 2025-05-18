@@ -1465,6 +1465,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-range-header"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9171a2ea8a68358193d15dd5d70c1c10a2afc3e7e4c5bc92bc9f025cebd7359c"
+
+[[package]]
 name = "http-serde"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1991,6 +1997,7 @@ dependencies = [
  "directories",
  "include_dir",
  "lynx-core",
+ "sea-orm",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -2022,6 +2029,7 @@ dependencies = [
  "jsonschema",
  "local-ip-address",
  "lynx-cert",
+ "lynx-db",
  "lynx-mock",
  "mime_guess",
  "moka",
@@ -2050,6 +2058,7 @@ dependencies = [
  "tokio-tungstenite",
  "tokio-util",
  "tower",
+ "tower-http",
  "tower-test",
  "tracing",
  "tracing-subscriber",
@@ -2058,6 +2067,22 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "utoipa-swagger-ui",
+]
+
+[[package]]
+name = "lynx-db"
+version = "0.1.4"
+dependencies = [
+ "anyhow",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs",
+ "utoipa",
 ]
 
 [[package]]
@@ -4294,6 +4319,31 @@ dependencies = [
  "pin-project-lite",
  "slab",
  "sync_wrapper",
+ "tokio",
+ "tokio-util",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fdb0c213ca27a9f57ab69ddb290fd80d970922355b83ae380b395d3986b8a2e"
+dependencies = [
+ "bitflags",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body",
+ "http-body-util",
+ "http-range-header",
+ "httpdate",
+ "mime",
+ "mime_guess",
+ "percent-encoding",
+ "pin-project-lite",
  "tokio",
  "tokio-util",
  "tower-layer",

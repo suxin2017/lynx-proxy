@@ -1,5 +1,6 @@
 import { SideBar } from '@/components/SideBar';
 import { store, useUpdateRequestLog } from '@/store';
+import { GeneralSettingProvider } from '@/store/useGeneralState';
 import { Outlet, createRootRoute } from '@tanstack/react-router';
 import { Provider } from 'react-redux';
 
@@ -14,7 +15,7 @@ function InnerRouteComponent() {
       <div className="flex">
         <SideBar />
       </div>
-      <div className="flex flex-1 p-2 w-[calc(100%-56px)]">
+      <div className="flex w-[calc(100%-56px)] flex-1 p-2">
         <Outlet />
       </div>
     </div>
@@ -23,8 +24,10 @@ function InnerRouteComponent() {
 
 function RootComponent() {
   return (
-    <Provider store={store}>
-      <InnerRouteComponent />
-    </Provider>
+    <GeneralSettingProvider>
+      <Provider store={store}>
+        <InnerRouteComponent />
+      </Provider>
+    </GeneralSettingProvider>
   );
 }

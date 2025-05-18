@@ -60,7 +60,7 @@ pub async fn is_https_tcp_stream(tcp_stream: &tokio::net::TcpStream) -> bool {
 
 // support http and https websocket
 pub async fn websocket_server() -> Result<()> {
-    let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 3000))).await?;
+    let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 3001))).await?;
     // Build TLS configuration.
     let server_config = get_server_config()?;
     let tls_acceptor = TlsAcceptor::from(Arc::new(server_config));

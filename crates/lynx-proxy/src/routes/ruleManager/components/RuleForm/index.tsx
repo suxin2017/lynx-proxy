@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { Form, Button, Typography } from 'antd';
-import { useGetRuleDetailQuery, useUpdateRuleContent } from '@/api/rule';
+// import { useGetRuleDetailQuery, useUpdateRuleContent } from '@/api/rule';
 import { useRuleContentState, useSelectedRuleContext } from '../store';
 import { Capture } from './Capture';
 import { HandlerType } from './Handler/constant';
 import { NamePath } from 'antd/es/form/interface';
-import { Handler as HandlerData } from '@/api/type';
+// import { Handler as HandlerData } from '@/api/type';
 import { HandlerComponent } from './Handler';
 
 const { Title, Text } = Typography;
@@ -38,37 +38,37 @@ export function useFormWatch(name: NamePath<IRuleFormValues>) {
 
 export const RuleForm = () => {
   const [form] = Form.useForm<IRuleFormValues>();
-  const { mutateAsync: updateRule } = useUpdateRuleContent();
+  // const { mutateAsync: updateRule } = useUpdateRuleContent();
   const { selectedRule } = useSelectedRuleContext();
-  const { data } = useGetRuleDetailQuery({ id: selectedRule?.id });
+  // const { data } = useGetRuleDetailQuery({ id: selectedRule?.id });
   const { setState } = useRuleContentState();
 
-  useEffect(() => {
-    if (!data) {
-      return;
-    }
-    const remoteData = data?.data;
-    console.log(
-      data.data,
-      {
-        capture: {
-          type: remoteData?.capture?.type || CaptureType.Glob,
-          globUrl: remoteData?.capture?.url || '',
-          regexUrl: remoteData?.capture?.url || '',
-        },
-        handlers: remoteData?.handlers,
-      },
-      'remoteData',
-    );
-    form.setFieldsValue({
-      capture: {
-        type: remoteData?.capture?.type || CaptureType.Glob,
-        globUrl: remoteData?.capture?.url ?? '',
-        regexUrl: remoteData?.capture?.url ?? '',
-      },
-      handlers: remoteData?.handlers,
-    });
-  }, [data, form]);
+  // useEffect(() => {
+  //   // if (!data) {
+  //   //   return;
+  //   // }
+  //   // const remoteData = data?.data;
+  //   // console.log(
+  //   //   data.data,
+  //   //   {
+  //   //     capture: {
+  //   //       type: remoteData?.capture?.type || CaptureType.Glob,
+  //   //       globUrl: remoteData?.capture?.url || '',
+  //   //       regexUrl: remoteData?.capture?.url || '',
+  //   //     },
+  //   //     handlers: remoteData?.handlers,
+  //   //   },
+  //   //   'remoteData',
+  //   // );
+  //   // form.setFieldsValue({
+  //   //   capture: {
+  //   //     type: remoteData?.capture?.type || CaptureType.Glob,
+  //   //     globUrl: remoteData?.capture?.url ?? '',
+  //   //     regexUrl: remoteData?.capture?.url ?? '',
+  //   //   },
+  //   //   handlers: remoteData?.handlers,
+  //   // });
+  // }, [data, form]);
 
   return (
     <Form

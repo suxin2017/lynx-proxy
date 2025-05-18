@@ -3,7 +3,7 @@ use std::task::{Context, Poll};
 use axum::response::Response;
 use tower::Service;
 
-use crate::common::HyperReq;
+use crate::common::Req;
 
 use super::ErrorHandleFuture;
 
@@ -12,9 +12,9 @@ pub struct ErrorHandlerService<S> {
     pub service: S,
 }
 
-impl<S> Service<HyperReq> for ErrorHandlerService<S>
+impl<S> Service<Req> for ErrorHandlerService<S>
 where
-    S: Service<HyperReq, Response = Response, Error = anyhow::Error>,
+    S: Service<Req, Response = Response, Error = anyhow::Error>,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -24,7 +24,7 @@ where
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, request: HyperReq) -> Self::Future {
+    fn call(&mut self, request: Req) -> Self::Future {
         ErrorHandleFuture {
             f: self.service.call(request),
         }

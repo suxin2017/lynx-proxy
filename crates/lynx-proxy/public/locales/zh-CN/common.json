@@ -1,0 +1,168 @@
+{
+  "common": {
+    "copySuccess": "复制成功",
+    "copyFailed": "复制失败"
+  },
+  "settings": {
+    "title": "设置",
+    "menu": {
+      "general": "常规",
+      "certificates": "证书",
+      "network": "网络"
+    },
+    "general": {
+      "title": "通用设置",
+      "subTitle": "配置应用程序的基本行为和外观",
+      "language": "语言选择",
+      "maxLogSize": {
+        "title": "最大日志数量",
+        "description": "设置最大日志数量。当超出限制时，最早的日志将被移除",
+        "validation": {
+          "required": "请输入最大日志数量",
+          "range": "最大日志数量必须在 60 到 6000 之间"
+        }
+      },
+      "actions": {
+        "save": "保存设置",
+        "reset": "重置"
+      }
+    },
+    "certificate": {
+      "title": "证书管理",
+      "subtitle": "管理HTTPS抓包所需的SSL证书",
+      "installed": {
+        "title": "证书已正确安装",
+        "description": "您的系统已信任此证书，可以正常抓取HTTPS请求。"
+      },
+      "notInstalled": {
+        "title": "需要安装证书才能抓取HTTPS请求",
+        "description": "要抓取HTTPS请求，您需要在系统或浏览器中安装并信任此证书。"
+      },
+      "certPath": "证书路径",
+      "copySuccess": "已复制证书路径",
+      "checkStatus": "检查状态",
+      "installCert": "安装证书",
+      "downloadCert": "下载证书",
+      "install": {
+        "title": "证书安装步骤",
+        "platform": {
+          "windows": "Windows",
+          "macos": "MacOS",
+          "mobile": "移动设备"
+        },
+        "windows": {
+          "step1": {
+            "title": "打开证书",
+            "description": "双击下载的证书文件（.crt）"
+          },
+          "step2": {
+            "title": "选择证书存储",
+            "description": "点击\"安装证书\" → 选择\"本地计算机\" → 点击\"下一步\""
+          },
+          "step3": {
+            "title": "导入根证书",
+            "description": "选择\"将所有的证书放入下列存储\" → 点击\"浏览\" → 选择\"受信任的根证书颁发机构\" → 点击\"下一步\""
+          },
+          "step4": {
+            "title": "完成安装",
+            "description": "点击\"完成\"，在安全警告窗口中点击\"是\"确认导入"
+          }
+        },
+        "macos": {
+          "step1": {
+            "title": "打开钥匙串访问",
+            "description": "在\"启动台\"中搜索并打开\"钥匙串访问\"应用"
+          },
+          "step2": {
+            "title": "导入证书",
+            "description": "选择\"文件\" → \"导入项目\"，选择下载的证书文件"
+          },
+          "step3": {
+            "title": "信任证书",
+            "description": "双击导入的证书 → 展开\"信任\" → 将\"使用此证书时\"设置为\"始终信任\""
+          },
+          "step4": {
+            "title": "确认修改",
+            "description": "输入系统管理员密码确认更改"
+          }
+        },
+        "mobile": {
+          "step1": {
+            "title": "下载证书",
+            "description": "在移动设备上打开证书下载链接"
+          },
+          "step2": {
+            "title": "iOS设备",
+            "description": "打开\"设置\" → \"通用\" → \"描述文件\" → 选择已下载的证书 → 点击\"安装\"，完成后在\"设置\" → \"通用\" → \"关于本机\" → \"证书信任设置\"中启用证书"
+          },
+          "step3": {
+            "title": "Android设备",
+            "description": "打开\"设置\" → \"安全\" → \"更多安全设置\" → \"加密和凭据\" → \"安装证书\" → \"CA证书\"，选择下载的证书文件进行安装"
+          }
+        }
+      }
+    }
+  },
+  "networkSetting": {
+    "title": "网络设置",
+    "subTitle": "配置应用程序的网络设置",
+    "switch": "开关",
+    "host": "主机地址",
+    "port": "端口",
+    "operation": "操作",
+    "add": "添加",
+    "save": "保存设置",
+    "captureHttps": {
+      "title": "抓取HTTPS请求",
+      "description": "抓取HTTPS请求需要安装证书。请确保已安装",
+      "status": "当前状态",
+      "filter": {
+        "title": "抓取过滤器",
+        "description": "抓取过滤器用于设置请求抓取规则。您可以使用Glob模式匹配请求URL",
+        "includeDomains": "包含域名",
+        "excludeDomains": "排除域名",
+        "validation": {
+          "domain": "请输入域名",
+          "port": "请输入端口号"
+        }
+      }
+    },
+    "messages": {
+      "saveSuccess": "保存成功"
+    }
+  },
+  "network": {
+    "contextMenu": {
+      "copyCurl": "复制为 cURL"
+    },
+    "title": "网络",
+    "sequence": "表格",
+    "structure": "树形",
+    "overview": "概览",
+    "contents": "内容",
+    "websocket": "WebSocket",
+    "toolbar": {
+      "backToBottom": "返回底部"
+    },
+    "table": {
+      "status": "状态",
+      "schema": "协议",
+      "version": "版本",
+      "method": "方法",
+      "path": "路径",
+      "type": "类型",
+      "time": "耗时"
+    }
+  },
+  "sideBar": {
+    "network": "网络",
+    "certificates": "证书",
+    "settings": "设置"
+  },
+  "recording": {
+    "start": "开始录制",
+    "stop": "停止录制"
+  },
+  "clearRequests": "清除所有请求",
+  "startTime": "开始时间"
+}

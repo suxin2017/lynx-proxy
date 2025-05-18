@@ -1,4 +1,4 @@
-import { Descriptions } from 'antd';
+import { Descriptions, Empty } from 'antd';
 import { keys, map } from 'lodash';
 import React, { useMemo } from 'react';
 
@@ -19,6 +19,13 @@ export const Headers: React.FC<IOverviewProps> = ({ data }) => {
     }
   }, [data]);
 
+  if (!data) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Empty />
+      </div>
+    );
+  }
   return (
     <Descriptions
       bordered

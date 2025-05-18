@@ -12,7 +12,7 @@ pub struct TraceIdService<S> {
     pub service: S,
 }
 
-type TraceId = Arc<String>;
+pub type TraceId = Arc<String>;
 
 impl<S, Body> Service<Request<Body>> for TraceIdService<S>
 where

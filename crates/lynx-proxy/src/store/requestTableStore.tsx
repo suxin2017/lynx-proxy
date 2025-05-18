@@ -1,26 +1,60 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { useSelector } from 'react-redux';
 import { RootState } from '.';
-import { Model as RequestModel } from '@/RequestModel';
+import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
 
 export interface RequestTableState {
-  requests: RequestModel[];
+  requests: MessageEventStoreValue[];
   filterUri: string;
   filterMimeType: string[];
+  pendingRequestIds: Record<string, boolean>;
 }
 const initialState: RequestTableState = {
   requests: [],
   filterUri: '',
   filterMimeType: [],
+  pendingRequestIds: {},
+};
+
+const isCompletedReq = (res: MessageEventStoreValue) => {
+  return !(
+    res.status === 'Completed' &&
+    res.tunnel?.status === 'Disconnected' &&
+    res.messages?.status === 'Disconnected'
+  );
 };
 
 const requestTableSlice = createSlice({
   name: 'requestTable',
   initialState,
+
   reducers: {
     clearRequestTable: () => initialState,
-    appendRequest: (state, action: PayloadAction<RequestModel>) => {
-      state.requests.push(action.payload);
+    appendRequest: (state, action: PayloadAction<MessageEventStoreValue[]>) => {
+      state.requests.push(...action.payload);
+      action.payload
+        ?.filter(isCompletedReq)
+        ?.map((res) => res.traceId)
+        .forEach((id) => {
+          state.pendingRequestIds[id] = true;
+        });
+    },
+    replaceRequest: (
+      state,
+      action: PayloadAction<MessageEventStoreValue[]>,
+    ) => {
+      state.requests.forEach((request, index) => {
+        const newRequest = action.payload.find(
+          (newRequest) => newRequest.traceId === request.traceId,
+        );
+        if (newRequest) {
+          if (isCompletedReq(newRequest)) {
+            delete state.pendingRequestIds[newRequest.traceId];
+          }
+
+          state.requests[index] = newRequest;
+        }
+      });
     },
     filterUri: (state, action: PayloadAction<string>) => {
       state.filterUri = action.payload;
@@ -32,12 +66,9 @@ const requestTableSlice = createSlice({
       state,
       action: PayloadAction<{
         maxLogSize: number;
-        clearLogSize: number;
       }>,
     ) => {
-      state.requests = state.requests.slice(
-        -(action.payload.maxLogSize - action.payload.clearLogSize),
-      );
+      state.requests = state.requests.slice(-action.payload.maxLogSize);
     },
   },
 });
@@ -48,17 +79,19 @@ export const useRequestLogCount = () => {
 export const useFilteredTableData = () => {
   return useSelector((state: RootState) => {
     return state.requestTable.requests
-      .filter((request) => {
+      .filter((requestValue) => {
         if (!state.requestTable.filterUri) {
           return true;
         }
-        return request.uri.includes(state.requestTable.filterUri);
+        return requestValue.request?.url?.includes(
+          state.requestTable.filterUri,
+        );
       })
       .filter((request) => {
         if (state.requestTable.filterMimeType.length === 0) {
           return true;
         }
-        const mimeType = request.responseMimeType || '';
+        const mimeType = request.response?.headers?.['content-type'] || '';
         return state.requestTable.filterMimeType.some((type) =>
           mimeType.includes(type),
         );
@@ -69,6 +102,7 @@ export const useFilteredTableData = () => {
 export const {
   appendRequest,
   removeOldRequest,
+  replaceRequest,
   clearRequestTable,
   filterMimeType,
   filterUri,

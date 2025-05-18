@@ -9,7 +9,7 @@ import {
 } from '../TreeContentMenu';
 import { App, Form, Input, Modal } from 'antd';
 import { useForm } from 'antd/es/form/Form';
-import { useAddRule, useAddRuleGroup, useUpdateRuleName } from '@/api/rule';
+// import { useAddRule, useAddRuleGroup, useUpdateRuleName } from '@/api/rule';
 
 interface ISaveTreeNodeModalProps {}
 
@@ -26,9 +26,9 @@ export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = () => {
     if (!menuItem) return '';
     return menuItem.label;
   }, [menuItem]);
-  const { mutateAsync: addRule } = useAddRule();
-  const { mutateAsync: updateRule } = useUpdateRuleName();
-  const { mutateAsync: addRuleGroup } = useAddRuleGroup();
+  // const { mutateAsync: addRule } = useAddRule();
+  // const { mutateAsync: updateRule } = useUpdateRuleName();
+  // const { mutateAsync: addRuleGroup } = useAddRuleGroup();
 
   const [form] = useForm();
 
@@ -65,7 +65,7 @@ export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = () => {
           const values = await form.validateFields();
           switch (type) {
             case OperatorType.CreateGroup:
-              await addRuleGroup({ name: values.name });
+              // await addRuleGroup({ name: values.name });
               closeModalAndResetData();
               break;
             case OperatorType.CreateRule: {
@@ -80,10 +80,10 @@ export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = () => {
                 message.error('ruleGroupId is required');
                 return;
               }
-              await addRule({
-                ruleGroupId,
-                name: values.name,
-              });
+              // await addRule({
+              //   ruleGroupId,
+              //   name: values.name,
+              // });
               closeModalAndResetData();
               break;
             }
@@ -92,10 +92,10 @@ export const SaveTreeNodeModal: React.FC<ISaveTreeNodeModalProps> = () => {
                 message.error('contextData is not a rule');
                 return;
               }
-              await updateRule({
-                id: contextData.data.id,
-                name: values.name,
-              });
+              // await updateRule({
+              //   id: contextData.data.id,
+              //   name: values.name,
+              // });
               closeModalAndResetData();
               break;
             case OperatorType.DeleteRule:

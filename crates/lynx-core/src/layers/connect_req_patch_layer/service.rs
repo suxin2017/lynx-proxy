@@ -7,6 +7,8 @@ use http::{
 use tower::Service;
 use tracing::info;
 
+use crate::common::Req;
+
 #[derive(Debug, Clone)]
 pub struct ConnectReqPatchService<S> {
     pub service: S,
@@ -14,9 +16,9 @@ pub struct ConnectReqPatchService<S> {
     pub schema: Scheme,
 }
 
-impl<S, Body> Service<Request<Body>> for ConnectReqPatchService<S>
+impl<S> Service<Req> for ConnectReqPatchService<S>
 where
-    S: Service<Request<Body>>,
+    S: Service<Req>,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -26,7 +28,7 @@ where
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, request: Request<Body>) -> Self::Future {
+    fn call(&mut self, request: Req) -> Self::Future {
         let req = if matches!(request.version(), Version::HTTP_10 | Version::HTTP_11) {
             let (mut parts, body) = request.into_parts();
             parts.uri = {
