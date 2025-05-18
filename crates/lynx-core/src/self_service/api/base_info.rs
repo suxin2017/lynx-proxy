@@ -4,7 +4,6 @@ use crate::self_service::{
 };
 use axum::{Json, extract::State};
 use http::StatusCode;
-use std::net::SocketAddr;
 use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
 

@@ -1,5 +1,8 @@
+import { useGetCachedRequests } from '@/services/generated/net-request/net-request';
+import { ResponseDataWrapperRecordRequests } from '@/services/generated/utoipaAxum.schemas';
 import { configureStore } from '@reduxjs/toolkit';
-import { appendTreeNode, requestTreeReducer } from './requestTreeStore';
+import { useInterval } from 'ahooks';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   appendRequest,
   removeOldRequest,
@@ -7,12 +10,8 @@ import {
   requestTableReducer,
   useRequestLogCount,
 } from './requestTableStore';
-import { useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { appendLog, websocketResourceReducer } from './websocketResourceStore';
-import { useGetCachedRequests } from '@/services/generated/net-request/net-request';
-import { useInterval } from 'ahooks';
-import { ResponseDataWrapperRecordRequests } from '@/services/generated/utoipaAxum.schemas';
+import { appendTreeNode, requestTreeReducer } from './requestTreeStore';
+import { websocketResourceReducer } from './websocketResourceStore';
 
 export const store = configureStore({
   reducer: {

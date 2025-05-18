@@ -1,9 +1,7 @@
-use axum::extract::Path;
 use axum::response::IntoResponse;
-use axum::{Router, extract::State};
+use axum::extract::State;
 use http::header::CONTENT_TYPE;
 use http::{HeaderMap, Uri};
-use include_dir::{Dir, include_dir};
 use mime_guess::from_path;
 use tracing::info;
 

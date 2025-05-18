@@ -188,7 +188,7 @@ export interface RecordRequests {
 export type RecordingStatus =
   (typeof RecordingStatus)[keyof typeof RecordingStatus];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const RecordingStatus = {
   startRecording: 'startRecording',
   pauseRecording: 'pauseRecording',
@@ -196,7 +196,7 @@ export const RecordingStatus = {
 
 export type ResponseCode = (typeof ResponseCode)[keyof typeof ResponseCode];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const ResponseCode = {
   ok: 'ok',
   validateError: 'validateError',
@@ -275,7 +275,7 @@ export interface ResponseDataWrapperTupleUnit {
 
 export type TunnelStatus = (typeof TunnelStatus)[keyof typeof TunnelStatus];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const TunnelStatus = {
   Connected: 'Connected',
   Disconnected: 'Disconnected',
@@ -284,7 +284,7 @@ export const TunnelStatus = {
 export type WebSocketDirection =
   (typeof WebSocketDirection)[keyof typeof WebSocketDirection];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const WebSocketDirection = {
   ClientToServer: 'ClientToServer',
   ServerToClient: 'ServerToClient',
@@ -337,7 +337,7 @@ export type WebSocketMessage =
 export type WebSocketStatus =
   (typeof WebSocketStatus)[keyof typeof WebSocketStatus];
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+ 
 export const WebSocketStatus = {
   Connected: 'Connected',
   Disconnected: 'Disconnected',

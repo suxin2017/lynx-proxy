@@ -1,6 +1,5 @@
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -14,8 +13,8 @@ use lynx_core::proxy_server::{ProxyServerBuilder, StaticDir};
 use lynx_core::self_service::SELF_SERVICE_PATH_PREFIX;
 use sea_orm::ConnectOptions;
 use tokio::signal;
-use tracing::{Level, info};
-use tracing_subscriber::{EnvFilter, filter};
+use tracing::info;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser, Debug)]
@@ -79,19 +78,16 @@ async fn main() -> Result<()> {
 
     // init log level
     let log_level = args.log_level;
-    // if !matches!(log_level, LogLevel::Silent) {
-    //     let level = Level::from_str(&log_level.to_string()).expect("log level error");
-    //     let lynx_cli_filter = filter::Targets::new()
-    //         .with_target("lynx_cli", level)
-    //         .with_target("lynx_core", level);
-    //     tracing_subscriber::registry()
-    //         .with(fmt::layer())
-    //         .with(lynx_cli_filter)
-    //         .init();
-    // }
+    let env_filter = if !matches!(log_level, LogLevel::Silent) {
+        EnvFilter::from_default_env()
+            .add_directive(format!("lynx_cli={}", log_level.to_string()).parse()?)
+            .add_directive(format!("lynx_core={}", log_level.to_string()).parse()?)
+    } else {
+        EnvFilter::from_default_env()
+    };
     tracing_subscriber::registry()
         .with(fmt::layer())
-        .with(EnvFilter::new("trace"))
+        .with(env_filter)
         .init();
     info!("Starting proxy server");
 

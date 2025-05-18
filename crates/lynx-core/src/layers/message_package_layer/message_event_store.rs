@@ -1,6 +1,5 @@
 use anyhow::Result;
 use bytes::Bytes;
-use derive_builder::Builder;
 use http::Extensions;
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};

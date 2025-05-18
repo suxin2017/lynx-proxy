@@ -1,17 +1,11 @@
 use crate::self_service::RouteState;
 use crate::self_service::utils::{AppError, ErrorResponse, ResponseDataWrapper, ok};
-use anyhow::anyhow;
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
-use axum::routing::{get, post};
 use lynx_db::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
-use utoipa::{IntoResponses, TupleUnit};
-use utoipa_axum::router::{OpenApiRouter, UtoipaMethodRouter};
+use utoipa::TupleUnit;
+use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
-
-use serde::Serialize;
-use std::fmt;
 
 #[utoipa::path(
     get,

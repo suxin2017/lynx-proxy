@@ -2,18 +2,16 @@ use std::sync::Arc;
 
 use anyhow::{Ok, Result, anyhow};
 use axum::{body::Body, extract::Request, response::Response};
-use http::{Extensions, Method};
+use http::Method;
 use http_body_util::BodyExt;
 use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     service::TowerToHyperService,
 };
 use lynx_db::dao::https_capture_dao::HttpsCaptureDao;
-use rsa::pkcs8::Document;
 use tokio::spawn;
 use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn, util::Oneshot};
-use tracing::info;
 
 use crate::{
     common::{HyperReq, Req},

@@ -1,18 +1,14 @@
-use std::sync::Arc;
 
 use anyhow::{Ok, Result};
 use axum::body::Body;
 use axum::response::Response;
 use hyper::Method;
 use hyper_util::rt::TokioIo;
-use tokio::io::{AsyncRead, AsyncWrite};
-use tokio::net::{TcpStream, ToSocketAddrs};
-use tokio::spawn;
-use tracing::{error, event, trace};
+use tracing::error;
 
 use crate::common::Req;
-use crate::layers::message_package_layer::{MessageEventCannel, MessageEventLayerExt};
-use crate::layers::trace_id_layer::service::{TraceId, TraceIdExt};
+use crate::layers::message_package_layer::MessageEventLayerExt;
+use crate::layers::trace_id_layer::service::TraceIdExt;
 use crate::utils::host_addr;
 
 use super::tunnel_proxy_by_stream::tunnel_proxy_by_stream;

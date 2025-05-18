@@ -1,6 +1,5 @@
 use std::iter::Extend;
 use std::{
-    io::Write,
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
@@ -14,7 +13,7 @@ use http_body_util::BodyExt;
 use hyper::body::Body;
 use message_event_data::{
     MessageEventRequest, MessageEventResponse, MessageEventTunnel, MessageEventWebSocket,
-    TunnelStatus, WebSocketMessage, WebSocketStatus, copy_body_stream,
+    TunnelStatus, WebSocketStatus, copy_body_stream,
 };
 use message_event_store::{MessageEvent, MessageEventStoreValue, MessageEventTimings};
 use tokio::{spawn, sync::mpsc::channel};

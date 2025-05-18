@@ -1,6 +1,5 @@
 use anyhow::Result;
 use sea_orm::*;
-use sea_orm_migration::seaql_migrations::Entity;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;

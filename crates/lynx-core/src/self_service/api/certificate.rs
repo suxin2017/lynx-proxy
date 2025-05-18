@@ -1,22 +1,11 @@
-use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::{Json, extract::State};
-use serde::{Deserialize, Serialize};
-use tracing::info;
-use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
-use crate::layers::message_package_layer::message_event_data::{
-    MessageEventRequest, MessageEventResponse,
-};
-use crate::layers::message_package_layer::message_event_store::{
-    MessageEventStatus, MessageEventStoreValue, MessageEventTimings,
-};
 use crate::self_service::RouteState;
-use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
+use crate::self_service::utils::{ResponseDataWrapper, ok};
 use axum::http::header;
 use axum::response::IntoResponse;
-use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 

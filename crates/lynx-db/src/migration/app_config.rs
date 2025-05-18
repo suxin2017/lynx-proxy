@@ -1,11 +1,10 @@
-use sea_orm::{ActiveModelTrait, ActiveValue::NotSet, EntityTrait, Schema, Set};
+use sea_orm::{EntityTrait, Schema};
 use sea_orm_migration::prelude::*;
-use serde_json::json;
 
 use crate::{
     dao::{https_capture_dao::CaptureFilter, net_request_dao::CaptureSwitch},
     entities::{
-        app_config::{self, ActiveModel, Model},
+        app_config::{self, ActiveModel},
         prelude::AppConfig,
     },
 };

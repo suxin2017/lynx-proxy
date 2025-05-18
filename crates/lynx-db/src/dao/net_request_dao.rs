@@ -1,4 +1,4 @@
-use crate::entities::app_config::{self, ActiveModel, Entity, Model};
+use crate::entities::app_config::{self, ActiveModel, Entity};
 use anyhow::Result;
 use sea_orm::*;
 use serde::{Deserialize, Serialize};

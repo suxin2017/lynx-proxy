@@ -1,10 +1,6 @@
 import { createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit';
 import { last } from 'lodash';
-import { Model as RequestModel } from '@/RequestModel';
-import {
-  MessageEventRequest,
-  MessageEventStoreValue,
-} from '@/services/generated/utoipaAxum.schemas';
+import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
 
 export interface IRequestTreeNode {
   id: string;

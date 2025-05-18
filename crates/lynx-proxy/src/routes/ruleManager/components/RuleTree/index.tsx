@@ -1,16 +1,15 @@
-import { Tree } from 'antd';
+import { useEventListener, useSize } from 'ahooks';
 import React, { Key } from 'react';
 import { useSelectedRuleContext } from '../store';
+import {
+  SaveTreeNodeModal,
+  SaveTreeNodeModalContextProvider,
+} from './SaveTreeNodeModal';
 import {
   TreeContentMenu,
   TreeContentMenuContextProvider,
   useTreeContentMenuContext,
 } from './TreeContentMenu';
-import { useEventListener, useSize } from 'ahooks';
-import {
-  SaveTreeNodeModal,
-  SaveTreeNodeModalContextProvider,
-} from './SaveTreeNodeModal';
 
 interface IRuleTreeProps {}
 
