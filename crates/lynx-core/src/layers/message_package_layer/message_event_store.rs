@@ -104,6 +104,13 @@ impl MessageEventTimings {
         self.request_end = Some(Self::now());
     }
 
+    pub fn set_tunnel_start(&mut self) {
+        self.tunnel_start = Some(Self::now());
+    }
+    pub fn set_tunnel_end(&mut self) {
+        self.tunnel_end = Some(Self::now());
+    }
+
     pub fn set_request_body_start(&mut self) {
         self.request_body_start = Some(Self::now());
     }

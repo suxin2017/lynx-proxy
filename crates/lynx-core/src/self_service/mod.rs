@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::common::Req;
+use crate::layers::error_handle_layer::ErrorHandlerLayer;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreExtensionsExt;
@@ -13,6 +14,7 @@ use axum::Json;
 use axum::Router;
 use axum::extract::State;
 use axum::response::Response;
+use axum::routing::get;
 use http::Method;
 use tower::ServiceExt;
 use utoipa::ToResponse;
@@ -45,7 +47,6 @@ pub struct RouteState {
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
-    let start_time = std::time::Instant::now();
     let state = RouteState {
         db: req.extensions().get_db(),
         net_request_cache: req.extensions().get_message_event_store(),
@@ -76,13 +77,13 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
 
     let swagger_router =
         Router::new().merge(SwaggerUi::new(swagger_path).url(api_docs_path, openapi));
-    let elapsed_time = start_time.elapsed();
-    let router = Router::new().nest(SELF_SERVICE_PATH_PREFIX, router);
 
-    let router = router.merge(swagger_router);
-    tracing::info!("Request handled in {:?}", elapsed_time);
-    return router
+    let router = Router::new()
+        .nest(SELF_SERVICE_PATH_PREFIX, router)
+        .merge(swagger_router);
+
+    router
         .oneshot(req)
         .await
-        .map_err(|_| anyhow::anyhow!("Error handling request"));
+        .map_err(|e| anyhow::anyhow!(e).context("Error handling request"))
 }

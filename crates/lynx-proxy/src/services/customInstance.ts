@@ -7,13 +7,8 @@ export const AXIOS_INSTANCE = axios.create({
   },
 });
 
-// 添加请求拦截器
 AXIOS_INSTANCE.interceptors.request.use(
   (config) => {
-    console.log(
-      `[Request] ${config.method?.toUpperCase()} ${config.url}`,
-      config,
-    );
     return config;
   },
   (error) => {
@@ -22,13 +17,8 @@ AXIOS_INSTANCE.interceptors.request.use(
   },
 );
 
-// 添加响应拦截器
 AXIOS_INSTANCE.interceptors.response.use(
   (response) => {
-    console.log(
-      `[Response] ${response.config.method?.toUpperCase()} ${response.config.url}`,
-      response.data,
-    );
     return response;
   },
   (error: AxiosError) => {

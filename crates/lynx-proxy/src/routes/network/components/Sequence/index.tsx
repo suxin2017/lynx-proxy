@@ -15,14 +15,12 @@ export const Sequence: React.FC<ISequenceProps> = () => {
         <ShowTypeSegmented />
         <Toolbar />
       </div>
-      <div className="flex-1 max-h-full" ref={ref}>
-        <Splitter
-          className="h-full"
-          layout="vertical"
-        >
+      <div className="max-h-full flex-1" ref={ref}>
+        <Splitter className="h-full" layout="vertical">
           <Splitter.Panel defaultSize="50%" min="10%" max="90%">
             <RequestTable />
           </Splitter.Panel>
+
           <Splitter.Panel defaultSize="50%" min="10%" max="90%">
             <Detail />
           </Splitter.Panel>

@@ -41,9 +41,21 @@ export const RequestTable: React.FC = () => {
     },
     {
       title: t('network.table.status'),
-      width: 80,
+      width: 100,
       dataIndex: ['response', 'status'],
       ellipsis: true,
+      render: (status: number, raw) => {
+        if (raw.request?.headers['connection'] === 'Upgrade') {
+          return <span>101</span>;
+        }
+        if (raw.tunnel) {
+          return <span>{raw.tunnel.status}</span>;
+        }
+        if (!status) {
+          return '-';
+        }
+        return <span>{status}</span>;
+      },
     },
     {
       title: t('network.table.path'),
@@ -57,6 +69,9 @@ export const RequestTable: React.FC = () => {
       dataIndex: ['request', 'url'],
       ellipsis: true,
       render: (url: string, raw) => {
+        if (raw.tunnel) {
+          return <span>Tunnel</span>;
+        }
         if (!url) {
           return '-';
         }
@@ -100,6 +115,7 @@ export const RequestTable: React.FC = () => {
     {
       title: t('network.table.type'),
       key: 'type',
+      width: 100,
       ellipsis: true,
       dataIndex: ['response', 'headers', 'content-type'],
       render: (type: string, raw) => {
@@ -115,27 +131,54 @@ export const RequestTable: React.FC = () => {
       },
     },
     {
+      title: t('network.table.startTime'),
+      key: 'time',
+      width: 160,
+      dataIndex: ['timings', 'requestStart'],
+      render: (requestStart: number) => {
+        if (!requestStart) {
+          return '-';
+        }
+        const formattedTime = dayjs(requestStart).format('YYYY-MM-DD HH:mm:ss');
+        return <span>{formattedTime}</span>;
+      },
+    },
+
+    {
       title: t('network.table.time'),
       key: 'time',
+      width: 80,
       dataIndex: ['timings'],
-      render: (timings: MessageEventTimings) => {
-        const { requestStart, requestEnd } = timings;
+      render: (timings: MessageEventTimings, raw) => {
+        const { requestStart, requestEnd, tunnelEnd, tunnelStart } = timings;
 
-        if (!requestStart || !requestEnd) {
-          return <Spin size="small" />;
+        if (raw.tunnel && tunnelStart) {
+          const formattedDuration = prettyMs(
+            (tunnelEnd || Date.now()) - tunnelStart,
+          );
+
+          return <span>{formattedDuration}</span>;
         }
-        const formattedDuration = prettyMs(requestEnd - requestStart);
+        if (requestStart) {
+          const formattedDuration = prettyMs(
+            (requestEnd || Date.now()) - requestStart,
+          );
+          return <span>{formattedDuration}</span>;
+        }
 
-        return <span>{formattedDuration}</span>;
+        return <Spin size="small" />;
       },
     },
   ];
 
   useEffect(() => {
-    if (autoScroll) {
-      tblRef.current?.scrollTo({
-        key: requestTable[requestTable.length - 1]?.traceId,
-      });
+    if (autoScroll && requestTable.length > 0) {
+      const lastItem = requestTable[requestTable.length - 1];
+      if (lastItem && tblRef.current) {
+        tblRef.current.scrollTo({
+          key: lastItem.traceId,
+        });
+      }
     }
   }, [autoScroll, requestTable]);
 
@@ -168,7 +211,7 @@ export const RequestTable: React.FC = () => {
               sticky
               className="flex-1"
               columns={columns}
-              rowKey="id"
+              rowKey="traceId"
               size="small"
               rowClassName={(record) => {
                 if (selectRequest?.traceId === record.traceId) {
@@ -183,15 +226,13 @@ export const RequestTable: React.FC = () => {
                 onContextMenu: (event) => handleContextMenu(record, event),
               })}
               virtual
-              scroll={{ x: 800, y: size?.height ? size.height - 66 : 400 }}
+              scroll={{ x: 800, y: size?.height ? size.height : 400 }}
               pagination={false}
               dataSource={requestTable}
             />
           </div>
         )}
       </RequestContextMenu>
-
-      <TableFilter />
     </div>
   );
 };

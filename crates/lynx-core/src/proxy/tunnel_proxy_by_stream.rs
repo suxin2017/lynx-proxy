@@ -22,7 +22,7 @@ pub async fn tunnel_proxy_by_stream<
     let (mut ri, mut wi) = tokio::io::split(stream);
     let (mut ro, mut wo) = server.split();
 
-    let idle_timeout = Duration::from_secs(2);
+    let idle_timeout = Duration::from_secs(60 * 60 * 24);
 
     let client_to_server = async {
         let mut buf = [0u8; 1024];

@@ -23,8 +23,15 @@
         "includeDomains": "Include Domains",
         "excludeDomains": "Exclude Domains",
         "invalidHost": "Invalid host",
-        "invalidPort": "Invalid port"
+        "invalidPort": "Invalid port",
+        "validation": {
+          "domain": "Please enter domain",
+          "port": "Please enter port number"
+        }
       }
+    },
+    "messages": {
+      "saveSuccess": "Saved successfully"
     }
   },
   "settings": {
@@ -147,7 +154,8 @@
       "method": "Method",
       "path": "Path",
       "type": "Type",
-      "time": "Time"
+      "time": "Time",
+      "startTime": "Start Time"
     }
   },
   "sideBar": {

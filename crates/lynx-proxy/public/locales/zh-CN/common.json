@@ -112,17 +112,23 @@
     "operation": "操作",
     "add": "添加",
     "save": "保存设置",
-    "reset": "重置",
     "captureHttps": {
-      "title": "捕获HTTPS请求",
-      "description": "捕获HTTPS请求需要安装证书，请确保已经安装证书",
+      "title": "抓取HTTPS请求",
+      "description": "抓取HTTPS请求需要安装证书。请确保已安装",
       "status": "当前状态",
       "filter": {
-        "title": "捕获过滤器",
-        "description": "捕获过滤器用于设置捕获请求的规则，可以使用Glob默认来匹配请求的URL",
-        "includeDomains": "包含的域名",
-        "excludeDomains": "排除的域名"
+        "title": "抓取过滤器",
+        "description": "抓取过滤器用于设置请求抓取规则。您可以使用Glob模式匹配请求URL",
+        "includeDomains": "包含域名",
+        "excludeDomains": "排除域名",
+        "validation": {
+          "domain": "请输入域名",
+          "port": "请输入端口号"
+        }
       }
+    },
+    "messages": {
+      "saveSuccess": "保存成功"
     }
   },
   "network": {
@@ -157,5 +163,6 @@
     "start": "开始录制",
     "stop": "停止录制"
   },
-  "clearRequests": "清除所有请求"
+  "clearRequests": "清除所有请求",
+  "startTime": "开始时间"
 }

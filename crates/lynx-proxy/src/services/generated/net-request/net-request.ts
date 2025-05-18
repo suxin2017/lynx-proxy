@@ -22,7 +22,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  GetCachedRequestsParams,
+  GetRequestsData,
   ResponseDataWrapperCaptureSwitch,
   ResponseDataWrapperRecordRequests,
   ResponseDataWrapperTupleUnit,
@@ -237,156 +237,78 @@ export const useToggleCapture = <TError = void, TContext = unknown>(
   return useMutation(mutationOptions, queryClient);
 };
 export const getCachedRequests = (
-  params?: GetCachedRequestsParams,
+  getRequestsData: GetRequestsData,
   signal?: AbortSignal,
 ) => {
   return customInstance<ResponseDataWrapperRecordRequests>({
     url: `/net_request/requests`,
-    method: 'GET',
-    params,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: getRequestsData,
     signal,
   });
 };
 
-export const getGetCachedRequestsQueryKey = (
-  params?: GetCachedRequestsParams,
-) => {
-  return [`/net_request/requests`, ...(params ? [params] : [])] as const;
-};
-
-export const getGetCachedRequestsQueryOptions = <
-  TData = Awaited<ReturnType<typeof getCachedRequests>>,
+export const getGetCachedRequestsMutationOptions = <
   TError = void,
->(
-  params?: GetCachedRequestsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof getCachedRequests>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getGetCachedRequestsQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getCachedRequests>>
-  > = ({ signal }) => getCachedRequests(params, signal);
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof getCachedRequests>>,
     TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+    { data: GetRequestsData },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof getCachedRequests>>,
+  TError,
+  { data: GetRequestsData },
+  TContext
+> => {
+  const mutationKey = ['getCachedRequests'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof getCachedRequests>>,
+    { data: GetRequestsData }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return getCachedRequests(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
 };
 
-export type GetCachedRequestsQueryResult = NonNullable<
+export type GetCachedRequestsMutationResult = NonNullable<
   Awaited<ReturnType<typeof getCachedRequests>>
 >;
-export type GetCachedRequestsQueryError = void;
+export type GetCachedRequestsMutationBody = GetRequestsData;
+export type GetCachedRequestsMutationError = void;
 
-export function useGetCachedRequests<
-  TData = Awaited<ReturnType<typeof getCachedRequests>>,
-  TError = void,
->(
-  params: undefined | GetCachedRequestsParams,
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof getCachedRequests>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCachedRequests>>,
-          TError,
-          Awaited<ReturnType<typeof getCachedRequests>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetCachedRequests<
-  TData = Awaited<ReturnType<typeof getCachedRequests>>,
-  TError = void,
->(
-  params?: GetCachedRequestsParams,
+export const useGetCachedRequests = <TError = void, TContext = unknown>(
   options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof getCachedRequests>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getCachedRequests>>,
-          TError,
-          Awaited<ReturnType<typeof getCachedRequests>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetCachedRequests<
-  TData = Awaited<ReturnType<typeof getCachedRequests>>,
-  TError = void,
->(
-  params?: GetCachedRequestsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof getCachedRequests>>,
-        TError,
-        TData
-      >
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof getCachedRequests>>,
+      TError,
+      { data: GetRequestsData },
+      TContext
     >;
   },
   queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
+): UseMutationResult<
+  Awaited<ReturnType<typeof getCachedRequests>>,
+  TError,
+  { data: GetRequestsData },
+  TContext
+> => {
+  const mutationOptions = getGetCachedRequestsMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
 };
-
-export function useGetCachedRequests<
-  TData = Awaited<ReturnType<typeof getCachedRequests>>,
-  TError = void,
->(
-  params?: GetCachedRequestsParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof getCachedRequests>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getGetCachedRequestsQueryOptions(params, options);
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}

@@ -23,7 +23,6 @@ use tokio_tungstenite::tungstenite;
 use tower::Service;
 use tracing::{info, warn};
 
-use crate::proxy::proxy_connect_request::is_connect_req;
 use crate::proxy::proxy_ws_request::SendType;
 use crate::{
     common::{Req, Res},
@@ -186,6 +185,8 @@ pub async fn handle_message_event(
                 }
                 let value = value.unwrap();
                 let mut value = value.write().await;
+
+                value.timings_mut().set_tunnel_end();
                 let msg = &mut value.tunnel;
 
                 match msg {
@@ -203,6 +204,7 @@ pub async fn handle_message_event(
                 }
                 let value = value.unwrap();
                 let mut value = value.write().await;
+                value.timings_mut().set_tunnel_start();
                 value.tunnel = Some(MessageEventTunnel {
                     status: TunnelStatus::Connected,
                     ..Default::default()

@@ -1,12 +1,17 @@
 use crate::self_service::RouteState;
-use crate::self_service::utils::{ResponseDataWrapper, ok};
+use crate::self_service::utils::{AppError, ErrorResponse, ResponseDataWrapper, ok};
+use anyhow::anyhow;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use lynx_db::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
-use utoipa_axum::router::OpenApiRouter;
+use utoipa::{IntoResponses, TupleUnit};
+use utoipa_axum::router::{OpenApiRouter, UtoipaMethodRouter};
 use utoipa_axum::routes;
+
+use serde::Serialize;
+use std::fmt;
 
 #[utoipa::path(
     get,
@@ -14,17 +19,17 @@ use utoipa_axum::routes;
     tags = ["HTTPS Capture"],
     responses(
         (status = 200, description = "Successfully retrieved HTTPS capture filter", body = ResponseDataWrapper<CaptureFilter>),
-        (status = 500, description = "Failed to get HTTPS capture filter")
+        (status = 500, description = "Failed to get HTTPS capture filter",body = ErrorResponse),
     )
 )]
 async fn get_https_capture_filter(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<CaptureFilter>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<CaptureFilter>>, AppError> {
     let dao = HttpsCaptureDao::new(db);
     let filter = dao
         .get_capture_filter()
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(Json(ok(filter)))
 }
 
@@ -34,18 +39,18 @@ async fn get_https_capture_filter(
     tags = ["HTTPS Capture"],
     request_body = CaptureFilter,
     responses(
-        (status = 200, description = "Successfully updated HTTPS capture filter"),
-        (status = 500, description = "Failed to update HTTPS capture filter")
+        (status = 200, description = "Successfully updated HTTPS capture filter", body = ResponseDataWrapper<TupleUnit>),
+        (status = 500, description = "Failed to update HTTPS capture filter",body = ErrorResponse)
     )
 )]
 async fn update_https_capture_filter(
     State(RouteState { db, .. }): State<RouteState>,
     Json(filter): Json<CaptureFilter>,
-) -> Result<Json<ResponseDataWrapper<()>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<()>>, AppError> {
     let dao = HttpsCaptureDao::new(db);
     dao.update_capture_filter(filter)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
     Ok(Json(ok(())))
 }
 

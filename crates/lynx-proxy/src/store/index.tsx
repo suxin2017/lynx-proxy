@@ -8,10 +8,11 @@ import {
   useRequestLogCount,
 } from './requestTableStore';
 import { useEffect, useMemo } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { appendLog, websocketResourceReducer } from './websocketResourceStore';
 import { useGetCachedRequests } from '@/services/generated/net-request/net-request';
 import { useInterval } from 'ahooks';
+import { ResponseDataWrapperRecordRequests } from '@/services/generated/utoipaAxum.schemas';
 
 export const store = configureStore({
   reducer: {
@@ -41,8 +42,45 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
 export const useUpdateRequestLog = () => {
   const cacheRequests = useGetCachedRequests({});
 
-  const chacheNewData = useMemo(() => {
-    const newRequests = cacheRequests.data?.data?.newRequests?.map((item) => {
+  const dispatch = useDispatch();
+  const requestLogCount = useRequestLogCount();
+  const { maxLogSize = 1000 } = {};
+
+  const pendingRequestIds = useSelector((state: RootState) => {
+    return state.requestTable.pendingRequestIds;
+  });
+
+  const handleCacheRequests = (
+    cacheRequestsData: ResponseDataWrapperRecordRequests,
+  ) => {
+    const newRequests = cacheRequestsData?.data?.newRequests
+      ?.filter((item) => {
+        if (item.request?.method === 'CONNECT' && !item.tunnel) {
+          return false;
+        }
+        return true;
+      })
+      .map((item) => {
+        const { request, response } = item;
+        const body = request?.body
+          ? base64ToArrayBuffer(request.body)
+          : undefined;
+        const responseBody = response?.body
+          ? base64ToArrayBuffer(response.body)
+          : undefined;
+        return {
+          ...item,
+          request: {
+            ...request,
+            body,
+          },
+          response: {
+            ...response,
+            body: responseBody,
+          },
+        };
+      });
+    const patchRequests = cacheRequestsData?.data.patchRequests?.map((item) => {
       const { request, response } = item;
       const body = request?.body
         ? base64ToArrayBuffer(request.body)
@@ -62,29 +100,7 @@ export const useUpdateRequestLog = () => {
         },
       };
     });
-    const patchRequests = cacheRequests.data?.data.patchRequests?.map(
-      (item) => {
-        const { request, response } = item;
-        const body = request?.body
-          ? base64ToArrayBuffer(request.body)
-          : undefined;
-        const responseBody = response?.body
-          ? base64ToArrayBuffer(response.body)
-          : undefined;
-        return {
-          ...item,
-          request: {
-            ...request,
-            body,
-          },
-          response: {
-            ...response,
-            body: responseBody,
-          },
-        };
-      },
-    );
-    return {
+    const chacheNewData = {
       data: {
         data: {
           ...cacheRequests.data?.data,
@@ -93,12 +109,7 @@ export const useUpdateRequestLog = () => {
         },
       },
     };
-  }, [cacheRequests.data?.data]);
-  const dispatch = useDispatch();
-  const requestLogCount = useRequestLogCount();
-  const { maxLogSize = 1000, clearLogSize = 100 } = {};
-
-  const handleCacheRequests = () => {
+    console.log('chacheNewData', chacheNewData);
     if (requestLogCount >= maxLogSize) {
       dispatch(
         removeOldRequest({
@@ -121,10 +132,17 @@ export const useUpdateRequestLog = () => {
     }
   };
 
-  useEffect(() => {
-    handleCacheRequests();
-  }, [
-    chacheNewData.data?.data.newRequests,
-    chacheNewData.data?.data.patchRequests,
-  ]);
+  useInterval(
+    () => {
+      cacheRequests
+        .mutateAsync({
+          data: {
+            traceIds: Object.keys(pendingRequestIds),
+          },
+        })
+        .then(handleCacheRequests);
+    },
+    1000,
+    { immediate: true },
+  );
 };

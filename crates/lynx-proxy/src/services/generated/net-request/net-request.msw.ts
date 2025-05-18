@@ -9,10 +9,18 @@ import { faker } from '@faker-js/faker';
 
 import { HttpResponse, delay, http } from 'msw';
 
-import { RecordingStatus, ResponseCode } from '../utoipaAxum.schemas';
+import {
+  RecordingStatus,
+  ResponseCode,
+  TunnelStatus,
+  WebSocketDirection,
+  WebSocketStatus,
+} from '../utoipaAxum.schemas';
 import type {
   MessageEventRequest,
   MessageEventResponse,
+  MessageEventTunnel,
+  MessageEventWebSocket,
   ResponseDataWrapperCaptureSwitch,
   ResponseDataWrapperRecordRequests,
   ResponseDataWrapperTupleUnit,
@@ -41,6 +49,29 @@ export const getToggleCaptureResponseMock = (
     faker.helpers.arrayElement([faker.string.alpha(20), null]),
     undefined,
   ]),
+  ...overrideResponse,
+});
+
+export const getGetCachedRequestsResponseMessageEventWebSocketMock = (
+  overrideResponse: Partial<MessageEventWebSocket> = {},
+): MessageEventWebSocket => ({
+  ...{
+    message: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({
+      direction: faker.helpers.arrayElement(Object.values(WebSocketDirection)),
+      message: faker.helpers.arrayElement([
+        { text: faker.helpers.arrayElement([null, faker.string.alpha(20)]) },
+        { binary: faker.helpers.arrayElement([null, faker.string.alpha(20)]) },
+        { ping: faker.helpers.arrayElement([null, faker.string.alpha(20)]) },
+        { pong: faker.helpers.arrayElement([null, faker.string.alpha(20)]) },
+        { close: faker.helpers.arrayElement([[], null]) },
+      ]),
+      timestamp: faker.number.int({ min: 0, max: undefined }),
+    })),
+    status: faker.helpers.arrayElement(Object.values(WebSocketStatus)),
+  },
   ...overrideResponse,
 });
 
@@ -75,248 +106,111 @@ export const getGetCachedRequestsResponseMessageEventResponseMock = (
   ...overrideResponse,
 });
 
+export const getGetCachedRequestsResponseMessageEventTunnelMock = (
+  overrideResponse: Partial<MessageEventTunnel> = {},
+): MessageEventTunnel => ({
+  ...{ status: faker.helpers.arrayElement(Object.values(TunnelStatus)) },
+  ...overrideResponse,
+});
+
 export const getGetCachedRequestsResponseMock = (
   overrideResponse: Partial<ResponseDataWrapperRecordRequests> = {},
 ): ResponseDataWrapperRecordRequests => ({
-  ...{
-    code: 'ok',
-    message: null,
-    data: {
-      newRequests: [
-        {
-          status: 'Completed',
-          traceId: '9wmIjmv7DFCuoPeXgMyf0',
-          isNew: true,
-          request: {
-            method: 'GET',
-            url: 'http://www.baidu.com/a/1',
-            headers: {
-              host: 'www.baidu.com',
-              'user-agent': 'curl/8.5.0',
-              accept: '*/*',
-              'proxy-connection': 'Keep-Alive',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 72,
-            body: '',
-          },
-          response: {
-            status: 200,
-            headers: {
-              'content-length': '509323',
-              bdqid: '0xc741e28e0001b502',
-              'set-cookie':
-                'BAIDUID_BFESS=98A7E5CA6E6D98B4E785D775A40B4A2E:FG=1; Path=/; Domain=baidu.com; Max-Age=31536000; Secure; SameSite=None',
-              'x-xss-protection': '1;mode=block',
-              vary: 'Accept-Encoding',
-              server: 'BWS/1.1',
-              connection: 'keep-alive',
-              bdpagetype: '1',
-              'content-type': 'text/html; charset=utf-8',
-              traceid: '1747399243243806337014358006186547197186',
-              'x-ua-compatible': 'IE=Edge,chrome=1',
-              date: 'Fri, 16 May 2025 12:40:43 GMT',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 974,
-          },
-          timings: {
-            requestStart: 1747399243245,
-            requestEnd: 1747399243269,
-            requestBodyStart: null,
-            requestBodyEnd: 1747399243245,
-            proxyStart: 1747399243268,
-            proxyEnd: 1747399243245,
-            reponseBodyStart: 1747399243290,
-            reponseBodyEnd: 1747399243290,
-          },
-        },
-        {
-          status: 'Completed',
-          traceId: '9wmIjmv7DFCuoPeXgMyf0',
-          isNew: true,
-          request: {
-            method: 'GET',
-            url: 'http://www.baidu.com/a',
-            headers: {
-              host: 'www.baidu.com',
-              'user-agent': 'curl/8.5.0',
-              accept: '*/*',
-              'proxy-connection': 'Keep-Alive',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 72,
-            body: '',
-          },
-          response: {
-            status: 200,
-            headers: {
-              'content-length': '509323',
-              bdqid: '0xc741e28e0001b502',
-              'set-cookie':
-                'BAIDUID_BFESS=98A7E5CA6E6D98B4E785D775A40B4A2E:FG=1; Path=/; Domain=baidu.com; Max-Age=31536000; Secure; SameSite=None',
-              'x-xss-protection': '1;mode=block',
-              vary: 'Accept-Encoding',
-              server: 'BWS/1.1',
-              connection: 'keep-alive',
-              bdpagetype: '1',
-              'content-type': 'text/html; charset=utf-8',
-              traceid: '1747399243243806337014358006186547197186',
-              'x-ua-compatible': 'IE=Edge,chrome=1',
-              date: 'Fri, 16 May 2025 12:40:43 GMT',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 974,
-          },
-          timings: {
-            requestStart: 1747399243245,
-            requestEnd: 1747399243269,
-            requestBodyStart: null,
-            requestBodyEnd: 1747399243245,
-            proxyStart: 1747399243268,
-            proxyEnd: 1747399243245,
-            reponseBodyStart: 1747399243290,
-            reponseBodyEnd: 1747399243290,
-          },
-        },
-        {
-          status: 'Completed',
-          traceId: '9wmIjmv7DFCuoPeXgMyf0',
-          isNew: true,
-          request: {
-            method: 'GET',
-            url: 'http://www.baidu.com/',
-            headers: {
-              host: 'www.baidu.com',
-              'user-agent': 'curl/8.5.0',
-              accept: '*/*',
-              'proxy-connection': 'Keep-Alive',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 72,
-            body: '',
-          },
-          response: {
-            status: 200,
-            headers: {
-              'content-length': '509323',
-              bdqid: '0xc741e28e0001b502',
-              'set-cookie':
-                'BAIDUID_BFESS=98A7E5CA6E6D98B4E785D775A40B4A2E:FG=1; Path=/; Domain=baidu.com; Max-Age=31536000; Secure; SameSite=None',
-              'x-xss-protection': '1;mode=block',
-              vary: 'Accept-Encoding',
-              server: 'BWS/1.1',
-              connection: 'keep-alive',
-              bdpagetype: '1',
-              'content-type': 'text/html; charset=utf-8',
-              traceid: '1747399243243806337014358006186547197186',
-              'x-ua-compatible': 'IE=Edge,chrome=1',
-              date: 'Fri, 16 May 2025 12:40:43 GMT',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 974,
-          },
-          timings: {
-            requestStart: 1747399243245,
-            requestEnd: 1747399243269,
-            requestBodyStart: null,
-            requestBodyEnd: 1747399243245,
-            proxyStart: 1747399243268,
-            proxyEnd: 1747399243245,
-            reponseBodyStart: 1747399243290,
-            reponseBodyEnd: 1747399243290,
-          },
-        },
-        {
-          status: 'Completed',
-          traceId: 't_tZJzG6LlG9j2T9_DKTv',
-          isNew: true,
-          request: {
-            method: 'CONNECT',
-            url: '',
-            headers: {
-              host: '127.0.0.1:3001',
-              'proxy-connection': 'close',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 39,
-            body: '',
-          },
-          response: null,
-          messages: null,
-          timings: {
-            requestStart: 1747442496140,
-            requestEnd: 1747442496140,
-            requestBodyStart: null,
-            requestBodyEnd: 1747442496140,
-            proxyStart: null,
-            proxyEnd: null,
-            reponseBodyStart: null,
-            reponseBodyEnd: null,
-          },
-        },
-        {
-          status: 'Completed',
-          traceId: 'hdZtDQjt0WIr1lhQyLr-I',
-          isNew: true,
-          request: {
-            method: 'GET',
-            url: 'http://127.0.0.1:3001/',
-            headers: {
-              'sec-websocket-version': '13',
-              upgrade: 'websocket',
-              'sec-websocket-extensions':
-                'permessage-deflate; client_max_window_bits',
-              'sec-websocket-key': 'MeByFGua8qD+2w88c5dMmQ==',
-              connection: 'Upgrade',
-              host: '127.0.0.1:3001',
-            },
-            version: 'HTTP/1.1',
-            headerSize: 181,
-            body: '',
-          },
-          response: null,
-          messages: {
-            status: 'Disconnected',
-            message: [
-              {
-                direction: 'ServerToClient',
-                timestamp: 1747442498157,
-                message: {
-                  text: '5bCx56uL5Yi75pW45pOa5bqr55qE5rWq6LK75pmC6ZaT6ICD5oWu5bCN5pa5',
-                },
-              },
-              {
-                direction: 'ClientToServer',
-                timestamp: 1747442498158,
-                message: {
-                  text: '5bCx56uL5Yi75pW45pOa5bqr55qE5rWq6LK75pmC6ZaT6ICD5oWu5bCN5pa5',
-                },
-              },
-              {
-                direction: 'ServerToClient',
-                timestamp: 1747442502203,
-                message: {
-                  close: null,
-                },
-              },
-            ],
-          },
-          timings: {
-            requestStart: 1747442496142,
-            requestEnd: 1747442496144,
-            requestBodyStart: null,
-            requestBodyEnd: 1747442496142,
-            proxyStart: null,
-            proxyEnd: null,
-            reponseBodyStart: null,
-            reponseBodyEnd: null,
-          },
-        },
-      ],
-      patchRequests: null,
-    },
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: {
+    newRequests: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => ({
+      isNew: faker.datatype.boolean(),
+      messages: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([
+          null,
+          { ...getGetCachedRequestsResponseMessageEventWebSocketMock() },
+        ]),
+        undefined,
+      ]),
+      request: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([
+          null,
+          { ...getGetCachedRequestsResponseMessageEventRequestMock() },
+        ]),
+        undefined,
+      ]),
+      response: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([
+          null,
+          { ...getGetCachedRequestsResponseMessageEventResponseMock() },
+        ]),
+        undefined,
+      ]),
+      status: faker.helpers.arrayElement([
+        faker.helpers.arrayElement(['Initial'] as const),
+        faker.helpers.arrayElement(['RequestStarted'] as const),
+        faker.helpers.arrayElement(['Completed'] as const),
+        { Error: faker.string.alpha(20) },
+        faker.helpers.arrayElement(['Cancelled'] as const),
+      ]),
+      timings: {
+        proxyEnd: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        proxyStart: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        reponseBodyEnd: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        reponseBodyStart: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        requestBodyEnd: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        requestBodyStart: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        requestEnd: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        requestStart: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        tunnelEnd: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        tunnelStart: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+      },
+      traceId: faker.string.alpha(20),
+      tunnel: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([
+          null,
+          { ...getGetCachedRequestsResponseMessageEventTunnelMock() },
+        ]),
+        undefined,
+      ]),
+    })),
+    patchRequests: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([[], null]),
+      undefined,
+    ]),
   },
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
   ...overrideResponse,
 });
 
@@ -374,12 +268,12 @@ export const getGetCachedRequestsMockHandler = (
   overrideResponse?:
     | ResponseDataWrapperRecordRequests
     | ((
-        info: Parameters<Parameters<typeof http.get>[1]>[0],
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
       ) =>
         | Promise<ResponseDataWrapperRecordRequests>
         | ResponseDataWrapperRecordRequests),
 ) => {
-  return http.get('*/net_request/requests', async (info) => {
+  return http.post('*/net_request/requests', async (info) => {
     await delay(1000);
 
     return new HttpResponse(

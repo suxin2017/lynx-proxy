@@ -9,11 +9,33 @@ export interface BaseInfo {
   accessAddrList: string[];
 }
 
+export interface CaptureFilter {
+  enabled: boolean;
+  excludeDomains: DomainFilter[];
+  includeDomains: DomainFilter[];
+}
+
 export interface CaptureSwitch {
   recordingStatus: RecordingStatus;
 }
 
+export interface DomainFilter {
+  domain: string;
+  enabled: boolean;
+  /**
+   * @minimum 0
+   * @maximum 65535
+   */
+  port: number;
+}
+
 export type EmptyOkResponse = ResponseDataWrapperTupleUnit;
+
+export type GetRequestsDataTraceIds = string[] | null;
+
+export interface GetRequestsData {
+  traceIds?: GetRequestsDataTraceIds;
+}
 
 export type MessageEventBody = string;
 
@@ -56,6 +78,8 @@ export type MessageEventStoreValueRequest = null | MessageEventRequest;
 
 export type MessageEventStoreValueResponse = null | MessageEventResponse;
 
+export type MessageEventStoreValueTunnel = null | MessageEventTunnel;
+
 export interface MessageEventStoreValue {
   isNew: boolean;
   messages?: MessageEventStoreValueMessages;
@@ -64,6 +88,7 @@ export interface MessageEventStoreValue {
   status: MessageEventStatus;
   timings: MessageEventTimings;
   traceId: string;
+  tunnel?: MessageEventStoreValueTunnel;
 }
 
 /**
@@ -106,6 +131,16 @@ export type MessageEventTimingsRequestEnd = number | null;
  */
 export type MessageEventTimingsRequestStart = number | null;
 
+/**
+ * @minimum 0
+ */
+export type MessageEventTimingsTunnelEnd = number | null;
+
+/**
+ * @minimum 0
+ */
+export type MessageEventTimingsTunnelStart = number | null;
+
 export interface MessageEventTimings {
   /** @minimum 0 */
   proxyEnd?: MessageEventTimingsProxyEnd;
@@ -123,6 +158,14 @@ export interface MessageEventTimings {
   requestEnd?: MessageEventTimingsRequestEnd;
   /** @minimum 0 */
   requestStart?: MessageEventTimingsRequestStart;
+  /** @minimum 0 */
+  tunnelEnd?: MessageEventTimingsTunnelEnd;
+  /** @minimum 0 */
+  tunnelStart?: MessageEventTimingsTunnelStart;
+}
+
+export interface MessageEventTunnel {
+  status: TunnelStatus;
 }
 
 export interface MessageEventWebSocket {
@@ -171,6 +214,20 @@ export interface ResponseDataWrapperBaseInfo {
   message?: ResponseDataWrapperBaseInfoMessage;
 }
 
+export type ResponseDataWrapperCaptureFilterData = {
+  enabled: boolean;
+  excludeDomains: DomainFilter[];
+  includeDomains: DomainFilter[];
+};
+
+export type ResponseDataWrapperCaptureFilterMessage = string | null;
+
+export interface ResponseDataWrapperCaptureFilter {
+  code: ResponseCode;
+  data: ResponseDataWrapperCaptureFilterData;
+  message?: ResponseDataWrapperCaptureFilterMessage;
+}
+
 export type ResponseDataWrapperCaptureSwitchData = {
   recordingStatus: RecordingStatus;
 };
@@ -215,6 +272,14 @@ export interface ResponseDataWrapperTupleUnit {
   data: unknown;
   message?: ResponseDataWrapperTupleUnitMessage;
 }
+
+export type TunnelStatus = (typeof TunnelStatus)[keyof typeof TunnelStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TunnelStatus = {
+  Connected: 'Connected',
+  Disconnected: 'Disconnected',
+} as const;
 
 export type WebSocketDirection =
   (typeof WebSocketDirection)[keyof typeof WebSocketDirection];
@@ -277,7 +342,3 @@ export const WebSocketStatus = {
   Connected: 'Connected',
   Disconnected: 'Disconnected',
 } as const;
-
-export type GetCachedRequestsParams = {
-  traceIds?: string[] | null;
-};

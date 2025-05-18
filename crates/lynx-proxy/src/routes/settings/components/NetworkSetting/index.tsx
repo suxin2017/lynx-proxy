@@ -13,17 +13,28 @@ import {
   Typography,
   InputNumber,
   Space,
+  Empty,
+  message,
 } from 'antd';
 import { FormListProps } from 'antd/es/form';
 import React from 'react';
 import { CommonCard } from '../CommonCard';
 import { useGetHealth } from '@/services/generated/default/default';
 import { useTranslation } from 'react-i18next';
+import {
+  useGetHttpsCaptureFilter,
+  useUpdateHttpsCaptureFilter,
+} from '@/services/generated/https-capture/https-capture';
+import { PageLoading } from '@/components/PageLoading';
+import {
+  DomainFilter,
+  ResponseDataWrapperCaptureFilterData,
+} from '@/services/generated/utoipaAxum.schemas';
 
-const defaultSSLConfig = {
-  switch: true,
-  host: '',
-  port: undefined,
+const defaultSSLConfig: DomainFilter = {
+  enabled: true,
+  domain: '',
+  port: 443,
 };
 
 export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
@@ -43,7 +54,7 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
       {(fields, { add, remove }) => {
         return (
           <div>
-            <div className="grid grid-cols-[auto_1fr_1fr_auto] gap-4 pb-2">
+            <div className="grid grid-cols-[50px_1fr_1fr_80px] gap-4 pb-2">
               <div className="font-medium whitespace-nowrap">
                 {t('networkSetting.switch')}
               </div>
@@ -52,11 +63,19 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
               <div className="font-medium whitespace-nowrap">
                 {t('networkSetting.operation')}
               </div>
+              {fields.length === 0 && (
+                <div className="col-span-4">
+                  <Empty
+                    description={false}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                </div>
+              )}
               {fields.map((field, index) => (
                 <React.Fragment key={field.key}>
                   <Form.Item
-                    name={[field.name, 'switch']}
-                    className="mb-0 flex items-center"
+                    name={[field.name, 'enabled']}
+                    className="flex items-center"
                   >
                     <Switch />
                   </Form.Item>
@@ -67,34 +86,33 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
                         type: 'string',
                         required: true,
                         message: t(
-                          'networkSetting.captureHttps.filter.invalidHost',
+                          'networkSetting.captureHttps.filter.validation.domain',
                         ),
                       },
                     ]}
-                    name={[field.name, 'host']}
+                    name={[field.name, 'domain']}
                     className="mb-0 min-w-0"
                   >
-                    <Input
-                      className="w-full"
-                      placeholder="*.example.com,127.0.0.1"
-                    />
+                    <Input className="w-full" placeholder="*.example.com" />
                   </Form.Item>
                   <Form.Item
                     required
                     rules={[
                       {
                         type: 'number',
+                        required: true,
+                        min: 0,
+                        max: 65535,
                         message: t(
-                          'networkSetting.captureHttps.filter.invalidPort',
+                          'networkSetting.captureHttps.filter.validation.port',
                         ),
                       },
                     ]}
                     name={[field.name, 'port']}
-                    className="mb-0 min-w-0"
                   >
                     <InputNumber className="w-full" placeholder="443" />
                   </Form.Item>
-                  <div className="flex items-center space-x-2">
+                  <Form.Item className="flex items-center space-x-2">
                     <Button
                       type="text"
                       onClick={() => {
@@ -109,7 +127,7 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
                       }}
                       icon={<RiDeleteBinLine size={16} />}
                     />
-                  </div>
+                  </Form.Item>
                 </React.Fragment>
               ))}
             </div>
@@ -134,6 +152,16 @@ export const NetworkSetting: React.FC = () => {
   const [form] = Form.useForm<IAppConfigModel>();
   const { data } = useGetHealth();
   const { t } = useTranslation();
+  const { data: httpsCaptureData, isLoading } = useGetHttpsCaptureFilter();
+  const { isPending: isSubmiting, mutateAsync: updateHttpsCaptureFilter } =
+    useUpdateHttpsCaptureFilter();
+
+  const initialValues = httpsCaptureData?.data;
+
+  const [messageApi, context] = message.useMessage();
+  if (isLoading) {
+    return <PageLoading />;
+  }
 
   return (
     <CommonCard
@@ -142,29 +170,30 @@ export const NetworkSetting: React.FC = () => {
       extra={
         <Space>
           <Button
+            loading={isSubmiting}
             type="primary"
-            onClick={() => {
-              form.resetFields();
+            onClick={async () => {
+              const formData = await form.validateFields();
+              await updateHttpsCaptureFilter({
+                data: formData,
+              });
+              messageApi.success(t('networkSetting.messages.saveSuccess'));
             }}
           >
             {t('networkSetting.save')}
           </Button>
-          <Button
-            type="dashed"
-            onClick={() => {
-              form.resetFields();
-            }}
-          >
-            {t('networkSetting.reset')}
-          </Button>
         </Space>
       }
     >
+      {context}
       <Form
         className="flex flex-col overflow-hidden"
         layout="vertical"
         form={form}
-        initialValues={{}}
+        initialValues={initialValues}
+        onValuesChange={(changedValues) => {
+          console.log('changedValues', changedValues);
+        }}
       >
         <div className="flex-1 overflow-y-auto">
           <div className="my-2 flex items-center justify-between">
@@ -176,7 +205,7 @@ export const NetworkSetting: React.FC = () => {
                 <span>{t('networkSetting.captureHttps.description')}</span>
                 <span className="flex items-center gap-1">
                   {t('networkSetting.captureHttps.status')}:
-                  {data !== 'ok' ? (
+                  {data === 'ok' ? (
                     <RiCheckboxCircleLine
                       className="inline-block text-green-400 dark:text-green-500"
                       size={14}
@@ -190,7 +219,9 @@ export const NetworkSetting: React.FC = () => {
                 </span>
               </Typography.Paragraph>
             </Space>
-            <Switch className="w-8" />
+            <Form.Item noStyle name="enabled" valuePropName="checked">
+              <Switch className="w-8" />
+            </Form.Item>
           </div>
           <Typography.Title level={5}>
             {t('networkSetting.captureHttps.filter.title')}

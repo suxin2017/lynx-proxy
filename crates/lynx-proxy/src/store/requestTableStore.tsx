@@ -1,27 +1,43 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { useSelector } from 'react-redux';
 import { RootState } from '.';
-import { Model as RequestModel } from '@/RequestModel';
 import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
 
 export interface RequestTableState {
   requests: MessageEventStoreValue[];
   filterUri: string;
   filterMimeType: string[];
+  pendingRequestIds: Record<string, boolean>;
 }
 const initialState: RequestTableState = {
   requests: [],
   filterUri: '',
   filterMimeType: [],
+  pendingRequestIds: {},
+};
+
+const isCompletedReq = (res: MessageEventStoreValue) => {
+  return !(
+    res.status === 'Completed' &&
+    res.tunnel?.status === 'Disconnected' &&
+    res.messages?.status === 'Disconnected'
+  );
 };
 
 const requestTableSlice = createSlice({
   name: 'requestTable',
   initialState,
+
   reducers: {
     clearRequestTable: () => initialState,
     appendRequest: (state, action: PayloadAction<MessageEventStoreValue[]>) => {
       state.requests.push(...action.payload);
+      action.payload
+        ?.filter(isCompletedReq)
+        ?.map((res) => res.traceId)
+        .forEach((id) => {
+          state.pendingRequestIds[id] = true;
+        });
     },
     replaceRequest: (
       state,
@@ -32,6 +48,10 @@ const requestTableSlice = createSlice({
           (newRequest) => newRequest.traceId === request.traceId,
         );
         if (newRequest) {
+          if (isCompletedReq(newRequest)) {
+            delete state.pendingRequestIds[newRequest.traceId];
+          }
+
           state.requests[index] = newRequest;
         }
       });

@@ -12,7 +12,9 @@ use crate::layers::message_package_layer::message_event_store::{
     MessageEventStatus, MessageEventStoreValue, MessageEventTimings,
 };
 use crate::self_service::RouteState;
-use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
+use crate::self_service::utils::{
+    AppError, EmptyOkResponse, ErrorResponse, ResponseDataWrapper, empty_ok, ok,
+};
 use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
 
 #[utoipa::path(
@@ -86,7 +88,7 @@ struct GetRequestsData {
     tags = ["Net Request"],
     responses(
         (status = 200, description = "Successfully retrieved cached requests", body = ResponseDataWrapper<RecordRequests>),
-        (status = 500, description = "Failed to get cached requests")
+        (status = 500, description = "Failed to get cached requests", body = ErrorResponse)
     ),
     request_body = GetRequestsData,
 )]
@@ -95,11 +97,11 @@ async fn get_cached_requests(
         net_request_cache, ..
     }): State<RouteState>,
     Json(params): Json<GetRequestsData>,
-) -> Result<Json<ResponseDataWrapper<RecordRequests>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<RecordRequests>>, AppError> {
     println!("get_cached_requests called {:?}", params);
     let new_requests = net_request_cache.get_new_requests().await.map_err(|e| {
         tracing::error!("Failed to get new requests: {:?}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        AppError::DatabaseError(e.to_string())
     })?;
     let patch_requests = net_request_cache
         .get_request_by_keys(params.trace_ids.unwrap_or_default())
