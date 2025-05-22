@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.5-alpha.1] - 2025-05-19
+## [0.1.5-alpha.2] - 2025-05-22
 
 ### 🚀 Features
 
@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 - *(ui)* Clear request log and content ui bug in request tree struce  ([#35](https://github.com/suxin2017/lynx/issues/35))
 - Unable to create dir on startup  ([#36](https://github.com/suxin2017/lynx/issues/36))
 - Http1.1, http 1.0 proxy request and lose some header ([#34](https://github.com/suxin2017/lynx/issues/34))
+- A lot of bugs
 
 ### 🚜 Refactor
 
