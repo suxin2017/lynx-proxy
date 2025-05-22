@@ -1,7 +1,6 @@
 use anyhow::Result;
 use axum::response::{IntoResponse, Response};
 use tower::{ServiceBuilder, ServiceExt, service_fn};
-use tracing::info;
 
 use crate::{
     client::request_client::RequestClientExt,
@@ -17,16 +16,15 @@ pub fn is_http_req(req: &Req) -> bool {
 }
 
 async fn proxy_http_request_inner(req: Req) -> Result<Res> {
-    info!("req {:#?}", req);
     let trace_id = req.extensions().get_trace_id().clone();
     let http_client = req.extensions().get_http_client();
     http_client
         .request(req)
         .await
         .map_err(|e| e.context("http request failed"))
-        .and_then(|mut res| {
+        .map(|mut res| {
             res.extensions_mut().insert(trace_id);
-            Ok(res)
+            res
         })
         .map(|res| res.into_box_res())
 }

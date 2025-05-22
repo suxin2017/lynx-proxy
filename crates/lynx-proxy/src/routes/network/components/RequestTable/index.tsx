@@ -1,7 +1,5 @@
-import {
-  MessageEventStoreValue,
-  MessageEventTimings,
-} from '@/services/generated/utoipaAxum.schemas';
+import { RequestContextMenu } from '@/components/RequestContextMenu';
+import { MessageEventTimings } from '@/services/generated/utoipaAxum.schemas';
 import { useFilteredTableData } from '@/store/requestTableStore';
 import { useSize } from 'ahooks';
 import type { TableProps } from 'antd';
@@ -13,8 +11,7 @@ import prettyMs from 'pretty-ms';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelectRequest } from '../store/selectRequestStore';
-import { TableFilter } from '../TableFilter';
-import { RequestContextMenu } from '@/components/RequestContextMenu';
+import { IViewMessageEventStoreValue } from '@/store';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -31,7 +28,7 @@ export const RequestTable: React.FC = () => {
 
   const [autoScroll, setAutoScroll] = React.useState(true);
 
-  const columns: ColumnsType<MessageEventStoreValue> = [
+  const columns: ColumnsType<IViewMessageEventStoreValue> = [
     {
       title: '#',
       width: 50,
@@ -45,7 +42,7 @@ export const RequestTable: React.FC = () => {
       dataIndex: ['response', 'status'],
       ellipsis: true,
       render: (status: number, raw) => {
-        if (raw.request?.headers['connection'] === 'Upgrade') {
+        if (raw.request?.headers?.['connection'] === 'Upgrade') {
           return <span>101</span>;
         }
         if (raw.tunnel) {
@@ -60,6 +57,7 @@ export const RequestTable: React.FC = () => {
     {
       title: t('network.table.path'),
       key: 'uri',
+      width: 400,
       ellipsis: true,
       dataIndex: ['request', 'url'],
     },
@@ -79,9 +77,9 @@ export const RequestTable: React.FC = () => {
           const protocol = new URL(url).protocol;
 
           if (
-            raw.request?.headers['connection'] === 'Upgrade' &&
-            raw.request?.headers['upgrade'] === 'websocket' &&
-            raw.request?.headers['sec-websocket-key'] !== undefined
+            raw.request?.headers?.['connection'] === 'Upgrade' &&
+            raw.request?.headers?.['upgrade'] === 'websocket' &&
+            raw.request?.headers?.['sec-websocket-key'] !== undefined
           ) {
             if (protocol === 'http:') {
               return <span>ws</span>;
@@ -115,7 +113,7 @@ export const RequestTable: React.FC = () => {
     {
       title: t('network.table.type'),
       key: 'type',
-      width: 100,
+      width: 200,
       ellipsis: true,
       dataIndex: ['response', 'headers', 'content-type'],
       render: (type: string, raw) => {
@@ -206,13 +204,16 @@ export const RequestTable: React.FC = () => {
               </div>
             )}
 
-            <Table<MessageEventStoreValue>
+            <Table<IViewMessageEventStoreValue>
               ref={tblRef}
               sticky
               className="flex-1"
               columns={columns}
               rowKey="traceId"
               size="small"
+              onScroll={() => {
+                setAutoScroll(false);
+              }}
               rowClassName={(record) => {
                 if (selectRequest?.traceId === record.traceId) {
                   return 'cursor-pointer ant-table-row-selected';

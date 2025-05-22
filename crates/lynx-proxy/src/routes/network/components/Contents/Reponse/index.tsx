@@ -24,7 +24,8 @@ export const Response: React.FC<IContentsProps> = (_props) => {
       title={'Response'}
       headers={headers}
       contentType={contentType}
-      body={responseData?.body as ArrayBuffer | undefined}
+      rawBody={responseData?.body}
+      body={responseData?.bodyArrayBuffer}
       isLoading={
         selectRequest?.status !== 'Completed' &&
         selectRequest?.status !== 'Cancelled'

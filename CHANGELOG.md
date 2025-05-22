@@ -2,7 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.4] - 2025-02-17
+## [0.1.5-alpha.1] - 2025-05-19
+
+### 🚀 Features
+
+- Support a more user-friendly experience for rule config and network tree  ([#39](https://github.com/suxin2017/lynx/issues/39))
+- Support html,css,js,font,video,image,font content preview ([#41](https://github.com/suxin2017/lynx/issues/41))
+- Filter support and limit the number of size ([#42](https://github.com/suxin2017/lynx/issues/42))
+- Websocket support ([#43](https://github.com/suxin2017/lynx/issues/43))
+- Add some layer ([#46](https://github.com/suxin2017/lynx/issues/46))
+- Add axum and swagger ([#47](https://github.com/suxin2017/lynx/issues/47))
+- Add request session event ([#2](https://github.com/suxin2017/lynx/issues/2))
 
 ### 🐛 Bug Fixes
 
@@ -15,6 +25,7 @@ All notable changes to this project will be documented in this file.
 ### 🚜 Refactor
 
 - Use include dir replace static dir ([#32](https://github.com/suxin2017/lynx/issues/32))
+- Refactoring everything ([#44](https://github.com/suxin2017/lynx/issues/44))
 
 ## [0.1.0] - 2025-02-13
 

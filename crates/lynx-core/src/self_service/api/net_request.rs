@@ -91,7 +91,6 @@ async fn get_cached_requests(
     }): State<RouteState>,
     Json(params): Json<GetRequestsData>,
 ) -> Result<Json<ResponseDataWrapper<RecordRequests>>, AppError> {
-    println!("get_cached_requests called {:?}", params);
     let new_requests = net_request_cache.get_new_requests().await.map_err(|e| {
         tracing::error!("Failed to get new requests: {:?}", e);
         AppError::DatabaseError(e.to_string())

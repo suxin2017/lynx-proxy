@@ -1,4 +1,4 @@
-import { Button, Card, CardProps, Typography } from 'antd';
+import { CardProps, Typography } from 'antd';
 
 export const CommonCard: React.FC<
   CardProps & {

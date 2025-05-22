@@ -10,7 +10,6 @@ use include_dir::include_dir;
 use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
 use lynx_core::proxy_server::{ProxyServerBuilder, StaticDir};
-use lynx_core::self_service::SELF_SERVICE_PATH_PREFIX;
 use sea_orm::ConnectOptions;
 use tokio::signal;
 use tracing::info;
@@ -23,9 +22,6 @@ struct Args {
     /// proxy server port
     #[arg(short, long, default_value_t = 3000)]
     port: u16,
-    /// only allow localhost access
-    #[arg(long, default_value_t = true)]
-    only_localhost: bool,
 
     /// log level
     #[arg(long,  value_enum, default_value_t = LogLevel::Silent)]
@@ -80,10 +76,12 @@ async fn main() -> Result<()> {
     let log_level = args.log_level;
     let env_filter = if !matches!(log_level, LogLevel::Silent) {
         EnvFilter::from_default_env()
-            .add_directive(format!("lynx_cli={}", log_level.to_string()).parse()?)
-            .add_directive(format!("lynx_core={}", log_level.to_string()).parse()?)
+            .add_directive(format!("lynx_cli={}", log_level).parse()?)
+            .add_directive(format!("lynx_core={}", log_level).parse()?)
     } else {
         EnvFilter::from_default_env()
+            .add_directive(format!("lynx_cli={}", "info").parse()?)
+            .add_directive(format!("lynx_core={}", "info").parse()?)
     };
     tracing_subscriber::registry()
         .with(fmt::layer())
@@ -121,8 +119,10 @@ async fn main() -> Result<()> {
         server_config.root_key_file_path.clone(),
     )
     .build()?;
-
-    let db_connect = ConnectOptions::new(format!("sqlite://{}/lynx.db?mode=rwc", data_dir_path));
+    let db_connect = ConnectOptions::new(format!(
+        "sqlite://{}/lynx.db?mode=rwc",
+        data_dir.to_string_lossy()
+    ));
 
     let mut proxy_server = ProxyServerBuilder::default()
         .config(Arc::new(server_config))
@@ -147,7 +147,7 @@ async fn main() -> Result<()> {
     let web_path = proxy_server
         .access_addr_list
         .iter()
-        .map(|addr| format!("  http://{}{}", addr, SELF_SERVICE_PATH_PREFIX))
+        .map(|addr| format!("  http://{}", addr))
         .collect::<Vec<String>>()
         .join("\n");
     println!("{}{}", style("Web UI is available on:\n").green(), web_path);

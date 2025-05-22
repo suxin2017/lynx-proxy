@@ -17,8 +17,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "paths": {
-      "@/*": ["./src/*", "../lynx-core/bindings/*"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "../lynx-core/bindings"]
+  "include": ["src"],
 }

@@ -1,10 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { useSelector } from 'react-redux';
-import { RootState } from '.';
-import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
+import { IViewMessageEventStoreValue, RootState } from '.';
 
 export interface RequestTableState {
-  requests: MessageEventStoreValue[];
+  requests: IViewMessageEventStoreValue[];
   filterUri: string;
   filterMimeType: string[];
   pendingRequestIds: Record<string, boolean>;
@@ -16,12 +15,17 @@ const initialState: RequestTableState = {
   pendingRequestIds: {},
 };
 
-const isCompletedReq = (res: MessageEventStoreValue) => {
-  return !(
-    res.status === 'Completed' &&
-    res.tunnel?.status === 'Disconnected' &&
-    res.messages?.status === 'Disconnected'
-  );
+const isCompletedReq = (res: IViewMessageEventStoreValue) => {
+  if (res.status === 'Completed' && res.tunnel?.status === "Disconnected") {
+    return true;
+  }
+  if (res.status === 'Completed' && res.messages?.status === 'Disconnected') {
+    return true;
+  }
+  if (res.status === "Completed" && !res.tunnel && !res.messages) {
+    return true;
+  }
+  return false;
 };
 
 const requestTableSlice = createSlice({
@@ -30,7 +34,10 @@ const requestTableSlice = createSlice({
 
   reducers: {
     clearRequestTable: () => initialState,
-    appendRequest: (state, action: PayloadAction<MessageEventStoreValue[]>) => {
+    appendRequest: (
+      state,
+      action: PayloadAction<IViewMessageEventStoreValue[]>,
+    ) => {
       state.requests.push(...action.payload);
       action.payload
         ?.filter(isCompletedReq)
@@ -41,7 +48,7 @@ const requestTableSlice = createSlice({
     },
     replaceRequest: (
       state,
-      action: PayloadAction<MessageEventStoreValue[]>,
+      action: PayloadAction<IViewMessageEventStoreValue[]>,
     ) => {
       state.requests.forEach((request, index) => {
         const newRequest = action.payload.find(

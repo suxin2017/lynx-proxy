@@ -26,7 +26,8 @@ export const Request: React.FC<IContentsProps> = (_props) => {
       title={'Request'}
       headers={headers}
       contentType={contentType}
-      body={selectRequest?.request?.body as ArrayBuffer | undefined}
+      rawBody={selectRequest?.request?.body}
+      body={selectRequest?.request?.bodyArrayBuffer as ArrayBuffer | undefined}
       websocketBody={websocketBody}
     />
   );

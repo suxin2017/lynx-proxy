@@ -25,10 +25,9 @@ where
 
     fn call(&mut self, request: Req) -> Self::Future {
         // Insert log statement here or other functionality
-        let span = info_span!("log_service");
+        let span = info_span!("log_service",);
         let future = {
-            let _guard = span.enter();
-            info!("handling request");
+            info!("handling request for {:?}", request.uri());
             self.service.call(request)
         };
         LogFuture { f: future, span }

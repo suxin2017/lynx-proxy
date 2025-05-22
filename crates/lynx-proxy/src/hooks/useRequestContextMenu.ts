@@ -1,20 +1,20 @@
 import { MenuProps, message } from 'antd';
-import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
 import { useTranslation } from 'react-i18next';
 import { generateCurlCommand } from '@/utils/curlGenerator';
 import { useState } from 'react';
+import { IViewMessageEventStoreValue } from '@/store';
 
 export interface UseRequestContextMenuOptions {
-  onSelectRecord?: (record: MessageEventStoreValue) => void;
+  onSelectRecord?: (record: IViewMessageEventStoreValue) => void;
 }
 
 export function useRequestContextMenu(options?: UseRequestContextMenuOptions) {
   const { t } = useTranslation();
   const [selectedRecord, setSelectedRecord] =
-    useState<MessageEventStoreValue | null>(null);
+    useState<IViewMessageEventStoreValue | null>(null);
 
   const handleContextMenu = (
-    record: MessageEventStoreValue,
+    record: IViewMessageEventStoreValue,
     event: React.MouseEvent,
   ) => {
     event.preventDefault();

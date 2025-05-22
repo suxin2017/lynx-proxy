@@ -37,7 +37,10 @@ async fn main() -> Result<()> {
         .config(Arc::new(server_config))
         .port(3000)
         .server_ca_manager(Arc::new(server_ca_manager))
-        .db_config(ConnectOptions::new("sqlite::memory:"))
+        .db_config(ConnectOptions::new(format!(
+            "sqlite://{}/lynx.db?mode=rwc",
+            fixed_temp_dir_path.to_string_lossy()
+        )))
         .build()
         .await?;
     proxy_server.run().await?;

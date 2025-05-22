@@ -1,5 +1,5 @@
-use axum::response::IntoResponse;
 use axum::extract::State;
+use axum::response::IntoResponse;
 use http::header::CONTENT_TYPE;
 use http::{HeaderMap, Uri};
 use mime_guess::from_path;
@@ -11,12 +11,17 @@ pub async fn get_file(
     file_path: Uri,
     State(RouteState { static_dir, .. }): State<RouteState>,
 ) -> impl IntoResponse {
-    info!("Requesting file: {}", file_path);
+    info!("get_file: {:?}", file_path);
     if let Some(static_dir) = static_dir {
         let file_path = file_path.path().trim_start_matches('/');
-        info!("Static directory: {:?}", static_dir);
-        info!("File path: {}", file_path);
-        let res = static_dir.0.get_file(&file_path);
+
+        let file_path = if file_path.is_empty() {
+            "index.html"
+        } else {
+            file_path
+        };
+
+        let res = static_dir.0.get_file(file_path);
 
         if let Some(res) = res {
             let mime_type = from_path(file_path).first_or_octet_stream();
@@ -26,9 +31,7 @@ pub async fn get_file(
             return (http::StatusCode::OK, header, res.contents());
         }
     }
-    return (
-        http::StatusCode::OK,
-        HeaderMap::new(),
-        "not found".as_bytes(),
-    );
+    let mut header = HeaderMap::new();
+    header.insert(CONTENT_TYPE, "text/plain".parse().unwrap());
+    (http::StatusCode::OK, header, "not found".as_bytes())
 }

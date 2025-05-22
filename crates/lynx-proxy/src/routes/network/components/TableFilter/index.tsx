@@ -23,7 +23,7 @@ export const TableFilter: React.FC<IFilterProps> = () => {
       <div className="flex items-center gap-1">
         <div className="text-sm whitespace-pre">Mime Type:</div>
         <Select
-          className="min-w-36 flex-1"
+          className="min-w-2xs flex-1"
           placeholder="application/json"
           mode="multiple"
           onChange={(value: string[]) => {

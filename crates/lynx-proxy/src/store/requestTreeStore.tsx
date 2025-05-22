@@ -1,11 +1,12 @@
 import { createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit';
 import { last } from 'lodash';
-import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
+import { IViewMessageEventStoreValue, RootState } from '.';
+import { useSelector } from 'react-redux';
 
 export interface IRequestTreeNode {
   id: string;
   name: string;
-  record?: MessageEventStoreValue;
+  record?: IViewMessageEventStoreValue;
   children: IRequestTreeNode[];
 }
 
@@ -13,11 +14,44 @@ export type IRequestTree = IRequestTreeNode[];
 
 export interface RequestTreeState {
   requestTree: IRequestTree;
-  nodeMap: Record<string, IRequestTreeNode>;
 }
 const initialState: RequestTreeState = {
   requestTree: [],
-  nodeMap: {},
+};
+
+const dfsFind = (
+  tree: IRequestTree,
+  id: string,
+  callback: (node: IRequestTreeNode) => void,
+) => {
+  for (const node of tree) {
+    callback(node);
+    if (node.children.length > 0) {
+      dfsFind(node.children, id, callback);
+    }
+  }
+};
+
+const dfsFilter = (
+  tree: IRequestTree,
+  callback: (node: IRequestTreeNode) => boolean,
+): IRequestTree => {
+  return tree
+    .filter(callback)
+    .map((node) => {
+      const children = dfsFilter(node.children, callback);
+      console.log(children, 'children');
+      return {
+        ...node,
+        children,
+      };
+    })
+    .filter((node) => {
+      if (node.record) {
+        return true;
+      }
+      return node?.children?.length > 0;
+    });
 };
 
 const requestTreeSlice = createSlice({
@@ -25,9 +59,22 @@ const requestTreeSlice = createSlice({
   initialState,
   reducers: {
     clearRequestTree: () => initialState,
+    replaceTreeNode: (
+      state,
+      action: PayloadAction<IViewMessageEventStoreValue[] | undefined>,
+    ) => {
+      const nodes = action.payload;
+      nodes?.forEach((requestValue) => {
+        dfsFind(state.requestTree, requestValue.traceId, (node) => {
+          if (node.record?.traceId === requestValue.traceId) {
+            node.record = requestValue;
+          }
+        });
+      });
+    },
     appendTreeNode: (
       state,
-      action: PayloadAction<MessageEventStoreValue[]>,
+      action: PayloadAction<IViewMessageEventStoreValue[] | undefined>,
     ) => {
       action.payload?.forEach((requestValue) => {
         const { request } = requestValue;
@@ -77,6 +124,41 @@ const requestTreeSlice = createSlice({
   },
 });
 
-export const { appendTreeNode, clearRequestTree } = requestTreeSlice.actions;
+export const useTreeData = () => {
+  return useSelector((state: RootState) => {
+    return dfsFilter(state.requestTree.requestTree, (node) => {
+      console.log('node.record', node.record);
+
+      if (!node.record) {
+        return true;
+      }
+      if (
+        state.requestTable.filterUri &&
+        !node.record?.request?.url?.includes(state.requestTable.filterUri)
+      ) {
+        console.log('filterUri', state.requestTable.filterUri);
+        return false;
+      }
+
+      if (!state.requestTable.filterMimeType.length) {
+        return true;
+      }
+      const mimeType = node.record.response?.headers?.['content-type'] || '';
+
+      if (
+        !state.requestTable.filterMimeType.some((type) =>
+          mimeType.includes(type),
+        )
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  });
+};
+
+export const { appendTreeNode, replaceTreeNode, clearRequestTree } =
+  requestTreeSlice.actions;
 
 export const requestTreeReducer = requestTreeSlice.reducer;

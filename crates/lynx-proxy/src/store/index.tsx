@@ -1,5 +1,13 @@
-import { useGetCachedRequests } from '@/services/generated/net-request/net-request';
-import { ResponseDataWrapperRecordRequests } from '@/services/generated/utoipaAxum.schemas';
+import {
+  useGetCachedRequests,
+  useGetCaptureStatus,
+} from '@/services/generated/net-request/net-request';
+import {
+  MessageEventBody,
+  MessageEventRequestHeaders,
+  MessageEventStoreValue,
+  ResponseDataWrapperRecordRequests,
+} from '@/services/generated/utoipaAxum.schemas';
 import { configureStore } from '@reduxjs/toolkit';
 import { useInterval } from 'ahooks';
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,14 +18,17 @@ import {
   requestTableReducer,
   useRequestLogCount,
 } from './requestTableStore';
-import { appendTreeNode, requestTreeReducer } from './requestTreeStore';
-import { websocketResourceReducer } from './websocketResourceStore';
+import {
+  appendTreeNode,
+  replaceTreeNode,
+  requestTreeReducer,
+} from './requestTreeStore';
+import pako from 'pako';
 
 export const store = configureStore({
   reducer: {
     requestTable: requestTableReducer,
     requestTree: requestTreeReducer,
-    websocketResource: websocketResourceReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }),
@@ -38,9 +49,48 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+export function decodeGzipBase64(base64: string): ArrayBuffer {
+  const bytes = base64ToArrayBuffer(base64);
+  const decompressed = pako.ungzip(bytes);
+  return decompressed.buffer;
+}
+
+export function bodyToArrayBuffer(
+  headers: MessageEventRequestHeaders,
+  body: MessageEventBody,
+) {
+  if (headers['content-encoding'] === 'gzip') {
+    return decodeGzipBase64(body as string);
+  }
+  return base64ToArrayBuffer(body);
+}
+
+const formatItem = (item: MessageEventStoreValue) => {
+  const { request, response } = item;
+  const reqBodyArrayBuffer = request?.body
+    ? bodyToArrayBuffer(request.headers,request.body)
+    : undefined;
+  const resBodyArrayBuffer = response?.body
+    ? bodyToArrayBuffer(response.headers,response.body)
+    : undefined;
+  return {
+    ...item,
+    request: {
+      ...request,
+      bodyArrayBuffer: reqBodyArrayBuffer,
+    },
+    response: {
+      ...response,
+      bodyArrayBuffer: resBodyArrayBuffer,
+    },
+  };
+};
+
+export type IViewMessageEventStoreValue = ReturnType<typeof formatItem>;
+
 export const useUpdateRequestLog = () => {
   const cacheRequests = useGetCachedRequests({});
-
+  const { data: netWorkCaptureStatusData } = useGetCaptureStatus();
   const dispatch = useDispatch();
   const requestLogCount = useRequestLogCount();
   const { maxLogSize = 1000 } = {};
@@ -59,47 +109,10 @@ export const useUpdateRequestLog = () => {
         }
         return true;
       })
-      .map((item) => {
-        const { request, response } = item;
-        const body = request?.body
-          ? base64ToArrayBuffer(request.body)
-          : undefined;
-        const responseBody = response?.body
-          ? base64ToArrayBuffer(response.body)
-          : undefined;
-        return {
-          ...item,
-          request: {
-            ...request,
-            body,
-          },
-          response: {
-            ...response,
-            body: responseBody,
-          },
-        };
-      });
-    const patchRequests = cacheRequestsData?.data.patchRequests?.map((item) => {
-      const { request, response } = item;
-      const body = request?.body
-        ? base64ToArrayBuffer(request.body)
-        : undefined;
-      const responseBody = response?.body
-        ? base64ToArrayBuffer(response.body)
-        : undefined;
-      return {
-        ...item,
-        request: {
-          ...request,
-          body,
-        },
-        response: {
-          ...response,
-          body: responseBody,
-        },
-      };
-    });
-    const chacheNewData = {
+      .map(formatItem);
+    const patchRequests =
+      cacheRequestsData?.data.patchRequests?.map(formatItem);
+    const cacheNewData = {
       data: {
         data: {
           ...cacheRequests.data?.data,
@@ -108,7 +121,6 @@ export const useUpdateRequestLog = () => {
         },
       },
     };
-    console.log('chacheNewData', chacheNewData);
     if (requestLogCount >= maxLogSize) {
       dispatch(
         removeOldRequest({
@@ -116,32 +128,34 @@ export const useUpdateRequestLog = () => {
         }),
       );
     }
-    if (chacheNewData.data?.data.newRequests) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      dispatch(appendRequest(chacheNewData.data?.data?.newRequests));
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      dispatch(appendTreeNode(chacheNewData.data?.data?.newRequests));
+    if (cacheNewData.data?.data.newRequests) {
+      dispatch(appendRequest(cacheNewData.data?.data?.newRequests));
+
+      dispatch(appendTreeNode(cacheNewData.data?.data?.newRequests));
     }
-    if (chacheNewData.data?.data.patchRequests) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      dispatch(replaceRequest(chacheNewData.data?.data?.patchRequests));
+    if (cacheNewData.data?.data.patchRequests) {
+      dispatch(replaceRequest(cacheNewData.data?.data?.patchRequests));
+
+      dispatch(replaceTreeNode(cacheNewData.data?.data?.patchRequests));
     }
   };
 
+
   useInterval(
     () => {
-      cacheRequests
-        .mutateAsync({
-          data: {
-            traceIds: Object.keys(pendingRequestIds),
-          },
-        })
-        .then(handleCacheRequests);
+      if (
+        netWorkCaptureStatusData?.data?.recordingStatus === "pauseRecording"
+      ) {
+        cacheRequests
+          .mutateAsync({
+            data: {
+              traceIds: Object.keys(pendingRequestIds),
+            },
+          })
+          .then(handleCacheRequests);
+      }
     },
-    1000,
+    2000,
     { immediate: true },
   );
 };

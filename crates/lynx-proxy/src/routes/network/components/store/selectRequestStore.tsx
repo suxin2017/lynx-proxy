@@ -1,17 +1,16 @@
-import { Model } from '@/RequestModel';
-import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
+import { IViewMessageEventStoreValue } from '@/store';
 import constate from 'constate';
 import { useState } from 'react';
 
 export const [UseSelectRequestProvider, useSelectRequest] = constate(() => {
   const [selectRequest, setSelectRequest] =
-    useState<MessageEventStoreValue | null>(null);
+    useState<IViewMessageEventStoreValue | null>(null);
   const [isWebsocketRequest, setIsWebsocketRequest] = useState(false);
 
   return {
     selectRequest,
     isWebsocketRequest,
-    setSelectRequest: (request: MessageEventStoreValue | null) => {
+    setSelectRequest: (request: IViewMessageEventStoreValue | null) => {
       setIsWebsocketRequest(!!request?.messages?.message);
       setSelectRequest(request);
     },

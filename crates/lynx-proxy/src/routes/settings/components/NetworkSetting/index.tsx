@@ -1,4 +1,3 @@
-import { IAppConfigModel } from '@/api/models';
 import {
   RiAddLine,
   RiCheckboxCircleLine,
@@ -26,10 +25,7 @@ import {
   useUpdateHttpsCaptureFilter,
 } from '@/services/generated/https-capture/https-capture';
 import { PageLoading } from '@/components/PageLoading';
-import {
-  DomainFilter,
-  ResponseDataWrapperCaptureFilterData,
-} from '@/services/generated/utoipaAxum.schemas';
+import { DomainFilter } from '@/services/generated/utoipaAxum.schemas';
 
 const defaultSSLConfig: DomainFilter = {
   enabled: true,
@@ -149,7 +145,7 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
 };
 
 export const NetworkSetting: React.FC = () => {
-  const [form] = Form.useForm<IAppConfigModel>();
+  const [form] = Form.useForm();
   const { data } = useGetHealth();
   const { t } = useTranslation();
   const { data: httpsCaptureData, isLoading } = useGetHttpsCaptureFilter();
