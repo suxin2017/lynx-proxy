@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.2](https://github.com/suxin2017/lynx/compare/lynx-proxy-v0.0.1...lynx-proxy-v0.0.2) - 2025-02-05
+## [0.0.2](https://github.com/suxin2017/lynx-server/compare/lynx-proxy-v0.0.1...lynx-proxy-v0.0.2) - 2025-02-05
 
 ### Other
 

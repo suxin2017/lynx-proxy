@@ -6,27 +6,27 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
-- Support a more user-friendly experience for rule config and network tree  ([#39](https://github.com/suxin2017/lynx/issues/39))
-- Support html,css,js,font,video,image,font content preview ([#41](https://github.com/suxin2017/lynx/issues/41))
-- Filter support and limit the number of size ([#42](https://github.com/suxin2017/lynx/issues/42))
-- Websocket support ([#43](https://github.com/suxin2017/lynx/issues/43))
-- Add some layer ([#46](https://github.com/suxin2017/lynx/issues/46))
-- Add axum and swagger ([#47](https://github.com/suxin2017/lynx/issues/47))
-- Add request session event ([#2](https://github.com/suxin2017/lynx/issues/2))
+- Support a more user-friendly experience for rule config and network tree  ([#39](https://github.com/suxin2017/lynx-server/issues/39))
+- Support html,css,js,font,video,image,font content preview ([#41](https://github.com/suxin2017/lynx-server/issues/41))
+- Filter support and limit the number of size ([#42](https://github.com/suxin2017/lynx-server/issues/42))
+- Websocket support ([#43](https://github.com/suxin2017/lynx-server/issues/43))
+- Add some layer ([#46](https://github.com/suxin2017/lynx-server/issues/46))
+- Add axum and swagger ([#47](https://github.com/suxin2017/lynx-server/issues/47))
+- Add request session event ([#2](https://github.com/suxin2017/lynx-server/issues/2))
 
 ### 🐛 Bug Fixes
 
 - Ui assert not found
-- Window local ip ([#33](https://github.com/suxin2017/lynx/issues/33))
-- *(ui)* Clear request log and content ui bug in request tree struce  ([#35](https://github.com/suxin2017/lynx/issues/35))
-- Unable to create dir on startup  ([#36](https://github.com/suxin2017/lynx/issues/36))
-- Http1.1, http 1.0 proxy request and lose some header ([#34](https://github.com/suxin2017/lynx/issues/34))
+- Window local ip ([#33](https://github.com/suxin2017/lynx-server/issues/33))
+- *(ui)* Clear request log and content ui bug in request tree struce  ([#35](https://github.com/suxin2017/lynx-server/issues/35))
+- Unable to create dir on startup  ([#36](https://github.com/suxin2017/lynx-server/issues/36))
+- Http1.1, http 1.0 proxy request and lose some header ([#34](https://github.com/suxin2017/lynx-server/issues/34))
 - A lot of bugs
 
 ### 🚜 Refactor
 
-- Use include dir replace static dir ([#32](https://github.com/suxin2017/lynx/issues/32))
-- Refactoring everything ([#44](https://github.com/suxin2017/lynx/issues/44))
+- Use include dir replace static dir ([#32](https://github.com/suxin2017/lynx-server/issues/32))
+- Refactoring everything ([#44](https://github.com/suxin2017/lynx-server/issues/44))
 
 ## [0.1.0] - 2025-02-13
 
@@ -34,14 +34,14 @@ All notable changes to this project will be documented in this file.
 
 - Rule support
 - Add rule group
-- Support tariui ([#5](https://github.com/suxin2017/lynx/issues/5))
+- Support tariui ([#5](https://github.com/suxin2017/lynx-server/issues/5))
 - *(lynx-core)* Support glob match model 
 - Support more access ip
 - Support certificate download and install doc
-- Fetch request log in the app context ([#13](https://github.com/suxin2017/lynx/issues/13))
-- Support clear request log ([#16](https://github.com/suxin2017/lynx/issues/16))
-- Support ssl capture switch and ssl capture rule ([#18](https://github.com/suxin2017/lynx/issues/18))
-- Support better default config dir and support specifying dir ([#21](https://github.com/suxin2017/lynx/issues/21))
+- Fetch request log in the app context ([#13](https://github.com/suxin2017/lynx-server/issues/13))
+- Support clear request log ([#16](https://github.com/suxin2017/lynx-server/issues/16))
+- Support ssl capture switch and ssl capture rule ([#18](https://github.com/suxin2017/lynx-server/issues/18))
+- Support better default config dir and support specifying dir ([#21](https://github.com/suxin2017/lynx-server/issues/21))
 
 ### 🐛 Bug Fixes
 
