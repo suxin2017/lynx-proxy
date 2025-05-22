@@ -18,7 +18,7 @@ use rcgen::Certificate;
 use sea_orm::{ConnectOptions, Database};
 use sea_orm_migration::MigratorTrait;
 use tokio::net::TcpListener;
-use tokio_rustls::TlsAcceptor;
+use tokio_rustls::{TlsAcceptor, rustls};
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
 use tracing::{debug, trace, warn};
@@ -66,6 +66,9 @@ impl ProxyServerBuilder {
     pub async fn build(&self) -> Result<ProxyServer> {
         let port = self.port.flatten().unwrap_or(0);
         let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
+        rustls::crypto::ring::default_provider()
+            .install_default()
+            .expect("Failed to install rustls crypto provider");
 
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
