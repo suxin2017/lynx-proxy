@@ -1,6 +1,6 @@
 import { MimeTypeIcon } from '@/components/MimeTypeIcon';
-import { RootState } from '@/store';
-import { IRequestTreeNode } from '@/store/requestTreeStore';
+import { RequestContextMenu } from '@/components/RequestContextMenu';
+import { IRequestTreeNode, useTreeData } from '@/store/requestTreeStore';
 import {
   RiArrowDropDownLine,
   RiArrowDropRightLine,
@@ -9,20 +9,16 @@ import {
   RiTimeLine,
 } from '@remixicon/react';
 import { useSize } from 'ahooks';
-import { Spin, Tag, theme } from 'antd';
+import { Spin, Tag, theme, Typography } from 'antd';
 import { first, get, keys } from 'lodash';
 import prettyMilliseconds from 'pretty-ms';
 import React, { useRef } from 'react';
-import { NodeRendererProps, Tree } from 'react-arborist';
-import { useSelector } from 'react-redux';
+import { NodeApi, NodeRendererProps, Tree } from 'react-arborist';
 import { useSelectRequest } from '../store/selectRequestStore';
-import { RequestContextMenu } from '@/components/RequestContextMenu';
 
 export const RequestTree: React.FC = () => {
-  const treeData = useSelector(
-    (state: RootState) => state.requestTree.requestTree,
-  );
-
+  const treeData = useTreeData()
+  console.log(treeData,"treeData")
   const ref = useRef(null);
   const size = useSize(ref);
   const { setSelectRequest } = useSelectRequest();
@@ -65,6 +61,16 @@ export const RequestTree: React.FC = () => {
 
 interface TreeNodeProps extends NodeRendererProps<IRequestTreeNode> {
   onContextMenu?: (event: React.MouseEvent) => void;
+}
+
+const dfsSumChildrenCount = (treeNode: NodeApi<IRequestTreeNode>): number =>  {
+  let count = 0;
+  if (treeNode.children) {
+    for (const child of treeNode.children) {
+      count += dfsSumChildrenCount(child);
+    }
+  }
+  return count + (treeNode.isLeaf ? 1 : 0);
 }
 
 const TreeNode = ({
@@ -136,12 +142,10 @@ const TreeNode = ({
           <RiFolder6Line color={token.token['orange-5']} size={18} />
         </span>
       )}
-      <span className="inline-block w-full overflow-ellipsis">
-        {node.data.name}
-      </span>
+      <Typography.Text ellipsis className="w-full">{node.data.name}</Typography.Text>
       {isRoot && node.data.children.length > 0 && (
         <Tag className="rounded-xl text-xs" color="blue">
-          {node.data.children.length} 请求
+          {dfsSumChildrenCount(node)} 请求
         </Tag>
       )}
 

@@ -4,14 +4,12 @@ import { Request } from './Request';
 import { Response } from './Reponse';
 import { useSelectRequest } from '../store/selectRequestStore';
 
-interface IContentsProps {}
-
-export const Contents: React.FC<IContentsProps> = (_props) => {
+export const Contents: React.FC = (_props) => {
   const [sizes, setSizes] = React.useState<(number | string)[]>(['50%', '50%']);
   const { selectRequest } = useSelectRequest();
   if (!selectRequest) {
     return (
-      <div className="h-full flex justify-center items-center">
+      <div className="flex h-full items-center justify-center">
         <Empty description={false} />
       </div>
     );

@@ -70,6 +70,7 @@ impl ProxyServerBuilder {
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
             .filter(|(_, ip)| ip.is_ipv4())
+            .filter(|(_, ip)| ip.is_loopback())
             .map(|(_, ip)| ip)
             .map(|ip| SocketAddr::new(ip, port))
             .collect();

@@ -3,7 +3,7 @@ version: "3"
 tasks:
   dev:
     desc: Run development server
-    deps: [start-test-server, dev-ui]
+    deps: [dev-lynx-server,dev-ui]
     
   test:
     desc: Run tests
@@ -57,11 +57,11 @@ tasks:
       - task: build-ui
       - task: build-server
 
-  start-test-server:
+  dev-lynx-server:
     desc: Start test server
     dir: crates/lynx-core
     cmds:
-      - cargo test --package lynx-core --test start_test_server --features test  -- start_test_server --exact --nocapture --ignored
+      - cargo run --package lynx-core --example proxy_server_example 
 
   release-minor:
     deps: [update-main-branch]

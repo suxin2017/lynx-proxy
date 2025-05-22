@@ -20,6 +20,7 @@ interface IContentsProps {
   websocketBody?: WebSocketLog[];
   headers?: Record<string, string>;
   isLoading?: boolean;
+  rawBody?: string;
 }
 export enum ContentPreviewType {
   Headers = 'Headers',
@@ -30,6 +31,7 @@ export enum ContentPreviewType {
   Form = 'Form',
   Media = 'Media',
   Websocket = 'Websocket',
+  Base64 = 'Base64',
 }
 
 function useAsyncMemo<T>(
@@ -60,10 +62,14 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
   contentType,
   headers,
   isLoading,
+  rawBody,
 }) => {
   const [activeKey, setActiveKey] = React.useState<string>('0');
   const contentIsEmpty = useMemo(() => body?.byteLength != null, [body]);
   const websocketBodyArrayBuffer = useAsyncMemo(async () => {
+    if (!websocketBody) {
+      return;
+    }
     const blob = new Blob(
       websocketBody?.map(({ message: item }) => {
         if ('text' in item && item.text) {
@@ -77,7 +83,6 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
     );
     return blob.arrayBuffer();
   }, [websocketBody]);
-  // new TextEncoder().encode
   const contentTypeCheck = useMemo(() => {
     const contentTypeJson = !!contentType?.includes('application/json');
     const contentTypeImage = !!contentType?.includes('image');
@@ -211,7 +216,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
           label: 'Websocket',
           children: <Websocket websocketLog={websocketBody} />,
         }),
-        ifTrue(!contentTypeJson && !contentTypeMedia && !contentTypeCode, {
+        ifTrue(!contentTypeMedia && !contentTypeCode, {
           key: ContentPreviewType.Text,
           label: 'Text',
           children: <TextView arrayBuffer={websocketBodyArrayBuffer ?? body} />,
@@ -234,10 +239,24 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
             <HexViewer arrayBuffer={websocketBodyArrayBuffer ?? body} />
           ),
         },
+        {
+          key: ContentPreviewType.Base64,
+          label: 'Base64',
+          children: <TextView text={rawBody} />,
+        },
       ],
       (item) => item != null,
     );
-  }, [websocketBodyArrayBuffer, body, contentType, contentTypeCheck, headers]);
+  }, [
+    contentTypeCheck,
+    headers,
+    contentIsEmpty,
+    body,
+    contentType,
+    websocketBody,
+    websocketBodyArrayBuffer,
+    rawBody,
+  ]);
 
   return (
     <Tabs

@@ -25,7 +25,7 @@ pub mod file_service;
 pub mod utils;
 use tower_http::cors::{Any, CorsLayer};
 
-pub const SELF_SERVICE_PATH_PREFIX: &str = "/__self_service_path__";
+pub const SELF_SERVICE_PATH_PREFIX: &str = "/api";
 
 pub fn is_self_service(req: &Req) -> bool {
     let access_addr_list = req.extensions().get::<Arc<Vec<SocketAddr>>>();
@@ -33,7 +33,7 @@ pub fn is_self_service(req: &Req) -> bool {
     access_addr_list
         .map(|list| {
             list.iter().any(|addr| {
-                req.headers().get("host").map_or(false, |host| {
+                req.headers().get("host").is_some_and(|host| {
                     if let Ok(host) = host.to_str() {
                         let host_ip = if host.starts_with("localhost") {
                             "127.0.0.1"
@@ -90,7 +90,6 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
 
     let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
         .routes(routes!(get_health))
-        .fallback(get_file)
         .layer(cors)
         .with_state(state.clone())
         .nest("/net_request", net_request::router(state.clone()))
@@ -107,6 +106,8 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         Router::new().merge(SwaggerUi::new(swagger_path).url(api_docs_path, openapi));
 
     let router = Router::new()
+        .fallback(get_file)
+        .with_state(state.clone())
         .nest(SELF_SERVICE_PATH_PREFIX, router)
         .merge(swagger_router);
 

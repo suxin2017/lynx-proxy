@@ -5,7 +5,6 @@ use http::{
     uri::{Authority, Scheme},
 };
 use tower::Service;
-use tracing::info;
 
 use crate::common::Req;
 
@@ -33,13 +32,10 @@ where
             let (mut parts, body) = request.into_parts();
             parts.uri = {
                 let mut parts = parts.uri.into_parts();
-                info!("authority: {:?}", self.authority);
-                info!("schema: {:?}", self.schema);
                 parts.scheme = Some(self.schema.clone());
                 parts.authority = Some(self.authority.clone());
                 Uri::from_parts(parts).expect("Failed to build URI")
             };
-            info!("req uri {:#?}", parts.uri.to_string());
             Request::from_parts(parts, body)
         } else {
             request

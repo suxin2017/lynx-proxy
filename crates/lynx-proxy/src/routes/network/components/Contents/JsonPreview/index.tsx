@@ -11,7 +11,13 @@ export const JsonPreview: React.FC<IJsonPreviewProps> = ({ arrayBuffer }) => {
     if (!arrayBuffer) {
       return null;
     }
-    return JSON.parse(new TextDecoder().decode(arrayBuffer));
+    try {
+      return JSON.parse(new TextDecoder().decode(arrayBuffer));
+    } catch (e) {
+      return {
+        error: e,
+      };
+    }
   }, [arrayBuffer]);
   if (!json) {
     return null;

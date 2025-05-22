@@ -1,14 +1,13 @@
 import {
-  RiMedalFill,
   RiMoonLine,
   RiPlanetFill,
   RiSettings2Fill,
-  RiSunLine,
+  RiSunLine
 } from '@remixicon/react';
-import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();

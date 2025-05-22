@@ -34,7 +34,6 @@ Usage: lynx-cli [OPTIONS]
 
 Options:
   -p, --port <PORT>            proxy server port [default: 3000]
-      --only-localhost         only allow localhost access
       --log-level <LOG_LEVEL>  log level [default: silent] [possible values: silent, info, error, debug, trace]
       --data-dir <DATA_DIR>    data dir if not set, use default data dir
   -h, --help                   Print help

@@ -88,6 +88,7 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     let message_event_cannel = ex.get_message_event_cannel();
     let message_event_store = ex.get_message_event_store();
     let trace_id = ex.get_trace_id();
+    let db = ex.get_db();
 
     let mut nex = Extensions::new();
     nex.insert(request_client);
@@ -96,5 +97,6 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     nex.insert(trace_id);
     nex.insert(message_event_cannel);
     nex.insert(message_event_store);
+    nex.insert(db);
     Ok(nex)
 }

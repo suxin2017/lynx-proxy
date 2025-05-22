@@ -91,6 +91,7 @@ utoipa-swagger-ui = { version = "9.0.1", features = ["axum"] }
 utoipa-axum = "0.2.0"
 utoipa = { version = "5.3.1", features = ["axum_extras"] }
 tower-http = { version = "0.6.4", features = ["cors", "fs"] }
+dashmap = "6.1.0"
 
 
 [dev-dependencies]

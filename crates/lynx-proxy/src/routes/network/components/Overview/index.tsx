@@ -44,12 +44,11 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
         return {
           key,
           label: key,
-          children: <p>{selectRequest.request?.headers[key]}</p>,
+          children: <p>{selectRequest.request?.headers?.[key]}</p>,
         };
       });
       items.push(...headerItems);
     }
-    console.log(items, 'items');
     return items;
   }, [
     selectRequest?.request?.url,

@@ -11,11 +11,11 @@ interface IStructureProps {}
 export const Structure: React.FC<IStructureProps> = () => {
   const ref = useRef<HTMLDivElement>(null);
   const size = useSize(ref);
-  const [sizes, setSizes] = React.useState([320, 400]);
+  const [sizes, setSizes] = React.useState([400, 400]);
 
   useEffect(() => {
     if (size?.width) {
-      setSizes([320, size.width - 240]);
+      setSizes([400, size.width - 400]);
     }
   }, [size?.width]);
 
@@ -25,7 +25,7 @@ export const Structure: React.FC<IStructureProps> = () => {
         {size && (
           <Splitter
             onResize={(sizes) => {
-              if (sizes[0] < 240) {
+              if (sizes[0] < 400) {
                 return;
               }
               setSizes(sizes);
@@ -36,7 +36,7 @@ export const Structure: React.FC<IStructureProps> = () => {
             <Splitter.Panel
               size={sizes[0]}
               className="flex flex-col"
-              min={320}
+              min={400}
               max="70%"
             >
               <ShowTypeSegmented />

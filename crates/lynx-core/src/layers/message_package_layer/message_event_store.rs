@@ -1,5 +1,7 @@
 use anyhow::Result;
 use bytes::Bytes;
+use dashmap::mapref::one::RefMut;
+use dashmap::DashMap;
 use http::Extensions;
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
@@ -234,7 +236,8 @@ impl MessageEventStoreValue {
 
 #[derive(Debug, Clone)]
 pub struct MessageEventCache {
-    cache: Arc<Cache<TraceId, CacheValue>>,
+    moka: Arc<Cache<TraceId, ()>>,
+    map: Arc<DashMap<TraceId, MessageEventStoreValue>>,
 }
 
 impl From<MessageEventStoreValue> for CacheValue {
@@ -247,38 +250,47 @@ type CacheValue = Arc<RwLock<MessageEventStoreValue>>;
 
 impl MessageEventCache {
     pub fn new(max_capacity: u64) -> Self {
+        let map = Arc::new(DashMap::new());
+        let map_clone = map.clone();
+
+        let moka = Cache::builder()
+            .max_capacity(max_capacity)
+            .eviction_listener(move |k, _, _| {
+                // 淘汰时移除 DashMap
+                map_clone.remove(&*k);
+            })
+            .build();
         Self {
-            cache: Arc::new(Cache::new(max_capacity)),
+            moka: Arc::new(moka),
+            map,
         }
     }
 
-    pub async fn insert(&self, request_id: TraceId, value: CacheValue) {
-        self.cache.insert(request_id, value).await;
+    pub async fn insert(&self, key: TraceId, value: MessageEventStoreValue) {
+        self.map.insert(key.clone(), value);
+        self.moka.insert(key, ()).await;
     }
 
-    pub async fn get(&self, request_id: &TraceId) -> Option<CacheValue> {
-        self.cache.get(request_id).await
+    pub fn get(&self, key: &TraceId) -> Option<MessageEventStoreValue> {
+        self.map.get(key).map(|v| v.clone())
     }
 
-    pub async fn remove(&self, request_id: &TraceId) -> Option<CacheValue> {
-        self.cache.remove(request_id).await
-    }
-
-    pub async fn invalidate(&self, request_id: &TraceId) {
-        self.cache.invalidate(request_id).await;
+    pub fn get_mut(&self, key: &TraceId) -> Option<RefMut<TraceId, MessageEventStoreValue>> {
+        self.map.get_mut(key)
     }
 
     pub async fn get_new_requests(&self) -> Result<Vec<MessageEventStoreValue>> {
         let mut new_requests = Vec::new();
-        for (_, value) in self.cache.iter() {
-            let mut wv = value.try_write().map_err(|e| {
-                anyhow::anyhow!(e).context("Failed to acquire write lock on cache value")
-            })?;
-            if wv.is_new {
-                new_requests.push(wv.clone());
-                wv.is_new = false;
+
+        for mut entry in self.map.iter_mut() {
+            if entry.is_new {
+                // 收集副本
+                new_requests.push(entry.clone());
+                // 标记为已处理
+                entry.is_new = false;
             }
         }
+
         Ok(new_requests)
     }
 
@@ -286,13 +298,15 @@ impl MessageEventCache {
         let mut requests = Vec::new();
 
         for key in keys {
-            if let Some(value) = self.cache.get(&key).await {
-                let read = value.read().await;
-                let filter_flag =
-                    read.is_new || read.is_completed() || read.is_error() || read.is_cancelled();
+            if let Some(entry) = self.map.get(&key) {
+                let value = entry.value();
+                let filter_flag = value.is_new
+                    || value.is_completed()
+                    || value.is_error()
+                    || value.is_cancelled();
 
                 if filter_flag {
-                    requests.push(read.clone());
+                    requests.push(value.clone());
                 }
             }
         }

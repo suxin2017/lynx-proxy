@@ -2,6 +2,7 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { TanStackRouterRspack } from '@tanstack/router-plugin/rspack';
 import { env } from 'process';
+import { pluginTypeCheck } from '@rsbuild/plugin-type-check';
 
 import { server } from './src/mock/node';
 
@@ -12,10 +13,19 @@ if (useMock) {
 }
 
 export default defineConfig({
-  plugins: [pluginReact()].filter(Boolean),
-  output: {
-    assetPrefix: '/__self_service_path__/',
-  },
+  plugins: [
+    pluginReact(),
+    pluginTypeCheck({
+      tsCheckerOptions: {
+        issue: {
+          // ignore types errors from node_modules
+          exclude: [
+            ({ file = '' }) => /[\\/]services|ruleManager[\\/]/.test(file),
+          ],
+        },
+      },
+    }),
+  ].filter(Boolean),
   html: {
     title: 'Lynx Proxy',
   },
@@ -27,10 +37,7 @@ export default defineConfig({
   server: {
     port: 8080,
     proxy: {
-      // '/__self_service_path__': 'http://127.0.0.1:3000',
-      // http://localhost:3000/api -> http://localhost:3000/api
-      // http://localhost:3000/api/foo -> http://localhost:3000/api/foo
-      '/__self_service_path__': {
+      '/api': {
         target: 'http://127.0.0.1:3000',
         onProxyRes(proxyRes, _req, res) {
           res.on('close', () => {

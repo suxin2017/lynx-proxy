@@ -6,31 +6,19 @@ use serde_json::json;
 use std::sync::Arc;
 use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum RecordingStatus {
+    #[default]
     StartRecording,
     PauseRecording,
 }
 
-impl Default for RecordingStatus {
-    fn default() -> Self {
-        Self::PauseRecording
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub struct CaptureSwitch {
     pub recording_status: RecordingStatus,
-}
-
-impl Default for CaptureSwitch {
-    fn default() -> Self {
-        Self {
-            recording_status: RecordingStatus::default(),
-        }
-    }
 }
 
 impl From<CaptureSwitch> for ActiveModel {

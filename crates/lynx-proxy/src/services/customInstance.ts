@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 
 export const AXIOS_INSTANCE = axios.create({
-  baseURL: '/__self_service_path__',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -9,6 +9,9 @@ export const AXIOS_INSTANCE = axios.create({
 
 AXIOS_INSTANCE.interceptors.request.use(
   (config) => {
+    if (config.url === '/health') {
+      config.baseURL = 'https://' + location.host + "/api";
+    }
     return config;
   },
   (error) => {

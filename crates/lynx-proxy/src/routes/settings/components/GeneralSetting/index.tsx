@@ -1,15 +1,14 @@
-import { Button, Form, InputNumber, message, Space, Typography } from 'antd';
-import React from 'react';
-import { Model as AppConfigModel } from '@/AppConfigModel';
-import { CommonCard } from '../CommonCard';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { useGeneralSetting } from '@/store/useGeneralState';
+import { Button, Form, InputNumber, message, Space, Typography } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { CommonCard } from '../CommonCard';
 
 interface IGeneralSettingProps {}
 
 export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
-  const [form] = Form.useForm<AppConfigModel>();
+  const [form] = Form.useForm();
   const { maxLogSize, setMaxLogSize } = useGeneralSetting();
   const [messageApi, contextHolder] = message.useMessage();
   const { t } = useTranslation();

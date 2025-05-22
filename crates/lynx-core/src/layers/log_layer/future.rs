@@ -3,7 +3,7 @@ use std::task::{Context, Poll, ready};
 use anyhow::Result;
 use axum::response::Response;
 use pin_project_lite::pin_project;
-use tracing::{Span, info};
+use tracing::Span;
 
 pin_project! {
     pub struct LogFuture<F> {
@@ -23,9 +23,6 @@ where
         let this = self.project();
         let _enter = this.span.enter();
         let res = ready!(this.f.poll(cx))?;
-
-        this.span.record("status", res.status().as_u16());
-        info!("request completed");
         Poll::Ready(Ok(res))
     }
 }

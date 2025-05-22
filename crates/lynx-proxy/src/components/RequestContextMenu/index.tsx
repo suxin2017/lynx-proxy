@@ -1,17 +1,17 @@
 import { Dropdown } from 'antd';
-import { MessageEventStoreValue } from '@/services/generated/utoipaAxum.schemas';
 import { useRequestContextMenu } from '@/hooks/useRequestContextMenu';
+import { IViewMessageEventStoreValue } from '@/store';
 
 interface RequestContextMenuProps {
   children:
     | React.ReactNode
     | ((props: {
         handleContextMenu: (
-          record: MessageEventStoreValue,
+          record: IViewMessageEventStoreValue,
           event: React.MouseEvent,
         ) => void;
       }) => React.ReactNode);
-  onSelectRecord?: (record: MessageEventStoreValue) => void;
+  onSelectRecord?: (record: IViewMessageEventStoreValue) => void;
 }
 
 export const RequestContextMenu: React.FC<RequestContextMenuProps> = ({
