@@ -17,7 +17,7 @@ Lynx Proxy is a high-performance, flexible proxy tool built using the Rust progr
 ## Bash
 
 ```
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx/releases/latest/download/lynx-cli-installer.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
 # Usage
