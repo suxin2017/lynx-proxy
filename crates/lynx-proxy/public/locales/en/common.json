@@ -62,7 +62,26 @@
         "platform": {
           "windows": "Windows",
           "macos": "MacOS",
+          "linux": "Linux",
           "mobile": "Mobile Devices"
+        },
+        "linux": {
+          "step1": {
+            "title": "Download Certificate",
+            "description": "Download the certificate file from this page"
+          },
+          "step2": {
+            "title": "Install for Chrome/Chromium",
+            "description": "Navigate to chrome://certificate-manager/localcerts/usercerts, click \"Import\", and select the downloaded certificate file"
+          },
+          "step3": {
+            "title": "Install for Firefox",
+            "description": "Navigate to about:preferences#privacy, click \"View Certificates\", select \"Import\" in the \"Certificate Manager\", and select the downloaded certificate file"
+          },
+          "step4": {
+            "title": "Install for Ubuntu System",
+            "description": "sudo cp /path/to/lynx-proxy.crt /usr/local/share/ca-certificates/lynx-proxy.crt && sudo update-ca-certificates"
+          }
         },
         "windows": {
           "step1": {
