@@ -1,29 +1,32 @@
 # Lynx Proxy
 
-[English](README.md) | Simplified Chinese
+[简体中文](README.zh-CN.md) | English
 
 [![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
-Lynx Proxy is a high-performance, flexible proxy tool built using the Rust programming language. It aims to provide efficient HTTP/HTTPS proxy services, supporting multiple features and configuration options, suitable for different network environments and requirements.
+**Lynx Proxy** is a high-performance and flexible proxy tool developed in Rust, designed for efficient handling of HTTP/HTTPS and WebSocket traffic. The project leverages popular Rust networking libraries such as hyper, axum, and tower, and comes with a modern web client (with dark mode support), suitable for various network environments and requirements.
 
-# Features
+## Features
 
-- High Performance: Leverages Rust's performance and safety features.
-- HTTP/HTTPS Support: Proxies HTTP and HTTPS traffic.
+- 🚀 **High Performance**: Fully utilizes Rust's performance and safety.
+- 🌐 **HTTP/HTTPS Support**: Efficiently proxies HTTP and HTTPS traffic.
+- 🔗 **WebSocket Support**: Native support for WebSocket proxying.
+- 🦀 **Rust Ecosystem**: Built with popular libraries like hyper, axum, and tower.
+- 💻 **Modern Web Client**: Intuitive and user-friendly web management interface with dark mode support.
 
-# Installation
+## Installation
 
-## Bash
+Quickly install Lynx Proxy with the one-click installation script:
 
-```
+```bash
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
-# Usage
+## Quick Start
 
-```
-# start server
+```bash
+# Start the service
 lynx-cli
 ```
 
@@ -40,37 +43,38 @@ Options:
   -V, --version                Print version
 ```
 
-# Contribution
+## Contribution Guide
 
-We welcome your contributions! Please follow these steps to contribute:
+Community contributions are welcome! Please follow these steps to participate in development:
 
-- Fork the repository.
-- Create a new branch (git checkout -b feature-branch).
-- Install necessary dependencies
-  - Install [taskfile](https://taskfile.dev/)
-  - Install(Optional) [cargo-release](https://crates.io/crates/cargo-release)
-  - Install(Optional) [git-cliff](https://git-cliff.org/docs/)
-  - Install UI-related dependencies
-    ```bash
-    task setup-ui
-    ```
-  - Start the service
-    ```bash
-    task dev
-    ```
-- Make your changes.
-- Commit your changes (git commit -am 'Add new feature').
-- Push your changes to the branch (git push origin feature-branch).
-- Create a new Pull Request.
+1. Fork this repository
+2. Create a new branch: `git checkout -b feature-branch`
+3. Install dependencies
+   - Install [taskfile](https://taskfile.dev/)
+   - Install UI dependencies
+     ```bash
+     task setup-ui
+     ```
+   - Start the development environment
+     ```bash
+     task dev
+     ```
+4. Commit your changes: `git commit -am 'Add new feature'`
+5. Push your branch: `git push origin feature-branch`
+6. Create a Pull Request
 
-# License
+## License
 
-This project is licensed under the MIT License. For more details, please refer to the [LICENSE](LICENSE) file.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-# Contact
+## Contact
 
-If you have any questions or feedback, please submit an issue on GitHub.
+If you have any questions or suggestions, please submit feedback via GitHub Issues.
 
-# Status
+## Project Status
 
-This project is still under development. We are regularly adding new features and improvements. Stay tuned for updates!
+The project is under active development. Stay tuned and feel free to participate!
+
+## Roadmap
+
+https://v0-modern-proxy-tool-wq.vercel.app/
