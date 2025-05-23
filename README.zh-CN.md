@@ -5,50 +5,76 @@
 [![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
-Lynx Proxy 是一款使用 Rust 编程语言构建的高性能、灵活的代理工具。它旨在提供高效的 HTTP/HTTPS 代理服务，支持多种功能和配置选项，适用于不同的网络环境和需求。
+**Lynx Proxy** 是一款基于 Rust 语言开发的高性能、灵活的代理工具，专为高效处理 HTTP/HTTPS 及 WebSocket 流量而设计。项目采用 hyper、axum、tower 等主流 Rust 网络库，并配备现代化 Web 客户端（支持暗黑模式），适用于多种网络环境和需求。
 
-# 功能
+## 功能特性
 
-- 高性能：利用 Rust 的性能和安全性特性。
-- 支持 HTTP/HTTPS：代理 HTTP 和 HTTPS 流量。
+- 🚀 **高性能**：充分利用 Rust 的性能与安全性。
+- 🌐 **支持 HTTP/HTTPS**：高效代理 HTTP 和 HTTPS 流量。
+- 🔗 **支持 WebSocket**：原生支持 WebSocket 代理。
+- 🦀 **Rust 生态**：基于 hyper、axum、tower 等主流库开发。
+- 💻 **现代 Web 客户端**：提供直观易用的 Web 管理界面，支持暗黑模式。
 
-# 安装
+## 安装
 
-TODO
+通过一键安装脚本快速安装 Lynx Proxy：
 
-# 使用
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
+```
 
-TODO
+## 快速开始
 
-# 贡献
+```bash
+# 启动服务
+lynx-cli
+```
 
-我们欢迎您的贡献！请按照以下步骤进行贡献：
+```
+A proxy service
 
+Usage: lynx-cli [OPTIONS]
 
-- 叉取（Fork）仓库。
-- 创建一个新分支（git checkout -b feature-branch）。
-- 安装必须依赖
-  - 安装 [taskfile](https://taskfile.dev/)
-  - 
-    安装ui相关依赖
-    ```bash
-    task setup-ui
-    ```
-  - 启动服务
+Options:
+  -p, --port <PORT>            proxy server port [default: 3000]
+      --log-level <LOG_LEVEL>  log level [default: silent] [possible values: silent, info, error, debug, trace]
+      --data-dir <DATA_DIR>    data dir if not set, use default data dir
+  -h, --help                   Print help
+  -V, --version                Print version
+```
+
+## 贡献指南
+
+欢迎社区贡献！请按照以下流程参与开发：
+
+1. Fork 本仓库
+2. 创建新分支：`git checkout -b feature-branch`
+3. 安装依赖
+   - 安装 [taskfile](https://taskfile.dev/)
+   - 安装 UI 相关依赖
      ```bash
-    task dev
-    ```
-- 进行修改。
-- 提交您的更改（git commit -am 'Add new feature'）。
-- 将更改推送到分支（git push origin feature-branch）。
-- 创建一个新的拉取请求（Pull Request）。
+     task setup-ui
+     ```
+   - 启动开发环境
+     ```bash
+     task dev
+     ```
+4. 提交更改：`git commit -am 'Add new feature'`
+5. 推送分支：`git push origin feature-branch`
+6. 创建 Pull Request
 
-# 许可
+## 许可证
 
-本项目采用 MIT 许可证。详细信息请参阅 [LICENSE](LICENSE) 文件。
+本项目采用 MIT 许可证，详情请参阅 [LICENSE](LICENSE) 文件。
 
-# 联系
-如有任何问题或反馈，请在 GitHub 上提交问题。
+## 联系我们
 
-# 状态
-本项目目前仍在开发中。我们正在定期添加新功能和改进。请关注更新！
+如有任何问题或建议，请通过 GitHub Issues 提交反馈。
+
+## 项目状态
+
+项目仍在持续开发中，欢迎关注和参与！
+
+## 未来规划
+
+https://v0-modern-proxy-tool-wq.vercel.app/
