@@ -48,7 +48,26 @@
         "platform": {
           "windows": "Windows",
           "macos": "MacOS",
+          "linux": "Linux",
           "mobile": "移动设备"
+        },
+        "linux": {
+          "step1": {
+            "title": "下载证书",
+            "description": "从此页面下载证书文件"
+          },
+          "step2": {
+            "title": "为Chrome/Chromium安装证书",
+            "description": "访问chrome://certificate-manager/localcerts/usercerts,点击\"导入\"，选择下载的证书文件"
+          },
+          "step3": {
+            "title": "为Firefox安装证书",
+            "description": "访问about:preferences#privacy，点击\"查看证书\"，在\"证书管理器\"中选择\"导入\"，选择下载的证书文件"
+          },
+          "step4": {
+            "title": "为Ubuntu系统安装证书",
+            "description": "sudo cp /path/to/lynx-proxy.crt /usr/local/share/ca-certificates/lynx-proxy.crt && sudo update-ca-certificates"
+          }
         },
         "windows": {
           "step1": {

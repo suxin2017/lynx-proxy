@@ -49,6 +49,15 @@ export const CertInstallDesc = () => {
             label: (
               <Space>
                 <RiComputerLine className="align-middle" size={16} />
+                <span>{t('settings.certificate.install.platform.linux')}</span>
+              </Space>
+            ),
+            value: 'linux',
+          },
+          {
+            label: (
+              <Space>
+                <RiComputerLine className="align-middle" size={16} />
                 <span>{t('settings.certificate.install.platform.mobile')}</span>
               </Space>
             ),
