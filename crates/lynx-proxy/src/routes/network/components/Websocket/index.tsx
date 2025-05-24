@@ -28,9 +28,9 @@ const Websocket: React.FC<TextViewProps> = ({ websocketLog }) => {
             width: 20,
             render: (text: WebSocketDirection) => {
               return text === WebSocketDirection.ClientToServer ? (
-                <RiArrowUpLine className="text-green-700" size={14} />
-              ) : (
                 <RiArrowDownLine className="text-red-700" size={14} />
+              ) : (
+                <RiArrowUpLine className="text-green-700" size={14} />
               );
             },
           },

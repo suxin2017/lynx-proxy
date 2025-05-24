@@ -15,7 +15,7 @@ export const Request: React.FC<IContentsProps> = (_props) => {
     : 'websocket';
 
   const websocketBody = selectRequest?.messages?.message.filter(
-    (item) => item.direction === WebSocketDirection.ClientToServer,
+    (item) => item.direction === WebSocketDirection.ServerToClient,
   );
   return (
     <ContentPreviewTabs

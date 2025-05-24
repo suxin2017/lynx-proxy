@@ -1,32 +1,32 @@
 import { RequestContextMenu } from '@/components/RequestContextMenu';
 import { MessageEventTimings } from '@/services/generated/utoipaAxum.schemas';
+import { IViewMessageEventStoreValue } from '@/store';
 import { useFilteredTableData } from '@/store/requestTableStore';
-import { useSize } from 'ahooks';
 import type { TableProps } from 'antd';
-import { Button, Spin, Table } from 'antd';
+import { Spin, Table } from 'antd';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import prettyMs from 'pretty-ms';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAutoScroll } from '../store/autoScrollStore';
 import { useSelectRequest } from '../store/selectRequestStore';
-import { IViewMessageEventStoreValue } from '@/store';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
 type ColumnsType<T extends object> = TableProps<T>['columns'];
 
-export const RequestTable: React.FC = () => {
+export const RequestTable: React.FC<{ maxHeight: number }> = ({
+  maxHeight,
+}) => {
   const { t } = useTranslation();
   const requestTable = useFilteredTableData();
   const { selectRequest, setSelectRequest } = useSelectRequest();
-  const ref = useRef(null);
-  const size = useSize(ref);
   const tblRef: Parameters<typeof Table>[0]['ref'] = React.useRef(null);
 
-  const [autoScroll, setAutoScroll] = React.useState(true);
+  const { autoScroll } = useAutoScroll();
 
   const columns: ColumnsType<IViewMessageEventStoreValue> = [
     {
@@ -35,6 +35,9 @@ export const RequestTable: React.FC = () => {
       dataIndex: 'traceId',
       align: 'center',
       ellipsis: true,
+      render: (_traceId: string, _raw, index) => {
+        return <span>{index}</span>;
+      },
     },
     {
       title: t('network.table.status'),
@@ -152,14 +155,14 @@ export const RequestTable: React.FC = () => {
 
         if (raw.tunnel && tunnelStart) {
           const formattedDuration = prettyMs(
-            (tunnelEnd || Date.now()) - tunnelStart,
+            (tunnelEnd ?? Date.now()) - tunnelStart,
           );
 
           return <span>{formattedDuration}</span>;
         }
         if (requestStart) {
           const formattedDuration = prettyMs(
-            (requestEnd || Date.now()) - requestStart,
+            (requestEnd ?? Date.now()) - requestStart,
           );
           return <span>{formattedDuration}</span>;
         }
@@ -168,10 +171,12 @@ export const RequestTable: React.FC = () => {
       },
     },
   ];
-
+  console.log(maxHeight, 'maxHeight');
   useEffect(() => {
+    console.log('requestTable', requestTable, autoScroll);
     if (autoScroll && requestTable.length > 0) {
       const lastItem = requestTable[requestTable.length - 1];
+      console.log('autoScroll', lastItem, tblRef.current);
       if (lastItem && tblRef.current) {
         tblRef.current.scrollTo({
           key: lastItem.traceId,
@@ -181,59 +186,36 @@ export const RequestTable: React.FC = () => {
   }, [autoScroll, requestTable]);
 
   return (
-    <div
-      className="bg-red relative flex h-full w-full flex-1 flex-col overflow-hidden"
-      ref={ref}
-    >
-      <RequestContextMenu>
-        {({ handleContextMenu }) => (
-          <div className="flex-1">
-            {!autoScroll && (
-              <div className="absolute right-2 bottom-8 z-10">
-                <Button
-                  size="small"
-                  onClick={() => {
-                    tblRef.current?.scrollTo({
-                      index: requestTable.length - 1,
-                    });
-                    setAutoScroll(true);
-                  }}
-                >
-                  {t('network.toolbar.backToBottom')}
-                </Button>
-              </div>
-            )}
-
-            <Table<IViewMessageEventStoreValue>
-              ref={tblRef}
-              sticky
-              className="flex-1"
-              columns={columns}
-              rowKey="traceId"
-              size="small"
-              onScroll={() => {
-                setAutoScroll(false);
-              }}
-              rowClassName={(record) => {
-                if (selectRequest?.traceId === record.traceId) {
-                  return 'cursor-pointer ant-table-row-selected';
-                }
-                return 'cursor-pointer';
-              }}
-              onRow={(record) => ({
-                onClick: () => {
-                  setSelectRequest(record);
-                },
-                onContextMenu: (event) => handleContextMenu(record, event),
-              })}
-              virtual
-              scroll={{ x: 800, y: size?.height ? size.height : 400 }}
-              pagination={false}
-              dataSource={requestTable}
-            />
-          </div>
-        )}
-      </RequestContextMenu>
-    </div>
+    <RequestContextMenu>
+      {({ handleContextMenu }) => (
+        <div className="flex-1">
+          <Table<IViewMessageEventStoreValue>
+            ref={tblRef}
+            style={{ height: maxHeight }}
+            sticky
+            className="flex-1"
+            columns={columns}
+            rowKey="traceId"
+            size="small"
+            rowClassName={(record) => {
+              if (selectRequest?.traceId === record.traceId) {
+                return 'cursor-pointer ant-table-row-selected';
+              }
+              return 'cursor-pointer';
+            }}
+            onRow={(record) => ({
+              onClick: () => {
+                setSelectRequest(record);
+              },
+              onContextMenu: (event) => handleContextMenu(record, event),
+            })}
+            virtual
+            scroll={{ x: 800, y: maxHeight - 40 }}
+            pagination={false}
+            dataSource={requestTable}
+          />
+        </div>
+      )}
+    </RequestContextMenu>
   );
 };

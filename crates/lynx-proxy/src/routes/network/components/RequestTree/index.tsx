@@ -17,8 +17,8 @@ import { NodeApi, NodeRendererProps, Tree } from 'react-arborist';
 import { useSelectRequest } from '../store/selectRequestStore';
 
 export const RequestTree: React.FC = () => {
-  const treeData = useTreeData()
-  console.log(treeData,"treeData")
+  const treeData = useTreeData();
+  console.log(treeData, 'treeData');
   const ref = useRef(null);
   const size = useSize(ref);
   const { setSelectRequest } = useSelectRequest();
@@ -63,7 +63,7 @@ interface TreeNodeProps extends NodeRendererProps<IRequestTreeNode> {
   onContextMenu?: (event: React.MouseEvent) => void;
 }
 
-const dfsSumChildrenCount = (treeNode: NodeApi<IRequestTreeNode>): number =>  {
+const dfsSumChildrenCount = (treeNode: NodeApi<IRequestTreeNode>): number => {
   let count = 0;
   if (treeNode.children) {
     for (const child of treeNode.children) {
@@ -71,7 +71,7 @@ const dfsSumChildrenCount = (treeNode: NodeApi<IRequestTreeNode>): number =>  {
     }
   }
   return count + (treeNode.isLeaf ? 1 : 0);
-}
+};
 
 const TreeNode = ({
   node,
@@ -142,10 +142,12 @@ const TreeNode = ({
           <RiFolder6Line color={token.token['orange-5']} size={18} />
         </span>
       )}
-      <Typography.Text ellipsis className="w-full">{node.data.name}</Typography.Text>
+      <Typography.Text ellipsis className="w-full">
+        {node.data.name}
+      </Typography.Text>
       {isRoot && node.data.children.length > 0 && (
         <Tag className="rounded-xl text-xs" color="blue">
-          {dfsSumChildrenCount(node)} 请求
+          {dfsSumChildrenCount(node)}
         </Tag>
       )}
 

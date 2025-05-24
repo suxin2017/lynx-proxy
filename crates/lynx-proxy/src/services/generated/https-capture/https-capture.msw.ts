@@ -10,7 +10,10 @@ import { faker } from '@faker-js/faker';
 import { HttpResponse, delay, http } from 'msw';
 
 import { ResponseCode } from '../utoipaAxum.schemas';
-import type { ResponseDataWrapperCaptureFilter } from '../utoipaAxum.schemas';
+import type {
+  ResponseDataWrapperCaptureFilter,
+  ResponseDataWrapperTupleUnit,
+} from '../utoipaAxum.schemas';
 
 export const getGetHttpsCaptureFilterResponseMock = (
   overrideResponse: Partial<ResponseDataWrapperCaptureFilter> = {},
@@ -35,6 +38,18 @@ export const getGetHttpsCaptureFilterResponseMock = (
       port: faker.number.int({ min: 0, max: 65535 }),
     })),
   },
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getUpdateHttpsCaptureFilterResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperTupleUnit> = {},
+): ResponseDataWrapperTupleUnit => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: {},
   message: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha(20), null]),
     undefined,
@@ -69,17 +84,26 @@ export const getGetHttpsCaptureFilterMockHandler = (
 
 export const getUpdateHttpsCaptureFilterMockHandler = (
   overrideResponse?:
-    | void
+    | ResponseDataWrapperTupleUnit
     | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Promise<void> | void),
+      ) =>
+        | Promise<ResponseDataWrapperTupleUnit>
+        | ResponseDataWrapperTupleUnit),
 ) => {
   return http.post('*/https_capture/https-capture/filter', async (info) => {
     await delay(1000);
-    if (typeof overrideResponse === 'function') {
-      await overrideResponse(info);
-    }
-    return new HttpResponse(null, { status: 200 });
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getUpdateHttpsCaptureFilterResponseMock(),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
   });
 };
 export const getHttpsCaptureMock = () => [

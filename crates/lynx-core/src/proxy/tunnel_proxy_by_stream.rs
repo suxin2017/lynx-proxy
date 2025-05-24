@@ -7,7 +7,7 @@ use tokio::{
 };
 use tracing::{trace, warn};
 
-use crate::layers::{message_package_layer::MessageEventCannel, trace_id_layer::service::TraceId};
+use crate::layers::{message_package_layer::MessageEventChannel, trace_id_layer::service::TraceId};
 
 pub async fn tunnel_proxy_by_stream<
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
@@ -16,7 +16,7 @@ pub async fn tunnel_proxy_by_stream<
     mut stream: S,
     addr: A,
     trace_id: TraceId,
-    event_cannel: Arc<MessageEventCannel>,
+    event_cannel: Arc<MessageEventChannel>,
 ) -> Result<()> {
     // let mut upgraded = TokioIo::new(stream);
     let mut server = TcpStream::connect(addr).await?;

@@ -35,7 +35,7 @@ use super::trace_id_layer::service::{TraceId, TraceIdExt};
 pub mod message_event_data;
 pub mod message_event_store;
 
-pub struct MessageEventCannel {
+pub struct MessageEventChannel {
     sender: tokio::sync::mpsc::Sender<MessageEvent>,
 }
 
@@ -43,7 +43,7 @@ pub async fn handle_message_event(
     mut rx: tokio::sync::mpsc::Receiver<MessageEvent>,
     cache: Arc<message_event_store::MessageEventCache>,
 ) -> Result<()> {
-    info!("MessageEventCannel started");
+    info!("MessageEventChannel started");
     while let Some(event) = rx.recv().await {
         match event {
             MessageEvent::OnRequestStart(id, req) => {
@@ -92,7 +92,7 @@ pub async fn handle_message_event(
                 value.status = message_event_store::MessageEventStatus::Completed;
             }
             MessageEvent::OnError(id, error_reason) => {
-                tracing::trace!("Received OnRequestEnd event");
+                tracing::trace!("Received OnError event");
                 let value = cache.get_mut(&id);
                 if value.is_none() {
                     continue;
@@ -142,6 +142,41 @@ pub async fn handle_message_event(
                 }
                 let mut value = value.unwrap();
                 value.response_mut().replace(res);
+            }
+            MessageEvent::OnWebSocketStart(id) => {
+                tracing::trace!("Received OnWebSocketStart event {}", id);
+                let value = cache.get_mut(&id);
+                if value.is_none() {
+                    continue;
+                }
+                let mut value = value.unwrap();
+                value.timings_mut().set_websocket_start();
+                value.messages = Some(MessageEventWebSocket {
+                    ..Default::default()
+                });
+            }
+            MessageEvent::OnWebSocketError(id, error_reason) => {
+                tracing::trace!("Received OnWebSocketError event {}", id);
+                let value = cache.get_mut(&id);
+                if value.is_none() {
+                    continue;
+                }
+                let mut value = value.unwrap();
+                value.timings_mut().set_websocket_end();
+                let msg = value.messages_mut();
+
+                match msg {
+                    Some(msg) => {
+                        msg.status = WebSocketStatus::Error(error_reason);
+                    }
+                    None => {
+                        let msg = MessageEventWebSocket {
+                            status: WebSocketStatus::Error(error_reason),
+                            ..Default::default()
+                        };
+                        value.messages = Some(msg);
+                    }
+                }
             }
             MessageEvent::OnWebSocketMessage(id, log) => {
                 tracing::trace!("Received OnWebSocketMessage event {}", id);
@@ -202,7 +237,7 @@ pub async fn handle_message_event(
     Ok(())
 }
 
-impl MessageEventCannel {
+impl MessageEventChannel {
     pub fn new(cache: Arc<message_event_store::MessageEventCache>) -> Self {
         let (tx, rx) = channel::<MessageEvent>(100);
 
@@ -309,6 +344,19 @@ impl MessageEventCannel {
             .await;
     }
 
+    pub async fn dispatch_on_websocket_start(&self, request_id: TraceId) {
+        let _ = self
+            .sender
+            .send(MessageEvent::OnWebSocketStart(request_id))
+            .await;
+    }
+
+    pub async fn dispatch_on_websocket_error(&self, request_id: TraceId, error_reason: String) {
+        let _ = self
+            .sender
+            .send(MessageEvent::OnWebSocketError(request_id, error_reason))
+            .await;
+    }
     pub async fn dispatch_on_websocket_message(
         &self,
         request_id: TraceId,
@@ -336,13 +384,13 @@ impl MessageEventCannel {
 }
 
 pub trait MessageEventLayerExt {
-    fn get_message_event_cannel(&self) -> Arc<MessageEventCannel>;
+    fn get_message_event_cannel(&self) -> Arc<MessageEventChannel>;
 }
 
 impl MessageEventLayerExt for Extensions {
-    fn get_message_event_cannel(&self) -> Arc<MessageEventCannel> {
-        self.get::<Arc<MessageEventCannel>>()
-            .expect("MessageEventCannel not found in Extensions")
+    fn get_message_event_cannel(&self) -> Arc<MessageEventChannel> {
+        self.get::<Arc<MessageEventChannel>>()
+            .expect("MessageEventChannel not found in Extensions")
             .clone()
     }
 }

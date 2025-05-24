@@ -14,6 +14,22 @@
 - 🔗 **支持 WebSocket**：原生支持 WebSocket 代理。
 - 🦀 **Rust 生态**：基于 hyper、axum、tower 等主流库开发。
 - 💻 **现代 Web 客户端**：提供直观易用的 Web 管理界面，支持暗黑模式。
+- 📋 **列表视图**：支持以结构化列表格式查看 HTTP 请求和响应。
+- 🌲 **树形视图**：以直观的树形结构可视化请求数据，提供更好的组织和分析体验。
+
+## 功能展示
+
+### HTTP/HTTPS 代理
+
+![HTTP 代理示例](./images/http.png)
+
+### WebSocket 代理
+
+![WebSocket 代理示例](./images/webscoket.png)
+
+### 树形结构视图
+
+![树形结构视图示例](./images/tree.png)
 
 ## 安装
 

@@ -7,7 +7,6 @@ import { filter } from 'lodash';
 import { ifTrue } from '@/utils/ifTrue';
 import { MediaViewer } from '../MediaViewer';
 import TextView from '../TextViewer';
-import CodeViewer from '../CodeViewer';
 import FormViewer from '../FormView';
 import Websocket from '../../Websocket';
 import { WebSocketLog } from '@/services/generated/utoipaAxum.schemas';
@@ -121,13 +120,8 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       contentTypeCheck.contentTypeFont
     ) {
       return ContentPreviewType.Media;
-    } else if (
-      contentTypeCheck.contentTypeHtml ||
-      contentTypeCheck.contentTypeXml ||
-      contentTypeCheck.contentTypeCss ||
-      contentTypeCheck.contentTypeJavascript
-    ) {
-      return ContentPreviewType.Code;
+    } else if (contentTypeCheck.contentTypeWebsocket) {
+      return ContentPreviewType.Websocket;
     } else if (
       contentTypeCheck.contentTypeMultiForm ||
       contentTypeCheck.contentTypeForm
@@ -144,20 +138,11 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       contentTypeJson,
       contentTypeVideo,
       contentTypeImage,
-      contentTypeHtml,
-      contentTypeXml,
-      contentTypeCss,
-      contentTypeJavascript,
       contentTypeMultiForm,
       contentTypeForm,
       contentTypeFont,
       contentTypeWebsocket,
     } = contentTypeCheck;
-    const contentTypeCode =
-      contentTypeHtml ||
-      contentTypeXml ||
-      contentTypeCss ||
-      contentTypeJavascript;
 
     const contentTypeMedia =
       contentTypeImage || contentTypeVideo || contentTypeFont;
@@ -196,27 +181,12 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
             />
           ),
         }),
-        ifTrue(contentTypeCode, {
-          key: ContentPreviewType.Code,
-          label: 'Code',
-          children: (
-            <CodeViewer
-              arrayBuffer={body}
-              type={[
-                contentTypeHtml,
-                contentTypeXml,
-                contentTypeCss,
-                contentTypeJavascript,
-              ]}
-            />
-          ),
-        }),
         ifTrue(contentTypeWebsocket, {
           key: ContentPreviewType.Websocket,
           label: 'Websocket',
           children: <Websocket websocketLog={websocketBody} />,
         }),
-        ifTrue(!contentTypeMedia && !contentTypeCode, {
+        ifTrue(!contentTypeMedia, {
           key: ContentPreviewType.Text,
           label: 'Text',
           children: <TextView arrayBuffer={websocketBodyArrayBuffer ?? body} />,

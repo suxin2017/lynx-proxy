@@ -23,7 +23,9 @@ import type {
 
 import type {
   CaptureFilter,
+  ErrorResponse,
   ResponseDataWrapperCaptureFilter,
+  ResponseDataWrapperTupleUnit,
 } from '../utoipaAxum.schemas';
 
 import { customInstance } from '../../customInstance';
@@ -42,7 +44,7 @@ export const getGetHttpsCaptureFilterQueryKey = () => {
 
 export const getGetHttpsCaptureFilterQueryOptions = <
   TData = Awaited<ReturnType<typeof getHttpsCaptureFilter>>,
-  TError = void,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -70,11 +72,11 @@ export const getGetHttpsCaptureFilterQueryOptions = <
 export type GetHttpsCaptureFilterQueryResult = NonNullable<
   Awaited<ReturnType<typeof getHttpsCaptureFilter>>
 >;
-export type GetHttpsCaptureFilterQueryError = void;
+export type GetHttpsCaptureFilterQueryError = ErrorResponse;
 
 export function useGetHttpsCaptureFilter<
   TData = Awaited<ReturnType<typeof getHttpsCaptureFilter>>,
-  TError = void,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -99,7 +101,7 @@ export function useGetHttpsCaptureFilter<
 };
 export function useGetHttpsCaptureFilter<
   TData = Awaited<ReturnType<typeof getHttpsCaptureFilter>>,
-  TError = void,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -124,7 +126,7 @@ export function useGetHttpsCaptureFilter<
 };
 export function useGetHttpsCaptureFilter<
   TData = Awaited<ReturnType<typeof getHttpsCaptureFilter>>,
-  TError = void,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -142,7 +144,7 @@ export function useGetHttpsCaptureFilter<
 
 export function useGetHttpsCaptureFilter<
   TData = Awaited<ReturnType<typeof getHttpsCaptureFilter>>,
-  TError = void,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -173,7 +175,7 @@ export const updateHttpsCaptureFilter = (
   captureFilter: CaptureFilter,
   signal?: AbortSignal,
 ) => {
-  return customInstance<void>({
+  return customInstance<ResponseDataWrapperTupleUnit>({
     url: `/https_capture/https-capture/filter`,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -183,7 +185,7 @@ export const updateHttpsCaptureFilter = (
 };
 
 export const getUpdateHttpsCaptureFilterMutationOptions = <
-  TError = void,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -223,9 +225,12 @@ export type UpdateHttpsCaptureFilterMutationResult = NonNullable<
   Awaited<ReturnType<typeof updateHttpsCaptureFilter>>
 >;
 export type UpdateHttpsCaptureFilterMutationBody = CaptureFilter;
-export type UpdateHttpsCaptureFilterMutationError = void;
+export type UpdateHttpsCaptureFilterMutationError = ErrorResponse;
 
-export const useUpdateHttpsCaptureFilter = <TError = void, TContext = unknown>(
+export const useUpdateHttpsCaptureFilter = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof updateHttpsCaptureFilter>>,
