@@ -32,6 +32,7 @@ where
     type Error = S::Error;
     type Future = MarkFuture<S::Future>;
     fn call(&self, req: Req) -> Self::Future {
+        tracing::trace!("handle request: {:?}", req.uri());
         MarkFuture {
             future: self.inner.call(req),
             mark: self.mark.clone(),

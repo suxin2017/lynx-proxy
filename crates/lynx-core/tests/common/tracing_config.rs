@@ -6,6 +6,8 @@ pub fn init_tracing() {
     let my_filter = FilterFn::new(|metadata| {
         // Only enable spans or events with the target "interesting_things"
         metadata.target().starts_with("lynx_core")
+            || metadata.target().starts_with("lynx_db")
+            || metadata.target().starts_with("lynx_mock")
     });
     let _ = tracing_subscriber::registry()
         .with(

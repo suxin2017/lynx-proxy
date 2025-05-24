@@ -3,13 +3,13 @@ version: "3"
 tasks:
   dev:
     desc: Run development server
-    deps: [dev-lynx-server,dev-ui]
-    
+    deps: [dev-lynx-server, dev-ui]
+
   test:
     desc: Run tests
     dir: crates/lynx-core
     cmds:
-      - cargo test --features test -- --test-threads 1 --nocapture
+      - cargo test  --  --nocapture
 
   lint:
     desc: Run clippy linter
@@ -61,7 +61,7 @@ tasks:
     desc: Start test server
     dir: crates/lynx-core
     cmds:
-      - cargo run --package lynx-core --example proxy_server_example 
+      - cargo run --package lynx-core --example proxy_server_example
 
   release-minor:
     deps: [update-main-branch]
@@ -99,7 +99,7 @@ tasks:
     dir: crates/lynx-core
     desc: Generate type defined
     cmds:
-      - cargo test export_bindings  
+      - cargo test export_bindings
 
   update-main-branch:
     desc: Update remote branch

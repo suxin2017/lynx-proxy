@@ -12,7 +12,9 @@ async fn main() -> Result<()> {
     server.write_cert_to_file()?;
     server.start_server().await?;
     let client = MockClient::new(Some(vec![server.cert.clone()]), None)?;
+    client.test_request_https_request(&server).await?;
     client.test_request_http_request(&server).await?;
     client.test_request_websocket(&server).await?;
+    client.test_request_tls_websocket(&server).await?;
     Ok(())
 }

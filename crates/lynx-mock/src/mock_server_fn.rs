@@ -76,7 +76,6 @@ impl Display for MockPath {
 pub async fn mock_server_fn(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, anyhow::Error>>> {
-    tracing::trace!("{:?}", req);
     let res = match (req.method(), MockPath::from(req.uri().path())) {
         (&Method::GET, MockPath::Websocket) => {
             let (res, ws) = hyper_tungstenite::upgrade(req, None)?;

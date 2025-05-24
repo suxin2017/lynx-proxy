@@ -15,10 +15,10 @@ use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
 use lynx_db::migration::Migrator;
 use rcgen::Certificate;
-use sea_orm::{ConnectOptions, Database};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use sea_orm_migration::MigratorTrait;
 use tokio::net::TcpListener;
-use tokio_rustls::{TlsAcceptor, rustls};
+use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
 use tracing::{debug, trace, warn};
@@ -60,16 +60,15 @@ pub struct ProxyServer {
     pub server_ca_manager: Arc<ServerCaManager>,
 
     pub db_config: ConnectOptions,
+
+    #[builder(setter(skip))]
+    pub db_connect: Arc<DatabaseConnection>,
 }
 
 impl ProxyServerBuilder {
     pub async fn build(&self) -> Result<ProxyServer> {
         let port = self.port.flatten().unwrap_or(0);
         let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
-        rustls::crypto::ring::default_provider()
-            .install_default()
-            .expect("Failed to install rustls crypto provider");
-
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
             .filter(|(_, ip)| ip.is_ipv4())
@@ -78,18 +77,21 @@ impl ProxyServerBuilder {
             .map(|ip| SocketAddr::new(ip, port))
             .collect();
         let custom_certs = self.custom_certs.clone().flatten();
+        let db_config = self.db_config.clone().expect("db_config is required");
+        let db_con = Database::connect(db_config.clone()).await?;
 
         Ok(ProxyServer {
             port: self.port.flatten(),
             access_addr_list,
             custom_certs,
             config: self.config.clone().expect("config is required"),
-            db_config: self.db_config.clone().expect("db_config is required"),
+            db_config,
             static_dir: self.static_dir.clone().flatten(),
             server_ca_manager: self
                 .server_ca_manager
                 .clone()
                 .expect("server_ca_manager is required"),
+            db_connect: Arc::new(db_con),
         })
     }
 }
@@ -158,7 +160,7 @@ impl ProxyServer {
         let self_ca = server_ca_manager.get_server_config(&authority).await?;
         let tls_acceptor = TlsAcceptor::from(self_ca);
 
-        let db_connect = Arc::new(Database::connect(self.db_config.clone()).await?);
+        let db_connect = self.db_connect.clone();
         Migrator::up(db_connect.as_ref(), None).await?;
 
         tokio::spawn(async move {
@@ -255,17 +257,46 @@ impl ProxyServer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use tempdir::TempDir;
+
+    use super::{
+        server_ca_manage::ServerCaManagerBuilder, server_config::ProxyServerConfigBuilder, *,
+    };
+
+    async fn build_test_proxy_server() -> Result<ProxyServer> {
+        let fixed_temp_dir_path = TempDir::new("proxy_test")?;
+        let fixed_temp_dir_path = fixed_temp_dir_path.path();
+
+        let server_config = ProxyServerConfigBuilder::default()
+            .root_cert_file_path(fixed_temp_dir_path.join("root.pem"))
+            .root_key_file_path(fixed_temp_dir_path.join("key.pem"))
+            .build()?;
+
+        let server_ca_manager = ServerCaManagerBuilder::new(
+            server_config.root_cert_file_path.clone(),
+            server_config.root_key_file_path.clone(),
+        )
+        .build()?;
+
+        let proxy_server = ProxyServerBuilder::default()
+            .config(Arc::new(server_config))
+            .port(3000)
+            .server_ca_manager(Arc::new(server_ca_manager))
+            .db_config(ConnectOptions::new("sqlite::memory:"))
+            .build()
+            .await?;
+        Ok(proxy_server)
+    }
 
     #[tokio::test]
     async fn build_test() -> Result<()> {
-        ProxyServerBuilder::default().port(3000).build().await?;
+        build_test_proxy_server().await?;
         Ok(())
     }
 
     #[tokio::test]
     async fn listener_test() -> Result<()> {
-        let server = ProxyServerBuilder::default().port(3000).build().await?;
+        let server = build_test_proxy_server().await?;
 
         let data = server.bind_tcp_listener().await?;
 
@@ -278,7 +309,7 @@ mod tests {
 
     #[tokio::test]
     async fn hyper_test() -> Result<()> {
-        let server = ProxyServerBuilder::default().port(3000).build().await?;
+        let server = build_test_proxy_server().await?;
 
         let tcp_listeners = server.bind_tcp_listener().await?;
 
@@ -290,7 +321,7 @@ mod tests {
 
     #[tokio::test]
     async fn run_test() -> Result<()> {
-        let mut server = ProxyServerBuilder::default().port(3000).build().await?;
+        let mut server = build_test_proxy_server().await?;
 
         server.run().await?;
         Ok(())
