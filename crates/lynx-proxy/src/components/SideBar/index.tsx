@@ -2,17 +2,17 @@ import {
   RiMoonLine,
   RiPlanetFill,
   RiSettings2Fill,
-  RiSunLine
+  RiSunLine,
 } from '@remixicon/react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/contexts';
 
 export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') || 'light';

@@ -34,6 +34,11 @@ export default defineConfig({
       'process.platform': '"browser"',
     },
   },
+  dev: {
+    client: {
+      overlay: false,
+    },
+  },
   server: {
     port: 8080,
     proxy: {

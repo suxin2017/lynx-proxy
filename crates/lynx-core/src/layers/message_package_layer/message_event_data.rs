@@ -60,8 +60,10 @@ pub struct MessageEventRequest {
 #[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
 pub enum WebSocketStatus {
     #[default]
+    Start,
     Connected,
     Disconnected,
+    Error(String),
 }
 
 #[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]

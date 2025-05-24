@@ -143,6 +143,41 @@ pub async fn handle_message_event(
                 let mut value = value.unwrap();
                 value.response_mut().replace(res);
             }
+            MessageEvent::OnWebSocketStart(id) => {
+                tracing::trace!("Received OnWebSocketStart event {}", id);
+                let value = cache.get_mut(&id);
+                if value.is_none() {
+                    continue;
+                }
+                let mut value = value.unwrap();
+                value.timings_mut().set_websocket_start();
+                value.messages = Some(MessageEventWebSocket {
+                    ..Default::default()
+                });
+            }
+            MessageEvent::OnWebSocketError(id, error_reason) => {
+                tracing::trace!("Received OnWebSocketError event {}", id);
+                let value = cache.get_mut(&id);
+                if value.is_none() {
+                    continue;
+                }
+                let mut value = value.unwrap();
+                value.timings_mut().set_websocket_end();
+                let msg = value.messages_mut();
+
+                match msg {
+                    Some(msg) => {
+                        msg.status = WebSocketStatus::Error(error_reason);
+                    }
+                    None => {
+                        let msg = MessageEventWebSocket {
+                            status: WebSocketStatus::Error(error_reason),
+                            ..Default::default()
+                        };
+                        value.messages = Some(msg);
+                    }
+                }
+            }
             MessageEvent::OnWebSocketMessage(id, log) => {
                 tracing::trace!("Received OnWebSocketMessage event {}", id);
                 let value = cache.get_mut(&id);
@@ -309,6 +344,19 @@ impl MessageEventCannel {
             .await;
     }
 
+    pub async fn dispatch_on_websocket_start(&self, request_id: TraceId) {
+        let _ = self
+            .sender
+            .send(MessageEvent::OnWebSocketStart(request_id))
+            .await;
+    }
+
+    pub async fn dispatch_on_websocket_error(&self, request_id: TraceId, error_reason: String) {
+        let _ = self
+            .sender
+            .send(MessageEvent::OnWebSocketError(request_id, error_reason))
+            .await;
+    }
     pub async fn dispatch_on_websocket_message(
         &self,
         request_id: TraceId,

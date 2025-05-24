@@ -64,14 +64,33 @@ pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
     let trace_id = req.extensions().get_trace_id();
     let (_res, hyper_ws) = hyper_tungstenite::upgrade(&mut req, None)?;
 
+    message_cannel
+        .dispatch_on_websocket_start(trace_id.clone())
+        .await;
+
     let ws_client = req.extensions().get_websocket_client();
     let ws_req: WebSocketReq = req.try_into()?;
-    let (client_ws, res) = ws_client.request(ws_req).await?;
+
+    let (client_ws, res) = ws_client.request(ws_req).await.inspect_err(|e| {
+        let message_cannel = message_cannel.clone();
+        let trace_id = trace_id.clone();
+        let reason = format!("WebSocket request error: {}", e);
+        spawn(async move {
+            message_cannel
+                .dispatch_on_websocket_error(trace_id, reason)
+                .await;
+        });
+    })?;
 
     let mc = message_cannel.clone();
     let tid = trace_id.clone();
     spawn(async move {
-        let _ = handle_hyper_and_client_websocket(hyper_ws, client_ws, mc, tid).await;
+        if let Err(e) = handle_hyper_and_client_websocket(hyper_ws, client_ws, mc, tid).await {
+            let reason = format!("WebSocket handling error: {}", e);
+            message_cannel
+                .dispatch_on_websocket_error(trace_id, reason)
+                .await;
+        }
     });
 
     let res = res.map(|body| body.map(|b| full(b)).unwrap_or(empty()));

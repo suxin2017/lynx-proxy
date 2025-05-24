@@ -24,6 +24,7 @@ import {
   requestTreeReducer,
 } from './requestTreeStore';
 import pako from 'pako';
+import { useSelectRequest } from '@/routes/network/components/store/selectRequestStore';
 
 export const store = configureStore({
   reducer: {
@@ -68,16 +69,20 @@ export function bodyToArrayBuffer(
 const formatItem = (item: MessageEventStoreValue) => {
   const { request, response } = item;
   const reqBodyArrayBuffer = request?.body
-    ? bodyToArrayBuffer(request.headers,request.body)
+    ? bodyToArrayBuffer(request.headers, request.body)
     : undefined;
   const resBodyArrayBuffer = response?.body
-    ? bodyToArrayBuffer(response.headers,response.body)
+    ? bodyToArrayBuffer(response.headers, response.body)
     : undefined;
   return {
     ...item,
     request: {
       ...request,
       bodyArrayBuffer: reqBodyArrayBuffer,
+    },
+    message: {
+      ...item.messages,
+      message: item.messages?.message?.reverse(),
     },
     response: {
       ...response,
@@ -98,6 +103,7 @@ export const useUpdateRequestLog = () => {
   const pendingRequestIds = useSelector((state: RootState) => {
     return state.requestTable.pendingRequestIds;
   });
+  const { selectRequest, setSelectRequest } = useSelectRequest();
 
   const handleCacheRequests = (
     cacheRequestsData: ResponseDataWrapperRecordRequests,
@@ -134,17 +140,27 @@ export const useUpdateRequestLog = () => {
       dispatch(appendTreeNode(cacheNewData.data?.data?.newRequests));
     }
     if (cacheNewData.data?.data.patchRequests) {
+      const updateCurrentRequest = cacheNewData.data?.data.patchRequests.find(
+        (item) => item.traceId === selectRequest?.traceId,
+      );
+      console.log(
+        'updateCurrentRequest',
+        updateCurrentRequest,
+        selectRequest?.traceId,
+      );
+      if (updateCurrentRequest) {
+        setSelectRequest(updateCurrentRequest);
+      }
       dispatch(replaceRequest(cacheNewData.data?.data?.patchRequests));
 
       dispatch(replaceTreeNode(cacheNewData.data?.data?.patchRequests));
     }
   };
 
-
   useInterval(
     () => {
       if (
-        netWorkCaptureStatusData?.data?.recordingStatus === "pauseRecording"
+        netWorkCaptureStatusData?.data?.recordingStatus === 'pauseRecording'
       ) {
         cacheRequests
           .mutateAsync({

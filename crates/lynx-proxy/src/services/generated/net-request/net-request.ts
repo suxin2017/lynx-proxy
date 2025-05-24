@@ -22,6 +22,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ErrorResponse,
   GetRequestsData,
   ResponseDataWrapperCaptureSwitch,
   ResponseDataWrapperRecordRequests,
@@ -250,7 +251,7 @@ export const getCachedRequests = (
 };
 
 export const getGetCachedRequestsMutationOptions = <
-  TError = void,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -290,9 +291,12 @@ export type GetCachedRequestsMutationResult = NonNullable<
   Awaited<ReturnType<typeof getCachedRequests>>
 >;
 export type GetCachedRequestsMutationBody = GetRequestsData;
-export type GetCachedRequestsMutationError = void;
+export type GetCachedRequestsMutationError = ErrorResponse;
 
-export const useGetCachedRequests = <TError = void, TContext = unknown>(
+export const useGetCachedRequests = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof getCachedRequests>>,
