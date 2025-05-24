@@ -108,6 +108,7 @@ impl MockClient {
                 client = client.add_root_certificate(cert);
             }
         }
+        client = client.no_proxy();
         if let Some(proxy_url) = proxy_url {
             client = client.proxy(reqwest::Proxy::all(proxy_url).unwrap());
         }
@@ -137,6 +138,34 @@ impl MockClient {
     pub async fn test_request_websocket(&self, server: &MockServer) -> Result<()> {
         let ws_path = server.get_websocket_path();
         let (direct_res, proxy_res) = self.ws(ws_path.as_str()).await;
+        Self::assert_equality_ws(direct_res, proxy_res).await?;
+        Ok(())
+    }
+
+    pub async fn test_real_world_http_request(&self) -> Result<()> {
+        let path = "http://example.com/";
+        let (direct_res, proxy_res) = self.get(path).await;
+        Self::assert_equality_res(direct_res, proxy_res).await?;
+        Ok(())
+    }
+
+    pub async fn test_real_world_https_request(&self) -> Result<()> {
+        let path = "https://example.com/";
+        let (direct_res, proxy_res) = self.get(path).await;
+        Self::assert_equality_res(direct_res, proxy_res).await?;
+        Ok(())
+    }
+
+    pub async fn test_real_world_websocket_request(&self) -> Result<()> {
+        let ws_path = "ws://echo.websocket.org";
+        let (direct_res, proxy_res) = self.ws(ws_path).await;
+        Self::assert_equality_ws(direct_res, proxy_res).await?;
+        Ok(())
+    }
+
+    pub async fn test_real_world_tls_websocket_request(&self) -> Result<()> {
+        let ws_path = "wss://echo.websocket.org";
+        let (direct_res, proxy_res) = self.ws(ws_path).await;
         Self::assert_equality_ws(direct_res, proxy_res).await?;
         Ok(())
     }

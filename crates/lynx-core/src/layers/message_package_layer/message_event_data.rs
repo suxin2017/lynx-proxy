@@ -344,8 +344,8 @@ mod tests {
         assert_eq!(message_event_request.method, "POST");
         assert_eq!(message_event_request.url, "http://example.com/");
         assert_eq!(
-            message_event_request.headers.get("Content-Type").unwrap(),
-            "application/json"
+            message_event_request.headers.get("content-type"),
+            Some(&"application/json".to_string())
         );
         assert_eq!(message_event_request.body, MessageEventBody(Bytes::new()));
     }

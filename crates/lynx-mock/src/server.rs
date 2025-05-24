@@ -2,12 +2,11 @@ use crate::mark_service::MarkService;
 use crate::mock_server_fn::{HTTP_PATH_LIST, WS_PATH, mock_server_fn};
 use anyhow::Result;
 use hyper_util::rt::{TokioExecutor, TokioIo};
-use lynx_cert::{gen_server_config_by_ca, get_self_signed_cert};
+use lynx_cert::{gen_server_config_by_ca, get_self_signed_cert, read_cert_and_key_by_file};
 use rcgen::{Certificate, KeyPair};
 use std::fs;
 use std::path::PathBuf;
 use std::{net::SocketAddr, sync::Arc};
-use tempdir::TempDir;
 use tokio::net::TcpListener;
 use tokio_rustls::{TlsAcceptor, rustls::ServerConfig};
 use tower::ServiceBuilder;
@@ -21,9 +20,19 @@ pub async fn is_https_tcp_stream(tcp_stream: &tokio::net::TcpStream) -> bool {
     }
 }
 
-pub fn mock_server_config() -> Result<(ServerConfig, Arc<Certificate>, KeyPair)> {
-    let (cert, key) = get_self_signed_cert(None)?;
-    let cert = Arc::new(cert);
+pub fn mock_server_config(
+    cert_path: &PathBuf,
+    key_path: &PathBuf,
+) -> Result<(ServerConfig, Arc<Certificate>, KeyPair)> {
+    let (cert, key) = if cert_path.exists() && key_path.exists() {
+        let (cert, key) = read_cert_and_key_by_file(&key_path, &cert_path)?;
+        let cert = Arc::new(cert);
+        (cert, key)
+    } else {
+        let (cert, key) = get_self_signed_cert(None)?;
+        let cert = Arc::new(cert);
+        (cert, key)
+    };
     let server_config = gen_server_config_by_ca(&[cert.clone()], &key)?;
     Ok((server_config, cert, key))
 }
@@ -33,23 +42,31 @@ pub struct MockServer {
     pub cert: Arc<Certificate>,
     key: KeyPair,
     server_config: Arc<ServerConfig>,
-    cert_path: Option<PathBuf>,
-    key_path: Option<PathBuf>,
+    cert_path: PathBuf,
+    key_path: PathBuf,
 }
 
 impl MockServer {
     pub fn new(port: Option<u16>) -> Self {
         let addr = Self::init_addr(port);
+        let fixed_temp_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/temp");
+
+        if !fixed_temp_dir_path.exists() {
+            fs::create_dir_all(&fixed_temp_dir_path).expect("Failed to create temp dir");
+        }
+
+        let cert_path = fixed_temp_dir_path.join("cert.pem");
+        let key_path = fixed_temp_dir_path.join("key.pem");
         // Build TLS configuration.
         let (server_config, cert, key) =
-            mock_server_config().unwrap_or_else(|_| panic!("Failed to generate server config"));
+            mock_server_config(&cert_path, &key_path).expect("Failed to generate server config");
         MockServer {
             addr,
             server_config: Arc::new(server_config),
             cert,
             key,
-            cert_path: None,
-            key_path: None,
+            cert_path,
+            key_path,
         }
     }
 
@@ -84,14 +101,11 @@ impl MockServer {
     }
 
     pub fn write_cert_to_file(&mut self) -> Result<()> {
-        let temp_dir = TempDir::new("lynx_mock")?;
-        let temp_dir_path = temp_dir.path();
-        let cert_path = temp_dir_path.join("cert.pem");
-        let key_path = temp_dir_path.join("key.pem");
-        fs::write(&cert_path, self.cert.pem().as_bytes())?;
-        fs::write(&key_path, self.key.serialize_pem().as_bytes())?;
-        self.cert_path = Some(cert_path);
-        self.key_path = Some(key_path);
+        if self.cert_path.exists() && self.key_path.exists() {
+            return Ok(());
+        }
+        fs::write(&self.cert_path, self.cert.pem().as_bytes())?;
+        fs::write(&self.key_path, self.key.serialize_pem().as_bytes())?;
         Ok(())
     }
 
