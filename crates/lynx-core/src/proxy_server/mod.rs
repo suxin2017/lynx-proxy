@@ -29,7 +29,7 @@ use crate::gateway_service::gateway_service_fn;
 use crate::layers::error_handle_layer::ErrorHandlerLayer;
 use crate::layers::log_layer::LogLayer;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
-use crate::layers::message_package_layer::{MessageEventCannel, RequestMessageEventService};
+use crate::layers::message_package_layer::{MessageEventChannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
 
@@ -153,7 +153,7 @@ impl ProxyServer {
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
         let message_event_store = Arc::new(MessageEventCache::default());
-        let message_event_cannel = Arc::new(MessageEventCannel::new(message_event_store.clone()));
+        let message_event_cannel = Arc::new(MessageEventChannel::new(message_event_store.clone()));
         let static_dir = self.static_dir.clone();
         let addr_str = listener.local_addr()?.to_string();
         let authority = Authority::from_str(&addr_str)?;

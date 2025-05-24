@@ -18,7 +18,7 @@ use crate::{
     client::request_client::RequestClientExt,
     common::Req,
     layers::{
-        message_package_layer::{MessageEventCannel, MessageEventLayerExt},
+        message_package_layer::{MessageEventChannel, MessageEventLayerExt},
         trace_id_layer::service::{TraceId, TraceIdExt},
     },
     utils::{empty, full},
@@ -60,11 +60,11 @@ pub fn is_websocket_req(req: &Req) -> bool {
 
 pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
     assert!(hyper_tungstenite::is_upgrade_request(&req));
-    let message_cannel = req.extensions().get_message_event_cannel();
+    let message_channel = req.extensions().get_message_event_cannel();
     let trace_id = req.extensions().get_trace_id();
     let (_res, hyper_ws) = hyper_tungstenite::upgrade(&mut req, None)?;
 
-    message_cannel
+    message_channel
         .dispatch_on_websocket_start(trace_id.clone())
         .await;
 
@@ -72,22 +72,22 @@ pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
     let ws_req: WebSocketReq = req.try_into()?;
 
     let (client_ws, res) = ws_client.request(ws_req).await.inspect_err(|e| {
-        let message_cannel = message_cannel.clone();
+        let message_channel = message_channel.clone();
         let trace_id = trace_id.clone();
         let reason = format!("WebSocket request error: {}", e);
         spawn(async move {
-            message_cannel
+            message_channel
                 .dispatch_on_websocket_error(trace_id, reason)
                 .await;
         });
     })?;
 
-    let mc = message_cannel.clone();
+    let mc = message_channel.clone();
     let tid = trace_id.clone();
     spawn(async move {
         if let Err(e) = handle_hyper_and_client_websocket(hyper_ws, client_ws, mc, tid).await {
             let reason = format!("WebSocket handling error: {}", e);
-            message_cannel
+            message_channel
                 .dispatch_on_websocket_error(trace_id, reason)
                 .await;
         }
@@ -100,7 +100,7 @@ pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
 async fn handle_hyper_and_client_websocket<S>(
     hyper_ws: HyperWebsocket,
     client_ws: WebSocketStream<MaybeTlsStream<S>>,
-    mc: Arc<MessageEventCannel>,
+    mc: Arc<MessageEventChannel>,
     trace_id: TraceId,
 ) -> anyhow::Result<()>
 where
@@ -157,7 +157,7 @@ async fn serve_websocket(
     mut sink: impl Sink<tungstenite::Message, Error = tungstenite::Error> + Unpin + Send,
     mut stream: impl Stream<Item = Result<tungstenite::Message, tungstenite::Error>> + Unpin + Send,
     send_type: SendType,
-    mc: Arc<MessageEventCannel>,
+    mc: Arc<MessageEventChannel>,
     trace_id: TraceId,
 ) -> Result<()> {
     while let Some(message) = stream.next().await {

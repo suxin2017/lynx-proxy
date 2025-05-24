@@ -155,14 +155,14 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
 
         if (raw.tunnel && tunnelStart) {
           const formattedDuration = prettyMs(
-            (tunnelEnd || Date.now()) - tunnelStart,
+            (tunnelEnd ?? Date.now()) - tunnelStart,
           );
 
           return <span>{formattedDuration}</span>;
         }
         if (requestStart) {
           const formattedDuration = prettyMs(
-            (requestEnd || Date.now()) - requestStart,
+            (requestEnd ?? Date.now()) - requestStart,
           );
           return <span>{formattedDuration}</span>;
         }
