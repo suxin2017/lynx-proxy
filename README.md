@@ -14,6 +14,22 @@
 - 🔗 **WebSocket Support**: Native support for WebSocket proxying.
 - 🦀 **Rust Ecosystem**: Built with popular libraries like hyper, axum, and tower.
 - 💻 **Modern Web Client**: Intuitive and user-friendly web management interface with dark mode support.
+- 📋 **List View**: Support for viewing HTTP requests and responses in a structured list format.
+- 🌲 **Tree View**: Visualize your request data in an intuitive tree structure for better organization and analysis.
+
+## Feature Showcase
+
+### HTTP/HTTPS Proxy
+
+![HTTP Proxy Example](./images/http.png)
+
+### WebSocket Proxy
+
+![WebSocket Proxy Example](./images/webscoket.png)
+
+### Tree View Structure
+
+![Tree View Structure Example](./images/tree.png)
 
 ## Installation
 

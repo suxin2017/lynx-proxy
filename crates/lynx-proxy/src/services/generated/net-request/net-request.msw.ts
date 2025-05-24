@@ -14,7 +14,6 @@ import {
   ResponseCode,
   TunnelStatus,
   WebSocketDirection,
-  WebSocketStatus,
 } from '../utoipaAxum.schemas';
 import type {
   MessageEventRequest,
@@ -70,7 +69,12 @@ export const getGetCachedRequestsResponseMessageEventWebSocketMock = (
       ]),
       timestamp: faker.number.int({ min: 0, max: undefined }),
     })),
-    status: faker.helpers.arrayElement(Object.values(WebSocketStatus)),
+    status: faker.helpers.arrayElement([
+      faker.helpers.arrayElement(['Start'] as const),
+      faker.helpers.arrayElement(['Connected'] as const),
+      faker.helpers.arrayElement(['Disconnected'] as const),
+      { Error: faker.string.alpha(20) },
+    ]),
   },
   ...overrideResponse,
 });
@@ -189,6 +193,14 @@ export const getGetCachedRequestsResponseMock = (
           undefined,
         ]),
         tunnelStart: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        websocketEnd: faker.helpers.arrayElement([
+          faker.number.int({ min: 0, max: undefined }),
+          undefined,
+        ]),
+        websocketStart: faker.helpers.arrayElement([
           faker.number.int({ min: 0, max: undefined }),
           undefined,
         ]),

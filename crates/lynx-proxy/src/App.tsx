@@ -9,6 +9,8 @@ import { App as AntdApp, ConfigProvider, theme } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import './main.css';
 import { routeTree } from './routeTree.gen';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { useAntdLocale } from './contexts/useAntdLocale';
 
 const hashHistory = createHashHistory();
 // Set up a Router instance
@@ -40,8 +42,9 @@ const getIsDark = () => {
   return false;
 };
 
-const App = () => {
+const AppContent = () => {
   const [isDark, setIsDark] = useState(getIsDark());
+  const antdLocale = useAntdLocale();
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
@@ -59,24 +62,33 @@ const App = () => {
   }, [isDark]);
 
   return (
+    <ConfigProvider
+      locale={antdLocale}
+      theme={{
+        cssVar: true,
+        hashed: false,
+        token: {
+          borderRadius: 6,
+          colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
+          colorBgContainer: isDark ? '#0d0d0d' : '#f9fafb',
+        },
+        algorithm: antdAlgorithm,
+      }}
+    >
+      <AntdApp className="h-full w-full">
+        <RouterProvider router={router} />
+      </AntdApp>
+    </ConfigProvider>
+  );
+};
+
+const App = () => {
+  return (
     <QueryClientProvider client={queryClient}>
       <StyleProvider layer>
-        <ConfigProvider
-          theme={{
-            cssVar: true,
-            hashed: false,
-            token: {
-              borderRadius: 6,
-              colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
-              colorBgContainer: isDark ? '#0d0d0d' : '#f9fafb',
-            },
-            algorithm: antdAlgorithm,
-          }}
-        >
-          <AntdApp className="h-full w-full">
-            <RouterProvider router={router} />
-          </AntdApp>
-        </ConfigProvider>
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
       </StyleProvider>
     </QueryClientProvider>
   );

@@ -16,13 +16,20 @@ const initialState: RequestTableState = {
 };
 
 const isCompletedReq = (res: IViewMessageEventStoreValue) => {
-  if (res.status === 'Completed' && res.tunnel?.status === "Disconnected") {
+  console.log('isCompletedReq', res);
+  if (res.status === 'Completed' && res.tunnel?.status === 'Disconnected') {
     return true;
   }
-  if (res.status === 'Completed' && res.messages?.status === 'Disconnected') {
+  if (
+    res.status === 'Completed' &&
+    res.messages &&
+    (res.messages?.status === 'Disconnected' ||
+      (typeof res.messages.status === 'object' &&
+        'Error' in res.messages.status))
+  ) {
     return true;
   }
-  if (res.status === "Completed" && !res.tunnel && !res.messages) {
+  if (res.status === 'Completed' && !res.tunnel && !res.messages) {
     return true;
   }
   return false;
@@ -40,7 +47,7 @@ const requestTableSlice = createSlice({
     ) => {
       state.requests.push(...action.payload);
       action.payload
-        ?.filter(isCompletedReq)
+        ?.filter((res) => !isCompletedReq(res))
         ?.map((res) => res.traceId)
         .forEach((id) => {
           state.pendingRequestIds[id] = true;

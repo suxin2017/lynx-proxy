@@ -31,6 +31,12 @@ export interface DomainFilter {
 
 export type EmptyOkResponse = ResponseDataWrapperTupleUnit;
 
+export interface ErrorResponse {
+  /** @minimum 0 */
+  code: number;
+  message: string;
+}
+
 export type GetRequestsDataTraceIds = string[] | null;
 
 export interface GetRequestsData {
@@ -141,6 +147,16 @@ export type MessageEventTimingsTunnelEnd = number | null;
  */
 export type MessageEventTimingsTunnelStart = number | null;
 
+/**
+ * @minimum 0
+ */
+export type MessageEventTimingsWebsocketEnd = number | null;
+
+/**
+ * @minimum 0
+ */
+export type MessageEventTimingsWebsocketStart = number | null;
+
 export interface MessageEventTimings {
   /** @minimum 0 */
   proxyEnd?: MessageEventTimingsProxyEnd;
@@ -162,6 +178,10 @@ export interface MessageEventTimings {
   tunnelEnd?: MessageEventTimingsTunnelEnd;
   /** @minimum 0 */
   tunnelStart?: MessageEventTimingsTunnelStart;
+  /** @minimum 0 */
+  websocketEnd?: MessageEventTimingsWebsocketEnd;
+  /** @minimum 0 */
+  websocketStart?: MessageEventTimingsWebsocketStart;
 }
 
 export interface MessageEventTunnel {
@@ -188,7 +208,7 @@ export interface RecordRequests {
 export type RecordingStatus =
   (typeof RecordingStatus)[keyof typeof RecordingStatus];
 
- 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RecordingStatus = {
   startRecording: 'startRecording',
   pauseRecording: 'pauseRecording',
@@ -196,7 +216,7 @@ export const RecordingStatus = {
 
 export type ResponseCode = (typeof ResponseCode)[keyof typeof ResponseCode];
 
- 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ResponseCode = {
   ok: 'ok',
   validateError: 'validateError',
@@ -275,16 +295,18 @@ export interface ResponseDataWrapperTupleUnit {
 
 export type TunnelStatus = (typeof TunnelStatus)[keyof typeof TunnelStatus];
 
- 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const TunnelStatus = {
   Connected: 'Connected',
   Disconnected: 'Disconnected',
 } as const;
 
+export interface TupleUnit {}
+
 export type WebSocketDirection =
   (typeof WebSocketDirection)[keyof typeof WebSocketDirection];
 
- 
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const WebSocketDirection = {
   ClientToServer: 'ClientToServer',
   ServerToClient: 'ServerToClient',
@@ -334,11 +356,12 @@ export type WebSocketMessage =
   | WebSocketMessageOneOfSeven
   | WebSocketMessageOneOfNine;
 
-export type WebSocketStatus =
-  (typeof WebSocketStatus)[keyof typeof WebSocketStatus];
+export type WebSocketStatusOneOf = {
+  Error: string;
+};
 
- 
-export const WebSocketStatus = {
-  Connected: 'Connected',
-  Disconnected: 'Disconnected',
-} as const;
+export type WebSocketStatus =
+  | 'Start'
+  | 'Connected'
+  | 'Disconnected'
+  | WebSocketStatusOneOf;

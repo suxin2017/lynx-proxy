@@ -1,7 +1,7 @@
 use anyhow::Result;
 use bytes::Bytes;
-use dashmap::mapref::one::RefMut;
 use dashmap::DashMap;
+use dashmap::mapref::one::RefMut;
 use http::Extensions;
 use moka::future::Cache;
 use serde::{Deserialize, Serialize};
@@ -33,6 +33,10 @@ pub enum MessageEvent {
     OnProxyEnd(TraceId),
 
     OnResponseStart(TraceId, MessageEventResponse),
+
+    OnWebSocketStart(TraceId),
+
+    OnWebSocketError(TraceId, String),
 
     OnWebSocketMessage(TraceId, WebSocketLog),
 
@@ -87,6 +91,9 @@ pub struct MessageEventTimings {
 
     pub tunnel_start: Option<u64>,
     pub tunnel_end: Option<u64>,
+
+    pub websocket_start: Option<u64>,
+    pub websocket_end: Option<u64>,
 }
 
 impl MessageEventTimings {
@@ -110,6 +117,13 @@ impl MessageEventTimings {
     }
     pub fn set_tunnel_end(&mut self) {
         self.tunnel_end = Some(Self::now());
+    }
+
+    pub fn set_websocket_start(&mut self) {
+        self.websocket_start = Some(Self::now());
+    }
+    pub fn set_websocket_end(&mut self) {
+        self.websocket_end = Some(Self::now());
     }
 
     pub fn set_request_body_start(&mut self) {

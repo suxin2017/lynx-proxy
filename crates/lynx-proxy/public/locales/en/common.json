@@ -164,7 +164,8 @@
     "contents": "Contents",
     "websocket": "Websocket",
     "toolbar": {
-      "backToBottom": "Back to bottom"
+      "autoScrollLabel": "Auto Scroll",
+      "autoScroll": "Auto Scroll to Bottom"
     },
     "table": {
       "status": "Status",

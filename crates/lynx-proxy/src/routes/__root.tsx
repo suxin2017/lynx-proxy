@@ -3,6 +3,7 @@ import { store, useUpdateRequestLog } from '@/store';
 import { GeneralSettingProvider } from '@/store/useGeneralState';
 import { Outlet, createRootRoute } from '@tanstack/react-router';
 import { Provider } from 'react-redux';
+import { UseSelectRequestProvider } from './network/components/store/selectRequestStore';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -24,10 +25,12 @@ function InnerRouteComponent() {
 
 function RootComponent() {
   return (
-    <GeneralSettingProvider>
-      <Provider store={store}>
-        <InnerRouteComponent />
-      </Provider>
-    </GeneralSettingProvider>
+    <UseSelectRequestProvider>
+      <GeneralSettingProvider>
+        <Provider store={store}>
+          <InnerRouteComponent />
+        </Provider>
+      </GeneralSettingProvider>
+    </UseSelectRequestProvider>
   );
 }

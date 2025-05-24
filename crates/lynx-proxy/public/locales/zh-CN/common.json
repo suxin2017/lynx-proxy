@@ -161,7 +161,8 @@
     "contents": "内容",
     "websocket": "WebSocket",
     "toolbar": {
-      "backToBottom": "返回底部"
+      "autoScrollLabel": "自动滚动",
+      "autoScroll": "自动滚动到底部"
     },
     "table": {
       "status": "状态",
