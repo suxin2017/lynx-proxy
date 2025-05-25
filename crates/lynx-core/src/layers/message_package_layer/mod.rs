@@ -81,7 +81,7 @@ pub async fn handle_message_event(
                     if value
                         .request
                         .as_ref()
-                        .and_then(|req| Some(req.body.is_empty()))
+                        .filter(|req| req.body.is_empty())
                         .is_some()
                     {
                         value.timings_mut().set_request_body_start();
@@ -129,7 +129,7 @@ pub async fn handle_message_event(
                     if value
                         .request
                         .as_ref()
-                        .and_then(|req| Some(req.body.is_empty()))
+                        .filter(|req| req.body.is_empty())
                         .is_some()
                     {
                         value.timings_mut().set_request_body_start();
