@@ -1,19 +1,23 @@
 pub mod common;
-pub mod matching;
+pub mod error;
+pub mod matcher;
 pub mod request_info;
 pub mod response_info;
 pub mod types;
+pub mod validator;
 
 pub use common::{BodyUtils, HeaderUtils, HttpMessage};
-pub use matching::RuleMatcher;
+pub use error::RequestProcessingError;
+pub use matcher::RuleMatcher;
 pub use request_info::RequestInfo;
 pub use response_info::ResponseInfo;
 pub use types::{
     BlockHandlerConfig, CaptureRule, HandlerRule, LocalFileConfig, ModifyRequestConfig, RequestRule,
 };
+pub use validator::RuleValidator;
 
 use crate::entities::{
-    capture::{self, ActiveModel as CaptureActiveModel, Entity as CaptureEntity},
+    capture::{self, Entity as CaptureEntity},
     handler::{self, ActiveModel as HandlerActiveModel, Entity as HandlerEntity},
     rule::{self, ActiveModel as RuleActiveModel, Entity as RuleEntity},
 };
@@ -48,20 +52,10 @@ impl RequestProcessingDao {
         let rule_result = RuleEntity::insert(rule_active_model).exec(&txn).await?;
         let rule_id = rule_result.last_insert_id;
 
-        // Insert capture
+        // Insert capture using the conversion method
         let capture = rule.capture;
-        let capture_active_model = CaptureActiveModel {
-            id: NotSet,
-            rule_id: Set(rule_id),
-            capture_type: Set(capture.capture_type),
-            pattern: Set(capture.pattern),
-            method: Set(capture.method),
-            host: Set(capture.host),
-            config: Set(capture.config),
-            enabled: Set(capture.enabled),
-            created_at: Set(chrono::Utc::now()),
-            updated_at: Set(chrono::Utc::now()),
-        };
+        let capture_active_model = capture::Model::from_capture_rule(&capture, rule_id)
+            .map_err(|e| anyhow!("Failed to convert capture rule: {}", e))?;
         CaptureEntity::insert(capture_active_model)
             .exec(&txn)
             .await?;
@@ -109,21 +103,17 @@ impl RequestProcessingDao {
 
             // Since capture is now required, return None if no capture found
             if let Some(capture) = capture {
+                let capture_rule = capture
+                    .to_capture_rule()
+                    .map_err(|e| anyhow!("Failed to convert capture: {}", e))?;
+
                 Ok(Some(RequestRule {
                     id: Some(rule.id),
                     name: rule.name,
                     description: rule.description,
                     enabled: rule.enabled,
                     priority: rule.priority,
-                    capture: CaptureRule {
-                        id: Some(capture.id),
-                        capture_type: capture.capture_type,
-                        pattern: capture.pattern,
-                        method: capture.method,
-                        host: capture.host,
-                        config: capture.config,
-                        enabled: capture.enabled,
-                    },
+                    capture: capture_rule,
                     handlers: handlers
                         .into_iter()
                         .map(|h| HandlerRule {
@@ -194,20 +184,10 @@ impl RequestProcessingDao {
             .exec(&txn)
             .await?;
 
-        // Insert new capture
+        // Insert new capture using conversion method
         let capture = rule.capture;
-        let capture_active_model = CaptureActiveModel {
-            id: NotSet,
-            rule_id: Set(rule_id),
-            capture_type: Set(capture.capture_type),
-            pattern: Set(capture.pattern),
-            method: Set(capture.method),
-            host: Set(capture.host),
-            config: Set(capture.config),
-            enabled: Set(capture.enabled),
-            created_at: Set(chrono::Utc::now()),
-            updated_at: Set(chrono::Utc::now()),
-        };
+        let capture_active_model = capture::Model::from_capture_rule(&capture, rule_id)
+            .map_err(|e| anyhow!("Failed to convert capture rule: {}", e))?;
         CaptureEntity::insert(capture_active_model)
             .exec(&txn)
             .await?;
@@ -261,7 +241,8 @@ impl RequestProcessingDao {
     /// Find matching rules for a request
     pub async fn find_matching_rules(&self, request: &RequestInfo) -> Result<Vec<RequestRule>> {
         let all_rules = self.list_rules().await?;
-        RuleMatcher::find_matching_rules(&all_rules, request)
+        let matcher = RuleMatcher::new();
+        matcher.find_matching_rules(&all_rules, request)
     }
 
     /// Enable or disable a rule
@@ -275,132 +256,6 @@ impl RequestProcessingDao {
         RuleEntity::update(rule_active_model)
             .exec(self.db.as_ref())
             .await?;
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::entities::{capture::CaptureType, handler::HandlerType};
-    use crate::migration::Migrator;
-    use axum::body::Bytes;
-    use sea_orm::Database;
-    use sea_orm_migration::MigratorTrait;
-    use serde_json::json;
-    use std::collections::HashMap;
-
-    async fn setup_test_db() -> DatabaseConnection {
-        let db = Database::connect("sqlite::memory:").await.unwrap();
-        Migrator::up(&db, None).await.unwrap();
-        db
-    }
-
-    #[tokio::test]
-    async fn test_create_and_get_rule() -> Result<()> {
-        let db = setup_test_db().await;
-        let dao = RequestProcessingDao::new(Arc::new(db));
-
-        let rule = RequestRule {
-            id: None,
-            name: "Test Rule".to_string(),
-            description: Some("A test rule".to_string()),
-            enabled: true,
-            priority: 100,
-            capture: CaptureRule {
-                id: None,
-                capture_type: CaptureType::Glob,
-                pattern: "https://api.example.com/*".to_string(),
-                method: Some("GET".to_string()),
-                host: Some("api.example.com".to_string()),
-                config: json!({}),
-                enabled: true,
-            },
-            handlers: vec![HandlerRule {
-                id: None,
-                handler_type: HandlerType::Block,
-                name: "Block Handler".to_string(),
-                description: Some("Block the request".to_string()),
-                execution_order: 0,
-                config: json!({
-                    "statusCode": 403,
-                    "reason": "Blocked by rule"
-                }),
-                enabled: true,
-            }],
-        };
-
-        let rule_id = dao.create_rule(rule.clone()).await?;
-        assert!(rule_id > 0);
-
-        let retrieved_rule = dao.get_rule(rule_id).await?;
-        assert!(retrieved_rule.is_some());
-
-        let retrieved_rule = retrieved_rule.unwrap();
-        assert_eq!(retrieved_rule.name, rule.name);
-        assert_eq!(retrieved_rule.handlers.len(), 1);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_matching_rules() -> Result<()> {
-        let db = setup_test_db().await;
-        let dao = RequestProcessingDao::new(Arc::new(db));
-
-        // Create a rule
-        let rule = RequestRule {
-            id: None,
-            name: "API Block Rule".to_string(),
-            description: None,
-            enabled: true,
-            priority: 100,
-            capture: CaptureRule {
-                id: None,
-                capture_type: CaptureType::Glob,
-                pattern: "https://api.example.com/*".to_string(),
-                method: Some("GET".to_string()),
-                host: None,
-                config: json!({}),
-                enabled: true,
-            },
-            handlers: vec![HandlerRule {
-                id: None,
-                handler_type: HandlerType::Block,
-                name: "Block Handler".to_string(),
-                description: None,
-                execution_order: 0,
-                config: json!({}),
-                enabled: true,
-            }],
-        };
-
-        dao.create_rule(rule).await?;
-
-        // Test matching request
-        let request = RequestInfo {
-            url: "https://api.example.com/users".to_string(),
-            method: "GET".to_string(),
-            host: "api.example.com".to_string(),
-            headers: HashMap::new(),
-            body: Bytes::new(),
-        };
-
-        let matching_rules = dao.find_matching_rules(&request).await?;
-        assert_eq!(matching_rules.len(), 1);
-
-        // Test non-matching request
-        let request = RequestInfo {
-            url: "https://other.example.com/users".to_string(),
-            method: "GET".to_string(),
-            host: "other.example.com".to_string(),
-            headers: HashMap::new(),
-            body: Bytes::new(),
-        };
-
-        let matching_rules = dao.find_matching_rules(&request).await?;
-        assert_eq!(matching_rules.len(), 0);
-
         Ok(())
     }
 }

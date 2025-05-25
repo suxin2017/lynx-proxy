@@ -2,6 +2,7 @@ pub use sea_orm_migration::prelude::*;
 
 pub mod app_config;
 pub mod request_processing;
+pub mod complex_capture_rules;
 
 pub struct Migrator;
 
@@ -11,6 +12,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(app_config::Migration),
             Box::new(request_processing::Migration),
+            Box::new(complex_capture_rules::Migration),
         ]
     }
 }

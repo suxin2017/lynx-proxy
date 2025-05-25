@@ -14,17 +14,36 @@ use utoipa::ToSchema;
 pub enum CaptureType {
     #[sea_orm(string_value = "glob")]
     Glob,
-    // #[sea_orm(string_value = "regex")]
-    // Regex,
-    // #[sea_orm(string_value = "exact")]
-    // Exact,
-    // #[sea_orm(string_value = "contains")]
-    // Contains,
+    #[sea_orm(string_value = "regex")]
+    Regex,
+    #[sea_orm(string_value = "exact")]
+    Exact,
+    #[sea_orm(string_value = "contains")]
+    Contains,
 }
 
 impl Default for CaptureType {
     fn default() -> Self {
         Self::Glob
+    }
+}
+
+/// Rule type enumeration
+#[derive(
+    Debug, Clone, PartialEq, Eq, DeriveActiveEnum, EnumIter, Serialize, Deserialize, ToSchema,
+)]
+#[sea_orm(rs_type = "String", db_type = "String(StringLen::N(20))")]
+#[serde(rename_all = "camelCase")]
+pub enum RuleType {
+    #[sea_orm(string_value = "simple")]
+    Simple,
+    #[sea_orm(string_value = "complex")]
+    Complex,
+}
+
+impl Default for RuleType {
+    fn default() -> Self {
+        Self::Simple
     }
 }
 
@@ -34,36 +53,14 @@ impl Default for CaptureType {
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-
-    /// Foreign key to rule
     pub rule_id: i32,
-
-    /// Capture type
-    pub capture_type: CaptureType,
-
-    /// Capture pattern (glob, regex, etc.)
-    #[sea_orm(column_type = "Text")]
-    pub pattern: String,
-
-    /// Match method (GET, POST, etc., empty means all methods)
-    pub method: Option<String>,
-
-    /// Match host (empty means all hosts)
-    pub host: Option<String>,
-
-    /// Additional capture configuration
-    #[sea_orm(column_type = "Json")]
-    pub config: JsonValue,
-
-    /// Whether this capture rule is enabled
-    #[sea_orm(default_value = true)]
-    pub enabled: bool,
-
-    /// Creation timestamp
+    pub rule_type: RuleType,
+    #[sea_orm(column_type = "Json", nullable)]
+    pub simple_config: Option<JsonValue>,
+    #[sea_orm(column_type = "Json", nullable)]
+    pub complex_condition: Option<JsonValue>,
     #[serde(skip)]
     pub created_at: ChronoDateTimeUtc,
-
-    /// Update timestamp
     #[serde(skip)]
     pub updated_at: ChronoDateTimeUtc,
 }
@@ -85,3 +82,73 @@ impl Related<super::rule::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+impl Model {
+    /// Convert to CaptureRule type
+    pub fn to_capture_rule(
+        &self,
+    ) -> Result<crate::dao::request_processing_dao::types::CaptureRule, Box<dyn std::error::Error>>
+    {
+        use crate::dao::request_processing_dao::types::{
+            CaptureCondition, CaptureRule, SimpleCaptureCondition,
+        };
+
+        let condition = match self.rule_type {
+            RuleType::Simple => {
+                if let Some(simple_json) = &self.simple_config {
+                    let simple: SimpleCaptureCondition =
+                        serde_json::from_value(simple_json.clone())?;
+                    CaptureCondition::Simple(simple)
+                } else {
+                    return Err("Simple rule type but no simple config found".into());
+                }
+            }
+            RuleType::Complex => {
+                if let Some(complex_json) = &self.complex_condition {
+                    serde_json::from_value(complex_json.clone())?
+                } else {
+                    return Err("Complex rule type but no complex condition found".into());
+                }
+            }
+        };
+
+        Ok(CaptureRule {
+            id: Some(self.id),
+            condition,
+        })
+    }
+
+    /// Create from CaptureRule type
+    pub fn from_capture_rule(
+        rule: &crate::dao::request_processing_dao::types::CaptureRule,
+        rule_id: i32,
+    ) -> Result<ActiveModel, Box<dyn std::error::Error>> {
+        use crate::dao::request_processing_dao::types::CaptureCondition;
+        use sea_orm::ActiveValue::*;
+
+        let (rule_type, simple_config, complex_condition) = match &rule.condition {
+            CaptureCondition::Simple(simple) => {
+                (RuleType::Simple, Some(serde_json::to_value(simple)?), None)
+            }
+            CaptureCondition::Complex(_) => (
+                RuleType::Complex,
+                None,
+                Some(serde_json::to_value(&rule.condition)?),
+            ),
+        };
+
+        Ok(ActiveModel {
+            id: if let Some(id) = rule.id {
+                Set(id)
+            } else {
+                NotSet
+            },
+            rule_id: Set(rule_id),
+            rule_type: Set(rule_type),
+            simple_config: Set(simple_config),
+            complex_condition: Set(complex_condition),
+            created_at: NotSet,
+            updated_at: NotSet,
+        })
+    }
+}

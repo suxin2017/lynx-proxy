@@ -30,3 +30,4 @@ async-trait = "0.1.88"
 axum = "0.8.4"
 http = { workspace = true }
 http-body-util = { workspace = true }
+thiserror = "1.0"
