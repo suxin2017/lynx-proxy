@@ -18,6 +18,34 @@ dayjs.extend(relativeTime);
 
 type ColumnsType<T extends object> = TableProps<T>['columns'];
 
+export const getDurationTime = (timings: MessageEventTimings) => {
+  const {
+    requestStart,
+    requestEnd,
+    tunnelEnd,
+    tunnelStart,
+    reponseBodyStart,
+    reponseBodyEnd,
+    websocketEnd,
+    websocketStart,
+  } = timings;
+
+  if (tunnelStart) {
+    return prettyMs((tunnelEnd ?? Date.now()) - tunnelStart);
+  }
+  if (websocketStart && requestStart) {
+    return prettyMs((websocketEnd ?? Date.now()) - requestStart);
+  }
+  if (reponseBodyStart && requestStart) {
+    return prettyMs((reponseBodyEnd ?? Date.now()) - requestStart);
+  }
+  if (requestStart) {
+    return prettyMs((requestEnd ?? Date.now()) - requestStart);
+  }
+
+  return '-';
+};
+
 export const RequestTable: React.FC<{ maxHeight: number }> = ({
   maxHeight,
 }) => {
@@ -150,24 +178,8 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
       key: 'time',
       width: 80,
       dataIndex: ['timings'],
-      render: (timings: MessageEventTimings, raw) => {
-        const { requestStart, requestEnd, tunnelEnd, tunnelStart } = timings;
-
-        if (raw.tunnel && tunnelStart) {
-          const formattedDuration = prettyMs(
-            (tunnelEnd ?? Date.now()) - tunnelStart,
-          );
-
-          return <span>{formattedDuration}</span>;
-        }
-        if (requestStart) {
-          const formattedDuration = prettyMs(
-            (requestEnd ?? Date.now()) - requestStart,
-          );
-          return <span>{formattedDuration}</span>;
-        }
-
-        return <Spin size="small" />;
+      render: (timings: MessageEventTimings) => {
+        return getDurationTime(timings);
       },
     },
   ];
