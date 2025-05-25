@@ -160,6 +160,9 @@ impl MessageEventBody {
     pub fn new(bytes: Bytes) -> Self {
         MessageEventBody(bytes)
     }
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 impl PartialSchema for MessageEventBody {
