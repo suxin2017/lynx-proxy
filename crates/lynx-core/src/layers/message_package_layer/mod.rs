@@ -132,7 +132,7 @@ pub async fn handle_message_event(
                         .filter(|req| req.body.is_empty())
                         .is_some()
                     {
-                        value.timings_mut().set_request_body_start();
+                        value.timings_mut().set_response_body_start();
                     }
                     value.timings_mut().set_response_body_end()
                 }
