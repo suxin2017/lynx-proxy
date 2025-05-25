@@ -78,6 +78,14 @@ pub async fn handle_message_event(
                     }
                     value.timings_mut().set_request_body_start();
                 } else {
+                    if value
+                        .request
+                        .as_ref()
+                        .filter(|req| req.body.is_empty())
+                        .is_some()
+                    {
+                        value.timings_mut().set_request_body_start();
+                    }
                     value.timings_mut().set_request_body_end()
                 }
             }
@@ -102,6 +110,11 @@ pub async fn handle_message_event(
                 value.status = message_event_store::MessageEventStatus::Error(error_reason);
             }
             MessageEvent::OnResponseBody(id, data) => {
+                tracing::trace!(
+                    "Received OnResponseBody event: {:?} {:?}",
+                    id,
+                    data.as_ref().map(|d| d.len())
+                );
                 let value = cache.get_mut(&id);
                 if value.is_none() {
                     continue;
@@ -113,6 +126,14 @@ pub async fn handle_message_event(
                     }
                     value.timings_mut().set_response_body_start();
                 } else {
+                    if value
+                        .request
+                        .as_ref()
+                        .filter(|req| req.body.is_empty())
+                        .is_some()
+                    {
+                        value.timings_mut().set_request_body_start();
+                    }
                     value.timings_mut().set_response_body_end()
                 }
             }
@@ -319,7 +340,7 @@ impl MessageEventChannel {
     }
 
     pub async fn dispatch_on_response_start(&self, res: &Res, mut body: ReceiverStream<Bytes>) {
-        trace!("Dispatching OnRequestStart event");
+        trace!("Dispatching OnResponseStart event");
         let sender = self.sender.clone();
         let trace_id = res.extensions().get_trace_id().clone();
         spawn(async move {
@@ -496,15 +517,16 @@ where
 
         Box::pin(async move {
             message_event_channel_clone
-                .dispatch_on_after_proxy(trace_id.clone())
+                .dispatch_on_before_proxy(trace_id.clone())
                 .await;
 
             let future = inner.call(request);
             let result = future.await;
 
             message_event_channel_clone
-                .dispatch_on_before_proxy(trace_id.clone())
+                .dispatch_on_after_proxy(trace_id.clone())
                 .await;
+
             match result {
                 Ok(res) => {
                     let (part, old_body) = res.into_parts();

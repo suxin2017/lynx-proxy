@@ -9,11 +9,11 @@ import {
   RiTimeLine,
 } from '@remixicon/react';
 import { useSize } from 'ahooks';
-import { Spin, Tag, theme, Typography } from 'antd';
+import { Tag, theme, Typography } from 'antd';
 import { first, get, keys } from 'lodash';
-import prettyMilliseconds from 'pretty-ms';
 import React, { useRef } from 'react';
 import { NodeApi, NodeRendererProps, Tree } from 'react-arborist';
+import { getDurationTime } from '../RequestTable';
 import { useSelectRequest } from '../store/selectRequestStore';
 
 export const RequestTree: React.FC = () => {
@@ -83,16 +83,11 @@ const TreeNode = ({
   const isRoot = !node.parent?.parent;
   const token = theme.useToken();
 
-  const { requestStart, requestEnd } = node.data.record?.timings || {};
-
   let time = null;
 
   if (isLeaf) {
-    if (!requestStart || !requestEnd) {
-      time = <Spin size="small" />;
-    } else {
-      const formattedDuration = prettyMilliseconds(requestEnd - requestStart);
-      time = <span>{formattedDuration}</span>;
+    if (node.data.record?.timings) {
+      time = getDurationTime(node.data.record?.timings);
     }
   }
 
