@@ -1,7 +1,9 @@
-use crate::entities::{capture::CaptureType, handler::HandlerType};
+use crate::entities::capture::CaptureType;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value as JsonValue, json};
 use utoipa::ToSchema;
+
+use super::handlers::HandlerRule;
 
 /// 逻辑操作符
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -65,27 +67,6 @@ pub struct RequestRule {
     pub priority: i32,
     pub capture: CaptureRule,
     pub handlers: Vec<HandlerRule>,
-}
-
-/// Handler rule configuration
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct HandlerRule {
-    pub id: Option<i32>,
-    pub handler_type: HandlerType,
-    pub name: String,
-    pub description: Option<String>,
-    pub execution_order: i32,
-    pub config: JsonValue,
-    pub enabled: bool,
-}
-
-/// Block handler configuration
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct BlockHandlerConfig {
-    pub status_code: Option<u16>,
-    pub reason: Option<String>,
 }
 
 /// Modify request handler configuration
@@ -153,20 +134,6 @@ impl Default for CaptureRule {
         Self {
             id: None,
             condition: CaptureCondition::default(),
-        }
-    }
-}
-
-impl Default for HandlerRule {
-    fn default() -> Self {
-        Self {
-            id: None,
-            handler_type: HandlerType::Block,
-            name: "Default Handler".to_string(),
-            description: None,
-            execution_order: 0,
-            config: json!({}),
-            enabled: true,
         }
     }
 }

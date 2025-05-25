@@ -1,6 +1,7 @@
 use super::{
     error::{RequestProcessingError, Result},
-    types::{CaptureCondition, CaptureRule, HandlerRule, RequestRule, SimpleCaptureCondition},
+    handlers::HandlerRule,
+    types::{CaptureCondition, CaptureRule, RequestRule, SimpleCaptureCondition},
 };
 use crate::entities::{capture::CaptureType, handler::HandlerType};
 use glob::Pattern;

@@ -1,5 +1,6 @@
 pub mod common;
 pub mod error;
+pub mod handlers;
 pub mod matcher;
 pub mod request_info;
 pub mod response_info;
@@ -8,12 +9,11 @@ pub mod validator;
 
 pub use common::{BodyUtils, HeaderUtils, HttpMessage};
 pub use error::RequestProcessingError;
+use handlers::HandlerRule;
 pub use matcher::RuleMatcher;
 pub use request_info::RequestInfo;
 pub use response_info::ResponseInfo;
-pub use types::{
-    BlockHandlerConfig, CaptureRule, HandlerRule, LocalFileConfig, ModifyRequestConfig, RequestRule,
-};
+pub use types::{CaptureRule, LocalFileConfig, ModifyRequestConfig, RequestRule};
 pub use validator::RuleValidator;
 
 use crate::entities::{

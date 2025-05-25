@@ -38,6 +38,43 @@ impl RequestInfo {
         })
     }
 
+    /// Convert to axum Request
+    pub fn to_axum_request(self) -> Result<Request> {
+        use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri};
+        use std::str::FromStr;
+
+        // Parse the method
+        let method = Method::from_str(&self.method)
+            .map_err(|e| anyhow::anyhow!("Invalid HTTP method '{}': {}", self.method, e))?;
+
+        // Parse the URI
+        let uri = Uri::from_str(&self.url)
+            .map_err(|e| anyhow::anyhow!("Invalid URI '{}': {}", self.url, e))?;
+
+        // Build headers
+        let mut header_map = HeaderMap::new();
+        for (name, value) in self.headers {
+            let header_name = HeaderName::from_str(&name)
+                .map_err(|e| anyhow::anyhow!("Invalid header name '{}': {}", name, e))?;
+            let header_value = HeaderValue::from_str(&value)
+                .map_err(|e| anyhow::anyhow!("Invalid header value '{}': {}", value, e))?;
+            header_map.insert(header_name, header_value);
+        }
+
+        // Create the request
+        let mut request = Request::builder().method(method).uri(uri);
+
+        // Add headers
+        *request.headers_mut().unwrap() = header_map;
+
+        // Build with body
+        let request = request
+            .body(axum::body::Body::from(self.body))
+            .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
+
+        Ok(request)
+    }
+
     /// Get request body as string (delegates to HttpMessage trait)
     pub fn body_as_string(&self) -> Result<String> {
         HttpMessage::body_as_string(self)
@@ -402,5 +439,247 @@ mod tests {
         assert_eq!(request_info.body_size(), 10000);
         assert_eq!(request_info.body_as_string().unwrap(), large_text);
         assert!(!request_info.is_body_empty());
+    }
+
+    #[tokio::test]
+    async fn test_to_axum_request_get() {
+        let mut headers = HashMap::new();
+        headers.insert("user-agent".to_string(), "test-agent".to_string());
+        headers.insert("accept".to_string(), "application/json".to_string());
+
+        let request_info = create_test_request_info(
+            "https://example.com/api/users?page=1",
+            "GET",
+            "example.com",
+            headers,
+            &[],
+        );
+
+        let axum_request = request_info.to_axum_request().unwrap();
+
+        assert_eq!(axum_request.method(), &Method::GET);
+        assert_eq!(
+            axum_request.uri().to_string(),
+            "https://example.com/api/users?page=1"
+        );
+        assert_eq!(
+            axum_request.headers().get("user-agent").unwrap(),
+            "test-agent"
+        );
+        assert_eq!(
+            axum_request.headers().get("accept").unwrap(),
+            "application/json"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_to_axum_request_post_with_json() {
+        let json_data = json!({"username": "john", "email": "john@example.com"});
+        let json_body = serde_json::to_string(&json_data).unwrap();
+
+        let mut headers = HashMap::new();
+        headers.insert("content-type".to_string(), "application/json".to_string());
+        headers.insert("content-length".to_string(), json_body.len().to_string());
+
+        let request_info = create_test_request_info(
+            "/api/users",
+            "POST",
+            "api.example.com",
+            headers,
+            json_body.as_bytes(),
+        );
+
+        let axum_request = request_info.to_axum_request().unwrap();
+
+        assert_eq!(axum_request.method(), &Method::POST);
+        assert_eq!(axum_request.uri().to_string(), "/api/users");
+        assert_eq!(
+            axum_request.headers().get("content-type").unwrap(),
+            "application/json"
+        );
+
+        // Extract body and verify
+        let (_, body) = axum_request.into_parts();
+        let body_bytes = body.collect().await.unwrap().to_bytes();
+        let body_string = String::from_utf8(body_bytes.to_vec()).unwrap();
+        assert_eq!(body_string, json_body);
+    }
+
+    #[tokio::test]
+    async fn test_to_axum_request_roundtrip() {
+        // Create original request
+        let json_data = json!({"test": "data", "number": 123});
+        let json_body = serde_json::to_string(&json_data).unwrap();
+
+        let original_req = Request::builder()
+            .method(Method::PUT)
+            .uri("/api/test/456")
+            .header("host", "test.example.com")
+            .header("content-type", "application/json")
+            .header("authorization", "Bearer token123")
+            .header("x-custom-header", "custom-value")
+            .body(Body::from(json_body.clone()))
+            .unwrap();
+
+        // Convert to RequestInfo
+        let request_info = RequestInfo::from_axum_request(original_req).await.unwrap();
+
+        // Convert back to axum Request
+        let converted_req = request_info.to_axum_request().unwrap();
+
+        // Verify method, URI, and headers
+        assert_eq!(converted_req.method(), &Method::PUT);
+        assert_eq!(converted_req.uri().to_string(), "/api/test/456");
+        assert_eq!(
+            converted_req.headers().get("content-type").unwrap(),
+            "application/json"
+        );
+        assert_eq!(
+            converted_req.headers().get("authorization").unwrap(),
+            "Bearer token123"
+        );
+        assert_eq!(
+            converted_req.headers().get("x-custom-header").unwrap(),
+            "custom-value"
+        );
+
+        // Verify body
+        let (_, body) = converted_req.into_parts();
+        let body_bytes = body.collect().await.unwrap().to_bytes();
+        let body_string = String::from_utf8(body_bytes.to_vec()).unwrap();
+        assert_eq!(body_string, json_body);
+    }
+
+    #[test]
+    fn test_to_axum_request_invalid_method() {
+        let request_info = RequestInfo {
+            url: "/test".to_string(),
+            method: "".to_string(), // Empty method should definitely be invalid
+            host: "example.com".to_string(),
+            headers: HashMap::new(),
+            body: Bytes::new(),
+        };
+
+        let result = request_info.to_axum_request();
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid HTTP method")
+        );
+    }
+
+    #[test]
+    fn test_to_axum_request_invalid_uri() {
+        let request_info = RequestInfo {
+            url: "invalid uri with spaces".to_string(),
+            method: "GET".to_string(),
+            host: "example.com".to_string(),
+            headers: HashMap::new(),
+            body: Bytes::new(),
+        };
+
+        let result = request_info.to_axum_request();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid URI"));
+    }
+
+    #[test]
+    fn test_to_axum_request_invalid_header_name() {
+        let mut headers = HashMap::new();
+        headers.insert("invalid header name".to_string(), "value".to_string());
+
+        let request_info = RequestInfo {
+            url: "/test".to_string(),
+            method: "GET".to_string(),
+            host: "example.com".to_string(),
+            headers,
+            body: Bytes::new(),
+        };
+
+        let result = request_info.to_axum_request();
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid header name")
+        );
+    }
+
+    #[test]
+    fn test_to_axum_request_invalid_header_value() {
+        let mut headers = HashMap::new();
+        headers.insert("valid-name".to_string(), "invalid\x00value".to_string());
+
+        let request_info = RequestInfo {
+            url: "/test".to_string(),
+            method: "GET".to_string(),
+            host: "example.com".to_string(),
+            headers,
+            body: Bytes::new(),
+        };
+
+        let result = request_info.to_axum_request();
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid header value")
+        );
+    }
+
+    #[test]
+    fn test_to_axum_request_all_http_methods() {
+        let methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"];
+
+        for method in &methods {
+            let request_info =
+                create_test_request_info("/test", method, "example.com", HashMap::new(), &[]);
+
+            let axum_request = request_info.to_axum_request().unwrap();
+            assert_eq!(axum_request.method().as_str(), *method);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_to_axum_request_with_binary_body() {
+        let binary_data = vec![0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]; // PNG header
+        let mut headers = HashMap::new();
+        headers.insert("content-type".to_string(), "image/png".to_string());
+
+        let request_info = create_test_request_info(
+            "/upload",
+            "POST",
+            "files.example.com",
+            headers,
+            &binary_data,
+        );
+
+        let axum_request = request_info.to_axum_request().unwrap();
+
+        assert_eq!(axum_request.method(), &Method::POST);
+        assert_eq!(axum_request.uri().to_string(), "/upload");
+        assert_eq!(
+            axum_request.headers().get("content-type").unwrap(),
+            "image/png"
+        );
+
+        // Verify binary body
+        let (_, body) = axum_request.into_parts();
+        let body_bytes = body.collect().await.unwrap().to_bytes();
+        assert_eq!(body_bytes.to_vec(), binary_data);
+    }
+
+    #[test]
+    fn test_to_axum_request_empty_body() {
+        let request_info =
+            create_test_request_info("/empty", "GET", "example.com", HashMap::new(), &[]);
+
+        let axum_request = request_info.to_axum_request().unwrap();
+        assert_eq!(axum_request.method(), &Method::GET);
+        assert_eq!(axum_request.uri().to_string(), "/empty");
     }
 }
