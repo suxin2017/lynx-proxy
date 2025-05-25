@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.5] - 2025-05-22
+## [0.1.6-alpha.1] - 2025-05-25
 
 ### 🚀 Features
 
@@ -22,6 +22,9 @@ All notable changes to this project will be documented in this file.
 - Unable to create dir on startup  ([#36](https://github.com/suxin2017/lynx-server/issues/36))
 - Http1.1, http 1.0 proxy request and lose some header ([#34](https://github.com/suxin2017/lynx-server/issues/34))
 - A lot of bugs
+- Table style and websocket log ([#6](https://github.com/suxin2017/lynx-server/issues/6))
+- Record time error ([#7](https://github.com/suxin2017/lynx-server/issues/7))
+- Record time error
 
 ### 🚜 Refactor
 
