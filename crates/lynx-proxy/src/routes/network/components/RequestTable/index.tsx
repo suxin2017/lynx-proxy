@@ -3,7 +3,7 @@ import { MessageEventTimings } from '@/services/generated/utoipaAxum.schemas';
 import { IViewMessageEventStoreValue } from '@/store';
 import { useFilteredTableData } from '@/store/requestTableStore';
 import type { TableProps } from 'antd';
-import { Spin, Table } from 'antd';
+import { Table } from 'antd';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';

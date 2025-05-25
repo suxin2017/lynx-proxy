@@ -57,6 +57,7 @@ mod tests {
     use futures_util::{SinkExt, StreamExt};
 
     #[tokio::test]
+    #[ignore = "need stable network connect"]
     async fn websocket_test() -> Result<()> {
         let client = WebsocketClientBuilder::default()
             .custom_certs(None)

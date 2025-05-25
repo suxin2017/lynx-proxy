@@ -68,7 +68,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "need network connect"]
+    #[ignore = "need stable network connect"]
     async fn test_http_request() -> Result<()> {
         let client = HttpClientBuilder::default().custom_certs(None).build()?;
 
