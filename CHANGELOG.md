@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2025-05-26
+
+### 🐛 Bug Fixes
+
+- Test case
+
 ## [0.1.6-alpha.1] - 2025-05-25
 
 ### 🚀 Features
