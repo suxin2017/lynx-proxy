@@ -11,7 +11,7 @@ repository.workspace = true
 include = ["src", "Cargo.toml", "README.md", "assets"]
 
 [dependencies]
-lynx-core = { version = "0.1.6", path = "../lynx-core" }
+lynx-core = { version = "0.1.7", path = "../lynx-core" }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
