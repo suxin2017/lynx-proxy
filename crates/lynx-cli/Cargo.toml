@@ -21,3 +21,4 @@ console = { version = "0.15.10", features = ["windows-console-colors"] }
 directories = "6.0.0"
 include_dir = { workspace = true }
 sea-orm = { workspace = true, features = ["sqlx-sqlite"] }
+rustls = { version = "0.23.26", features = ["ring"] }

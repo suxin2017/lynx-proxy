@@ -89,6 +89,10 @@ async fn main() -> Result<()> {
         .init();
     info!("Starting proxy server");
 
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     let data_dir = if let Some(data_dir) = args.data_dir {
         PathBuf::from(data_dir)
     } else {
