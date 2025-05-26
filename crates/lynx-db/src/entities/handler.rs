@@ -20,8 +20,8 @@ pub enum HandlerType {
     LocalFile,
     #[sea_orm(string_value = "modify_response")]
     ModifyResponse,
-    #[sea_orm(string_value = "redirect")]
-    Redirect,
+    #[sea_orm(string_value = "proxy_forward")]
+    ProxyForward,
 }
 
 impl Default for HandlerType {

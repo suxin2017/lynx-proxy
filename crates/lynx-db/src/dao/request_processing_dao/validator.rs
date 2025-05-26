@@ -294,8 +294,7 @@ impl RuleValidator {
                     });
                 }
             }
-
-            HandlerType::Redirect => {
+            HandlerType::ProxyForward => {
                 // Validate proxy configuration
                 if let Some(target_host) = config.get("targetHost") {
                     if let Some(host_str) = target_host.as_str() {
