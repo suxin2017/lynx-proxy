@@ -10,6 +10,14 @@ homepage.workspace = true
 repository.workspace = true
 include = ["src", "Cargo.toml", "README.md", "assets"]
 
+[[bin]]
+name = "lynx-cli"
+path = "src/main.rs"
+
+[lib]
+name = "lynx_cli"
+path = "src/lib.rs"
+
 [dependencies]
 lynx-core = { version = "0.1.7", path = "../lynx-core" }
 tracing-subscriber = { workspace = true }
@@ -22,3 +30,6 @@ directories = "6.0.0"
 include_dir = { workspace = true }
 sea-orm = { workspace = true, features = ["sqlx-sqlite"] }
 rustls = { version = "0.23.26", features = ["ring"] }
+
+[dev-dependencies]
+tempfile = "3.12.0"
