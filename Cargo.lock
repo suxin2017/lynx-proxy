@@ -2017,6 +2017,7 @@ dependencies = [
  "directories",
  "include_dir",
  "lynx-core",
+ "rustls",
  "sea-orm",
  "tokio",
  "tracing",
