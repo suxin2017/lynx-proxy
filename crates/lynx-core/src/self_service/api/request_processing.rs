@@ -7,7 +7,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 use http::StatusCode;
-use lynx_db::dao::request_processing_dao::{HandlerRule, RequestProcessingDao};
+use lynx_db::dao::request_processing_dao::{HandlerRule, RequestProcessingDao, RequestRule};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -125,7 +125,7 @@ async fn list_rules(
         ("id" = i32, Path, description = "Rule ID")
     ),
     responses(
-        (status = 200, description = "Successfully retrieved rule", body = ResponseDataWrapper<SimpleRuleInfo>),
+        (status = 200, description = "Successfully retrieved rule", body = ResponseDataWrapper<RequestRule>),
         (status = 404, description = "Rule not found"),
         (status = 500, description = "Failed to get rule")
     )
@@ -133,7 +133,7 @@ async fn list_rules(
 async fn get_rule(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
-) -> Result<Json<ResponseDataWrapper<SimpleRuleInfo>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<RequestRule>>, StatusCode> {
     let dao = RequestProcessingDao::new(db);
 
     let rule = dao
@@ -142,16 +142,7 @@ async fn get_rule(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     match rule {
-        Some(rule) => {
-            let simple_rule = SimpleRuleInfo {
-                id: rule.id,
-                name: rule.name,
-                description: rule.description,
-                enabled: rule.enabled,
-                priority: rule.priority,
-            };
-            Ok(Json(ok(simple_rule)))
-        }
+        Some(rule) => Ok(Json(ok(rule))),
         None => Err(StatusCode::NOT_FOUND),
     }
 }

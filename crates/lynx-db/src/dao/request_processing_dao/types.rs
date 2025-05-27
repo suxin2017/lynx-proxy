@@ -37,6 +37,7 @@ pub struct ComplexCaptureRule {
     /// 逻辑操作符
     pub operator: LogicalOperator,
     /// 子条件列表
+    #[schema(no_recursion)]
     pub conditions: Vec<CaptureCondition>,
 }
 
