@@ -9,7 +9,7 @@ pub mod validator;
 
 pub use common::{BodyUtils, HeaderUtils, HttpMessage};
 pub use error::RequestProcessingError;
-use handlers::HandlerRule;
+pub use handlers::HandlerRule;
 pub use matcher::RuleMatcher;
 pub use request_info::RequestInfo;
 pub use response_info::ResponseInfo;
@@ -243,6 +243,28 @@ impl RequestProcessingDao {
         let all_rules = self.list_rules().await?;
         let matcher = RuleMatcher::new();
         matcher.find_matching_rules(&all_rules, request)
+    }
+
+    /// Get template handlers (rule_id = 0)
+    pub async fn get_template_handlers(&self) -> Result<Vec<HandlerRule>> {
+        let handlers = HandlerEntity::find()
+            .filter(handler::Column::RuleId.eq(0))
+            .order_by_asc(handler::Column::ExecutionOrder)
+            .all(self.db.as_ref())
+            .await?;
+
+        Ok(handlers
+            .into_iter()
+            .map(|h| HandlerRule {
+                id: Some(h.id),
+                handler_type: h.handler_type,
+                name: h.name,
+                description: h.description,
+                execution_order: h.execution_order,
+                config: h.config,
+                enabled: h.enabled,
+            })
+            .collect())
     }
 
     /// Enable or disable a rule
