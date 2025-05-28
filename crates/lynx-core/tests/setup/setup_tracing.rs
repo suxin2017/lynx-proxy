@@ -2,7 +2,8 @@ use tracing_subscriber::{
     Layer, filter::FilterFn, fmt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
-pub fn init_tracing() {
+#[allow(dead_code)]
+pub fn setup_tracing() {
     let my_filter = FilterFn::new(|metadata| {
         // Only enable spans or events with the target "interesting_things"
         metadata.target().starts_with("lynx_core")

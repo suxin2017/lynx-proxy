@@ -235,10 +235,10 @@ async fn get_template_handlers(
 ) -> Result<Json<ResponseDataWrapper<TemplateHandlersResponse>>, StatusCode> {
     let dao = RequestProcessingDao::new(db);
 
-    let handlers = dao
-        .get_template_handlers()
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let handlers = dao.get_template_handlers().await.map_err(|e| {
+        println!("{:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let response = TemplateHandlersResponse { handlers };
 

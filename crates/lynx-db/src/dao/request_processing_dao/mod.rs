@@ -45,20 +45,17 @@ impl RequestProcessingDao {
             description: Set(rule.description),
             enabled: Set(rule.enabled),
             priority: Set(rule.priority),
-            created_at: Set(chrono::Utc::now()),
-            updated_at: Set(chrono::Utc::now()),
+            ..Default::default()
         };
 
-        let rule_result = RuleEntity::insert(rule_active_model).exec(&txn).await?;
-        let rule_id = rule_result.last_insert_id;
+        let rule_result = rule_active_model.insert(&txn).await?;
+        let rule_id = rule_result.id;
 
         // Insert capture using the conversion method
         let capture = rule.capture;
         let capture_active_model = capture::Model::from_capture_rule(&capture, rule_id)
             .map_err(|e| anyhow!("Failed to convert capture rule: {}", e))?;
-        CaptureEntity::insert(capture_active_model)
-            .exec(&txn)
-            .await?;
+        capture_active_model.insert(&txn).await?;
 
         // Insert handlers
         for handler in rule.handlers {
@@ -71,12 +68,10 @@ impl RequestProcessingDao {
                 execution_order: Set(handler.execution_order),
                 config: Set(handler.config),
                 enabled: Set(handler.enabled),
-                created_at: Set(chrono::Utc::now()),
-                updated_at: Set(chrono::Utc::now()),
+                created_at: NotSet,
+                updated_at: NotSet,
             };
-            HandlerEntity::insert(handler_active_model)
-                .exec(&txn)
-                .await?;
+            handler_active_model.insert(&txn).await?;
         }
 
         txn.commit().await?;
@@ -168,10 +163,10 @@ impl RequestProcessingDao {
             description: Set(rule.description),
             enabled: Set(rule.enabled),
             priority: Set(rule.priority),
-            updated_at: Set(chrono::Utc::now()),
+            updated_at: NotSet,
             ..Default::default()
         };
-        RuleEntity::update(rule_active_model).exec(&txn).await?;
+        rule_active_model.update(&txn).await?;
 
         // Delete existing captures and handlers
         CaptureEntity::delete_many()
@@ -203,8 +198,8 @@ impl RequestProcessingDao {
                 execution_order: Set(handler.execution_order),
                 config: Set(handler.config),
                 enabled: Set(handler.enabled),
-                created_at: Set(chrono::Utc::now()),
-                updated_at: Set(chrono::Utc::now()),
+                created_at: NotSet,
+                updated_at: NotSet,
             };
             HandlerEntity::insert(handler_active_model)
                 .exec(&txn)
@@ -272,11 +267,10 @@ impl RequestProcessingDao {
         let rule_active_model = RuleActiveModel {
             id: Set(rule_id),
             enabled: Set(enabled),
-            updated_at: Set(chrono::Utc::now()),
             ..Default::default()
         };
-        RuleEntity::update(rule_active_model)
-            .exec(self.db.as_ref())
+        rule_active_model
+            .update(self.db.as_ref())
             .await?;
         Ok(())
     }

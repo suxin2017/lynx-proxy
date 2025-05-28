@@ -37,7 +37,7 @@ impl MigrationTrait for Migration {
         // Insert default handler templates
         let default_templates = HandlerRule::default_templates();
         for template in default_templates {
-            let now = chrono::Utc::now();
+            let now = chrono::Utc::now().timestamp();
             let insert_stmt = Query::insert()
                 .into_table(handler::Entity)
                 .columns([

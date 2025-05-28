@@ -1,6 +1,7 @@
 //! Handler Entity for request processing actions
 
-use sea_orm::entity::prelude::*;
+use async_trait::async_trait;
+use sea_orm::{entity::prelude::*, Set};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use utoipa::ToSchema;
@@ -48,9 +49,9 @@ pub struct Model {
     #[sea_orm(default_value = true)]
     pub enabled: bool,
     #[serde(skip)]
-    pub created_at: ChronoDateTimeUtc,
+    pub created_at: i64,
     #[serde(skip)]
-    pub updated_at: ChronoDateTimeUtc,
+    pub updated_at: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -69,4 +70,34 @@ impl Related<super::rule::Entity> for Entity {
     }
 }
 
-impl ActiveModelBehavior for ActiveModel {}
+#[async_trait]
+impl ActiveModelBehavior for ActiveModel {
+    /// Called before insert and update
+    fn new() -> Self {
+        Self {
+            created_at: Set(chrono::Utc::now().timestamp()),
+            updated_at: Set(chrono::Utc::now().timestamp()),
+            ..ActiveModelTrait::default()
+        }
+    }
+
+    /// Called before insert
+    async fn before_save<C>(mut self, _db: &C, insert: bool) -> Result<Self, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        let now = chrono::Utc::now();
+
+        if insert {
+            // Only set created_at if it's not already set (for new records)
+            if self.created_at.is_not_set() {
+                self.created_at = Set(now.timestamp());
+            }
+        }
+
+        // Always update updated_at on both insert and update
+        self.updated_at = Set(now.timestamp());
+
+        Ok(self)
+    }
+}

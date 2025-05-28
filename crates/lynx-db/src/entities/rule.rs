@@ -29,11 +29,11 @@ pub struct Model {
 
     /// Creation timestamp
     #[serde(skip)]
-    pub created_at: ChronoDateTimeUtc,
+    pub created_at: i64,
 
     /// Update timestamp
     #[serde(skip)]
-    pub updated_at: ChronoDateTimeUtc,
+    pub updated_at: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -61,8 +61,8 @@ impl ActiveModelBehavior for ActiveModel {
     /// Called before insert and update
     fn new() -> Self {
         Self {
-            created_at: Set(chrono::Utc::now()),
-            updated_at: Set(chrono::Utc::now()),
+            created_at: Set(chrono::Utc::now().timestamp()),
+            updated_at: Set(chrono::Utc::now().timestamp()),
             ..ActiveModelTrait::default()
         }
     }
@@ -77,12 +77,12 @@ impl ActiveModelBehavior for ActiveModel {
         if insert {
             // Only set created_at if it's not already set (for new records)
             if self.created_at.is_not_set() {
-                self.created_at = Set(now);
+                self.created_at = Set(now.timestamp());
             }
         }
 
         // Always update updated_at on both insert and update
-        self.updated_at = Set(now);
+        self.updated_at = Set(now.timestamp());
 
         Ok(self)
     }
