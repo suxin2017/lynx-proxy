@@ -282,7 +282,6 @@ mod tests {
 
         let proxy_server = ProxyServerBuilder::default()
             .config(Arc::new(server_config))
-            .port(3000)
             .server_ca_manager(Arc::new(server_ca_manager))
             .db_config(ConnectOptions::new("sqlite::memory:"))
             .build()
