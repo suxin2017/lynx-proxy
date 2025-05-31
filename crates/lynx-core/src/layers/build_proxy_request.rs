@@ -1,4 +1,5 @@
 use std::{
+    future::Future,
     pin::Pin,
     str::FromStr,
     task::{Context, Poll},
@@ -12,7 +13,10 @@ use http::{
 use tower::Service;
 use url::Url;
 
-use crate::{common::Req, layers::extend_extension_layer::clone_extensions};
+use crate::{
+    common::{Req, Res},
+    layers::extend_extension_layer::clone_extensions,
+};
 
 #[derive(Clone)]
 pub struct BuildProxyRequestService<S> {
@@ -21,7 +25,11 @@ pub struct BuildProxyRequestService<S> {
 
 impl<S> Service<Req> for BuildProxyRequestService<S>
 where
-    S: Service<Req, Error = anyhow::Error, Future: Send> + Send + 'static + Clone,
+    S: Service<Req, Future: Future + Send + 'static, Response = Res, Error = anyhow::Error>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
     S::Future: Send,
 {
     type Response = S::Response;
@@ -54,8 +62,7 @@ where
             let mut proxy_req = req_builder.body(body)?;
 
             proxy_req.extensions_mut().extend(extensions);
-            let response = s.call(proxy_req).await?;
-            Ok(response)
+            s.call(proxy_req).await
         })
     }
 }

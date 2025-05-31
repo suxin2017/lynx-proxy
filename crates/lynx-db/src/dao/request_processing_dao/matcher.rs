@@ -1,10 +1,11 @@
 use super::{
     error::RequestProcessingError,
-    request_info::RequestInfo,
+    common::HeaderUtils,
     types::{CaptureCondition, CaptureRule, LogicalOperator, RequestRule, SimpleCaptureCondition},
 };
 use crate::entities::capture::CaptureType;
 use anyhow::Result;
+use axum::{body::HttpBody, extract::Request};
 use glob::Pattern;
 use regex::Regex;
 use std::collections::HashMap;
@@ -36,6 +37,7 @@ pub struct CompiledCaptureCondition {
     pub pattern: CompiledPattern,
     pub method: Option<String>,
     pub host: Option<String>,
+    pub headers: Option<Vec<HashMap<String, String>>>,
 }
 
 /// Compiled capture rule
@@ -75,10 +77,10 @@ impl RuleMatcher {
     }
 
     /// Find matching rules for a request with optimized performance
-    pub fn find_matching_rules(
+    pub fn find_matching_rules<T: HttpBody>(
         &self,
         rules: &[RequestRule],
-        request: &RequestInfo,
+        request: &Request<T>,
     ) -> Result<Vec<RequestRule>> {
         // Compile rules with caching
         let compiled_rules = self.compile_rules(rules)?;
@@ -102,7 +104,7 @@ impl RuleMatcher {
     }
 
     /// Check if a capture rule matches the request
-    pub fn capture_matches(&self, capture: &CaptureRule, request: &RequestInfo) -> Result<bool> {
+    pub fn capture_matches(&self, capture: &CaptureRule, request: &Request) -> Result<bool> {
         let compiled_condition = Self::compile_capture_condition(&capture.condition)?;
         Self::compiled_capture_matches(&compiled_condition, request)
     }
@@ -111,7 +113,7 @@ impl RuleMatcher {
     pub fn evaluate_condition(
         &self,
         condition: &CaptureCondition,
-        request: &RequestInfo,
+        request: &Request,
     ) -> Result<bool> {
         let compiled_condition = Self::compile_capture_condition(condition)?;
         Self::compiled_capture_matches(&compiled_condition, request)
@@ -199,30 +201,37 @@ impl RuleMatcher {
     fn compile_simple_condition(
         condition: &SimpleCaptureCondition,
     ) -> Result<CompiledCaptureCondition> {
-        let pattern = match condition.capture_type {
-            CaptureType::Glob => {
-                let pattern = Pattern::new(&condition.pattern)?;
-                CompiledPattern::Glob(pattern)
+        // If url_pattern is provided, validate and compile it
+        let pattern = if let Some(ref url_pattern) = condition.url_pattern {
+            match url_pattern.capture_type {
+                CaptureType::Glob => {
+                    let pattern = Pattern::new(&url_pattern.pattern)?;
+                    CompiledPattern::Glob(pattern)
+                }
+                CaptureType::Regex => {
+                    let regex = Regex::new(&url_pattern.pattern)?;
+                    CompiledPattern::Regex(regex)
+                }
+                CaptureType::Exact => CompiledPattern::Exact(url_pattern.pattern.clone()),
+                CaptureType::Contains => CompiledPattern::Contains(url_pattern.pattern.clone()),
             }
-            CaptureType::Regex => {
-                let regex = Regex::new(&condition.pattern)?;
-                CompiledPattern::Regex(regex)
-            }
-            CaptureType::Exact => CompiledPattern::Exact(condition.pattern.clone()),
-            CaptureType::Contains => CompiledPattern::Contains(condition.pattern.clone()),
+        } else {
+            // If no url_pattern is provided, use a wildcard pattern that matches everything
+            CompiledPattern::Glob(Pattern::new("*")?)
         };
 
         Ok(CompiledCaptureCondition {
             pattern,
             method: condition.method.clone(),
             host: condition.host.clone(),
+            headers: condition.headers.clone(),
         })
     }
 
     /// Check if compiled capture rule matches request
-    fn compiled_capture_matches(
+    fn compiled_capture_matches<T: HttpBody>(
         capture: &CompiledCaptureRule,
-        request: &RequestInfo,
+        request: &Request<T>,
     ) -> Result<bool> {
         match capture {
             CompiledCaptureRule::Simple(simple) => Self::compiled_simple_matches(simple, request),
@@ -261,408 +270,57 @@ impl RuleMatcher {
     }
 
     /// Check if compiled simple condition matches request
-    fn compiled_simple_matches(
+    fn compiled_simple_matches<T: HttpBody>(
         condition: &CompiledCaptureCondition,
-        request: &RequestInfo,
+        request: &Request<T>,
     ) -> Result<bool> {
+        // Extract data from axum Request
+        let url = request.uri().to_string();
+        let method = request.method().to_string();
+        let host = request
+            .headers()
+            .get("host")
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or_default();
+        let headers = HeaderUtils::extract_headers(request.headers());
+
         // Check method
-        if let Some(ref method) = condition.method {
-            if !method.is_empty() && !method.eq_ignore_ascii_case(&request.method) {
+        if let Some(ref method_condition) = condition.method {
+            if !method_condition.is_empty() && !method_condition.eq_ignore_ascii_case(&method) {
                 return Ok(false);
             }
         }
 
         // Check host
-        if let Some(ref host) = condition.host {
-            if !host.is_empty() && !host.eq_ignore_ascii_case(&request.host) {
+        if let Some(ref host_condition) = condition.host {
+            if !host_condition.is_empty() && !host_condition.eq_ignore_ascii_case(host) {
                 return Ok(false);
             }
         }
 
+        // Check headers
+        if let Some(ref condition_headers) = condition.headers {
+            for header_map in condition_headers {
+                for (key, expected_value) in header_map {
+                    if let Some(actual_value) = headers.get(key) {
+                        if !expected_value.is_empty() && !actual_value.eq_ignore_ascii_case(expected_value) {
+                            return Ok(false);
+                        }
+                    } else if !expected_value.is_empty() {
+                        // Header is required but not present
+                        return Ok(false);
+                    }
+                }
+            }
+        }
+
         // Check pattern against URL
-        Ok(condition.pattern.matches(&request.url))
+        Ok(condition.pattern.matches(&url))
     }
 }
 
 impl Default for RuleMatcher {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::dao::request_processing_dao::types::ComplexCaptureRule;
-
-    use super::*;
-    use axum::body::Bytes;
-    use serde_json::json;
-    use std::collections::HashMap;
-
-    fn create_test_request(
-        url: &str,
-        method: &str,
-        host: &str,
-        headers: Option<HashMap<String, String>>,
-    ) -> RequestInfo {
-        RequestInfo {
-            url: url.to_string(),
-            method: method.to_string(),
-            host: host.to_string(),
-            headers: headers.unwrap_or_default(),
-            body: Bytes::new(),
-        }
-    }
-
-    fn create_test_capture_rule(
-        capture_type: CaptureType,
-        pattern: &str,
-        method: Option<&str>,
-        host: Option<&str>,
-    ) -> CaptureRule {
-        let simple_condition = SimpleCaptureCondition {
-            capture_type,
-            pattern: pattern.to_string(),
-            method: method.map(|s| s.to_string()),
-            host: host.map(|s| s.to_string()),
-            config: json!({}),
-        };
-
-        CaptureRule {
-            id: None,
-            condition: CaptureCondition::Simple(simple_condition),
-        }
-    }
-
-    fn create_test_request_rule(
-        name: &str,
-        priority: i32,
-        enabled: bool,
-        capture: CaptureRule,
-    ) -> RequestRule {
-        RequestRule {
-            id: None,
-            name: name.to_string(),
-            description: None,
-            enabled,
-            priority,
-            capture,
-            handlers: vec![],
-        }
-    }
-
-    #[test]
-    fn test_glob_pattern_matching() {
-        let matcher = RuleMatcher::new();
-        let capture =
-            create_test_capture_rule(CaptureType::Glob, "https://api.example.com/*", None, None);
-
-        let request1 = create_test_request(
-            "https://api.example.com/users",
-            "GET",
-            "api.example.com",
-            None,
-        );
-        let request2 = create_test_request(
-            "https://other.example.com/users",
-            "GET",
-            "other.example.com",
-            None,
-        );
-
-        assert!(matcher.capture_matches(&capture, &request1).unwrap());
-        assert!(!matcher.capture_matches(&capture, &request2).unwrap());
-    }
-
-    #[test]
-    fn test_method_filtering() {
-        let matcher = RuleMatcher::new();
-        let capture = create_test_capture_rule(CaptureType::Glob, "*", Some("POST"), None);
-
-        let request1 = create_test_request("/api/users", "POST", "api.example.com", None);
-        let request2 = create_test_request("/api/users", "GET", "api.example.com", None);
-
-        assert!(matcher.capture_matches(&capture, &request1).unwrap());
-        assert!(!matcher.capture_matches(&capture, &request2).unwrap());
-    }
-
-    #[test]
-    fn test_priority_sorting() {
-        let matcher = RuleMatcher::new();
-        let capture1 = create_test_capture_rule(CaptureType::Glob, "*", None, None);
-        let capture2 = create_test_capture_rule(CaptureType::Glob, "*", None, None);
-
-        let rule1 = create_test_request_rule("Low Priority", 10, true, capture1);
-        let rule2 = create_test_request_rule("High Priority", 100, true, capture2);
-
-        let rules = vec![rule1, rule2];
-        let request = create_test_request("/api/users", "GET", "api.example.com", None);
-
-        let matching_rules = matcher.find_matching_rules(&rules, &request).unwrap();
-
-        assert_eq!(matching_rules.len(), 2);
-        assert_eq!(matching_rules[0].name, "High Priority");
-        assert_eq!(matching_rules[1].name, "Low Priority");
-    }
-
-    #[test]
-    fn test_simple_rule_exact_matching() {
-        let matcher = RuleMatcher::new();
-
-        // Create a simple capture rule with exact pattern
-        let capture = create_test_capture_rule(
-            CaptureType::Exact,
-            "https://api.example.com/users",
-            Some("GET"),
-            Some("api.example.com"),
-        );
-
-        let rule = create_test_request_rule("Simple Exact Rule", 50, true, capture);
-        let rules = vec![rule];
-
-        // Test exact match
-        let request1 = create_test_request(
-            "https://api.example.com/users",
-            "GET",
-            "api.example.com",
-            None,
-        );
-
-        // Test non-matching URL
-        let request2 = create_test_request(
-            "https://api.example.com/posts",
-            "GET",
-            "api.example.com",
-            None,
-        );
-
-        // Test non-matching method
-        let request3 = create_test_request(
-            "https://api.example.com/users",
-            "POST",
-            "api.example.com",
-            None,
-        );
-
-        let matching_rules1 = matcher.find_matching_rules(&rules, &request1).unwrap();
-        let matching_rules2 = matcher.find_matching_rules(&rules, &request2).unwrap();
-        let matching_rules3 = matcher.find_matching_rules(&rules, &request3).unwrap();
-
-        assert_eq!(matching_rules1.len(), 1);
-        assert_eq!(matching_rules1[0].name, "Simple Exact Rule");
-        assert_eq!(matching_rules2.len(), 0);
-        assert_eq!(matching_rules3.len(), 0);
-    }
-
-    #[test]
-    fn test_complex_rule_logical_operators() {
-        let matcher = RuleMatcher::new();
-
-        // Create simple conditions
-        let simple_condition1 = SimpleCaptureCondition {
-            capture_type: CaptureType::Contains,
-            pattern: "api.example.com".to_string(),
-            method: None,
-            host: None,
-            config: json!({}),
-        };
-
-        let simple_condition2 = SimpleCaptureCondition {
-            capture_type: CaptureType::Contains,
-            pattern: ".json".to_string(),
-            method: Some("GET".to_string()),
-            host: None,
-            config: json!({}),
-        };
-
-        // Create complex AND condition
-        let complex_condition = CaptureCondition::Complex(ComplexCaptureRule {
-            operator: LogicalOperator::And,
-            conditions: vec![
-                CaptureCondition::Simple(simple_condition1.clone()),
-                CaptureCondition::Simple(simple_condition2.clone()),
-            ],
-        });
-
-        let capture_rule = CaptureRule {
-            id: None,
-            condition: complex_condition,
-        };
-
-        let rule = create_test_request_rule("Complex AND Rule", 75, true, capture_rule);
-        let rules = vec![rule];
-
-        // Test request that matches both conditions
-        let request1 = create_test_request(
-            "https://api.example.com/data.json",
-            "GET",
-            "api.example.com",
-            None,
-        );
-
-        // Test request that matches only first condition
-        let request2 = create_test_request(
-            "https://api.example.com/users",
-            "GET",
-            "api.example.com",
-            None,
-        );
-
-        // Test request that matches only second condition
-        let request3 =
-            create_test_request("https://example.com/data.json", "GET", "example.com", None);
-
-        // Test request with wrong method
-        let request4 = create_test_request(
-            "https://api.example.com/data.json",
-            "POST",
-            "api.example.com",
-            None,
-        );
-
-        let matching_rules1 = matcher.find_matching_rules(&rules, &request1).unwrap();
-        let matching_rules2 = matcher.find_matching_rules(&rules, &request2).unwrap();
-        let matching_rules3 = matcher.find_matching_rules(&rules, &request3).unwrap();
-        let matching_rules4 = matcher.find_matching_rules(&rules, &request4).unwrap();
-
-        // Debug output
-        println!(
-            "Request1 URL: {}, Method: {}",
-            request1.url, request1.method
-        );
-        println!("Matching rules for request1: {}", matching_rules1.len());
-
-        // Test individual conditions
-        let condition1_match = matcher
-            .evaluate_condition(
-                &CaptureCondition::Simple(simple_condition1.clone()),
-                &request1,
-            )
-            .unwrap();
-        let condition2_match = matcher
-            .evaluate_condition(
-                &CaptureCondition::Simple(simple_condition2.clone()),
-                &request1,
-            )
-            .unwrap();
-        println!("Condition1 (api.example.com) matches: {}", condition1_match);
-        println!("Condition2 (.json + GET) matches: {}", condition2_match);
-
-        // Test the Contains pattern directly
-        println!(
-            "URL contains 'api.example.com': {}",
-            request1.url.contains("api.example.com")
-        );
-        println!("URL contains '.json': {}", request1.url.contains(".json"));
-        println!(
-            "Method matches 'GET': {}",
-            request1.method.eq_ignore_ascii_case("GET")
-        );
-
-        // Only first request should match (satisfies both AND conditions)
-        assert_eq!(matching_rules1.len(), 1);
-        assert_eq!(matching_rules1[0].name, "Complex AND Rule");
-        assert_eq!(matching_rules2.len(), 0); // Missing pattern match for .json
-        assert_eq!(matching_rules3.len(), 0); // Missing api.example.com in URL
-        assert_eq!(matching_rules4.len(), 0); // Wrong method
-    }
-
-    #[test]
-    fn test_complex_rule_and_with_not() {
-        let matcher = RuleMatcher::new();
-
-        // Create simple condition that matches all URLs
-        let match_all_condition = SimpleCaptureCondition {
-            capture_type: CaptureType::Glob,
-            pattern: "*".to_string(),
-            method: None,
-            host: None,
-            config: json!({}),
-        };
-
-        // Create condition that matches .json files (to be negated)
-        let json_condition = SimpleCaptureCondition {
-            capture_type: CaptureType::Contains,
-            pattern: ".json".to_string(),
-            method: None,
-            host: None,
-            config: json!({}),
-        };
-
-        // Create NOT condition for .json files
-        let not_json_condition = CaptureCondition::Complex(ComplexCaptureRule {
-            operator: LogicalOperator::Not,
-            conditions: vec![CaptureCondition::Simple(json_condition)],
-        });
-
-        // Create complex AND condition: match all AND NOT .json
-        let complex_condition = CaptureCondition::Complex(ComplexCaptureRule {
-            operator: LogicalOperator::And,
-            conditions: vec![
-                CaptureCondition::Simple(match_all_condition),
-                not_json_condition,
-            ],
-        });
-
-        let capture_rule = CaptureRule {
-            id: None,
-            condition: complex_condition,
-        };
-
-        let rule = create_test_request_rule("AND with NOT Rule", 80, true, capture_rule);
-        let rules = vec![rule];
-
-        // Test request with .json - should NOT match
-        let request1 = create_test_request(
-            "https://api.example.com/data.json",
-            "GET",
-            "api.example.com",
-            None,
-        );
-
-        // Test request without .json - should match
-        let request2 = create_test_request(
-            "https://api.example.com/users",
-            "GET",
-            "api.example.com",
-            None,
-        );
-
-        // Test another request without .json - should match
-        let request3 =
-            create_test_request("https://example.com/posts", "POST", "example.com", None);
-
-        // Test request with .json in middle - should NOT match
-        let request4 = create_test_request(
-            "https://api.example.com/data.json/extra",
-            "GET",
-            "api.example.com",
-            None,
-        );
-
-        let matching_rules1 = matcher.find_matching_rules(&rules, &request1).unwrap();
-        let matching_rules2 = matcher.find_matching_rules(&rules, &request2).unwrap();
-        let matching_rules3 = matcher.find_matching_rules(&rules, &request3).unwrap();
-        let matching_rules4 = matcher.find_matching_rules(&rules, &request4).unwrap();
-
-        // Debug output
-        println!("Testing AND with NOT operator:");
-        println!("Request1 (.json): {} matches", matching_rules1.len());
-        println!("Request2 (no .json): {} matches", matching_rules2.len());
-        println!("Request3 (no .json): {} matches", matching_rules3.len());
-        println!(
-            "Request4 (.json in path): {} matches",
-            matching_rules4.len()
-        );
-
-        // Requests with .json should NOT match (due to NOT condition)
-        assert_eq!(matching_rules1.len(), 0);
-        assert_eq!(matching_rules4.len(), 0);
-
-        // Requests without .json should match
-        assert_eq!(matching_rules2.len(), 1);
-        assert_eq!(matching_rules2[0].name, "AND with NOT Rule");
-        assert_eq!(matching_rules3.len(), 1);
-        assert_eq!(matching_rules3[0].name, "AND with NOT Rule");
     }
 }

@@ -1,10 +1,12 @@
 //! Handler Entity for request processing actions
 
 use async_trait::async_trait;
-use sea_orm::{entity::prelude::*, Set};
+use sea_orm::{Set, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use utoipa::ToSchema;
+
+use crate::dao::request_processing_dao::handlers::handler_rule::HandlerRuleType;
 
 /// Handler type enumeration
 #[derive(
@@ -25,6 +27,35 @@ pub enum HandlerType {
     ProxyForward,
 }
 
+impl From<&HandlerRuleType> for HandlerType {
+    fn from(handler_rule_type: &HandlerRuleType) -> Self {
+        match handler_rule_type {
+            HandlerRuleType::Block(_) => Self::Block,
+            HandlerRuleType::ModifyRequest(_) => Self::ModifyRequest,
+            HandlerRuleType::LocalFile(_) => Self::LocalFile,
+            HandlerRuleType::ModifyResponse(_) => Self::ModifyResponse,
+            HandlerRuleType::ProxyForward(_) => Self::ProxyForward,
+        }
+    }
+}
+
+impl From<&HandlerRuleType> for JsonValue {
+    fn from(handler_rule_type: &HandlerRuleType) -> Self {
+        match handler_rule_type {
+            HandlerRuleType::Block(config) => serde_json::to_value(config).unwrap_or_default(),
+            HandlerRuleType::ModifyRequest(config) => {
+                serde_json::to_value(config).unwrap_or_default()
+            }
+            HandlerRuleType::LocalFile(config) => serde_json::to_value(config).unwrap_or_default(),
+            HandlerRuleType::ModifyResponse(config) => {
+                serde_json::to_value(config).unwrap_or_default()
+            }
+            HandlerRuleType::ProxyForward(config) => {
+                serde_json::to_value(config).unwrap_or_default()
+            }
+        }
+    }
+}
 impl Default for HandlerType {
     fn default() -> Self {
         Self::Block

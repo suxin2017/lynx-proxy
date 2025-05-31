@@ -2,26 +2,24 @@ pub mod common;
 pub mod error;
 pub mod handlers;
 pub mod matcher;
-pub mod request_info;
-pub mod response_info;
 pub mod types;
 pub mod validator;
 
 pub use common::{BodyUtils, HeaderUtils, HttpMessage};
 pub use error::RequestProcessingError;
 pub use handlers::HandlerRule;
+use handlers::handler_rule::HandlerRuleType;
 pub use matcher::RuleMatcher;
-pub use request_info::RequestInfo;
-pub use response_info::ResponseInfo;
 pub use types::{CaptureRule, LocalFileConfig, ModifyRequestConfig, RequestRule};
 pub use validator::RuleValidator;
 
 use crate::entities::{
     capture::{self, Entity as CaptureEntity},
-    handler::{self, ActiveModel as HandlerActiveModel, Entity as HandlerEntity},
+    handler::{self, ActiveModel as HandlerActiveModel, Entity as HandlerEntity, HandlerType},
     rule::{self, ActiveModel as RuleActiveModel, Entity as RuleEntity},
 };
 use anyhow::{Result, anyhow};
+use axum::{body::HttpBody, extract::Request};
 use sea_orm::*;
 use std::sync::Arc;
 
@@ -62,11 +60,11 @@ impl RequestProcessingDao {
             let handler_active_model = HandlerActiveModel {
                 id: NotSet,
                 rule_id: Set(rule_id),
-                handler_type: Set(handler.handler_type),
+                handler_type: Set(HandlerType::from(&handler.handler_type)),
                 name: Set(handler.name),
                 description: Set(handler.description),
                 execution_order: Set(handler.execution_order),
-                config: Set(handler.config),
+                config: Set(JsonValue::from(&handler.handler_type)),
                 enabled: Set(handler.enabled),
                 created_at: NotSet,
                 updated_at: NotSet,
@@ -113,11 +111,10 @@ impl RequestProcessingDao {
                         .into_iter()
                         .map(|h| HandlerRule {
                             id: Some(h.id),
-                            handler_type: h.handler_type,
+                            handler_type: HandlerRuleType::from(&h),
                             name: h.name,
                             description: h.description,
                             execution_order: h.execution_order,
-                            config: h.config,
                             enabled: h.enabled,
                         })
                         .collect(),
@@ -183,27 +180,23 @@ impl RequestProcessingDao {
         let capture = rule.capture;
         let capture_active_model = capture::Model::from_capture_rule(&capture, rule_id)
             .map_err(|e| anyhow!("Failed to convert capture rule: {}", e))?;
-        CaptureEntity::insert(capture_active_model)
-            .exec(&txn)
-            .await?;
+        capture_active_model.insert(&txn).await?;
 
         // Insert new handlers
         for handler in rule.handlers {
             let handler_active_model = HandlerActiveModel {
                 id: NotSet,
                 rule_id: Set(rule_id),
-                handler_type: Set(handler.handler_type),
+                handler_type: Set(HandlerType::from(&handler.handler_type)),
                 name: Set(handler.name),
                 description: Set(handler.description),
                 execution_order: Set(handler.execution_order),
-                config: Set(handler.config),
+                config: Set(JsonValue::from(&handler.handler_type)),
                 enabled: Set(handler.enabled),
                 created_at: NotSet,
                 updated_at: NotSet,
             };
-            HandlerEntity::insert(handler_active_model)
-                .exec(&txn)
-                .await?;
+            handler_active_model.insert(&txn).await?;
         }
 
         txn.commit().await?;
@@ -234,7 +227,7 @@ impl RequestProcessingDao {
     }
 
     /// Find matching rules for a request
-    pub async fn find_matching_rules(&self, request: &RequestInfo) -> Result<Vec<RequestRule>> {
+    pub async fn find_matching_rules<T: HttpBody>(&self, request: &Request<T>) -> Result<Vec<RequestRule>> {
         let all_rules = self.list_rules().await?;
         let matcher = RuleMatcher::new();
         matcher.find_matching_rules(&all_rules, request)
@@ -252,11 +245,10 @@ impl RequestProcessingDao {
             .into_iter()
             .map(|h| HandlerRule {
                 id: Some(h.id),
-                handler_type: h.handler_type,
+                handler_type: HandlerRuleType::from(&h),
                 name: h.name,
                 description: h.description,
                 execution_order: h.execution_order,
-                config: h.config,
                 enabled: h.enabled,
             })
             .collect())
@@ -269,9 +261,7 @@ impl RequestProcessingDao {
             enabled: Set(enabled),
             ..Default::default()
         };
-        rule_active_model
-            .update(self.db.as_ref())
-            .await?;
+        rule_active_model.update(self.db.as_ref()).await?;
         Ok(())
     }
 }

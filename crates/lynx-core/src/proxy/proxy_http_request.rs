@@ -7,7 +7,9 @@ use crate::{
     common::{HyperResExt, Req, Res},
     layers::{
         build_proxy_request::BuildProxyRequestService,
-        message_package_layer::ProxyMessageEventService, trace_id_layer::service::TraceIdExt,
+        message_package_layer::ProxyMessageEventService,
+        request_processing_layer::{RequestProcessingLayer, RequestProcessingService},
+        trace_id_layer::service::TraceIdExt,
     },
 };
 
@@ -33,8 +35,13 @@ pub async fn proxy_http_request(req: Req) -> Result<Response> {
     let svc = service_fn(proxy_http_request_inner);
 
     let svc = ServiceBuilder::new()
-        .layer_fn(|s| BuildProxyRequestService { service: s })
+        // .layer_fn(|s| BuildProxyRequestService { service: s })
+
         .layer_fn(|s| ProxyMessageEventService { service: s })
+
+        .layer_fn(|s| RequestProcessingService { service: s })
+        
+        
         .service(svc);
 
     let res = svc.oneshot(req).await?;

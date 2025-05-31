@@ -22,16 +22,95 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CreateRuleRequest,
   ListRulesParams,
+  ResponseDataWrapperCreateRuleResponse,
   ResponseDataWrapperRequestRule,
   ResponseDataWrapperRuleListResponse,
   ResponseDataWrapperTemplateHandlersResponse,
   ResponseDataWrapperTupleUnit,
   ToggleRuleRequest,
+  UpdateRuleRequest,
 } from '../utoipaAxum.schemas';
 
 import { customInstance } from '../../customInstance';
 
+export const createRule = (
+  createRuleRequest: CreateRuleRequest,
+  signal?: AbortSignal,
+) => {
+  return customInstance<ResponseDataWrapperCreateRuleResponse>({
+    url: `/request_processing/rule`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: createRuleRequest,
+    signal,
+  });
+};
+
+export const getCreateRuleMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createRule>>,
+    TError,
+    { data: CreateRuleRequest },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createRule>>,
+  TError,
+  { data: CreateRuleRequest },
+  TContext
+> => {
+  const mutationKey = ['createRule'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createRule>>,
+    { data: CreateRuleRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createRule(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateRuleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createRule>>
+>;
+export type CreateRuleMutationBody = CreateRuleRequest;
+export type CreateRuleMutationError = void;
+
+export const useCreateRule = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createRule>>,
+      TError,
+      { data: CreateRuleRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createRule>>,
+  TError,
+  { data: CreateRuleRequest },
+  TContext
+> => {
+  const mutationOptions = getCreateRuleMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const listRules = (params?: ListRulesParams, signal?: AbortSignal) => {
   return customInstance<ResponseDataWrapperRuleListResponse>({
     url: `/request_processing/rules`,
@@ -292,6 +371,81 @@ export function useGetRule<
   return query;
 }
 
+export const updateRule = (
+  id: number,
+  updateRuleRequest: UpdateRuleRequest,
+) => {
+  return customInstance<ResponseDataWrapperTupleUnit>({
+    url: `/request_processing/rules/${id}`,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    data: updateRuleRequest,
+  });
+};
+
+export const getUpdateRuleMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateRule>>,
+    TError,
+    { id: number; data: UpdateRuleRequest },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateRule>>,
+  TError,
+  { id: number; data: UpdateRuleRequest },
+  TContext
+> => {
+  const mutationKey = ['updateRule'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateRule>>,
+    { id: number; data: UpdateRuleRequest }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateRule(id, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateRuleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateRule>>
+>;
+export type UpdateRuleMutationBody = UpdateRuleRequest;
+export type UpdateRuleMutationError = void;
+
+export const useUpdateRule = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof updateRule>>,
+      TError,
+      { id: number; data: UpdateRuleRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof updateRule>>,
+  TError,
+  { id: number; data: UpdateRuleRequest },
+  TContext
+> => {
+  const mutationOptions = getUpdateRuleMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const deleteRule = (id: number) => {
   return customInstance<ResponseDataWrapperTupleUnit>({
     url: `/request_processing/rules/${id}`,

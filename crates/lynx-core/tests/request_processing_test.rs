@@ -343,6 +343,196 @@ async fn test_template_handlers_response_structure() -> Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn test_create_rule_api() -> Result<()> {
+    let (server, client) = setup_self_service_test_server().await?;
+    let base_url = base_url(&server);
+
+    // Create a test rule via API
+    let create_request = json!({
+         "name": "Test API Rule",
+         "description": "Test rule created via API",
+         "enabled": true,
+         "priority": 10,
+         "capture": {
+             "condition": {
+                 "type": "simple",
+                 "urlPattern": {
+                     "captureType": "glob",
+                     "pattern": "/test/*"
+                 },
+                 "method": "GET"
+             }
+         },
+         "handlers": [
+             {
+                 "handlerType": {
+                     "type": "block",
+                     "statusCode": 403,
+                     "reason": "Access denied"
+                 },
+                 "name": "Block Handler",
+                 "description": "Blocks requests matching this rule",
+                 "executionOrder": 1,
+                 "enabled": true,
+
+             }
+         ]
+     });
+
+    let create_response = client
+        .get_request_client()
+        .post(format!("{}/request_processing/rule", base_url))
+        .json(&create_request)
+        .send()
+        .await?;
+
+    let status = create_response.status();
+    if status != StatusCode::OK {
+        let error_body = create_response.text().await?;
+        eprintln!("Create rule failed with status: {}", status);
+        eprintln!("Error response: {}", error_body);
+        assert_eq!(status, StatusCode::OK);
+        return Ok(()); // This will never be reached due to the assert above
+    }
+
+    let create_body: Value = create_response.json().await?;
+    assert_eq!(create_body["code"], "ok");
+    assert!(create_body["data"]["id"].is_number());
+
+    let rule_id = create_body["data"]["id"].as_i64().unwrap() as i32;
+
+    // Verify rule was created by getting it
+    let get_response = client
+        .get_request_client()
+        .get(format!("{}/request_processing/rules/{}", base_url, rule_id))
+        .send()
+        .await?;
+
+    assert_eq!(get_response.status(), StatusCode::OK);
+    let get_body: Value = get_response.json().await?;
+    assert_eq!(get_body["code"], "ok");
+    assert_eq!(get_body["data"]["name"], "Test API Rule");
+    assert_eq!(get_body["data"]["enabled"], true);
+    assert_eq!(get_body["data"]["priority"], 10);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_update_rule_api() -> Result<()> {
+    let (server, client) = setup_self_service_test_server().await?;
+    let base_url = base_url(&server);
+    let dao = RequestProcessingDao::new(server.db_connect.clone());
+
+    // Create a test rule first
+    let rule_id = create_test_rule(&dao, "Original Rule", true).await?;
+
+    // Update the rule via API
+    let update_request = json!({
+        "name": "Updated Rule Name",
+        "description": "Updated description",
+        "enabled": false,
+        "priority": 20,
+        "capture": {
+            "condition": {
+                "type": "simple",
+                "urlPattern": {
+                    "captureType": "glob",
+                    "pattern": "/updated/*"
+                },
+                "method": "POST"
+            }
+        },
+        "handlers": [
+            {
+                "handlerType": {
+                    "type": "block",
+                    "statusCode": 404,
+                    "reason": "Not found"
+                },
+                "name": "Updated Block Handler",
+                "description": "Updated handler description",
+                "executionOrder": 1,
+                "enabled": true
+            }
+        ]
+    });
+
+    let update_response = client
+        .get_request_client()
+        .put(format!("{}/request_processing/rules/{}", base_url, rule_id))
+        .json(&update_request)
+        .send()
+        .await?;
+
+    let status = update_response.status();
+    if status != StatusCode::OK {
+        let error_body = update_response.text().await?;
+        eprintln!("Update rule failed with status: {}", status);
+        eprintln!("Error response: {}", error_body);
+        assert_eq!(status, StatusCode::OK);
+        return Ok(()); // This will never be reached due to the assert above
+    }
+
+    let update_body: Value = update_response.json().await?;
+    assert_eq!(update_body["code"], "ok");
+
+    // Verify the rule was updated by getting it
+    let get_response = client
+        .get_request_client()
+        .get(format!("{}/request_processing/rules/{}", base_url, rule_id))
+        .send()
+        .await?;
+
+    assert_eq!(get_response.status(), StatusCode::OK);
+    let get_body: Value = get_response.json().await?;
+    assert_eq!(get_body["code"], "ok");
+    assert_eq!(get_body["data"]["name"], "Updated Rule Name");
+    assert_eq!(get_body["data"]["description"], "Updated description");
+    assert_eq!(get_body["data"]["enabled"], false);
+    assert_eq!(get_body["data"]["priority"], 20);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_update_rule_not_found() -> Result<()> {
+    let (server, client) = setup_self_service_test_server().await?;
+    let base_url = base_url(&server);
+
+    let non_existent_id = 99999;
+    let update_request = json!({
+        "name": "Non-existent Rule",
+        "description": "This rule does not exist",
+        "enabled": true,
+        "priority": 1,
+        "capture": {
+            "condition": {
+                "type": "simple",
+                "urlPattern": {
+                    "captureType": "glob",
+                    "pattern": "/test/*"
+                },
+                "method": "GET"
+            }
+        },
+        "handlers": []
+    });
+
+    let update_response = client
+        .get_request_client()
+        .put(format!("{}/request_processing/rules/{}", base_url, non_existent_id))
+        .json(&update_request)
+        .send()
+        .await?;
+
+    assert_eq!(update_response.status(), StatusCode::NOT_FOUND);
+
+    Ok(())
+}
+
+
 // Helper functions
 
 async fn create_test_rule(dao: &RequestProcessingDao, name: &str, enabled: bool) -> Result<i32> {
@@ -360,14 +550,18 @@ async fn create_test_rule(dao: &RequestProcessingDao, name: &str, enabled: bool)
 }
 
 fn create_basic_capture_rule() -> CaptureRule {
+    use lynx_db::dao::request_processing_dao::types::UrlPattern;
+
     CaptureRule {
         id: None,
         condition: CaptureCondition::Simple(SimpleCaptureCondition {
-            capture_type: CaptureType::Glob,
-            pattern: "/api/*".to_string(),
+            url_pattern: Some(UrlPattern {
+                capture_type: CaptureType::Glob,
+                pattern: "/api/*".to_string(),
+            }),
             method: Some("GET".to_string()),
             host: None,
-            config: json!({}),
+            headers: None,
         }),
     }
 }

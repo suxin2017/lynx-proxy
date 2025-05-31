@@ -11,16 +11,39 @@ import { HttpResponse, delay, http } from 'msw';
 
 import {
   CaptureType,
-  HandlerType,
   LogicalOperator,
   ResponseCode,
 } from '../utoipaAxum.schemas';
 import type {
+  ResponseDataWrapperCreateRuleResponse,
   ResponseDataWrapperRequestRule,
   ResponseDataWrapperRuleListResponse,
   ResponseDataWrapperTemplateHandlersResponse,
   ResponseDataWrapperTupleUnit,
+  UrlPattern,
 } from '../utoipaAxum.schemas';
+
+export const getCreateRuleResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperCreateRuleResponse> = {},
+): ResponseDataWrapperCreateRuleResponse => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: { id: faker.number.int({ min: undefined, max: undefined }) },
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getListRulesResponseUrlPatternMock = (
+  overrideResponse: Partial<UrlPattern> = {},
+): UrlPattern => ({
+  ...{
+    captureType: faker.helpers.arrayElement(Object.values(CaptureType)),
+    pattern: faker.string.alpha(20),
+  },
+  ...overrideResponse,
+});
 
 export const getListRulesResponseMock = (
   overrideResponse: Partial<ResponseDataWrapperRuleListResponse> = {},
@@ -33,11 +56,157 @@ export const getListRulesResponseMock = (
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
     ).map(() => ({
+      capture: {
+        condition: faker.helpers.arrayElement([
+          {
+            ...{
+              headers: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([[], null]),
+                undefined,
+              ]),
+              host: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              method: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              urlPattern: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([
+                  null,
+                  { ...getListRulesResponseUrlPatternMock() },
+                ]),
+                undefined,
+              ]),
+            },
+            ...{ type: faker.helpers.arrayElement(['simple'] as const) },
+          },
+          {
+            ...{
+              conditions: [],
+              operator: faker.helpers.arrayElement(
+                Object.values(LogicalOperator),
+              ),
+            },
+            ...{ type: faker.helpers.arrayElement(['complex'] as const) },
+          },
+        ]),
+        id: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([
+            faker.number.int({ min: undefined, max: undefined }),
+            null,
+          ]),
+          undefined,
+        ]),
+      },
       description: faker.helpers.arrayElement([
         faker.helpers.arrayElement([faker.string.alpha(20), null]),
         undefined,
       ]),
       enabled: faker.datatype.boolean(),
+      handlers: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => ({
+        description: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.string.alpha(20), null]),
+          undefined,
+        ]),
+        enabled: faker.datatype.boolean(),
+        executionOrder: faker.number.int({ min: undefined, max: undefined }),
+        handlerType: faker.helpers.arrayElement([
+          {
+            ...{
+              reason: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              statusCode: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([
+                  faker.number.int({ min: undefined, max: undefined }),
+                  null,
+                ]),
+                undefined,
+              ]),
+            },
+            ...{ type: faker.helpers.arrayElement(['block'] as const) },
+          },
+          {
+            ...{
+              modifyBody: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              modifyHeaders: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([null]),
+                undefined,
+              ]),
+              modifyMethod: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              modifyUrl: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+            },
+            ...{ type: faker.helpers.arrayElement(['modifyRequest'] as const) },
+          },
+          {
+            ...{
+              contentType: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              filePath: faker.string.alpha(20),
+              statusCode: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([
+                  faker.number.int({ min: undefined, max: undefined }),
+                  null,
+                ]),
+                undefined,
+              ]),
+            },
+            ...{ type: faker.helpers.arrayElement(['localFile'] as const) },
+          },
+          {
+            ...{
+              modifyBody: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              modifyHeaders: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([null]),
+                undefined,
+              ]),
+              modifyMethod: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              modifyUrl: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+            },
+            ...{
+              type: faker.helpers.arrayElement(['modifyResponse'] as const),
+            },
+          },
+          {
+            ...{ targetPort: faker.string.alpha(20) },
+            ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
+          },
+        ]),
+        id: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([
+            faker.number.int({ min: undefined, max: undefined }),
+            null,
+          ]),
+          undefined,
+        ]),
+        name: faker.string.alpha(20),
+      })),
       id: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
           faker.number.int({ min: undefined, max: undefined }),
@@ -57,6 +226,16 @@ export const getListRulesResponseMock = (
   ...overrideResponse,
 });
 
+export const getGetRuleResponseUrlPatternMock = (
+  overrideResponse: Partial<UrlPattern> = {},
+): UrlPattern => ({
+  ...{
+    captureType: faker.helpers.arrayElement(Object.values(CaptureType)),
+    pattern: faker.string.alpha(20),
+  },
+  ...overrideResponse,
+});
+
 export const getGetRuleResponseMock = (
   overrideResponse: Partial<ResponseDataWrapperRequestRule> = {},
 ): ResponseDataWrapperRequestRule => ({
@@ -66,8 +245,10 @@ export const getGetRuleResponseMock = (
       condition: faker.helpers.arrayElement([
         {
           ...{
-            captureType: faker.helpers.arrayElement(Object.values(CaptureType)),
-            config: {},
+            headers: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([[], null]),
+              undefined,
+            ]),
             host: faker.helpers.arrayElement([
               faker.helpers.arrayElement([faker.string.alpha(20), null]),
               undefined,
@@ -76,7 +257,13 @@ export const getGetRuleResponseMock = (
               faker.helpers.arrayElement([faker.string.alpha(20), null]),
               undefined,
             ]),
-            pattern: faker.string.alpha(20),
+            urlPattern: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([
+                null,
+                { ...getGetRuleResponseUrlPatternMock() },
+              ]),
+              undefined,
+            ]),
           },
           ...{ type: faker.helpers.arrayElement(['simple'] as const) },
         },
@@ -107,14 +294,93 @@ export const getGetRuleResponseMock = (
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
     ).map(() => ({
-      config: {},
       description: faker.helpers.arrayElement([
         faker.helpers.arrayElement([faker.string.alpha(20), null]),
         undefined,
       ]),
       enabled: faker.datatype.boolean(),
       executionOrder: faker.number.int({ min: undefined, max: undefined }),
-      handlerType: faker.helpers.arrayElement(Object.values(HandlerType)),
+      handlerType: faker.helpers.arrayElement([
+        {
+          ...{
+            reason: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            statusCode: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([
+                faker.number.int({ min: undefined, max: undefined }),
+                null,
+              ]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['block'] as const) },
+        },
+        {
+          ...{
+            modifyBody: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyHeaders: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([null]),
+              undefined,
+            ]),
+            modifyMethod: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyUrl: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['modifyRequest'] as const) },
+        },
+        {
+          ...{
+            contentType: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            filePath: faker.string.alpha(20),
+            statusCode: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([
+                faker.number.int({ min: undefined, max: undefined }),
+                null,
+              ]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['localFile'] as const) },
+        },
+        {
+          ...{
+            modifyBody: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyHeaders: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([null]),
+              undefined,
+            ]),
+            modifyMethod: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyUrl: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['modifyResponse'] as const) },
+        },
+        {
+          ...{ targetPort: faker.string.alpha(20) },
+          ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
+        },
+      ]),
       id: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
           faker.number.int({ min: undefined, max: undefined }),
@@ -134,6 +400,18 @@ export const getGetRuleResponseMock = (
     name: faker.string.alpha(20),
     priority: faker.number.int({ min: undefined, max: undefined }),
   },
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getUpdateRuleResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperTupleUnit> = {},
+): ResponseDataWrapperTupleUnit => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: {},
   message: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha(20), null]),
     undefined,
@@ -174,14 +452,93 @@ export const getGetTemplateHandlersResponseMock = (
       { length: faker.number.int({ min: 1, max: 10 }) },
       (_, i) => i + 1,
     ).map(() => ({
-      config: {},
       description: faker.helpers.arrayElement([
         faker.helpers.arrayElement([faker.string.alpha(20), null]),
         undefined,
       ]),
       enabled: faker.datatype.boolean(),
       executionOrder: faker.number.int({ min: undefined, max: undefined }),
-      handlerType: faker.helpers.arrayElement(Object.values(HandlerType)),
+      handlerType: faker.helpers.arrayElement([
+        {
+          ...{
+            reason: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            statusCode: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([
+                faker.number.int({ min: undefined, max: undefined }),
+                null,
+              ]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['block'] as const) },
+        },
+        {
+          ...{
+            modifyBody: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyHeaders: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([null]),
+              undefined,
+            ]),
+            modifyMethod: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyUrl: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['modifyRequest'] as const) },
+        },
+        {
+          ...{
+            contentType: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            filePath: faker.string.alpha(20),
+            statusCode: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([
+                faker.number.int({ min: undefined, max: undefined }),
+                null,
+              ]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['localFile'] as const) },
+        },
+        {
+          ...{
+            modifyBody: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyHeaders: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([null]),
+              undefined,
+            ]),
+            modifyMethod: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            modifyUrl: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
+          ...{ type: faker.helpers.arrayElement(['modifyResponse'] as const) },
+        },
+        {
+          ...{ targetPort: faker.string.alpha(20) },
+          ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
+        },
+      ]),
       id: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
           faker.number.int({ min: undefined, max: undefined }),
@@ -198,6 +555,31 @@ export const getGetTemplateHandlersResponseMock = (
   ]),
   ...overrideResponse,
 });
+
+export const getCreateRuleMockHandler = (
+  overrideResponse?:
+    | ResponseDataWrapperCreateRuleResponse
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) =>
+        | Promise<ResponseDataWrapperCreateRuleResponse>
+        | ResponseDataWrapperCreateRuleResponse),
+) => {
+  return http.post('*/request_processing/rule', async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCreateRuleResponseMock(),
+      ),
+      { status: 201, headers: { 'Content-Type': 'application/json' } },
+    );
+  });
+};
 
 export const getListRulesMockHandler = (
   overrideResponse?:
@@ -243,6 +625,31 @@ export const getGetRuleMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getGetRuleResponseMock(),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  });
+};
+
+export const getUpdateRuleMockHandler = (
+  overrideResponse?:
+    | ResponseDataWrapperTupleUnit
+    | ((
+        info: Parameters<Parameters<typeof http.put>[1]>[0],
+      ) =>
+        | Promise<ResponseDataWrapperTupleUnit>
+        | ResponseDataWrapperTupleUnit),
+) => {
+  return http.put('*/request_processing/rules/:id', async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getUpdateRuleResponseMock(),
       ),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
@@ -324,8 +731,10 @@ export const getGetTemplateHandlersMockHandler = (
   });
 };
 export const getRequestProcessingMock = () => [
+  getCreateRuleMockHandler(),
   getListRulesMockHandler(),
   getGetRuleMockHandler(),
+  getUpdateRuleMockHandler(),
   getDeleteRuleMockHandler(),
   getToggleRuleMockHandler(),
   getGetTemplateHandlersMockHandler(),

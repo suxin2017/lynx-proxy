@@ -4,6 +4,7 @@ import {
   getGetCaptureStatusMockHandler,
   getToggleCaptureMockHandler,
 } from '../services/generated/net-request/net-request.msw';
+import { getRequestProcessingMock } from '../services/generated/request-processing/request-processing.msw';
 import { ResponseCode } from '../services/generated/utoipaAxum.schemas';
 
 export const handlers = [
@@ -59,4 +60,5 @@ export const handlers = [
   getGetCaptureStatusMockHandler(),
   getToggleCaptureMockHandler(),
   ...getDefaultMock(),
+  ...getRequestProcessingMock()
 ];

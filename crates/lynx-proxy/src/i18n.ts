@@ -19,7 +19,7 @@ i18n
       caches: ['localStorage'],
     },
     backend: {
-      loadPath: process.env.ASSET_PREFIX + '/locales/{{lng}}/{{ns}}.json', // 默认路径
+      loadPath: process.env.ASSET_PREFIX + '/locales/{{lng}}/{{ns}}.json', 
     },
   });
 

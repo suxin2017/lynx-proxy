@@ -3,10 +3,9 @@ use super::{
     handlers::HandlerRule,
     types::{CaptureCondition, CaptureRule, RequestRule, SimpleCaptureCondition},
 };
-use crate::entities::{capture::CaptureType, handler::HandlerType};
+use crate::entities::capture::CaptureType;
 use glob::Pattern;
 use regex::Regex;
-use serde_json::Value as JsonValue;
 use std::collections::HashSet;
 
 /// Validator for request processing rules
@@ -90,35 +89,54 @@ impl RuleValidator {
 
     /// Validate simple capture condition
     pub fn validate_simple_condition(condition: &SimpleCaptureCondition) -> Result<()> {
-        // Validate pattern based on capture type
-        match condition.capture_type {
-            CaptureType::Glob => {
-                Pattern::new(&condition.pattern).map_err(|e| {
-                    RequestProcessingError::InvalidCapturePattern {
-                        pattern: condition.pattern.clone(),
-                        reason: format!("Invalid glob pattern: {}", e),
-                    }
-                })?;
-            }
-            CaptureType::Regex => {
-                Regex::new(&condition.pattern).map_err(|e| {
-                    RequestProcessingError::InvalidCapturePattern {
-                        pattern: condition.pattern.clone(),
-                        reason: format!("Invalid regex pattern: {}", e),
-                    }
-                })?;
-            }
-            CaptureType::Exact | CaptureType::Contains => {
-                // No validation needed for exact or contains patterns
-            }
+        // Check if at least one field is not empty/None
+        let has_url_pattern = condition.url_pattern.is_some();
+        let has_method = condition.method.as_ref().is_some_and(|m| !m.trim().is_empty());
+        let has_host = condition.host.as_ref().is_some_and(|h| !h.trim().is_empty());
+        let has_headers = condition.headers.as_ref().is_some_and(|headers| 
+            !headers.is_empty() && headers.iter().any(|h| 
+                h.iter().any(|(k, v)| !k.trim().is_empty() || !v.trim().is_empty())
+            )
+        );
+
+        if !has_url_pattern && !has_method && !has_host && !has_headers {
+            return Err(RequestProcessingError::RuleValidation {
+                reason: "At least one condition field (url_pattern, method, host, or headers) must be specified".to_string(),
+            });
         }
 
-        // Validate pattern is not empty
-        if condition.pattern.trim().is_empty() {
-            return Err(RequestProcessingError::InvalidCapturePattern {
-                pattern: condition.pattern.clone(),
-                reason: "Pattern cannot be empty".to_string(),
-            });
+        // Validate url_pattern if provided
+        if let Some(ref url_pattern) = condition.url_pattern {
+            // Validate pattern based on capture type
+            match url_pattern.capture_type {
+                CaptureType::Glob => {
+                    Pattern::new(&url_pattern.pattern).map_err(|e| {
+                        RequestProcessingError::InvalidCapturePattern {
+                            pattern: url_pattern.pattern.clone(),
+                            reason: format!("Invalid glob pattern: {}", e),
+                        }
+                    })?;
+                }
+                CaptureType::Regex => {
+                    Regex::new(&url_pattern.pattern).map_err(|e| {
+                        RequestProcessingError::InvalidCapturePattern {
+                            pattern: url_pattern.pattern.clone(),
+                            reason: format!("Invalid regex pattern: {}", e),
+                        }
+                    })?;
+                }
+                CaptureType::Exact | CaptureType::Contains => {
+                    // No validation needed for exact or contains patterns
+                }
+            }
+
+            // Validate pattern is not empty
+            if url_pattern.pattern.trim().is_empty() {
+                return Err(RequestProcessingError::InvalidCapturePattern {
+                    pattern: url_pattern.pattern.clone(),
+                    reason: "Pattern cannot be empty".to_string(),
+                });
+            }
         }
 
         // Validate method if specified
@@ -210,105 +228,6 @@ impl RuleValidator {
             });
         }
 
-        // Validate configuration based on handler type
-        Self::validate_handler_config(handler.handler_type.clone(), &handler.config)?;
-
-        Ok(())
-    }
-
-    /// Validate handler configuration
-    pub fn validate_handler_config(handler_type: HandlerType, config: &JsonValue) -> Result<()> {
-        match handler_type {
-            HandlerType::Block => {
-                if let Some(status_code) = config.get("statusCode") {
-                    if let Some(code) = status_code.as_u64() {
-                        if !(100..=599).contains(&code) {
-                            return Err(RequestProcessingError::InvalidHandlerConfig {
-                                handler_type: "Block".to_string(),
-                                reason: format!("Invalid HTTP status code: {}", code),
-                            });
-                        }
-                    }
-                }
-            }
-            HandlerType::ModifyRequest => {
-                // Validate modify request configuration
-                if let Some(method) = config.get("modifyMethod") {
-                    if let Some(method_str) = method.as_str() {
-                        Self::validate_http_method(method_str).map_err(|_| {
-                            RequestProcessingError::InvalidHandlerConfig {
-                                handler_type: "ModifyRequest".to_string(),
-                                reason: format!("Invalid HTTP method: {}", method_str),
-                            }
-                        })?;
-                    }
-                }
-
-                if let Some(url) = config.get("modifyUrl") {
-                    if let Some(url_str) = url.as_str() {
-                        if url_str.trim().is_empty() {
-                            return Err(RequestProcessingError::InvalidHandlerConfig {
-                                handler_type: "ModifyRequest".to_string(),
-                                reason: "Modified URL cannot be empty".to_string(),
-                            });
-                        }
-                    }
-                }
-            }
-            HandlerType::ModifyResponse => {
-                // Validate modify response configuration
-                if let Some(content_type) = config.get("contentType") {
-                    if let Some(ct_str) = content_type.as_str() {
-                        if ct_str.trim().is_empty() {
-                            return Err(RequestProcessingError::InvalidHandlerConfig {
-                                handler_type: "ModifyResponse".to_string(),
-                                reason: "Content type cannot be empty".to_string(),
-                            });
-                        }
-                    }
-                }
-
-                if let Some(body) = config.get("body") {
-                    if !body.is_string() && !body.is_object() && !body.is_array() {
-                        return Err(RequestProcessingError::InvalidHandlerConfig {
-                            handler_type: "ModifyResponse".to_string(),
-                            reason: "Response body must be a string, object, or array".to_string(),
-                        });
-                    }
-                }
-            }
-            HandlerType::LocalFile => {
-                if let Some(file_path) = config.get("filePath") {
-                    if let Some(path_str) = file_path.as_str() {
-                        if path_str.trim().is_empty() {
-                            return Err(RequestProcessingError::InvalidHandlerConfig {
-                                handler_type: "LocalFile".to_string(),
-                                reason: "File path cannot be empty".to_string(),
-                            });
-                        }
-                    }
-                } else {
-                    return Err(RequestProcessingError::InvalidHandlerConfig {
-                        handler_type: "LocalFile".to_string(),
-                        reason: "File path is required".to_string(),
-                    });
-                }
-            }
-            HandlerType::ProxyForward => {
-                // Validate proxy configuration
-                if let Some(target_host) = config.get("targetHost") {
-                    if let Some(host_str) = target_host.as_str() {
-                        if host_str.trim().is_empty() {
-                            return Err(RequestProcessingError::InvalidHandlerConfig {
-                                handler_type: "redirect".to_string(),
-                                reason: "Target host cannot be empty".to_string(),
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
         Ok(())
     }
 }
@@ -316,7 +235,6 @@ impl RuleValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     #[test]
     fn test_validate_rule_name() {
@@ -341,37 +259,5 @@ mod tests {
         assert!(RuleValidator::validate_http_method("GET").is_ok());
         assert!(RuleValidator::validate_http_method("post").is_ok());
         assert!(RuleValidator::validate_http_method("INVALID").is_err());
-    }
-
-    #[test]
-    fn test_validate_handler_config() {
-        // Block handler
-        let block_config = json!({
-            "statusCode": 404,
-            "reason": "Not found"
-        });
-        assert!(RuleValidator::validate_handler_config(HandlerType::Block, &block_config).is_ok());
-
-        let invalid_block_config = json!({
-            "statusCode": 999
-        });
-        assert!(
-            RuleValidator::validate_handler_config(HandlerType::Block, &invalid_block_config)
-                .is_err()
-        );
-
-        // Local file handler
-        let file_config = json!({
-            "filePath": "/path/to/file.txt"
-        });
-        assert!(
-            RuleValidator::validate_handler_config(HandlerType::LocalFile, &file_config).is_ok()
-        );
-
-        let invalid_file_config = json!({});
-        assert!(
-            RuleValidator::validate_handler_config(HandlerType::LocalFile, &invalid_file_config)
-                .is_err()
-        );
     }
 }

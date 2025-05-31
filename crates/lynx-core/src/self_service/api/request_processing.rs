@@ -7,7 +7,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 use http::StatusCode;
-use lynx_db::dao::request_processing_dao::{HandlerRule, RequestProcessingDao, RequestRule};
+use lynx_db::dao::request_processing_dao::{HandlerRule, RequestProcessingDao, RequestRule, RuleValidator, CaptureRule};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -23,21 +23,10 @@ pub struct RuleListQuery {
     pub enabled_only: Option<bool>,
 }
 
-// 简化的规则信息，避免循环引用
-#[derive(Debug, Clone, ToSchema, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SimpleRuleInfo {
-    pub id: Option<i32>,
-    pub name: String,
-    pub description: Option<String>,
-    pub enabled: bool,
-    pub priority: i32,
-}
-
 #[derive(Debug, ToSchema, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuleListResponse {
-    pub rules: Vec<SimpleRuleInfo>,
+    pub rules: Vec<RequestRule>,
     pub total: usize,
     pub page: u32,
     pub page_size: u32,
@@ -52,6 +41,34 @@ pub struct ToggleRuleRequest {
 #[derive(Debug, ToSchema, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TemplateHandlersResponse {
+    pub handlers: Vec<HandlerRule>,
+}
+
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateRuleRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub enabled: bool,
+    pub priority: i32,
+    pub capture: CaptureRule,
+    pub handlers: Vec<HandlerRule>,
+}
+
+#[derive(Debug, ToSchema, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateRuleResponse {
+    pub id: i32,
+}
+
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateRuleRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub enabled: bool,
+    pub priority: i32,
+    pub capture: CaptureRule,
     pub handlers: Vec<HandlerRule>,
 }
 
@@ -76,7 +93,6 @@ async fn list_rules(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // 如果只要启用的规则，进行过滤
     if query.enabled_only.unwrap_or(false) {
         rules.retain(|rule| rule.enabled);
     }
@@ -89,20 +105,8 @@ async fn list_rules(
     let start = ((page - 1) * page_size) as usize;
     let end = (start + page_size as usize).min(total);
 
-    // 转换为简化的规则信息以避免序列化问题
-    let simple_rules: Vec<SimpleRuleInfo> = rules
-        .iter()
-        .map(|rule| SimpleRuleInfo {
-            id: rule.id,
-            name: rule.name.clone(),
-            description: rule.description.clone(),
-            enabled: rule.enabled,
-            priority: rule.priority,
-        })
-        .collect();
-
     let paginated_rules = if start < total {
-        simple_rules[start..end].to_vec()
+        rules[start..end].to_vec()
     } else {
         vec![]
     };
@@ -236,7 +240,7 @@ async fn get_template_handlers(
     let dao = RequestProcessingDao::new(db);
 
     let handlers = dao.get_template_handlers().await.map_err(|e| {
-        println!("{:?}", e);
+        println!("Failed to get template handlers: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
@@ -245,10 +249,123 @@ async fn get_template_handlers(
     Ok(Json(ok(response)))
 }
 
+#[utoipa::path(
+    post,
+    path = "/rule",
+    tags = ["Request Processing"],
+    request_body = CreateRuleRequest,
+    responses(
+        (status = 201, description = "Rule created successfully", body = ResponseDataWrapper<CreateRuleResponse>),
+        (status = 400, description = "Invalid rule data"),
+        (status = 500, description = "Failed to create rule")
+    )
+)]
+async fn create_rule(
+    State(RouteState { db, .. }): State<RouteState>,
+    Json(request): Json<CreateRuleRequest>,
+) -> Result<Json<ResponseDataWrapper<CreateRuleResponse>>, StatusCode> {
+    let dao = RequestProcessingDao::new(db);
+
+    // Validate the rule
+    let rule = RequestRule {
+        id: None,
+        name: request.name,
+        description: request.description,
+        enabled: request.enabled,
+        priority: request.priority,
+        capture: request.capture,
+        handlers: request.handlers,
+    };
+
+    // Validate rule using validator
+    RuleValidator::validate_rule(&rule)
+        .map_err(|e| {
+            println!("Rule validation failed: {}", e);
+            StatusCode::BAD_REQUEST
+        })?;
+
+    // Create the rule
+    let rule_id = dao.create_rule(rule)
+        .await
+        .map_err(|e| {
+            println!("Failed to create rule: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    let response = CreateRuleResponse { id: rule_id };
+    Ok(Json(ok(response)))
+}
+
+#[utoipa::path(
+    put,
+    path = "/rules/{id}",
+    tags = ["Request Processing"],
+    params(
+        ("id" = i32, Path, description = "Rule ID")
+    ),
+    request_body = UpdateRuleRequest,
+    responses(
+        (status = 200, description = "Rule updated successfully", body = EmptyOkResponse),
+        (status = 404, description = "Rule not found"),
+        (status = 400, description = "Invalid rule data"),
+        (status = 500, description = "Failed to update rule")
+    )
+)]
+async fn update_rule(
+    State(RouteState { db, .. }): State<RouteState>,
+    Path(id): Path<i32>,
+    Json(request): Json<UpdateRuleRequest>,
+) -> Result<Json<EmptyOkResponse>, StatusCode> {
+    let dao = RequestProcessingDao::new(db);
+
+    // 首先检查规则是否存在
+    let existing_rule = dao
+        .get_rule(id)
+        .await
+        .map_err(|e| {
+            println!("Failed to get rule: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    if existing_rule.is_none() {
+        return Err(StatusCode::NOT_FOUND);
+    }
+
+    // Validate the rule
+    let rule = RequestRule {
+        id: Some(id),
+        name: request.name,
+        description: request.description,
+        enabled: request.enabled,
+        priority: request.priority,
+        capture: request.capture,
+        handlers: request.handlers,
+    };
+
+    // Validate rule using validator
+    RuleValidator::validate_rule(&rule)
+        .map_err(|e| {
+            println!("Rule validation failed: {}", e);
+            StatusCode::BAD_REQUEST
+        })?;
+
+    // Update the rule
+    dao.update_rule(rule)
+        .await
+        .map_err(|e| {
+            println!("Failed to update rule: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(empty_ok()))
+}
+
 pub fn router(state: RouteState) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(list_rules))
+        .routes(routes!(create_rule))
         .routes(routes!(get_rule))
+        .routes(routes!(update_rule))
         .routes(routes!(delete_rule))
         .routes(routes!(toggle_rule))
         .routes(routes!(get_template_handlers))

@@ -9,6 +9,22 @@ export interface BaseInfo {
   accessAddrList: string[];
 }
 
+export type BlockHandlerConfigReason = string | null;
+
+/**
+ * @minimum 0
+ */
+export type BlockHandlerConfigStatusCode = number | null;
+
+/**
+ * Block handler configuration
+ */
+export interface BlockHandlerConfig {
+  reason?: BlockHandlerConfigReason;
+  /** @minimum 0 */
+  statusCode?: BlockHandlerConfigStatusCode;
+}
+
 export type CaptureConditionOneOfAllOfType =
   (typeof CaptureConditionOneOfAllOfType)[keyof typeof CaptureConditionOneOfAllOfType];
 
@@ -89,6 +105,21 @@ export interface ComplexCaptureRule {
   operator: LogicalOperator;
 }
 
+export type CreateRuleRequestDescription = string | null;
+
+export interface CreateRuleRequest {
+  capture: CaptureRule;
+  description?: CreateRuleRequestDescription;
+  enabled: boolean;
+  handlers: HandlerRule[];
+  name: string;
+  priority: number;
+}
+
+export interface CreateRuleResponse {
+  id: number;
+}
+
 export interface DomainFilter {
   domain: string;
   enabled: boolean;
@@ -121,28 +152,112 @@ export type HandlerRuleId = number | null;
  * Handler rule configuration
  */
 export interface HandlerRule {
-  config: Value;
   description?: HandlerRuleDescription;
   enabled: boolean;
   executionOrder: number;
-  handlerType: HandlerType;
+  handlerType: HandlerRuleType;
   id?: HandlerRuleId;
   name: string;
 }
 
-/**
- * Handler type enumeration
- */
-export type HandlerType = (typeof HandlerType)[keyof typeof HandlerType];
+export type HandlerRuleTypeOneOfAllOfType =
+  (typeof HandlerRuleTypeOneOfAllOfType)[keyof typeof HandlerRuleTypeOneOfAllOfType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const HandlerType = {
+export const HandlerRuleTypeOneOfAllOfType = {
   block: 'block',
+} as const;
+
+export type HandlerRuleTypeOneOfAllOf = {
+  type: HandlerRuleTypeOneOfAllOfType;
+};
+
+export type HandlerRuleTypeOneOf = BlockHandlerConfig &
+  HandlerRuleTypeOneOfAllOf;
+
+export type HandlerRuleTypeOneOfFourAllOfType =
+  (typeof HandlerRuleTypeOneOfFourAllOfType)[keyof typeof HandlerRuleTypeOneOfFourAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfFourAllOfType = {
   modifyRequest: 'modifyRequest',
+} as const;
+
+export type HandlerRuleTypeOneOfFourAllOf = {
+  type: HandlerRuleTypeOneOfFourAllOfType;
+};
+
+export type HandlerRuleTypeOneOfFour = ModifyRequestConfig &
+  HandlerRuleTypeOneOfFourAllOf;
+
+export type HandlerRuleTypeOneOfSevenAllOfType =
+  (typeof HandlerRuleTypeOneOfSevenAllOfType)[keyof typeof HandlerRuleTypeOneOfSevenAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfSevenAllOfType = {
   localFile: 'localFile',
+} as const;
+
+export type HandlerRuleTypeOneOfSevenAllOf = {
+  type: HandlerRuleTypeOneOfSevenAllOfType;
+};
+
+export type HandlerRuleTypeOneOfSeven = LocalFileConfig &
+  HandlerRuleTypeOneOfSevenAllOf;
+
+export type HandlerRuleTypeOneOfOnezeroAllOfType =
+  (typeof HandlerRuleTypeOneOfOnezeroAllOfType)[keyof typeof HandlerRuleTypeOneOfOnezeroAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfOnezeroAllOfType = {
   modifyResponse: 'modifyResponse',
+} as const;
+
+export type HandlerRuleTypeOneOfOnezeroAllOf = {
+  type: HandlerRuleTypeOneOfOnezeroAllOfType;
+};
+
+export type HandlerRuleTypeOneOfOnezero = ModifyResponseConfig &
+  HandlerRuleTypeOneOfOnezeroAllOf;
+
+export type HandlerRuleTypeOneOfOnethreeAllOfType =
+  (typeof HandlerRuleTypeOneOfOnethreeAllOfType)[keyof typeof HandlerRuleTypeOneOfOnethreeAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfOnethreeAllOfType = {
   proxyForward: 'proxyForward',
 } as const;
+
+export type HandlerRuleTypeOneOfOnethreeAllOf = {
+  type: HandlerRuleTypeOneOfOnethreeAllOfType;
+};
+
+export type HandlerRuleTypeOneOfOnethree = ProxyForwardConfig &
+  HandlerRuleTypeOneOfOnethreeAllOf;
+
+export type HandlerRuleType =
+  | HandlerRuleTypeOneOf
+  | HandlerRuleTypeOneOfFour
+  | HandlerRuleTypeOneOfSeven
+  | HandlerRuleTypeOneOfOnezero
+  | HandlerRuleTypeOneOfOnethree;
+
+export type LocalFileConfigContentType = string | null;
+
+/**
+ * @minimum 0
+ */
+export type LocalFileConfigStatusCode = number | null;
+
+/**
+ * Local file handler configuration
+ */
+export interface LocalFileConfig {
+  contentType?: LocalFileConfigContentType;
+  filePath: string;
+  /** @minimum 0 */
+  statusCode?: LocalFileConfigStatusCode;
+}
 
 /**
  * 逻辑操作符
@@ -312,6 +427,52 @@ export interface MessageEventWebSocket {
  */
 export type MessageHeaderSize = number;
 
+export type ModifyRequestConfigModifyBody = string | null;
+
+export type ModifyRequestConfigModifyHeadersAnyOf = { [key: string]: string };
+
+export type ModifyRequestConfigModifyHeaders =
+  ModifyRequestConfigModifyHeadersAnyOf | null;
+
+export type ModifyRequestConfigModifyMethod = string | null;
+
+export type ModifyRequestConfigModifyUrl = string | null;
+
+/**
+ * Modify request handler configuration
+ */
+export interface ModifyRequestConfig {
+  modifyBody?: ModifyRequestConfigModifyBody;
+  modifyHeaders?: ModifyRequestConfigModifyHeaders;
+  modifyMethod?: ModifyRequestConfigModifyMethod;
+  modifyUrl?: ModifyRequestConfigModifyUrl;
+}
+
+export type ModifyResponseConfigModifyBody = string | null;
+
+export type ModifyResponseConfigModifyHeadersAnyOf = { [key: string]: string };
+
+export type ModifyResponseConfigModifyHeaders =
+  ModifyResponseConfigModifyHeadersAnyOf | null;
+
+export type ModifyResponseConfigModifyMethod = string | null;
+
+export type ModifyResponseConfigModifyUrl = string | null;
+
+/**
+ * Modify request handler configuration
+ */
+export interface ModifyResponseConfig {
+  modifyBody?: ModifyResponseConfigModifyBody;
+  modifyHeaders?: ModifyResponseConfigModifyHeaders;
+  modifyMethod?: ModifyResponseConfigModifyMethod;
+  modifyUrl?: ModifyResponseConfigModifyUrl;
+}
+
+export interface ProxyForwardConfig {
+  targetPort: string;
+}
+
 export type RecordRequestsPatchRequests = MessageEventStoreValue[] | null;
 
 export interface RecordRequests {
@@ -391,6 +552,18 @@ export interface ResponseDataWrapperCaptureSwitch {
   message?: ResponseDataWrapperCaptureSwitchMessage;
 }
 
+export type ResponseDataWrapperCreateRuleResponseData = {
+  id: number;
+};
+
+export type ResponseDataWrapperCreateRuleResponseMessage = string | null;
+
+export interface ResponseDataWrapperCreateRuleResponse {
+  code: ResponseCode;
+  data: ResponseDataWrapperCreateRuleResponseData;
+  message?: ResponseDataWrapperCreateRuleResponseMessage;
+}
+
 export type ResponseDataWrapperRecordRequestsDataPatchRequests =
   | MessageEventStoreValue[]
   | null;
@@ -439,7 +612,7 @@ export type ResponseDataWrapperRuleListResponseData = {
   page: number;
   /** @minimum 0 */
   pageSize: number;
-  rules: SimpleRuleInfo[];
+  rules: RequestRule[];
   /** @minimum 0 */
   total: number;
 };
@@ -485,47 +658,31 @@ export interface RuleListResponse {
   page: number;
   /** @minimum 0 */
   pageSize: number;
-  rules: SimpleRuleInfo[];
+  rules: RequestRule[];
   /** @minimum 0 */
   total: number;
 }
 
-/**
- * 主机过滤
- */
+export type SimpleCaptureConditionHeadersAnyOfItem = { [key: string]: string };
+
+export type SimpleCaptureConditionHeaders =
+  | SimpleCaptureConditionHeadersAnyOfItem[]
+  | null;
+
 export type SimpleCaptureConditionHost = string | null;
 
-/**
- * HTTP方法过滤
- */
 export type SimpleCaptureConditionMethod = string | null;
+
+export type SimpleCaptureConditionUrlPattern = null | UrlPattern;
 
 /**
  * 简单捕获条件
  */
 export interface SimpleCaptureCondition {
-  /** 捕获类型（目前只支持Glob） */
-  captureType: CaptureType;
-  /** 额外配置 */
-  config: Value;
-  /** 主机过滤 */
+  headers?: SimpleCaptureConditionHeaders;
   host?: SimpleCaptureConditionHost;
-  /** HTTP方法过滤 */
   method?: SimpleCaptureConditionMethod;
-  /** 匹配模式（Glob格式） */
-  pattern: string;
-}
-
-export type SimpleRuleInfoDescription = string | null;
-
-export type SimpleRuleInfoId = number | null;
-
-export interface SimpleRuleInfo {
-  description?: SimpleRuleInfoDescription;
-  enabled: boolean;
-  id?: SimpleRuleInfoId;
-  name: string;
-  priority: number;
+  urlPattern?: SimpleCaptureConditionUrlPattern;
 }
 
 export interface TemplateHandlersResponse {
@@ -546,7 +703,21 @@ export const TunnelStatus = {
 
 export interface TupleUnit {}
 
-export interface Value {}
+export type UpdateRuleRequestDescription = string | null;
+
+export interface UpdateRuleRequest {
+  capture: CaptureRule;
+  description?: UpdateRuleRequestDescription;
+  enabled: boolean;
+  handlers: HandlerRule[];
+  name: string;
+  priority: number;
+}
+
+export interface UrlPattern {
+  captureType: CaptureType;
+  pattern: string;
+}
 
 export type WebSocketDirection =
   (typeof WebSocketDirection)[keyof typeof WebSocketDirection];

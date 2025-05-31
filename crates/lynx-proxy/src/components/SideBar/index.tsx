@@ -41,7 +41,6 @@ export const SideBar: React.FC = (_props) => {
     },
   ];
 
-  // 使用 @tanstack/react-router 获取当前路径
   const currentPath = pathname;
 
   useEffect(() => {

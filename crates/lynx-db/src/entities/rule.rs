@@ -29,10 +29,12 @@ pub struct Model {
 
     /// Creation timestamp
     #[serde(skip)]
+    #[sea_orm(column_type = "BigInteger")]
     pub created_at: i64,
 
     /// Update timestamp
     #[serde(skip)]
+    #[sea_orm(column_type = "BigInteger")]
     pub updated_at: i64,
 }
 

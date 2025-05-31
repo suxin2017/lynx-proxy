@@ -1,9 +1,11 @@
 use sea_orm::Schema;
 use sea_orm::Statement;
 use sea_orm_migration::prelude::*;
+use sea_orm::JsonValue;
 
 use crate::dao::request_processing_dao::handlers::handler_rule::HandlerRule;
 use crate::entities::handler;
+use crate::entities::handler::HandlerType;
 use crate::entities::prelude::{Capture, Handler, Rule};
 
 #[derive(DeriveMigrationName)]
@@ -53,11 +55,11 @@ impl MigrationTrait for Migration {
                 ])
                 .values_panic([
                     0.into(), // rule_id 设为 0，表示这是模板
-                    template.handler_type.into(),
+                    HandlerType::from(&template.handler_type).into(),
                     template.name.into(),
                     template.description.into(),
                     template.execution_order.into(),
-                    template.config.into(),
+                    JsonValue::from(&template.handler_type).into(),
                     template.enabled.into(),
                     now.into(),
                     now.into(),
