@@ -1,5 +1,5 @@
 use anyhow::Result;
-use setup::setup_self_service_test_server::{base_url, setup_self_service_test_server};
+use setup::{base_url, setup_self_service_test_server::setup_self_service_test_server};
 mod setup;
 
 #[tokio::test]

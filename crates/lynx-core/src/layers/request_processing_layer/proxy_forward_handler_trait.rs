@@ -1,186 +1,241 @@
-use lynx_db::dao::request_processing_dao::handlers::proxy_forward_handler::ProxyForwardConfig;
 use anyhow::Result;
-use axum::{extract::Request, response::Response, body::Body, http::StatusCode};
 use http::Uri;
+use lynx_db::dao::request_processing_dao::handlers::proxy_forward_handler::ProxyForwardConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
+use crate::common::Req;
 
 #[async_trait::async_trait]
 impl HandlerTrait for ProxyForwardConfig {
-    /// Handles an incoming HTTP request by forwarding it to a target port.
-    ///
-    /// # Arguments
-    /// * `request` - The incoming HTTP request to be forwarded
-    ///
-    /// # Returns
-    /// A modified Request with updated target or a Response with error
-    async fn handle_request(&self, mut request: Request<Body>) -> Result<HandleRequestType> {
-        // Parse the target port
-        let target_port = &self.target_port;
-        
-        // Validate target port
-        if target_port.is_empty() {
-            let response = Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .header("content-type", "text/plain")
-                .body(Body::from("Target port is required for proxy forward"))?;
-            return Ok(HandleRequestType::Response(response));
+    async fn handle_request(&self, mut request: Req) -> Result<HandleRequestType> {
+        // Parse the target URL from the configuration
+        let target_uri = self.target.parse::<Uri>()?;
+        let target_parts = target_uri.into_parts();
+
+        // Get the current request URI
+        let current_uri = request.uri().clone();
+        let current_parts = current_uri.into_parts();
+
+        // Build new URI with target's scheme and authority, but keep original path and query
+        let mut uri_builder = Uri::builder();
+
+        // Use target's scheme or fallback to original
+        if let Some(scheme) = target_parts.scheme.or(current_parts.scheme) {
+            uri_builder = uri_builder.scheme(scheme);
         }
 
-        // Get current URI
-        let current_uri = request.uri().clone();
-        
-        // Create new URI with target port
-        let new_uri = if target_port.contains("://") {
-            // If target_port is a full URL, use it directly
-            target_port.parse::<Uri>()
-                .map_err(|e| anyhow::anyhow!("Invalid target URL: {}", e))?
-        } else {
-            // If target_port is just a port number, construct the URI
-            let port = target_port.parse::<u16>()
-                .map_err(|_| anyhow::anyhow!("Invalid port number: {}", target_port))?;
-            
-            let scheme = current_uri.scheme_str().unwrap_or("http");
-            let host = current_uri.host().unwrap_or("localhost");
-            let path = current_uri.path();
-            let query = current_uri.query().map(|q| format!("?{}", q)).unwrap_or_default();
-            
-            let new_uri_str = format!("{}://{}:{}{}{}", scheme, host, port, path, query);
-            new_uri_str.parse::<Uri>()
-                .map_err(|e| anyhow::anyhow!("Failed to construct new URI: {}", e))?
-        };
+        // Use target's authority or fallback to original
+        if let Some(authority) = target_parts.authority.or(current_parts.authority) {
+            uri_builder = uri_builder.authority(authority);
+        }
 
-        // Update the request URI
+        // Use original path and query, or target's if original doesn't have them
+        if let Some(path_and_query) = current_parts.path_and_query.or(target_parts.path_and_query) {
+            uri_builder = uri_builder.path_and_query(path_and_query);
+        }
+
+        // Build the new URI and update the request
+        let new_uri = uri_builder.build()?;
         *request.uri_mut() = new_uri;
 
-        // Add proxy headers
-        let headers = request.headers_mut();
-        headers.insert(
-            "x-forwarded-by",
-            "lynx-proxy".parse()
-                .map_err(|e| anyhow::anyhow!("Failed to create header value: {}", e))?
-        );
-        
-        // Preserve original host if not already present
-        if !headers.contains_key("x-forwarded-host") {
-            if let Some(host) = current_uri.host() {
-                headers.insert(
-                    "x-forwarded-host",
-                    host.parse()
-                        .map_err(|e| anyhow::anyhow!("Failed to create host header: {}", e))?
-                );
-            }
-        }
+        println!("Modified URI: {}", request.uri());
 
-        // Preserve original protocol
-        if let Some(scheme) = current_uri.scheme_str() {
-            headers.insert(
-                "x-forwarded-proto",
-                scheme.parse()
-                    .map_err(|e| anyhow::anyhow!("Failed to create proto header: {}", e))?
-            );
-        }
-        
         Ok(HandleRequestType::Request(request))
-    }
-
-    async fn handle_response(&self, response: Response<Body>) -> Result<Option<Response<Body>>> {
-        // ProxyForward handler doesn't modify responses by default
-        // The actual proxy forwarding will be handled by the proxy layer
-        Ok(Some(response))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::empty;
+
     use super::*;
-    use axum::body::Body;
-    use http::Method;
+    use axum::http::Method;
+    use http::Request;
 
     #[tokio::test]
-    async fn test_proxy_forward_handler_port_only() {
-        let handler = ProxyForwardConfig {
-            target_port: "8080".to_string(),
+    async fn test_proxy_forward_basic() {
+        let config = ProxyForwardConfig {
+            target: "http://example.com:8080".to_string(),
         };
 
         let request = Request::builder()
             .method(Method::GET)
-            .uri("http://example.com/test?param=value")
-            .body(Body::empty())
+            .uri("http://localhost/test?param=value")
+            .body(empty())
             .unwrap();
 
-        let result = handler.handle_request(request).await.unwrap();
+        let result = config.handle_request(request).await.unwrap();
 
         match result {
-            HandleRequestType::Request(req) => {
-                // The request should be modified to point to the new port
-                // Note: In a real implementation, you'd check the actual URL
-                // For now, we just verify it's a Request variant
-                assert_eq!(req.method(), Method::GET);
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("http"));
+                assert_eq!(uri.authority().unwrap().as_str(), "example.com:8080");
+                assert_eq!(uri.path(), "/test");
+                assert_eq!(uri.query(), Some("param=value"));
             }
-            _ => panic!("Expected Request variant"),
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
         }
     }
 
     #[tokio::test]
-    async fn test_proxy_forward_handler_full_url() {
-        let handler = ProxyForwardConfig {
-            target_port: "http://target-server:9090".to_string(),
+    async fn test_proxy_forward_port_only() {
+        // Test forwarding to a different port on the same host
+        let config = ProxyForwardConfig {
+            target: "127.0.0.1:9090".to_string(),
         };
 
         let request = Request::builder()
             .method(Method::POST)
-            .uri("https://example.com/api/data")
-            .body(Body::empty())
+            .uri("http://localhost:3000/api/users")
+            .body(empty())
             .unwrap();
 
-        let result = handler.handle_request(request).await.unwrap();
+        let result = config.handle_request(request).await.unwrap();
 
         match result {
-            HandleRequestType::Request(req) => {
-                assert_eq!(req.method(), Method::POST);
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                println!("Modified URI: {}", uri);
+                assert_eq!(uri.scheme_str(), Some("http"));
+                assert_eq!(uri.authority().unwrap().as_str(), "127.0.0.1:9090");
+                assert_eq!(uri.path(), "/api/users");
+                assert_eq!(uri.query(), None);
             }
-            _ => panic!("Expected Request variant"),
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
         }
     }
 
     #[tokio::test]
-    async fn test_proxy_forward_handler_empty_target() {
-        let handler = ProxyForwardConfig {
-            target_port: "".to_string(),
+    async fn test_proxy_forward_https_port() {
+        // Test forwarding to HTTPS with custom port
+        let config = ProxyForwardConfig {
+            target: "https://secure.example.com:8443".to_string(),
         };
 
         let request = Request::builder()
-            .method(Method::GET)
-            .uri("https://example.com/test")
-            .body(Body::empty())
+            .method(Method::PUT)
+            .uri("http://localhost/secure/endpoint?token=abc123")
+            .body(empty())
             .unwrap();
 
-        let result = handler.handle_request(request).await.unwrap();
+        let result = config.handle_request(request).await.unwrap();
 
         match result {
-            HandleRequestType::Response(response) => {
-                assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("https"));
+                assert_eq!(uri.authority().unwrap().as_str(), "secure.example.com:8443");
+                assert_eq!(uri.path(), "/secure/endpoint");
+                assert_eq!(uri.query(), Some("token=abc123"));
             }
-            _ => panic!("Expected Response variant for error case"),
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
         }
     }
 
     #[tokio::test]
-    async fn test_proxy_forward_handler_invalid_port() {
-        let handler = ProxyForwardConfig {
-            target_port: "invalid_port".to_string(),
+    async fn test_proxy_forward_standard_ports() {
+        // Test forwarding to standard HTTP port (80)
+        let config = ProxyForwardConfig {
+            target: "http://api.service.com".to_string(),
         };
 
         let request = Request::builder()
             .method(Method::GET)
-            .uri("https://example.com/test")
-            .body(Body::empty())
+            .uri("http://localhost:8000/health")
+            .body(empty())
             .unwrap();
 
-        let result = handler.handle_request(request).await;
+        let result = config.handle_request(request).await.unwrap();
 
-        // Should return an error for invalid port
-        assert!(result.is_err());
+        match result {
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("http"));
+                assert_eq!(uri.authority().unwrap().as_str(), "api.service.com");
+                assert_eq!(uri.path(), "/health");
+            }
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_proxy_forward_different_host_and_port() {
+        // Test forwarding to completely different host and port
+        let config = ProxyForwardConfig {
+            target: "http://backend.internal:5000".to_string(),
+        };
+
+        let request = Request::builder()
+            .method(Method::DELETE)
+            .uri("https://frontend.app:3000/delete/item/123?confirm=true")
+            .body(empty())
+            .unwrap();
+
+        let result = config.handle_request(request).await.unwrap();
+
+        match result {
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("http"));
+                assert_eq!(uri.authority().unwrap().as_str(), "backend.internal:5000");
+                assert_eq!(uri.path(), "/delete/item/123");
+                assert_eq!(uri.query(), Some("confirm=true"));
+            }
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_proxy_forward_preserve_complex_path() {
+        // Test forwarding with complex path and multiple query parameters
+        let config = ProxyForwardConfig {
+            target: "http://microservice:8080".to_string(),
+        };
+
+        let request = Request::builder()
+            .method(Method::PATCH)
+            .uri("http://gateway/v2/users/profile/update?user_id=456&version=2&format=json")
+            .body(empty())
+            .unwrap();
+
+        let result = config.handle_request(request).await.unwrap();
+
+        match result {
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("http"));
+                assert_eq!(uri.authority().unwrap().as_str(), "microservice:8080");
+                assert_eq!(uri.path(), "/v2/users/profile/update");
+                assert_eq!(uri.query(), Some("user_id=456&version=2&format=json"));
+            }
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_proxy_forward_high_port_number() {
+        // Test forwarding to high port number
+        let config = ProxyForwardConfig {
+            target: "http://development.local:65432".to_string(),
+        };
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("http://localhost:8080/debug/metrics")
+            .body(empty())
+            .unwrap();
+
+        let result = config.handle_request(request).await.unwrap();
+
+        match result {
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("http"));
+                assert_eq!(uri.authority().unwrap().as_str(), "development.local:65432");
+                assert_eq!(uri.path(), "/debug/metrics");
+            }
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
+        }
     }
 }

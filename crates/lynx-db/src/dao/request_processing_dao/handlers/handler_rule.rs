@@ -61,6 +61,94 @@ pub struct HandlerRule {
     pub enabled: bool,
 }
 
+impl HandlerRule {
+    pub fn block_handler(status_code: Option<u16>, reason: Option<String>) -> Self {
+        Self {
+            id: None,
+            handler_type: HandlerRuleType::Block(BlockHandlerConfig {
+                status_code,
+                reason,
+            }),
+            name: "Block Access".to_string(),
+            description: Some("Block all requests with 403 Forbidden".to_string()),
+            execution_order: 100,
+            enabled: true,
+        }
+    }
+
+    pub fn local_file_handler(
+        file_path: String,
+        content_type: Option<String>,
+        status_code: Option<u16>,
+    ) -> Self {
+        Self {
+            id: None,
+            handler_type: HandlerRuleType::LocalFile(LocalFileConfig {
+                file_path,
+                content_type,
+                status_code,
+            }),
+            name: "Local File Handler".to_string(),
+            description: Some("Serve local files from filesystem".to_string()),
+            execution_order: 50,
+            enabled: true,
+        }
+    }
+
+    pub fn modify_request_handler(
+        modify_headers: Option<std::collections::HashMap<String, String>>,
+        modify_body: Option<String>,
+        modify_method: Option<String>,
+        modify_url: Option<String>,
+    ) -> Self {
+        Self {
+            id: None,
+            handler_type: HandlerRuleType::ModifyRequest(ModifyRequestConfig {
+                modify_headers,
+                modify_body,
+                modify_method,
+                modify_url,
+            }),
+            name: "Modify Request Handler".to_string(),
+            description: Some("Modify request headers, body, method, or URL".to_string()),
+            execution_order: 20,
+            enabled: true,
+        }
+    }
+
+    pub fn modify_response_handler(
+        modify_headers: Option<std::collections::HashMap<String, String>>,
+        modify_body: Option<String>,
+        modify_method: Option<String>,
+        modify_status_code: Option<u16>,
+    ) -> Self {
+        Self {
+            id: None,
+            handler_type: HandlerRuleType::ModifyResponse(ModifyResponseConfig {
+                modify_headers,
+                modify_body,
+                modify_method,
+                modify_status_code,
+            }),
+            name: "Modify Response Handler".to_string(),
+            description: Some("Modify response headers, body, method, or status code".to_string()),
+            execution_order: 80,
+            enabled: true,
+        }
+    }
+
+    pub fn proxy_forward_handler(target: String) -> Self {
+        Self {
+            id: None,
+            handler_type: HandlerRuleType::ProxyForward(ProxyForwardConfig { target }),
+            name: "Proxy Forward Handler".to_string(),
+            description: Some("Forward requests to specified proxy target".to_string()),
+            execution_order: 10,
+            enabled: true,
+        }
+    }
+}
+
 impl Default for HandlerRule {
     fn default() -> Self {
         Self {

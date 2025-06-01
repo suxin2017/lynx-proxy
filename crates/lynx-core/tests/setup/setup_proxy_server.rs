@@ -11,11 +11,6 @@ use sea_orm::ConnectOptions;
 pub async fn setup_proxy_server(
     custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
 ) -> Result<ProxyServer> {
-    // Initialize CryptoProvider if not already installed
-    tokio_rustls::rustls::crypto::ring::default_provider()
-        .install_default()
-        .unwrap_or_default();
-    
     let fixed_temp_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/temp");
 
     if !fixed_temp_dir_path.exists() {

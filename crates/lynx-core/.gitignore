@@ -1,2 +1,4 @@
 examples/temp
-tests/temp
+tests/temp/key.pem
+tests/temp/root.pem
+tests/temp/lynx.db

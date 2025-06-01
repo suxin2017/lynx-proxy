@@ -8,5 +8,5 @@ pub struct ModifyResponseConfig {
     pub modify_headers: Option<std::collections::HashMap<String, String>>,
     pub modify_body: Option<String>,
     pub modify_method: Option<String>,
-    pub modify_url: Option<String>,
+    pub modify_status_code: Option<u16>,
 }

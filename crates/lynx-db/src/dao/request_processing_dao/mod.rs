@@ -5,7 +5,7 @@ pub mod matcher;
 pub mod types;
 pub mod validator;
 
-pub use common::{BodyUtils, HeaderUtils, HttpMessage};
+pub use common::{BodyUtils, HeaderUtils};
 pub use error::RequestProcessingError;
 pub use handlers::HandlerRule;
 use handlers::handler_rule::HandlerRuleType;
@@ -227,7 +227,10 @@ impl RequestProcessingDao {
     }
 
     /// Find matching rules for a request
-    pub async fn find_matching_rules<T: HttpBody>(&self, request: &Request<T>) -> Result<Vec<RequestRule>> {
+    pub async fn find_matching_rules<T: HttpBody>(
+        &self,
+        request: &Request<T>,
+    ) -> Result<Vec<RequestRule>> {
         let all_rules = self.list_rules().await?;
         let matcher = RuleMatcher::new();
         matcher.find_matching_rules(&all_rules, request)

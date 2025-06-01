@@ -1,11 +1,8 @@
 use anyhow::Result;
-use axum::{body::HttpBody, extract::Request, http::StatusCode, response::Response};
+use axum::{http::StatusCode, response::Response};
 use lynx_db::dao::request_processing_dao::handlers::BlockHandlerConfig;
 
-use crate::{
-    common::{Req, Res},
-    utils::full,
-};
+use crate::{common::Req, utils::full};
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
 
@@ -32,12 +29,13 @@ impl HandlerTrait for BlockHandlerConfig {
 mod tests {
     use super::*;
     use axum::http::Method;
+    use http::Request;
     use http_body_util::BodyExt;
 
     #[tokio::test]
     async fn test_block_handler_default_config() -> Result<()> {
         let handler = BlockHandlerConfig::default();
-        
+
         // Create a mock request
         let request = Request::builder()
             .method(Method::GET)
@@ -59,7 +57,7 @@ mod tests {
                     response.headers().get("x-blocked-by").unwrap(),
                     "lynx-proxy"
                 );
-                
+
                 // Verify response body
                 let body_bytes = response.into_body().collect().await?.to_bytes();
                 let body_str = String::from_utf8(body_bytes.to_vec())?;
@@ -77,7 +75,7 @@ mod tests {
             status_code: Some(429),
             reason: Some("Rate limit exceeded".to_string()),
         };
-        
+
         // Create a mock request
         let request = Request::builder()
             .method(Method::POST)
@@ -99,7 +97,7 @@ mod tests {
                     response.headers().get("x-blocked-by").unwrap(),
                     "lynx-proxy"
                 );
-                
+
                 // Verify response body
                 let body_bytes = response.into_body().collect().await?.to_bytes();
                 let body_str = String::from_utf8(body_bytes.to_vec())?;
@@ -117,7 +115,7 @@ mod tests {
             status_code: None,
             reason: None,
         };
-        
+
         // Create a mock request
         let request = Request::builder()
             .method(Method::DELETE)
@@ -131,7 +129,7 @@ mod tests {
         match result {
             HandleRequestType::Response(response) => {
                 assert_eq!(response.status(), StatusCode::from_u16(403)?);
-                
+
                 // Verify response body uses default reason
                 let body_bytes = response.into_body().collect().await?.to_bytes();
                 let body_str = String::from_utf8(body_bytes.to_vec())?;

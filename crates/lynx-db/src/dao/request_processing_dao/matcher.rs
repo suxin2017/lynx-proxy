@@ -1,7 +1,9 @@
 use super::{
     error::RequestProcessingError,
-    common::HeaderUtils,
-    types::{CaptureCondition, CaptureRule, LogicalOperator, RequestRule, SimpleCaptureCondition},
+    types::{
+        CaptureCondition, CaptureRule, LogicalOperator, RequestRule,
+        SimpleCaptureCondition,
+    }, HeaderUtils,
 };
 use crate::entities::capture::CaptureType;
 use anyhow::Result;
@@ -303,7 +305,9 @@ impl RuleMatcher {
             for header_map in condition_headers {
                 for (key, expected_value) in header_map {
                     if let Some(actual_value) = headers.get(key) {
-                        if !expected_value.is_empty() && !actual_value.eq_ignore_ascii_case(expected_value) {
+                        if !expected_value.is_empty()
+                            && !actual_value.eq_ignore_ascii_case(expected_value)
+                        {
                             return Ok(false);
                         }
                     } else if !expected_value.is_empty() {
@@ -322,5 +326,154 @@ impl RuleMatcher {
 impl Default for RuleMatcher {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::dao::request_processing_dao::types::{ComplexCaptureRule, UrlPattern};
+
+    use super::*;
+    use axum::http::Method;
+    use bytes::Bytes;
+    use http_body_util::Empty;
+
+    fn create_test_request(method: &str, uri: &str) -> Request<Empty<Bytes>> {
+        Request::builder()
+            .method(Method::from_bytes(method.as_bytes()).unwrap())
+            .uri(uri)
+            .body(Empty::new())
+            .unwrap()
+    }
+
+    fn create_simple_rule(pattern: &str, enabled: bool) -> RequestRule {
+        use std::sync::atomic::{AtomicI32, Ordering};
+        static COUNTER: AtomicI32 = AtomicI32::new(1);
+        let id = COUNTER.fetch_add(1, Ordering::SeqCst);
+        
+        RequestRule {
+            id: Some(id),
+            name: "Test Rule".to_string(),
+            description: Some("Test rule".to_string()),
+            enabled,
+            priority: 100,
+            capture: CaptureRule {
+                id: Some(id),
+                condition: CaptureCondition::Simple(SimpleCaptureCondition {
+                    url_pattern: Some(UrlPattern {
+                        capture_type: CaptureType::Glob,
+                        pattern: pattern.to_string(),
+                    }),
+                    method: None,
+                    host: None,
+                    headers: None,
+                }),
+            },
+            handlers: vec![],
+        }
+    }
+
+    #[test]
+    fn test_pattern_matching() {
+        // Glob pattern
+        let pattern = Pattern::new("/api/*").unwrap();
+        let compiled = CompiledPattern::Glob(pattern);
+        assert!(compiled.matches("/api/users"));
+        assert!(!compiled.matches("/web/users"));
+
+        // Regex pattern
+        let regex = Regex::new(r"/api/\d+").unwrap();
+        let compiled = CompiledPattern::Regex(regex);
+        assert!(compiled.matches("/api/123"));
+        assert!(!compiled.matches("/api/abc"));
+
+        // Exact pattern
+        let compiled = CompiledPattern::Exact("/api/users".to_string());
+        assert!(compiled.matches("/api/users"));
+        assert!(!compiled.matches("/api/users/123"));
+    }
+
+    #[test]
+    fn test_rule_matching() {
+        let matcher = RuleMatcher::new();
+        let request = create_test_request("GET", "/api/users");
+
+        // Matching rule
+        let rule = create_simple_rule("/api/*", true);
+        let result = matcher.find_matching_rules(&[rule], &request).unwrap();
+        assert_eq!(result.len(), 1);
+
+        // Non-matching rule
+        let rule = create_simple_rule("/web/*", true);
+        let result = matcher.find_matching_rules(&[rule], &request).unwrap();
+        assert_eq!(result.len(), 0);
+
+        // Disabled rule
+        let rule = create_simple_rule("/api/*", false);
+        let result = matcher.find_matching_rules(&[rule], &request).unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    #[test]
+    fn test_complex_conditions() {
+        let matcher = RuleMatcher::new();
+        let request = create_test_request("GET", "/api/users");
+
+        let rule = RequestRule {
+            id: Some(1),
+            name: "Complex Rule".to_string(),
+            description: Some("Test rule".to_string()),
+            enabled: true,
+            priority: 100,
+            capture: CaptureRule {
+                id: Some(1),
+                condition: CaptureCondition::Complex(ComplexCaptureRule {
+                    operator: LogicalOperator::And,
+                    conditions: vec![
+                        CaptureCondition::Simple(SimpleCaptureCondition {
+                            url_pattern: Some(UrlPattern {
+                                capture_type: CaptureType::Glob,
+                                pattern: "/api/*".to_string(),
+                            }),
+                            method: None,
+                            host: None,
+                            headers: None,
+                        }),
+                        CaptureCondition::Simple(SimpleCaptureCondition {
+                            url_pattern: None,
+                            method: Some("GET".to_string()),
+                            host: None,
+                            headers: None,
+                        }),
+                    ],
+                }),
+            },
+            handlers: vec![],
+        };
+
+        let result = matcher.find_matching_rules(&[rule], &request).unwrap();
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_cache() {
+        let matcher = RuleMatcher::new();
+        let request = create_test_request("GET", "/api/users");
+        let rule = create_simple_rule("/api/*", true);
+        let rule_id = rule.id.unwrap();
+
+        // First call caches the rule
+        matcher
+            .find_matching_rules(&[rule.clone()], &request)
+            .unwrap();
+
+        let cache = matcher.cache.read().unwrap();
+        assert!(cache.contains_key(&rule_id));
+        drop(cache);
+
+        // Clear cache
+        matcher.clear_cache();
+        let cache = matcher.cache.read().unwrap();
+        assert!(cache.is_empty());
     }
 }

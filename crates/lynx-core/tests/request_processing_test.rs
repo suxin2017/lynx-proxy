@@ -1,14 +1,10 @@
 use anyhow::Result;
 
-use lynx_db::dao::request_processing_dao::{
-    CaptureRule, RequestProcessingDao, RequestRule,
-    types::{CaptureCondition, SimpleCaptureCondition},
-};
-use lynx_db::entities::capture::CaptureType;
+use lynx_db::dao::request_processing_dao::RequestProcessingDao;
 use reqwest::{Method, StatusCode};
 use serde_json::{Value, json};
 
-use setup::setup_self_service_test_server::{base_url, setup_self_service_test_server};
+use setup::{base_url, mock_rule::create_test_rule, setup_self_service_test_server::setup_self_service_test_server};
 mod setup;
 // Core functionality tests - reduced to essential features
 
@@ -350,35 +346,35 @@ async fn test_create_rule_api() -> Result<()> {
 
     // Create a test rule via API
     let create_request = json!({
-         "name": "Test API Rule",
-         "description": "Test rule created via API",
-         "enabled": true,
-         "priority": 10,
-         "capture": {
-             "condition": {
-                 "type": "simple",
-                 "urlPattern": {
-                     "captureType": "glob",
-                     "pattern": "/test/*"
-                 },
-                 "method": "GET"
-             }
-         },
-         "handlers": [
-             {
-                 "handlerType": {
-                     "type": "block",
-                     "statusCode": 403,
-                     "reason": "Access denied"
-                 },
-                 "name": "Block Handler",
-                 "description": "Blocks requests matching this rule",
-                 "executionOrder": 1,
-                 "enabled": true,
+        "name": "Test API Rule",
+        "description": "Test rule created via API",
+        "enabled": true,
+        "priority": 10,
+        "capture": {
+            "condition": {
+                "type": "simple",
+                "urlPattern": {
+                    "captureType": "glob",
+                    "pattern": "/test/*"
+                },
+                "method": "GET"
+            }
+        },
+        "handlers": [
+            {
+                "handlerType": {
+                    "type": "block",
+                    "statusCode": 403,
+                    "reason": "Access denied"
+                },
+                "name": "Block Handler",
+                "description": "Blocks requests matching this rule",
+                "executionOrder": 1,
+                "enabled": true,
 
-             }
-         ]
-     });
+            }
+        ]
+    });
 
     let create_response = client
         .get_request_client()
@@ -522,7 +518,10 @@ async fn test_update_rule_not_found() -> Result<()> {
 
     let update_response = client
         .get_request_client()
-        .put(format!("{}/request_processing/rules/{}", base_url, non_existent_id))
+        .put(format!(
+            "{}/request_processing/rules/{}",
+            base_url, non_existent_id
+        ))
         .json(&update_request)
         .send()
         .await?;
@@ -532,36 +531,5 @@ async fn test_update_rule_not_found() -> Result<()> {
     Ok(())
 }
 
-
 // Helper functions
 
-async fn create_test_rule(dao: &RequestProcessingDao, name: &str, enabled: bool) -> Result<i32> {
-    let rule = RequestRule {
-        id: None,
-        name: name.to_string(),
-        description: Some("Test rule description".to_string()),
-        enabled,
-        priority: 1,
-        capture: create_basic_capture_rule(),
-        handlers: vec![],
-    };
-
-    dao.create_rule(rule).await
-}
-
-fn create_basic_capture_rule() -> CaptureRule {
-    use lynx_db::dao::request_processing_dao::types::UrlPattern;
-
-    CaptureRule {
-        id: None,
-        condition: CaptureCondition::Simple(SimpleCaptureCondition {
-            url_pattern: Some(UrlPattern {
-                capture_type: CaptureType::Glob,
-                pattern: "/api/*".to_string(),
-            }),
-            method: Some("GET".to_string()),
-            host: None,
-            headers: None,
-        }),
-    }
-}

@@ -78,14 +78,14 @@ impl MockClient {
     pub fn get_request_client(&self) -> Arc<Client> {
         self.0.direct_client.clone()
     }
+    pub fn get_proxy_client(&self) -> Arc<Client> {
+        self.0.proxy_client.clone()
+    }
     pub fn new(
         custom_cert: Option<Vec<Arc<rcgen::Certificate>>>,
         proxy_url: Option<String>,
     ) -> Result<Self> {
         let direct_client = Self::build_client(&custom_cert, None)?;
-        if let Some(proxy_url) = &proxy_url {
-            trace!("proxy addr: {proxy_url}");
-        }
         let proxy_client = Self::build_client(&custom_cert, proxy_url.clone())?;
         Ok(MockClient(Arc::new(MockClientInner {
             direct_client: Arc::new(direct_client),

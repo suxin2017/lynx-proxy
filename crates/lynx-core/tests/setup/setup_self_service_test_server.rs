@@ -1,6 +1,6 @@
 use anyhow::{Ok, Result};
 
-use lynx_core::{proxy_server::ProxyServer, self_service::SELF_SERVICE_PATH_PREFIX};
+use lynx_core::proxy_server::ProxyServer;
 use lynx_mock::client::MockClient;
 
 use super::setup_proxy_server::setup_proxy_server;
@@ -14,14 +14,3 @@ pub async fn setup_self_service_test_server() -> Result<(ProxyServer, MockClient
     Ok((proxy_server, client))
 }
 
-#[allow(dead_code)]
-pub fn base_url(proxy_server: &ProxyServer) -> String {
-    format!(
-        "http://{}{}",
-        proxy_server
-            .access_addr_list
-            .first()
-            .expect("show get access addr"),
-        SELF_SERVICE_PATH_PREFIX
-    )
-}

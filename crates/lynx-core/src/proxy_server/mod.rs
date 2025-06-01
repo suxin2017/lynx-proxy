@@ -67,6 +67,10 @@ pub struct ProxyServer {
 
 impl ProxyServerBuilder {
     pub async fn build(&self) -> Result<ProxyServer> {
+        tokio_rustls::rustls::crypto::ring::default_provider()
+            .install_default()
+            .unwrap_or_default();
+
         let port = self.port.flatten().unwrap_or(0);
         let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
         let access_addr_list: Vec<SocketAddr> = network_interfaces

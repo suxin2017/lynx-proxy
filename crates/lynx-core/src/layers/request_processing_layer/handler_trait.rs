@@ -15,8 +15,6 @@ pub enum HandleRequestType {
 pub trait HandlerTrait {
     async fn handle_request(&self, request: Req) -> Result<HandleRequestType>;
 
-    // async fn handle_response(&self, response: Res) -> Result<Res>;
-
     async fn handle_response(&self, response: Res) -> Result<Res> {
         Ok(response)
     }

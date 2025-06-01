@@ -1,100 +1,8 @@
 use anyhow::Result;
 use axum::body::Bytes;
 use http::HeaderMap;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::HashMap;
-
-/// Common traits and utilities for request and response processing
-pub trait HttpMessage {
-    /// Get the headers as a HashMap
-    fn headers(&self) -> &HashMap<String, String>;
-
-    /// Get the body data
-    fn body_data(&self) -> &[u8];
-
-    /// Get body as string
-    fn body_as_string(&self) -> Result<String> {
-        Ok(String::from_utf8(self.body_data().to_vec())?)
-    }
-
-    /// Get body as JSON
-    fn body_as_json<T: for<'de> Deserialize<'de>>(&self) -> Result<T> {
-        Ok(serde_json::from_slice(self.body_data())?)
-    }
-
-    /// Get the size of the body in bytes
-    fn body_size(&self) -> usize {
-        self.body_data().len()
-    }
-
-    /// Check if body is empty
-    fn is_body_empty(&self) -> bool {
-        self.body_data().is_empty()
-    }
-
-    /// Get a specific header value
-    fn get_header(&self, name: &str) -> Option<&String> {
-        self.headers().get(name)
-    }
-
-    /// Check if a header exists
-    fn has_header(&self, name: &str) -> bool {
-        self.headers().contains_key(name)
-    }
-
-    /// Get content type from headers
-    fn content_type(&self) -> Option<&String> {
-        self.get_header("content-type")
-    }
-
-    /// Check if content type matches a pattern
-    fn is_content_type(&self, content_type: &str) -> bool {
-        self.content_type()
-            .map(|ct| ct.starts_with(content_type))
-            .unwrap_or(false)
-    }
-
-    /// Check if content is JSON
-    fn is_json(&self) -> bool {
-        self.is_content_type("application/json")
-    }
-
-    /// Check if content is HTML
-    fn is_html(&self) -> bool {
-        self.is_content_type("text/html")
-    }
-
-    /// Check if content is plain text
-    fn is_text(&self) -> bool {
-        self.is_content_type("text/plain")
-    }
-
-    /// Get body content for display (truncated if too long)
-    fn body_display(&self, max_length: usize) -> String {
-        BodyUtils::truncate_for_display(self.body_data(), max_length)
-    }
-
-    /// Check if the message has any content
-    fn has_content(&self) -> bool {
-        !self.is_body_empty()
-    }
-
-    /// Get content length from headers (if available)
-    fn content_length_header(&self) -> Option<u64> {
-        self.get_header("content-length")
-            .and_then(|value| value.parse().ok())
-    }
-
-    /// Check if content encoding is specified
-    fn has_content_encoding(&self) -> bool {
-        self.has_header("content-encoding")
-    }
-
-    /// Get content encoding
-    fn content_encoding(&self) -> Option<&String> {
-        self.get_header("content-encoding")
-    }
-}
 
 /// Common utilities for header processing
 pub struct HeaderUtils;
@@ -197,38 +105,6 @@ impl BodyUtils {
 mod tests {
     use super::*;
     use http::{HeaderMap, HeaderValue};
-
-    struct TestMessage {
-        headers: HashMap<String, String>,
-        body: Vec<u8>,
-    }
-
-    impl HttpMessage for TestMessage {
-        fn headers(&self) -> &HashMap<String, String> {
-            &self.headers
-        }
-
-        fn body_data(&self) -> &[u8] {
-            &self.body
-        }
-    }
-
-    #[test]
-    fn test_http_message_trait() {
-        let mut headers = HashMap::new();
-        headers.insert("content-type".to_string(), "application/json".to_string());
-        headers.insert("content-length".to_string(), "13".to_string());
-
-        let body = b"Hello, world!".to_vec();
-        let message = TestMessage { headers, body };
-
-        assert_eq!(message.body_size(), 13);
-        assert!(!message.is_body_empty());
-        assert_eq!(message.body_as_string().unwrap(), "Hello, world!");
-        assert!(message.has_header("content-type"));
-        assert!(message.is_json());
-        assert!(!message.is_html());
-    }
 
     #[test]
     fn test_header_utils() {
