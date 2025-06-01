@@ -1,10 +1,11 @@
 use anyhow::Result;
+use axum::{body::Body, response::Response};
 use http::StatusCode;
 use http_body_util::{BodyExt, Full};
 use lynx_db::dao::request_processing_dao::handlers::modify_response_handler::ModifyResponseConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::common::{Req, Res};
+use crate::common::Req;
 
 #[async_trait::async_trait]
 impl HandlerTrait for ModifyResponseConfig {
@@ -13,7 +14,7 @@ impl HandlerTrait for ModifyResponseConfig {
         Ok(HandleRequestType::Request(request))
     }
 
-    async fn handle_response(&self, mut response: Res) -> Result<Res> {
+    async fn handle_response(&self, mut response: Response) -> Result<Response> {
         // Modify headers if specified
         if let Some(ref modify_headers) = self.modify_headers {
             let headers = response.headers_mut();
@@ -49,7 +50,7 @@ impl HandlerTrait for ModifyResponseConfig {
             let new_body = Full::new(bytes::Bytes::from(body_bytes))
                 .map_err(|e| anyhow::anyhow!("Body error: {}", e))
                 .boxed();
-            *response.body_mut() = new_body;
+            *response.body_mut() = Body::new(new_body)
         }
 
         Ok(response)
@@ -59,19 +60,15 @@ impl HandlerTrait for ModifyResponseConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use http::Response;
+    use axum::{body::Body, response::Response};
     use http_body_util::Empty;
     use std::collections::HashMap;
 
-    fn create_test_response() -> Res {
+    fn create_test_response() -> Response {
         Response::builder()
             .status(200)
             .header("content-type", "text/plain")
-            .body(
-                Empty::new()
-                    .map_err(|e| anyhow::anyhow!("Body error: {}", e))
-                    .boxed(),
-            )
+            .body(Body::empty())
             .unwrap()
     }
 
@@ -102,7 +99,10 @@ mod tests {
         let response = create_test_response();
         let result = config.handle_response(response).await?;
 
-        assert_eq!(result.headers().get("X-Custom-Header").unwrap(), "custom-value");
+        assert_eq!(
+            result.headers().get("X-Custom-Header").unwrap(),
+            "custom-value"
+        );
         assert_eq!(result.headers().get("content-type").unwrap(), "text/plain");
 
         Ok(())
@@ -114,7 +114,7 @@ mod tests {
             modify_headers: None,
             modify_body: None,
             modify_method: None,
-            modify_status_code: Some(202),
+            modify_status_code: Some(404),
         };
 
         let response = create_test_response();
@@ -213,7 +213,10 @@ mod tests {
         let result = config.handle_response(response).await?;
 
         assert_eq!(result.status(), original_status);
-        assert_eq!(result.headers().get("content-type"), original_content_type.as_ref());
+        assert_eq!(
+            result.headers().get("content-type"),
+            original_content_type.as_ref()
+        );
 
         Ok(())
     }

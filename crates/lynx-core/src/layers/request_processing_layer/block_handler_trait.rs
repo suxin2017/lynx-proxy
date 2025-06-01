@@ -1,5 +1,5 @@
 use anyhow::Result;
-use axum::{http::StatusCode, response::Response};
+use axum::{http::StatusCode, response::{IntoResponse, Response}};
 use lynx_db::dao::request_processing_dao::handlers::BlockHandlerConfig;
 
 use crate::{common::Req, utils::full};
@@ -21,7 +21,7 @@ impl HandlerTrait for BlockHandlerConfig {
             .header("x-blocked-by", "lynx-proxy")
             .body(full(reason))?;
 
-        Ok(HandleRequestType::Response(response))
+        Ok(HandleRequestType::Response(response.into_response()))
     }
 }
 

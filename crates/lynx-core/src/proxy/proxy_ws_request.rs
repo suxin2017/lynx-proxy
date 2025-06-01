@@ -93,7 +93,7 @@ pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
         }
     });
 
-    let res = res.map(|body| body.map(|b| full(b)).unwrap_or(empty()));
+    let res = res.map(|body| body.map(full).unwrap_or(empty()));
     Ok(res.into_response())
 }
 

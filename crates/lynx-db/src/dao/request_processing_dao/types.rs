@@ -53,6 +53,7 @@ pub enum CaptureCondition {
 /// 完整的捕获规则
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub struct CaptureRule {
     pub id: Option<i32>,
     pub condition: CaptureCondition,
@@ -130,15 +131,6 @@ impl Default for ComplexCaptureRule {
 impl Default for CaptureCondition {
     fn default() -> Self {
         Self::Simple(SimpleCaptureCondition::default())
-    }
-}
-
-impl Default for CaptureRule {
-    fn default() -> Self {
-        Self {
-            id: None,
-            condition: CaptureCondition::default(),
-        }
     }
 }
 

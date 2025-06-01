@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::Result;
+use axum::response::Response;
 use http::{
     Request, Uri,
     header::{CONNECTION, HOST, PROXY_AUTHORIZATION},
@@ -14,7 +15,7 @@ use tower::Service;
 use url::Url;
 
 use crate::{
-    common::{Req, Res},
+    common::Req,
     layers::extend_extension_layer::clone_extensions,
 };
 
@@ -25,7 +26,7 @@ pub struct BuildProxyRequestService<S> {
 
 impl<S> Service<Req> for BuildProxyRequestService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Res, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
         + Clone
         + Send
         + Sync

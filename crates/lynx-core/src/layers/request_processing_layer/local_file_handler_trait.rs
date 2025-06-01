@@ -1,5 +1,5 @@
 use anyhow::Result;
-use axum::{http::StatusCode, response::Response};
+use axum::{http::StatusCode, response::{IntoResponse, Response}};
 use lynx_db::dao::request_processing_dao::handlers::LocalFileConfig;
 use mime_guess::from_path;
 use std::path::Path;
@@ -20,7 +20,7 @@ impl HandlerTrait for LocalFileConfig {
                 .status(StatusCode::NOT_FOUND)
                 .header("content-type", "text/plain")
                 .body(full(format!("File not found: {}", self.file_path)))?;
-            return Ok(HandleRequestType::Response(response));
+            return Ok(HandleRequestType::Response(response.into_response()));
         }
 
         // Check if it's a file (not directory)
@@ -29,7 +29,7 @@ impl HandlerTrait for LocalFileConfig {
                 .status(StatusCode::BAD_REQUEST)
                 .header("content-type", "text/plain")
                 .body(full(format!("Path is not a file: {}", self.file_path)))?;
-            return Ok(HandleRequestType::Response(response));
+            return Ok(HandleRequestType::Response(response.into_response()));
         }
 
         // Read file content
@@ -55,14 +55,14 @@ impl HandlerTrait for LocalFileConfig {
                     .header("x-served-by", "lynx-proxy-local-file")
                     .body(full(content))?;
 
-                Ok(HandleRequestType::Response(response))
+                Ok(HandleRequestType::Response(response.into_response()))
             }
             Err(e) => {
                 let response = Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .header("content-type", "text/plain")
                     .body(full(format!("Failed to read file: {}", e)))?;
-                Ok(HandleRequestType::Response(response))
+                Ok(HandleRequestType::Response(response.into_response()))
             }
         }
     }

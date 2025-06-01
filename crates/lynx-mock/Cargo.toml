@@ -27,14 +27,14 @@ tokio-rustls = { workspace = true }
 lynx-cert = { path = "../lynx-cert" }
 pin-project-lite = { workspace = true }
 tower = { workspace = true }
-reqwest = { version = "0.12.12", features = [
+reqwest = { version = "0.12.18", features = [
     "rustls-tls-manual-roots",
     "gzip",
     "json",
     "stream",
     "rustls-tls",
 ] }
-reqwest-websocket = "0.4.4"
+reqwest-websocket = "0.5.0"
 rcgen = { workspace = true }
 tempdir = { workspace = true }
 tracing = { workspace = true }

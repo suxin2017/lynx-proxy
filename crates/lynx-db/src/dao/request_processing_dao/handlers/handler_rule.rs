@@ -137,10 +137,18 @@ impl HandlerRule {
         }
     }
 
-    pub fn proxy_forward_handler(target: String) -> Self {
+    pub fn proxy_forward_handler(
+        target_scheme: Option<String>,
+        target_authority: Option<String>,
+        target_path: Option<String>,
+    ) -> Self {
         Self {
             id: None,
-            handler_type: HandlerRuleType::ProxyForward(ProxyForwardConfig { target }),
+            handler_type: HandlerRuleType::ProxyForward(ProxyForwardConfig {
+                target_scheme,
+                target_authority,
+                target_path,
+            }),
             name: "Proxy Forward Handler".to_string(),
             description: Some("Forward requests to specified proxy target".to_string()),
             execution_order: 10,

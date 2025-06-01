@@ -6,7 +6,9 @@ use std::{
 };
 
 use anyhow::{Result, anyhow};
+use axum::body::Body as AxumBody;
 use axum::extract::Request;
+use axum::response::{IntoResponse, Response};
 use bytes::Bytes;
 use http::Extensions;
 use http_body_util::BodyExt;
@@ -450,7 +452,7 @@ where
 
         let old_body = old_body.map_err(|e| anyhow!(e)).boxed();
 
-        let (copy_stream, old_body) = copy_body_stream(old_body);
+        let (copy_stream, old_body) = copy_body_stream(AxumBody::new(old_body));
 
         let request = Request::from_parts(part, old_body);
 
@@ -493,7 +495,7 @@ pub struct ProxyMessageEventService<S> {
 
 impl<S> Service<Req> for ProxyMessageEventService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Res, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
         + Clone
         + Send
         + Sync
@@ -535,7 +537,7 @@ where
                     message_event_channel_clone
                         .dispatch_on_response_start(&res, copy_stream)
                         .await;
-                    Ok(res)
+                    Ok(res.into_response())
                 }
                 Err(e) => {
                     message_event_channel_clone

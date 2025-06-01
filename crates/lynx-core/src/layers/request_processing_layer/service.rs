@@ -1,11 +1,11 @@
 use super::handler_trait::{HandleRequestType, HandlerTrait};
 use crate::{
-    common::{Req, Res},
+    common::Req,
     layers::{extend_extension_layer::DbExtensionsExt, trace_id_layer::service::TraceIdExt},
     utils::full,
 };
 use anyhow::Result;
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 use lynx_db::dao::request_processing_dao::{
     RequestProcessingDao, handlers::handler_rule::HandlerRuleType,
 };
@@ -25,7 +25,7 @@ impl<S> RequestProcessingService<S> {
 
 impl<S> Service<Req> for RequestProcessingService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Res, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
         + Clone
         + Send
         + Sync
@@ -166,7 +166,7 @@ where
                             .header("content-type", "text/plain")
                             .body(full(format!("Handler processing failed: {}", e)))
                             .unwrap_or_else(|_| Response::new(full("Internal server error")));
-                        return Ok(error_response);
+                        return Ok(error_response.into_response());
                     }
                 }
             }

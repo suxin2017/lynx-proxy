@@ -4,7 +4,7 @@ use tower::{ServiceBuilder, ServiceExt, service_fn};
 
 use crate::{
     client::request_client::RequestClientExt,
-    common::{HyperResExt, Req, Res},
+    common::Req,
     layers::{
         build_proxy_request::BuildProxyRequestService,
         message_package_layer::ProxyMessageEventService,
@@ -16,7 +16,7 @@ pub fn is_http_req(req: &Req) -> bool {
     req.headers().get("Upgrade").is_none()
 }
 
-async fn proxy_http_request_inner(req: Req) -> Result<Res> {
+async fn proxy_http_request_inner(req: Req) -> Result<Response> {
     let trace_id = req.extensions().get_trace_id().clone();
     let http_client = req.extensions().get_http_client();
     http_client
@@ -27,7 +27,7 @@ async fn proxy_http_request_inner(req: Req) -> Result<Res> {
             res.extensions_mut().insert(trace_id);
             res
         })
-        .map(|res| res.into_box_res())
+        .map(|res| res.into_response())
 }
 
 pub async fn proxy_http_request(req: Req) -> Result<Response> {

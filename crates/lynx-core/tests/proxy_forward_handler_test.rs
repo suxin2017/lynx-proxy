@@ -1,6 +1,8 @@
 use anyhow::Result;
+use futures_util::{SinkExt, TryStreamExt};
 use http::StatusCode;
 use lynx_db::dao::request_processing_dao::HandlerRule;
+use reqwest_websocket::Message;
 use setup::{
     mock_base_url, mock_rule::mock_test_rule,
     setup_proxy_handler_server::setup_proxy_handler_server,
@@ -12,12 +14,15 @@ mod setup;
 async fn proxy_forward_handler_basic_test() -> Result<()> {
     let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
     let client = client.get_proxy_client();
-    let base_url = mock_base_url(&mock_server);
 
     // Setup proxy forward handler to redirect to the mock server
     mock_test_rule(
         proxy_server.db_connect,
-        vec![HandlerRule::proxy_forward_handler(base_url.clone())],
+        vec![HandlerRule::proxy_forward_handler(
+            None,
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
     )
     .await?;
 
@@ -38,12 +43,15 @@ async fn proxy_forward_handler_basic_test() -> Result<()> {
 async fn proxy_forward_handler_preserves_path_and_query() -> Result<()> {
     let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
     let client = client.get_proxy_client();
-    let base_url = mock_base_url(&mock_server);
 
     // Setup proxy forward handler
     mock_test_rule(
         proxy_server.db_connect,
-        vec![HandlerRule::proxy_forward_handler(base_url.clone())],
+        vec![HandlerRule::proxy_forward_handler(
+            None,
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
     )
     .await?;
 
@@ -60,6 +68,36 @@ async fn proxy_forward_handler_preserves_path_and_query() -> Result<()> {
 }
 
 #[tokio::test]
+async fn proxy_forward_handler_with_websocket() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
+
+    // Setup proxy forward handler to redirect to the mock server
+    mock_test_rule(
+        proxy_server.db_connect,
+        vec![HandlerRule::proxy_forward_handler(
+            None,
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    // Send a request - should result in error due to invalid target URL
+    let response = client
+        .proxy_ws("wss://not_exist.com/ws")
+        .await
+        .expect("send request failed");
+
+    let mut ws = response.into_websocket().await?;
+    ws.send(Message::Text("Hello".into())).await?;
+
+    let res = ws.try_next().await?;
+    assert!(matches!(res, Some(Message::Text(_))));
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
     let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
     let client = client.get_proxy_client();
@@ -69,7 +107,9 @@ async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
     mock_test_rule(
         proxy_server.db_connect,
         vec![HandlerRule::proxy_forward_handler(
-            "invalid-url".to_string(),
+            None,
+            Some("invalid-url".to_string()),
+            None,
         )],
     )
     .await?;

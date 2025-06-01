@@ -74,14 +74,14 @@ glob-match = "0.2.1"
 regex = "1.11.1"
 ts-rs = { version = "10.1", features = ["serde-json-impl"] }
 base64 = "0.22.1"
-reqwest = { version = "0.12.12", features = [
+reqwest = { version = "0.12.18", features = [
     "rustls-tls-manual-roots",
     "gzip",
     "json",
     "stream",
     "rustls-tls",
 ] }
-reqwest-websocket = "0.4.4"
+reqwest-websocket = "0.5.0"
 lynx-cert = { path = "../lynx-cert" }
 lynx-db = { path = "../lynx-db" }
 pin-project-lite = { workspace = true }
