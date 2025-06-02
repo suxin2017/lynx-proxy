@@ -184,8 +184,11 @@ export const getListRulesResponseMock = (
                 faker.helpers.arrayElement([faker.string.alpha(20), null]),
                 undefined,
               ]),
-              modifyUrl: faker.helpers.arrayElement([
-                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              modifyStatusCode: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([
+                  faker.number.int({ min: undefined, max: undefined }),
+                  null,
+                ]),
                 undefined,
               ]),
             },
@@ -194,7 +197,20 @@ export const getListRulesResponseMock = (
             },
           },
           {
-            ...{ targetPort: faker.string.alpha(20) },
+            ...{
+              targetAuthority: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              targetPath: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              targetScheme: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+            },
             ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
           },
         ]),
@@ -369,15 +385,31 @@ export const getGetRuleResponseMock = (
               faker.helpers.arrayElement([faker.string.alpha(20), null]),
               undefined,
             ]),
-            modifyUrl: faker.helpers.arrayElement([
-              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+            modifyStatusCode: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([
+                faker.number.int({ min: undefined, max: undefined }),
+                null,
+              ]),
               undefined,
             ]),
           },
           ...{ type: faker.helpers.arrayElement(['modifyResponse'] as const) },
         },
         {
-          ...{ targetPort: faker.string.alpha(20) },
+          ...{
+            targetAuthority: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            targetPath: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            targetScheme: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
           ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
         },
       ]),
@@ -527,15 +559,31 @@ export const getGetTemplateHandlersResponseMock = (
               faker.helpers.arrayElement([faker.string.alpha(20), null]),
               undefined,
             ]),
-            modifyUrl: faker.helpers.arrayElement([
-              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+            modifyStatusCode: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([
+                faker.number.int({ min: undefined, max: undefined }),
+                null,
+              ]),
               undefined,
             ]),
           },
           ...{ type: faker.helpers.arrayElement(['modifyResponse'] as const) },
         },
         {
-          ...{ targetPort: faker.string.alpha(20) },
+          ...{
+            targetAuthority: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            targetPath: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            targetScheme: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
           ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
         },
       ]),

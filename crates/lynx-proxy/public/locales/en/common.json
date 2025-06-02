@@ -187,5 +187,236 @@
     "start": "Start Recording",
     "stop": "Stop Recording"
   },
-  "clearRequests": "Clear all requests"
+  "clearRequests": "Clear all requests",
+  "ruleManager": {
+    "title": "Interception Rules List",
+    "description": "Manage rules for intercepting and modifying network requests",
+    "createRule": "Create Rule",
+    "table": {
+      "status": "Status",
+      "ruleName": "Rule Name",
+      "matchConditions": "Match Conditions",
+      "action": "Action",
+      "priority": "Priority",
+      "operations": "Operations"
+    },
+    "actions": {
+      "edit": "Edit",
+      "copy": "Copy",
+      "delete": "Delete"
+    },
+    "deleteConfirm": {
+      "title": "Confirm Delete",
+      "content": "Are you sure you want to delete rule \"{name}\"? This action cannot be undone.",
+      "okText": "Delete",
+      "cancelText": "Cancel"
+    },
+    "copyConfirm": {
+      "title": "Confirm Copy",
+      "content": "Are you sure you want to copy rule \"{name}\"?",
+      "okText": "Copy",
+      "cancelText": "Cancel"
+    },
+    "copyRuleName": "{name} (Copy)",
+    "copyRuleError": "Failed to copy rule:",
+    "noActions": "No Actions",
+    "allActionsDisabled": "All actions disabled",
+    "handlerTypes": {
+      "block": "Block",
+      "modifyRequest": "Modify Request",
+      "modifyResponse": "Modify Response",
+      "localFile": "Local File",
+      "proxyForward": "Proxy Forward",
+      "unknown": "Unknown Action"
+    },
+    "quickAdd": {
+      "prefix": "Quick Add: ",
+      "blockRequest": {
+        "name": "Block Request",
+        "description": "Block request with status code 403"
+      },
+      "modifyRequest": {
+        "name": "Modify Request",
+        "description": "Modify request headers, body, method or URL"
+      },
+      "modifyResponse": {
+        "name": "Modify Response",
+        "description": "Modify response headers, body or status code"
+      },
+      "localFile": {
+        "name": "Local File",
+        "description": "Return local file as response"
+      },
+      "proxyForward": {
+        "name": "Proxy Forward",
+        "description": "Forward request to another server"
+      }
+    },
+    "handlerDescriptions": {
+      "statusCode": "Status Code: {code}",
+      "reason": "Access blocked",
+      "modifyHeaders": "Modify request headers",
+      "modifyBody": "Modify request body",
+      "modifyMethod": "Method: {method}",
+      "modifyUrl": "Modify URL",
+      "modifyRequest": "Modify request",
+      "modifyResponseHeaders": "Modify response headers",
+      "modifyResponseBody": "Modify response body",
+      "modifyResponse": "Modify response",
+      "file": "File: {path}",
+      "returnLocalFile": "Return local file",
+      "forwardTo": "Forward to: {host}",
+      "proxyForward": "Proxy forward"
+    },
+    "captureTypes": {
+      "glob": "Glob",
+      "regex": "Regex",
+      "exact": "Exact",
+      "contains": "Contains"
+    },
+    "operators": {
+      "and": "AND",
+      "or": "OR",
+      "not": "NOT"
+    },
+    "conditionLabels": {
+      "method": "Method: ",
+      "host": "Host: ",
+      "not": "(NOT)"
+    },
+    "createRuleDrawer": {
+      "createTitle": "Create Interception Rule",
+      "editTitle": "Edit Interception Rule",
+      "cancel": "Cancel",
+      "save": "Save Changes",
+      "create": "Create Rule",
+      "createSuccess": "Rule created successfully",
+      "updateSuccess": "Rule updated successfully",
+      "operationFailed": "Operation failed, please try again",
+      "basicInfo": {
+        "title": "Basic Information",
+        "description": "Configure basic rule attributes including name, description and execution priority",
+        "ruleName": "Rule Name",
+        "ruleNamePlaceholder": "Please enter rule name",
+        "ruleDescription": "Rule Description",
+        "ruleDescriptionPlaceholder": "Please enter rule description (optional)",
+        "enableRule": "Enable Rule",
+        "enableDescription": "Whether the rule takes effect immediately",
+        "enableStatus": "Enable Status",
+        "enableTooltip": "The rule will not be executed when disabled",
+        "priority": "Priority",
+        "priorityTooltip": "Higher values have higher priority, range: 0-100"
+      },
+      "captureRule": {
+        "title": "Capture Rule",
+        "description": "Define what kind of requests will be matched and processed by this rule",
+        "simpleRule": "Simple Rule",
+        "complexRule": "Complex Rule",
+        "addAtLeastOneCondition": "Please add at least one condition",
+        "urlPattern": "URL Pattern",
+        "selectMatchType": "Select match type",
+        "urlPatternPlaceholder": "Enter URL pattern",
+        "globHelp": "Use glob syntax to match URLs, e.g.: *.example.com/api/*",
+        "regexHelp": "Use regular expression to match URLs, e.g.: ^https://example\\.com/api/.*$",
+        "exactHelp": "Match URL exactly",
+        "containsHelp": "Match URLs containing this string",
+        "httpMethod": "HTTP Method",
+        "selectHttpMethod": "Select HTTP method",
+        "httpMethodEmptyHelp": "Leave empty to match all HTTP methods",
+        "hostname": "Hostname",
+        "hostnamePlaceholder": "Enter hostname, e.g.: example.com",
+        "hostnameEmptyHelp": "Match all hostnames",
+        "headers": "Headers",
+        "headerName": "Header name",
+        "headerValue": "Header value",
+        "noHeadersHelp": "Add header matching conditions",
+        "addHeader": "Add Header",
+        "condition": "Condition",
+        "addOptionalConditions": "Add optional matching conditions",
+        "addSimpleCondition": "Add simple condition",
+        "addComplexCondition": "Add complex condition",
+        "notSet": "Not set",
+        "logicalOperator": "Logical Operator",
+        "andOperatorDescription": "All conditions must be satisfied",
+        "orOperatorDescription": "Any condition must be satisfied",
+        "notOperatorDescription": "Match when condition is not satisfied (only one condition allowed)",
+        "notOperatorTip": "When using the NOT operator, only one condition can be added. The NOT operator matches requests that do not satisfy the condition.",
+        "noConditions": "No conditions yet",
+        "clickButtonToStart": "Click the button below to add conditions",
+        "rulePreview": "Rule Preview"
+      },
+      "handlerBehavior": {
+        "title": "Handler Behavior",
+        "description": "Define the processing actions to execute when requests match the rule. Multiple handlers can be added",
+        "noHandlers": "No handlers yet, click the button below to add handlers",
+        "modifyConfig": {
+          "common": {
+            "statusCode": "Status Code",
+            "enterName": "Please enter {type} name",
+            "enterValue": "Please enter {type} value",
+            "headerNamePlaceholder": "{type} name (e.g., {example})",
+            "headerValuePlaceholder": "{type} value",
+            "addHeader": "Add {type}",
+            "newBody": "New {type} content",
+            "bodyPlaceholder": "Enter new {type} content ({formats})",
+            "optionalDescription": "Leave fields empty for any {type} items you don't want to modify"
+          },
+          "request": {
+            "title": "Request Configuration",
+            "header": "Request Header",
+            "headers": "Request Headers",
+            "headersDesc": "Modify request header information",
+            "body": "Request Body",
+            "bodyDesc": "Modify request body content",
+            "method": "Request Method",
+            "methodDesc": "Modify HTTP request method",
+            "newMethod": "New Request Method",
+            "selectMethod": "Select request method",
+            "url": "Request URL",
+            "urlDesc": "Modify request URL",
+            "newUrl": "New URL",
+            "urlValidation": "Please enter a valid URL",
+            "type": "request"
+          },
+          "response": {
+            "title": "Response Configuration",
+            "header": "Response Header",
+            "headers": "Response Headers",
+            "headersDesc": "Modify response header information",
+            "body": "Response Body",
+            "bodyDesc": "Modify response body content",
+            "statusCode": "Status Code",
+            "statusCodeDesc": "Modify response status code",
+            "statusCodeValidation": "Status code must be between 100 and 599",
+            "selectStatusCode": "Select status code",
+            "type": "response"
+          }
+        },
+        "handlerItem": {
+          "name": "Name",
+          "description": "Description",
+          "configuration": "Configuration",
+          "unnamed": "Unnamed Handler",
+          "notSet": "Not set"
+        },
+        "blockHandler": {
+          "title": "Block Request Configuration",
+          "statusCode": "Status Code",
+          "statusCodeRequired": "Please enter a status code",
+          "statusCodeRange": "Status code must be between 100 and 599",
+          "reason": "Block Reason",
+          "description": "The blocked request will return the specified HTTP status code and reason. Common status codes: 403 (Forbidden), 404 (Not Found), 503 (Service Unavailable)"
+        },
+        "proxyForward": {
+          "title": "Proxy Forward Configuration",
+          "scheme": "Protocol",
+          "authority": "Target Address",
+          "authorityRequired": "Please enter the target address",
+          "path": "Path",
+          "description": "Configure the destination address for proxy forwarding. You can specify the protocol, host/port and path of the target URL. For example, to forward requests to an internal network or other servers."
+        }
+      }
+    }
+  },
+  "startTime": "Start Time"
 }

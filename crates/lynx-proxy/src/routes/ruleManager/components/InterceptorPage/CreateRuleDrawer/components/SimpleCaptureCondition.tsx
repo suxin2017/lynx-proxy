@@ -2,150 +2,257 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Input, Select, Space, Typography, Button } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { SimpleCaptureCondition as SimpleCaptureConditionType } from '@/services/generated/utoipaAxum.schemas';
+import { useI18n } from '@/contexts';
 
 const { Text } = Typography;
 const { Option } = Select;
 
 interface SimpleCaptureConditionProps {
-    value?: SimpleCaptureConditionType;
-    onChange?: (value: SimpleCaptureConditionType) => void;
-    titleExtra?: React.ReactNode;
+  value?: SimpleCaptureConditionType;
+  onChange?: (value: SimpleCaptureConditionType) => void;
+  titleExtra?: React.ReactNode;
 }
 
-const UrlPatternInput = React.memo(({ urlPattern, onChange, onRemove }: {
+const UrlPatternInput = React.memo(
+  ({
+    urlPattern,
+    onChange,
+    onRemove,
+  }: {
     urlPattern?: { captureType?: string; pattern?: string };
     onChange: (data: { captureType?: string; pattern?: string }) => void;
     onRemove?: () => void;
-}) => (
-    <div className="w-full">
-        <div className="flex justify-between items-center mb-2">
-            <Text strong className="block">URL 模式</Text>
-            {onRemove && (
-                <Button type="text" size="small" danger onClick={onRemove}>移除</Button>
-            )}
+  }) => {
+    const { t } = useI18n();
+    return (
+      <div className="w-full">
+        <div className="mb-2 flex items-center justify-between">
+          <Text strong className="block">
+            {t('ruleManager.createRuleDrawer.captureRule.urlPattern')}
+          </Text>
+          {onRemove && (
+            <Button type="text" size="small" danger onClick={onRemove}>
+              {t('ruleManager.actions.delete')}
+            </Button>
+          )}
         </div>
         <Space direction="vertical" className="w-full">
-            <div className="flex gap-2">
-                <Select
-                    placeholder="选择匹配类型"
-                    className="w-32"
-                    value={urlPattern?.captureType || 'glob'}
-                    onChange={(captureType) => onChange({ captureType: captureType })}
-                >
-                    <Option value="glob">Glob</Option>
-                    <Option value="regex">Regex</Option>
-                    <Option value="exact">精确匹配</Option>
-                    <Option value="contains">包含</Option>
-                </Select>
-                <Input
-                    placeholder="输入URL模式，如: /api/* 或 *.example.com"
-                    className="flex-1"
-                    value={urlPattern?.pattern || ''}
-                    onChange={(e) => onChange({ pattern: e.target.value })}
-                />
-            </div>
-            <Text type="secondary" className="text-xs">
-                {(urlPattern?.captureType || 'glob') === 'glob' && '使用通配符: * 匹配任意字符, ? 匹配单个字符'}
-                {(urlPattern?.captureType || 'glob') === 'regex' && '使用正则表达式语法'}
-                {(urlPattern?.captureType || 'glob') === 'exact' && '精确匹配完整URL'}
-                {(urlPattern?.captureType || 'glob') === 'contains' && '检查URL是否包含指定字符串'}
-            </Text>
+          <div className="flex gap-2">
+            <Select
+              placeholder={t(
+                'ruleManager.createRuleDrawer.captureRule.selectMatchType',
+              )}
+              className="w-32"
+              value={urlPattern?.captureType || 'glob'}
+              onChange={(captureType) => onChange({ captureType: captureType })}
+            >
+              <Option value="glob">Glob</Option>
+              <Option value="regex">Regex</Option>
+              <Option value="exact">
+                {t('ruleManager.captureTypes.exact')}
+              </Option>
+              <Option value="contains">
+                {t('ruleManager.captureTypes.contains')}
+              </Option>
+            </Select>
+            <Input
+              placeholder={t(
+                'ruleManager.createRuleDrawer.captureRule.urlPatternPlaceholder',
+              )}
+              className="flex-1"
+              value={urlPattern?.pattern || ''}
+              onChange={(e) => onChange({ pattern: e.target.value })}
+            />
+          </div>
+          <Text type="secondary" className="text-xs">
+            {(urlPattern?.captureType || 'glob') === 'glob' &&
+              t('ruleManager.createRuleDrawer.captureRule.globHelp')}
+            {(urlPattern?.captureType || 'glob') === 'regex' &&
+              t('ruleManager.createRuleDrawer.captureRule.regexHelp')}
+            {(urlPattern?.captureType || 'glob') === 'exact' &&
+              t('ruleManager.createRuleDrawer.captureRule.exactHelp')}
+            {(urlPattern?.captureType || 'glob') === 'contains' &&
+              t('ruleManager.createRuleDrawer.captureRule.containsHelp')}
+          </Text>
         </Space>
-    </div>
-));
+      </div>
+    );
+  },
+);
 
-const MethodInput = React.memo(({ value, onChange, onRemove }: {
+UrlPatternInput.displayName = 'UrlPatternInput';
+
+const MethodInput = React.memo(
+  ({
+    value,
+    onChange,
+    onRemove,
+  }: {
     value?: string;
     onChange: (method: string | null) => void;
     onRemove: () => void;
-}) => (
-    <div className="w-full">
-        <div className="flex justify-between items-center mb-2">
-            <Text strong>HTTP 方法</Text>
-            <Button type="text" size="small" danger onClick={onRemove}>移除</Button>
+  }) => {
+    const { t } = useI18n();
+    return (
+      <div className="w-full">
+        <div className="mb-2 flex items-center justify-between">
+          <Text strong>
+            {t('ruleManager.createRuleDrawer.captureRule.httpMethod')}
+          </Text>
+          <Button type="text" size="small" danger onClick={onRemove}>
+            {t('ruleManager.actions.remove')}
+          </Button>
         </div>
         <Select
-            placeholder="选择HTTP方法（可选）"
-            allowClear
-            className="w-full mb-1"
-            value={value || undefined}
-            onChange={onChange}
+          placeholder={t(
+            'ruleManager.createRuleDrawer.captureRule.selectHttpMethod',
+          )}
+          allowClear
+          className="mb-1 w-full"
+          value={value || undefined}
+          onChange={onChange}
         >
-            <Option value="GET">GET</Option>
-            <Option value="POST">POST</Option>
-            <Option value="PUT">PUT</Option>
-            <Option value="DELETE">DELETE</Option>
-            <Option value="PATCH">PATCH</Option>
-            <Option value="HEAD">HEAD</Option>
-            <Option value="OPTIONS">OPTIONS</Option>
+          <Option value="GET">GET</Option>
+          <Option value="POST">POST</Option>
+          <Option value="PUT">PUT</Option>
+          <Option value="DELETE">DELETE</Option>
+          <Option value="PATCH">PATCH</Option>
+          <Option value="HEAD">HEAD</Option>
+          <Option value="OPTIONS">OPTIONS</Option>
         </Select>
-        <Text type="secondary" className="text-xs block">留空表示匹配所有HTTP方法</Text>
-    </div>
-));
+        <Text type="secondary" className="block text-xs">
+          {t('ruleManager.createRuleDrawer.captureRule.httpMethodEmptyHelp')}
+        </Text>
+      </div>
+    );
+  },
+);
 
-const HostInput = React.memo(({ value, onChange, onRemove }: {
+MethodInput.displayName = 'MethodInput';
+
+const HostInput = React.memo(
+  ({
+    value,
+    onChange,
+    onRemove,
+  }: {
     value?: string;
     onChange: (host: string) => void;
     onRemove: () => void;
-}) => (
-    <div className="w-full">
-        <div className="flex justify-between items-center mb-2">
-            <Text strong>主机名</Text>
-            <Button type="text" size="small" danger onClick={onRemove}>移除</Button>
+  }) => {
+    const { t } = useI18n();
+    return (
+      <div className="w-full">
+        <div className="mb-2 flex items-center justify-between">
+          <Text strong>
+            {t('ruleManager.createRuleDrawer.captureRule.hostname')}
+          </Text>
+          <Button type="text" size="small" danger onClick={onRemove}>
+            {t('ruleManager.actions.remove')}
+          </Button>
         </div>
         <Input
-            placeholder="输入主机名，如: api.example.com（可选）"
-            className="mb-1"
-            value={value || ''}
-            onChange={(e) => onChange(e.target.value)}
+          placeholder={t(
+            'ruleManager.createRuleDrawer.captureRule.hostnamePlaceholder',
+          )}
+          className="mb-1"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
         />
-        <Text type="secondary" className="text-xs block">留空表示匹配所有主机名</Text>
-    </div>
-));
+        <Text type="secondary" className="block text-xs">
+          {t('ruleManager.createRuleDrawer.captureRule.hostnameEmptyHelp')}
+        </Text>
+      </div>
+    );
+  },
+);
 
-const HeadersInput = React.memo(({ headers, onChange, onRemove, onAdd, onUpdate, onDelete }: {
+HostInput.displayName = 'HostInput';
+
+const HeadersInput = React.memo(
+  ({
+    headers,
+    onRemove,
+    onAdd,
+    onUpdate,
+    onDelete,
+  }: {
     headers: Array<{ key: string; value: string }>;
-    onChange: (headers: Array<{ key: string; value: string }>) => void;
     onRemove: () => void;
     onAdd: () => void;
     onUpdate: (index: number, key: string, value: string) => void;
     onDelete: (index: number) => void;
-}) => (
-    <div className="w-full">
-        <div className="flex justify-between items-center mb-2">
-            <Text strong>请求头</Text>
-            <Button type="text" size="small" danger onClick={onRemove}>移除</Button>
+  }) => {
+    const { t } = useI18n();
+    return (
+      <div className="w-full">
+        <div className="mb-2 flex items-center justify-between">
+          <Text strong>
+            {t('ruleManager.createRuleDrawer.captureRule.headers')}
+          </Text>
+          <Button type="text" size="small" danger onClick={onRemove}>
+            {t('ruleManager.actions.remove')}
+          </Button>
         </div>
         {headers.length > 0 ? (
-            <Space direction="vertical" className="w-full">
-                {headers.map((header, index) => (
-                    <div key={index} className="flex gap-2 items-center">
-                        <Input
-                            placeholder="Header名称"
-                            className="flex-1"
-                            value={header.key}
-                            onChange={(e) => onUpdate(index, e.target.value, header.value)}
-                        />
-                        <Input
-                            placeholder="Header值"
-                            className="flex-1"
-                            value={header.value}
-                            onChange={(e) => onUpdate(index, header.key, e.target.value)}
-                        />
-                        <Button type="text" danger icon={<DeleteOutlined />} onClick={() => onDelete(index)} />
-                    </div>
-                ))}
-            </Space>
+          <Space direction="vertical" className="w-full">
+            {headers.map((header, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  placeholder={t(
+                    'ruleManager.createRuleDrawer.captureRule.headerName',
+                  )}
+                  className="flex-1"
+                  value={header.key}
+                  onChange={(e) =>
+                    onUpdate(index, e.target.value, header.value)
+                  }
+                />
+                <Input
+                  placeholder={t(
+                    'ruleManager.createRuleDrawer.captureRule.headerValue',
+                  )}
+                  className="flex-1"
+                  value={header.value}
+                  onChange={(e) => onUpdate(index, header.key, e.target.value)}
+                />
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => onDelete(index)}
+                />
+              </div>
+            ))}
+          </Space>
         ) : (
-            <Text type="secondary" className="text-xs">没有设置请求头条件，点击"添加请求头"来添加请求头匹配条件</Text>
+          <Text type="secondary" className="text-xs">
+            {t('ruleManager.createRuleDrawer.captureRule.noHeadersHelp')}
+          </Text>
         )}
         <div className="mt-2">
-            <Button type="dashed" icon={<PlusOutlined />} onClick={onAdd}>添加请求头</Button>
+          <Button type="dashed" icon={<PlusOutlined />} onClick={onAdd}>
+            {t('ruleManager.createRuleDrawer.captureRule.addHeader')}
+          </Button>
         </div>
-    </div>
-));
+      </div>
+    );
+  },
+);
 
-const AddFieldButtons = React.memo(({ showMethod, onShowUrlPattern, showUrlPattern, showHost, showHeaders, onShowMethod, onShowHost, onShowHeaders }: {
+HeadersInput.displayName = 'HeadersInput';
+
+const AddFieldButtons = React.memo(
+  ({
+    showMethod,
+    onShowUrlPattern,
+    showUrlPattern,
+    showHost,
+    showHeaders,
+    onShowMethod,
+    onShowHost,
+    onShowHeaders,
+  }: {
     showMethod: boolean;
     showHost: boolean;
     showHeaders: boolean;
@@ -154,129 +261,205 @@ const AddFieldButtons = React.memo(({ showMethod, onShowUrlPattern, showUrlPatte
     onShowHost: () => void;
     onShowHeaders: () => void;
     onShowUrlPattern: () => void;
-}) => (
-    <div className="w-full">
-        <Text type="secondary" className="block mb-2">添加可选条件</Text>
+  }) => {
+    const { t } = useI18n();
+    return (
+      <div className="w-full">
+        <Text type="secondary" className="mb-2 block">
+          {t('ruleManager.createRuleDrawer.captureRule.addOptionalConditions')}
+        </Text>
         <Space wrap>
-            {!showMethod && (
-                <Button type="dashed" icon={<PlusOutlined />} onClick={onShowMethod}>HTTP 方法</Button>
-            )}
-            {!showHost && (
-                <Button type="dashed" icon={<PlusOutlined />} onClick={onShowHost}>主机名</Button>
-            )}
-            {!showHeaders && (
-                <Button type="dashed" icon={<PlusOutlined />} onClick={onShowHeaders}>请求头</Button>
-            )}
-            {!showUrlPattern && (
-                <Button type="dashed" icon={<PlusOutlined />} onClick={onShowUrlPattern}>
-                    URL 模式
-                </Button>
-            )}
+          {!showMethod && (
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={onShowMethod}
+            >
+              {t('ruleManager.createRuleDrawer.captureRule.httpMethod')}
+            </Button>
+          )}
+          {!showHost && (
+            <Button type="dashed" icon={<PlusOutlined />} onClick={onShowHost}>
+              {t('ruleManager.createRuleDrawer.captureRule.hostname')}
+            </Button>
+          )}
+          {!showHeaders && (
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={onShowHeaders}
+            >
+              {t('ruleManager.createRuleDrawer.captureRule.headers')}
+            </Button>
+          )}
+          {!showUrlPattern && (
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={onShowUrlPattern}
+            >
+              {t('ruleManager.createRuleDrawer.captureRule.urlPattern')}
+            </Button>
+          )}
         </Space>
-    </div>
-));
+      </div>
+    );
+  },
+);
 
-export const SimpleCaptureCondition: React.FC<SimpleCaptureConditionProps> = React.memo(({ value = {
-}, onChange }) => {
+AddFieldButtons.displayName = 'AddFieldButtons';
+
+export const SimpleCaptureCondition: React.FC<SimpleCaptureConditionProps> =
+  React.memo(({ value = {}, onChange }) => {
     const [showMethod, setShowMethod] = useState(!!value.method);
     const [showHost, setShowHost] = useState(!!value.host);
     const [showHeaders, setShowHeaders] = useState(!!value.headers);
     const [showUrlPattern, setShowUrlPattern] = useState(!!value.urlPattern);
 
-    const handleChange = useCallback((field: keyof SimpleCaptureConditionType, fieldValue: any) => {
+    const handleChange = useCallback(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (field: keyof SimpleCaptureConditionType, fieldValue: any) => {
         const newValue = { ...value, [field]: fieldValue };
         onChange?.(newValue);
-    }, [value, onChange]);
+      },
+      [value, onChange],
+    );
 
-    const handleUrlPatternChange = useCallback((urlPatternData: { captureType?: string; pattern?: string }) => {
-        const currentUrlPattern = value.urlPattern || { captureType: 'glob', pattern: '' };
+    const handleUrlPatternChange = useCallback(
+      (urlPatternData: { captureType?: string; pattern?: string }) => {
+        const currentUrlPattern = value.urlPattern || {
+          captureType: 'glob',
+          pattern: '',
+        };
         const newUrlPattern = {
-            captureType: urlPatternData.captureType ?? currentUrlPattern.captureType ?? 'glob',
-            pattern: urlPatternData.pattern ?? currentUrlPattern.pattern ?? ''
+          captureType:
+            urlPatternData.captureType ??
+            currentUrlPattern.captureType ??
+            'glob',
+          pattern: urlPatternData.pattern ?? currentUrlPattern.pattern ?? '',
         };
         handleChange('urlPattern', newUrlPattern);
-    }, [value.urlPattern, handleChange]);
+      },
+      [value.urlPattern, handleChange],
+    );
 
     // 将后端格式转换为前端编辑格式
-    const getHeadersAsArray = useCallback((): Array<{ key: string; value: string }> => {
-        if (!value.headers) return [];
-        return value.headers.map(header => {
-            const [key, val] = Object.entries(header)[0] || ['', ''];
-            return { key, value: val };
-        });
+    const getHeadersAsArray = useCallback((): Array<{
+      key: string;
+      value: string;
+    }> => {
+      if (!value.headers) return [];
+      return value.headers.map((header) => {
+        const [key, val] = Object.entries(header)[0] || ['', ''];
+        return { key, value: val };
+      });
     }, [value.headers]);
 
-    const handleHeaderChange = useCallback((headers: Array<{ key: string; value: string }>) => {
-        // 转换为后端期望的格式：Array<{ [key: string]: string }>
-        const formattedHeaders = headers.map(header => ({
-            [header.key]: header.value
+    const handleHeaderChange = useCallback(
+      (headers: Array<{ key: string; value: string }>) => {
+        // Convert to backend expected format: Array<{ [key: string]: string }>
+        const formattedHeaders = headers.map((header) => ({
+          [header.key]: header.value,
         }));
-        handleChange('headers', formattedHeaders.length > 0 ? formattedHeaders : null);
-    }, [handleChange]);
+        handleChange(
+          'headers',
+          formattedHeaders.length > 0 ? formattedHeaders : null,
+        );
+      },
+      [handleChange],
+    );
 
     const addHeader = useCallback(() => {
-        const currentHeaders = getHeadersAsArray();
-        const newHeaders = [...currentHeaders, { key: '', value: '' }];
-        handleHeaderChange(newHeaders);
+      const currentHeaders = getHeadersAsArray();
+      const newHeaders = [...currentHeaders, { key: '', value: '' }];
+      handleHeaderChange(newHeaders);
     }, [getHeadersAsArray, handleHeaderChange]);
 
-    const removeHeader = useCallback((index: number) => {
+    const removeHeader = useCallback(
+      (index: number) => {
         const currentHeaders = getHeadersAsArray();
         const newHeaders = currentHeaders.filter((_, i) => i !== index);
         handleHeaderChange(newHeaders);
-    }, [getHeadersAsArray, handleHeaderChange]);
+      },
+      [getHeadersAsArray, handleHeaderChange],
+    );
 
-    const updateHeader = useCallback((index: number, key: string, headerValue: string) => {
+    const updateHeader = useCallback(
+      (index: number, key: string, headerValue: string) => {
         const currentHeaders = getHeadersAsArray();
         const newHeaders = [...currentHeaders];
         newHeaders[index] = { key, value: headerValue };
         handleHeaderChange(newHeaders);
-    }, [getHeadersAsArray, handleHeaderChange]);
+      },
+      [getHeadersAsArray, handleHeaderChange],
+    );
 
-    const headersArray = useMemo(() => getHeadersAsArray(), [getHeadersAsArray]);
+    const headersArray = useMemo(
+      () => getHeadersAsArray(),
+      [getHeadersAsArray],
+    );
 
     return (
-        <Space direction="vertical" className="w-full" size="middle">
-            {showUrlPattern && (
-                <UrlPatternInput
-                    urlPattern={value.urlPattern ? { ...value.urlPattern } : undefined}
-                    onChange={handleUrlPatternChange}
-                    onRemove={() => { setShowUrlPattern(false); handleChange('urlPattern', null); }}
-                />
-            )}
-            {showMethod && (
-                <MethodInput value={typeof value.method === 'string' ? value.method : undefined} onChange={(m) => handleChange('method', m)} onRemove={() => { setShowMethod(false); handleChange('method', null); }} />
-            )}
-            {showHost && (
-                <HostInput value={typeof value.host === 'string' ? value.host : undefined} onChange={(h) => handleChange('host', h)} onRemove={() => { setShowHost(false); handleChange('host', null); }} />
-            )}
-            {showHeaders && (
-                <HeadersInput
-                    headers={headersArray}
-                    onChange={handleHeaderChange}
-                    onRemove={() => { setShowHeaders(false); handleChange('headers', null); }}
-                    onAdd={addHeader}
-                    onUpdate={updateHeader}
-                    onDelete={removeHeader}
-                />
-            )}
-            {(!showUrlPattern || !showHost || !showMethod || !showHeaders) && (
-                <AddFieldButtons
-                    showMethod={showMethod}
-                    showHost={showHost}
-                    showUrlPattern={showUrlPattern}
-                    showHeaders={showHeaders}
-                    onShowUrlPattern={() => setShowUrlPattern(true)}
-                    onShowMethod={() => setShowMethod(true)}
-                    onShowHost={() => setShowHost(true)}
-                    onShowHeaders={() => {
-                        setShowHeaders(true);
-                        if (!value.headers) handleHeaderChange([{ key: '', value: '' }]);
-                    }}
-                />
-            )}
-
-
-        </Space>
+      <Space direction="vertical" className="w-full" size="middle">
+        {showUrlPattern && (
+          <UrlPatternInput
+            urlPattern={value.urlPattern ? { ...value.urlPattern } : undefined}
+            onChange={handleUrlPatternChange}
+            onRemove={() => {
+              setShowUrlPattern(false);
+              handleChange('urlPattern', null);
+            }}
+          />
+        )}
+        {showMethod && (
+          <MethodInput
+            value={typeof value.method === 'string' ? value.method : undefined}
+            onChange={(m) => handleChange('method', m)}
+            onRemove={() => {
+              setShowMethod(false);
+              handleChange('method', null);
+            }}
+          />
+        )}
+        {showHost && (
+          <HostInput
+            value={typeof value.host === 'string' ? value.host : undefined}
+            onChange={(h) => handleChange('host', h)}
+            onRemove={() => {
+              setShowHost(false);
+              handleChange('host', null);
+            }}
+          />
+        )}
+        {showHeaders && (
+          <HeadersInput
+            headers={headersArray}
+            onRemove={() => {
+              setShowHeaders(false);
+              handleChange('headers', null);
+            }}
+            onAdd={addHeader}
+            onUpdate={updateHeader}
+            onDelete={removeHeader}
+          />
+        )}
+        {(!showUrlPattern || !showHost || !showMethod || !showHeaders) && (
+          <AddFieldButtons
+            showMethod={showMethod}
+            showHost={showHost}
+            showUrlPattern={showUrlPattern}
+            showHeaders={showHeaders}
+            onShowUrlPattern={() => setShowUrlPattern(true)}
+            onShowMethod={() => setShowMethod(true)}
+            onShowHost={() => setShowHost(true)}
+            onShowHeaders={() => {
+              setShowHeaders(true);
+              if (!value.headers) handleHeaderChange([{ key: '', value: '' }]);
+            }}
+          />
+        )}
+      </Space>
     );
-});
+  });
+
+SimpleCaptureCondition.displayName = 'SimpleCaptureCondition';

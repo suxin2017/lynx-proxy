@@ -143,12 +143,15 @@
         "validation": {
           "domain": "请输入域名",
           "port": "请输入端口号"
-        }
+        },
+        "invalidHost": "非法Host",
+        "invalidPort": "非法端口"
       }
     },
     "messages": {
       "saveSuccess": "保存成功"
-    }
+    },
+    "reset": "重置"
   },
   "network": {
     "contextMenu": {
@@ -171,7 +174,8 @@
       "method": "方法",
       "path": "路径",
       "type": "类型",
-      "time": "耗时"
+      "time": "耗时",
+      "startTime": "开始时间"
     }
   },
   "sideBar": {
@@ -184,5 +188,235 @@
     "stop": "停止录制"
   },
   "clearRequests": "清除所有请求",
-  "startTime": "开始时间"
+  "startTime": "开始时间",
+  "ruleManager": {
+    "title": "拦截规则列表",
+    "description": "管理用于拦截和修改网络请求的规则",
+    "createRule": "新建规则",
+    "table": {
+      "status": "状态",
+      "ruleName": "规则名称",
+      "matchConditions": "匹配条件",
+      "action": "动作",
+      "priority": "优先级",
+      "operations": "操作"
+    },
+    "actions": {
+      "edit": "编辑",
+      "copy": "复制",
+      "delete": "删除"
+    },
+    "deleteConfirm": {
+      "title": "确认删除",
+      "content": "确定要删除规则 \"{name}\" 吗？此操作不可恢复。",
+      "okText": "删除",
+      "cancelText": "取消"
+    },
+    "copyConfirm": {
+      "title": "确认复制",
+      "content": "确定要复制规则 \"{name}\" 吗？",
+      "okText": "复制",
+      "cancelText": "取消"
+    },
+    "copyRuleName": "{name} (副本)",
+    "copyRuleError": "复制规则失败:",
+    "noActions": "无动作",
+    "allActionsDisabled": "所有动作已禁用",
+    "handlerTypes": {
+      "block": "阻止",
+      "modifyRequest": "修改请求",
+      "modifyResponse": "修改响应",
+      "localFile": "本地文件",
+      "proxyForward": "代理转发",
+      "unknown": "未知动作"
+    },
+    "quickAdd": {
+      "prefix": "快速添加：",
+      "blockRequest": {
+        "name": "阻止请求",
+        "description": "使用 403 状态码阻止请求"
+      },
+      "modifyRequest": {
+        "name": "修改请求",
+        "description": "修改请求头、请求体、方法或 URL"
+      },
+      "modifyResponse": {
+        "name": "修改响应",
+        "description": "修改响应头、响应体或状态码"
+      },
+      "localFile": {
+        "name": "本地文件",
+        "description": "返回本地文件作为响应"
+      },
+      "proxyForward": {
+        "name": "代理转发",
+        "description": "将请求转发到其他服务器"
+      }
+    },
+    "handlerDescriptions": {
+      "statusCode": "状态码: {code}",
+      "reason": "访问被阻止",
+      "modifyHeaders": "修改请求头",
+      "modifyBody": "修改请求体",
+      "modifyMethod": "方法: {method}",
+      "modifyUrl": "修改URL",
+      "modifyRequest": "修改请求",
+      "modifyResponseHeaders": "修改响应头",
+      "modifyResponseBody": "修改响应体",
+      "modifyResponse": "修改响应",
+      "file": "文件: {path}",
+      "returnLocalFile": "返回本地文件",
+      "forwardTo": "转发到: {host}",
+      "proxyForward": "代理转发"
+    },
+    "captureTypes": {
+      "glob": "Glob",
+      "regex": "正则",
+      "exact": "精确",
+      "contains": "包含"
+    },
+    "operators": {
+      "and": "AND",
+      "or": "OR",
+      "not": "NOT"
+    },
+    "conditionLabels": {
+      "method": "方法: ",
+      "host": "主机: ",
+      "not": "(非)"
+    },
+    "createRuleDrawer": {
+      "createTitle": "创建拦截规则",
+      "editTitle": "编辑拦截规则",
+      "cancel": "取消",
+      "save": "保存修改",
+      "create": "创建规则",
+      "createSuccess": "规则创建成功",
+      "updateSuccess": "规则更新成功",
+      "operationFailed": "操作失败，请重试",
+      "basicInfo": {
+        "title": "基础信息",
+        "description": "配置规则的基本属性，包括名称、描述和执行优先级",
+        "ruleName": "规则名称",
+        "ruleNamePlaceholder": "请输入规则名称",
+        "ruleDescription": "规则描述",
+        "ruleDescriptionPlaceholder": "请输入规则描述（可选）",
+        "enableRule": "启用规则",
+        "enableDescription": "规则是否立即生效",
+        "enableStatus": "启用状态",
+        "enableTooltip": "关闭后该规则将不会被执行",
+        "priority": "优先级",
+        "priorityTooltip": "数值越大优先级越高，范围：0-100"
+      },
+      "captureRule": {
+        "title": "捕获规则",
+        "description": "定义什么样的请求会被此规则匹配和处理",
+        "simpleRule": "简单规则",
+        "complexRule": "复杂规则",
+        "addAtLeastOneCondition": "请添加至少一个条件",
+        "urlPattern": "URL 匹配模式",
+        "selectMatchType": "选择匹配类型",
+        "urlPatternPlaceholder": "输入 URL 匹配模式",
+        "globHelp": "使用 Glob 语法匹配 URL，例如: *.example.com/api/*",
+        "regexHelp": "使用正则表达式匹配 URL，例如: ^https://example\\.com/api/.*$",
+        "exactHelp": "精确匹配 URL",
+        "containsHelp": "匹配包含此字符串的 URL",
+        "httpMethod": "HTTP 方法",
+        "selectHttpMethod": "选择 HTTP 方法",
+        "httpMethodEmptyHelp": "不选择则匹配所有 HTTP 方法",
+        "hostname": "主机名",
+        "hostnamePlaceholder": "输入主机名，例如: example.com",
+        "hostnameEmptyHelp": "匹配所有主机名",
+        "headers": "请求头",
+        "headerName": "请求头名称",
+        "headerValue": "请求头值",
+        "noHeadersHelp": "添加请求头匹配条件",
+        "addHeader": "添加请求头",
+        "condition": "条件",
+        "addOptionalConditions": "添加可选的匹配条件",
+        "addSimpleCondition": "添加简单条件",
+        "addComplexCondition": "添加复杂条件",
+        "notSet": "未设置",
+        "logicalOperator": "逻辑操作符",
+        "andOperatorDescription": "所有条件必须满足",
+        "orOperatorDescription": "任一条件满足即可",
+        "notOperatorDescription": "当条件不满足时匹配（仅允许一个条件）",
+        "notOperatorTip": "使用 NOT 操作符时，只能添加一个条件。NOT 操作符会匹配不满足条件的请求。",
+        "noConditions": "暂无条件",
+        "clickButtonToStart": "点击下方按钮添加条件",
+        "rulePreview": "规则预览"
+      },
+      "handlerBehavior": {
+        "title": "处理行为",
+        "description": "定义当请求匹配规则时要执行的处理动作，可以添加多个处理器",
+        "noHandlers": "暂无处理器，点击下方按钮添加处理器",
+        "modifyConfig": {
+          "common": {
+            "statusCode": "状态码",
+            "enterName": "请输入{type}名称",
+            "enterValue": "请输入{type}值",
+            "headerNamePlaceholder": "{type}名称（如：{example}）",
+            "headerValuePlaceholder": "{type}值",
+            "addHeader": "添加{type}",
+            "newBody": "新的{type}内容",
+            "bodyPlaceholder": "输入新的{type}内容（{formats}）",
+            "optionalDescription": "如果不修改某项{type}，请保持对应字段为空"
+          },
+          "request": {
+            "title": "请求配置",
+            "header": "请求头",
+            "headers": "请求头",
+            "headersDesc": "修改请求头信息",
+            "body": "请求体",
+            "bodyDesc": "修改请求体内容",
+            "method": "请求方法",
+            "methodDesc": "修改 HTTP 请求方法",
+            "newMethod": "新的请求方法",
+            "selectMethod": "选择请求方法",
+            "url": "请求 URL",
+            "urlDesc": "修改请求 URL",
+            "newUrl": "新的 URL",
+            "urlValidation": "请输入有效的 URL",
+            "type": "请求"
+          },
+          "response": {
+            "title": "响应配置",
+            "header": "响应头",
+            "headers": "响应头",
+            "headersDesc": "修改响应头信息",
+            "body": "响应体",
+            "bodyDesc": "修改响应体内容",
+            "statusCode": "状态码",
+            "statusCodeDesc": "修改响应状态码",
+            "statusCodeValidation": "状态码必须在 100 到 599 之间",
+            "selectStatusCode": "选择状态码",
+            "type": "响应"
+          }
+        },
+        "handlerItem": {
+          "name": "名称",
+          "description": "描述",
+          "configuration": "配置",
+          "unnamed": "未命名处理器",
+          "notSet": "未设置"
+        },
+        "blockHandler": {
+          "title": "阻止请求配置",
+          "statusCode": "状态码",
+          "statusCodeRequired": "请输入状态码",
+          "statusCodeRange": "状态码必须在100-599之间",
+          "reason": "阻止原因",
+          "description": "阻止请求将返回指定的HTTP状态码和原因，常用状态码：403 (禁止访问)、404 (未找到)、503 (服务不可用)"
+        },
+        "proxyForward": {
+          "title": "代理转发配置",
+          "scheme": "协议",
+          "authority": "目标地址",
+          "authorityRequired": "请输入目标地址",
+          "path": "路径",
+          "description": "配置代理转发的目标地址。您可以指定目标URL的协议、主机/端口和路径。例如，将请求转发到内部网络或其他服务器。"
+        }
+      }
+    }
+  }
 }

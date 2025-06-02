@@ -457,7 +457,10 @@ export type ModifyResponseConfigModifyHeaders =
 
 export type ModifyResponseConfigModifyMethod = string | null;
 
-export type ModifyResponseConfigModifyUrl = string | null;
+/**
+ * @minimum 0
+ */
+export type ModifyResponseConfigModifyStatusCode = number | null;
 
 /**
  * Modify request handler configuration
@@ -466,11 +469,20 @@ export interface ModifyResponseConfig {
   modifyBody?: ModifyResponseConfigModifyBody;
   modifyHeaders?: ModifyResponseConfigModifyHeaders;
   modifyMethod?: ModifyResponseConfigModifyMethod;
-  modifyUrl?: ModifyResponseConfigModifyUrl;
+  /** @minimum 0 */
+  modifyStatusCode?: ModifyResponseConfigModifyStatusCode;
 }
 
+export type ProxyForwardConfigTargetAuthority = string | null;
+
+export type ProxyForwardConfigTargetPath = string | null;
+
+export type ProxyForwardConfigTargetScheme = string | null;
+
 export interface ProxyForwardConfig {
-  targetPort: string;
+  targetAuthority?: ProxyForwardConfigTargetAuthority;
+  targetPath?: ProxyForwardConfigTargetPath;
+  targetScheme?: ProxyForwardConfigTargetScheme;
 }
 
 export type RecordRequestsPatchRequests = MessageEventStoreValue[] | null;

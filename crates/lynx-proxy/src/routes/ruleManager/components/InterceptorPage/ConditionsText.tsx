@@ -8,6 +8,7 @@ import {
   CaptureType,
   LogicalOperator,
 } from '@/services/generated/utoipaAxum.schemas';
+import { useI18n } from '@/contexts';
 
 const { Text } = Typography;
 
@@ -17,63 +18,74 @@ interface ConditionsTextProps {
   style?: React.CSSProperties;
 }
 
-const getCaptureTypeLabel = (type: CaptureType): string => {
-  const typeMap = {
-    [CaptureType.glob]: 'Glob',
-    [CaptureType.regex]: '正则',
-    [CaptureType.exact]: '精确',
-    [CaptureType.contains]: '包含',
+const useCaptureTypeLabel = () => {
+  const { t } = useI18n();
+
+  return (type: CaptureType): string => {
+    const typeMap = {
+      [CaptureType.glob]: t('ruleManager.captureTypes.glob'),
+      [CaptureType.regex]: t('ruleManager.captureTypes.regex'),
+      [CaptureType.exact]: t('ruleManager.captureTypes.exact'),
+      [CaptureType.contains]: t('ruleManager.captureTypes.contains'),
+    };
+    return typeMap[type] || type;
   };
-  return typeMap[type] || type;
 };
 
-const getOperatorLabel = (operator: LogicalOperator): string => {
-  const operatorMap = {
-    [LogicalOperator.and]: 'AND',
-    [LogicalOperator.or]: 'OR',
-    [LogicalOperator.not]: 'NOT',
+const useOperatorLabel = () => {
+  const { t } = useI18n();
+
+  return (operator: LogicalOperator): string => {
+    const operatorMap = {
+      [LogicalOperator.and]: t('ruleManager.operators.and'),
+      [LogicalOperator.or]: t('ruleManager.operators.or'),
+      [LogicalOperator.not]: t('ruleManager.operators.not'),
+    };
+    return operatorMap[operator] || operator;
   };
-  return operatorMap[operator] || operator;
 };
 
-const renderSimpleCondition = (condition: SimpleCaptureCondition): React.ReactNode => {
+const RenderSimpleCondition: React.FC<{
+  condition: SimpleCaptureCondition;
+}> = ({ condition }): React.ReactNode => {
+  const { t } = useI18n();
   const parts: React.ReactNode[] = [];
-
-  // 添加匹配类型标签
+  const captureTypeLabel = useCaptureTypeLabel();
   if (condition.urlPattern) {
     parts.push(
       <Tag key="type" color="blue" style={{ fontSize: '12px' }}>
-        {getCaptureTypeLabel(condition.urlPattern.captureType)}
-      </Tag>
+        {captureTypeLabel(condition.urlPattern.captureType)}
+      </Tag>,
     );
 
-    // 添加模式
     if (condition.urlPattern.pattern) {
       parts.push(
         <Text key="pattern" code style={{ fontSize: '12px' }}>
           {condition.urlPattern.pattern}
-        </Text>
+        </Text>,
       );
     }
   }
 
-  // 添加方法过滤
   if (condition.method) {
     parts.push(
       <span key="method">
-        <Text type="secondary">方法: </Text>
-        <Tag color="green" style={{ fontSize: '12px' }}>{condition.method}</Tag>
-      </span>
+        <Text type="secondary">{t('ruleManager.conditionLabels.method')}</Text>
+        <Tag color="green" style={{ fontSize: '12px' }}>
+          {condition.method}
+        </Tag>
+      </span>,
     );
   }
 
-  // 添加主机过滤
   if (condition.host) {
     parts.push(
       <span key="host">
-        <Text type="secondary">主机: </Text>
-        <Tag color="orange" style={{ fontSize: '12px' }}>{condition.host}</Tag>
-      </span>
+        <Text type="secondary">{t('ruleManager.conditionLabels.host')}</Text>
+        <Tag color="orange" style={{ fontSize: '12px' }}>
+          {condition.host}
+        </Tag>
+      </span>,
     );
   }
 
@@ -84,10 +96,20 @@ const renderSimpleCondition = (condition: SimpleCaptureCondition): React.ReactNo
   );
 };
 
-const renderCondition = (condition: CaptureCondition, depth = 0): React.ReactNode => {
+const RenderCondition: React.FC<{
+  condition: CaptureCondition;
+  depth?: number;
+}> = (
+  { condition, depth = 0 }, // 默认深度为0
+): React.ReactNode => {
+  const getOperatorLabel = useOperatorLabel();
+  const { t } = useI18n();
+
   // 检查是否为简单条件
   if ('urlPattern' in condition && !('operator' in condition)) {
-    return renderSimpleCondition(condition as SimpleCaptureCondition);
+    return (
+      <RenderSimpleCondition condition={condition as SimpleCaptureCondition} />
+    );
   }
 
   // 处理复杂条件
@@ -108,14 +130,25 @@ const renderCondition = (condition: CaptureCondition, depth = 0): React.ReactNod
           </Tag>
           {complexCondition.operator === LogicalOperator.not && (
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              (非)
+              {t('ruleManager.conditionLabels.not')}
             </Text>
           )}
         </div>
-        <div style={{ paddingLeft: 8, borderLeft: isNested ? '2px solid #f0f0f0' : 'none' }}>
+        <div
+          style={{
+            paddingLeft: 8,
+            borderLeft: isNested ? '2px solid #f0f0f0' : 'none',
+          }}
+        >
           {complexCondition.conditions.map((subCondition, index) => (
-            <div key={index} style={{ marginBottom: index < complexCondition.conditions.length - 1 ? 8 : 0 }}>
-              {renderCondition(subCondition, depth + 1)}
+            <div
+              key={index}
+              style={{
+                marginBottom:
+                  index < complexCondition.conditions.length - 1 ? 8 : 0,
+              }}
+            >
+              <RenderCondition condition={subCondition} depth={depth + 1} />
             </div>
           ))}
         </div>
@@ -139,7 +172,7 @@ export const ConditionsText: React.FC<ConditionsTextProps> = ({
 
   return (
     <div className={className} style={style}>
-      {renderCondition(capture.condition)}
+      <RenderCondition condition={capture.condition} />
     </div>
   );
 };

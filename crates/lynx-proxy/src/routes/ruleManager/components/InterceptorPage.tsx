@@ -1,57 +1,57 @@
 import { CommonCard } from '@/routes/settings/components/CommonCard';
-import {
-  RiAddLine,
-  RiDeleteBinLine,
-  RiEditLine,
-} from '@remixicon/react';
-import {
-  Button,
-  Modal,
-  Space,
-  Switch,
-  Table,
-  Typography,
-} from 'antd';
+import { RiAddLine, RiDeleteBinLine, RiEditLine } from '@remixicon/react';
+import { Button, Modal, Space, Switch, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { RequestRule } from '@/services/generated/utoipaAxum.schemas';
-import { useDeleteRule, useListRules, useToggleRule } from '@/services/generated/request-processing/request-processing';
+import {
+  useDeleteRule,
+  useListRules,
+  useToggleRule,
+} from '@/services/generated/request-processing/request-processing';
 import { ConditionsText } from './InterceptorPage/ConditionsText';
 import { ActionCell } from './InterceptorPage/ActionCell';
-import { CreateRuleDrawer, CreateRuleDrawerProvider, useCreateRuleDrawer } from './InterceptorPage/CreateRuleDrawer';
+import {
+  CreateRuleDrawer,
+  CreateRuleDrawerProvider,
+  useCreateRuleDrawer,
+} from './InterceptorPage/CreateRuleDrawer';
 import { CopyRuleButton } from './InterceptorPage/CopyRuleButton';
+import { useI18n } from '@/contexts';
 
 const { Title, Text } = Typography;
 
 const InnerInterceptorPage: React.FC = () => {
+  const { t } = useI18n();
   const [pageParameters, setPageParameters] = React.useState({
     page: 1,
     pageSize: 10,
   });
-  const { data: listRulesData, refetch: refetchRules } = useListRules(pageParameters);
+  const { data: listRulesData, refetch: refetchRules } =
+    useListRules(pageParameters);
   const { openDrawer, openEditDrawer } = useCreateRuleDrawer();
-  
+
   // 启用/禁用规则
   const toggleRuleMutation = useToggleRule({
     mutation: {
       onSuccess: () => {
         refetchRules();
-      }
-    }
+      },
+    },
   });
-  
+
   // 删除规则
   const deleteRuleMutation = useDeleteRule({
     mutation: {
       onSuccess: () => {
         refetchRules();
-      }
-    }
+      },
+    },
   });
 
   const columns: ColumnsType<RequestRule> = [
     {
-      title: '状态',
+      title: t('ruleManager.table.status'),
       dataIndex: 'enabled',
       key: 'enabled',
       width: 80,
@@ -62,7 +62,7 @@ const InnerInterceptorPage: React.FC = () => {
             if (record.id) {
               toggleRuleMutation.mutate({
                 id: record.id,
-                data: { enabled: checked }
+                data: { enabled: checked },
               });
             }
           }}
@@ -70,7 +70,7 @@ const InnerInterceptorPage: React.FC = () => {
       ),
     },
     {
-      title: '规则名称',
+      title: t('ruleManager.table.ruleName'),
       dataIndex: 'name',
       key: 'name',
       width: 200,
@@ -85,7 +85,7 @@ const InnerInterceptorPage: React.FC = () => {
       ),
     },
     {
-      title: '匹配条件',
+      title: t('ruleManager.table.matchConditions'),
       key: 'conditions',
       width: 300,
       render: (_, record) => (
@@ -93,29 +93,27 @@ const InnerInterceptorPage: React.FC = () => {
       ),
     },
     {
-      title: '动作',
+      title: t('ruleManager.table.action'),
       key: 'action',
       width: 200,
-      render: (_, record) => (
-        <ActionCell handlers={record.handlers} />
-      ),
+      render: (_, record) => <ActionCell handlers={record.handlers} />,
     },
     {
-      title: '优先级',
+      title: t('ruleManager.table.priority'),
       dataIndex: 'priority',
       key: 'priority',
       width: 80,
       sorter: (a, b) => a.priority - b.priority,
     },
     {
-      title: '操作',
+      title: t('ruleManager.table.operations'),
       key: 'actions',
       width: 120,
       render: (_, record) => {
         return (
           <Space>
-            <Button 
-              type="text" 
+            <Button
+              type="text"
               icon={<RiEditLine size={14} />}
               onClick={() => {
                 if (record.id) {
@@ -124,24 +122,26 @@ const InnerInterceptorPage: React.FC = () => {
               }}
             />
             <CopyRuleButton record={record} onSuccess={refetchRules} />
-            <Button 
-              type="text" 
+            <Button
+              type="text"
               danger
               icon={<RiDeleteBinLine size={14} />}
               onClick={() => {
                 if (record.id) {
                   Modal.confirm({
-                    title: '确认删除',
-                    content: `确定要删除规则 "${record.name}" 吗？此操作不可恢复。`,
-                    okText: '删除',
+                    title: t('ruleManager.deleteConfirm.title'),
+                    content: t('ruleManager.deleteConfirm.content', {
+                      name: record.name,
+                    }),
+                    okText: t('ruleManager.deleteConfirm.okText'),
                     okType: 'danger',
-                    cancelText: '取消',
+                    cancelText: t('ruleManager.deleteConfirm.cancelText'),
                     onOk: () => {
                       const id = record.id;
                       if (typeof id === 'number') {
                         deleteRuleMutation.mutate({ id });
                       }
-                    }
+                    },
                   });
                 }
               }}
@@ -157,7 +157,7 @@ const InnerInterceptorPage: React.FC = () => {
       <CommonCard>
         <div className="mb-4 flex items-center justify-between">
           <Title level={4} style={{ margin: 0 }}>
-            拦截规则列表
+            {t('ruleManager.title')}
           </Title>
           <Space>
             <Button
@@ -165,13 +165,13 @@ const InnerInterceptorPage: React.FC = () => {
               icon={<RiAddLine size={16} />}
               onClick={openDrawer}
             >
-              新建规则
+              {t('ruleManager.createRule')}
             </Button>
           </Space>
         </div>
 
         <Text type="secondary" className="mb-4 block">
-          管理用于拦截和修改网络请求的规则
+          {t('ruleManager.description')}
         </Text>
 
         <Table
@@ -200,4 +200,3 @@ export const InterceptorPage: React.FC = () => {
     </CreateRuleDrawerProvider>
   );
 };
-

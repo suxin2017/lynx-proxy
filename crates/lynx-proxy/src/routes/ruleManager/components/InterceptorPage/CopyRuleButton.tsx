@@ -3,6 +3,7 @@ import { useCreateRule } from '@/services/generated/request-processing/request-p
 import { RiFileCopyLine } from '@remixicon/react';
 import { Button, Modal } from 'antd';
 import React from 'react';
+import { useI18n } from '@/contexts';
 
 interface CopyRuleButtonProps {
   record: RequestRule;
@@ -13,7 +14,9 @@ export const CopyRuleButton: React.FC<CopyRuleButtonProps> = ({
   record,
   onSuccess,
 }) => {
-  // 创建规则
+  const { t } = useI18n();
+
+  // Create rule
   const createRuleMutation = useCreateRule({
     mutation: {
       onSuccess: () => {
@@ -22,60 +25,54 @@ export const CopyRuleButton: React.FC<CopyRuleButtonProps> = ({
     },
   });
 
-  // 深度清除对象中所有的id属性
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const clearAllIds = (obj: any): any => {
     if (!obj || typeof obj !== 'object') return obj;
-    
-    // 处理数组
+
     if (Array.isArray(obj)) {
-      return obj.map(item => clearAllIds(item));
+      return obj.map((item) => clearAllIds(item));
     }
-    
-    // 处理对象
+
     const newObj = { ...obj };
-    
-    // 删除id属性
+
     delete newObj.id;
-    
-    // 递归处理所有子对象
+
     for (const key in newObj) {
       if (typeof newObj[key] === 'object' && newObj[key] !== null) {
         newObj[key] = clearAllIds(newObj[key]);
       }
     }
-    
+
     return newObj;
   };
 
   const handleCopy = () => {
     if (!record) return;
-    
+
     Modal.confirm({
-      title: '确认复制',
-      content: `确定要复制规则 "${record.name}" 吗？`,
-      okText: '复制',
-      cancelText: '取消',
+      title: t('ruleManager.copyConfirm.title'),
+      content: t('ruleManager.copyConfirm.content', { name: record.name }),
+      okText: t('ruleManager.copyConfirm.okText'),
+      cancelText: t('ruleManager.copyConfirm.cancelText'),
       onOk: async () => {
         try {
-          // 创建规则副本并清除所有id
           const ruleCopy = clearAllIds(record);
-          
-          // 设置新名称
-          ruleCopy.name = `${record.name} (副本)`;
-          
+
+          ruleCopy.name = t('ruleManager.copyRuleName', { name: record.name });
+
           createRuleMutation.mutate({
-            data: ruleCopy
+            data: ruleCopy,
           });
         } catch (error) {
-          console.error('复制规则失败:', error);
+          console.error(t('ruleManager.copyRuleError'), error);
         }
-      }
+      },
     });
   };
 
   return (
-    <Button 
-      type="text" 
+    <Button
+      type="text"
       icon={<RiFileCopyLine size={14} />}
       onClick={handleCopy}
     />
