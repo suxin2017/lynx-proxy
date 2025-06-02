@@ -1,6 +1,5 @@
 use sea_orm::JsonValue;
 use sea_orm::Schema;
-use sea_orm::Statement;
 use sea_orm_migration::prelude::*;
 
 use crate::dao::request_processing_dao::handlers::handler_rule::HandlerRule;
@@ -28,6 +27,40 @@ impl MigrationTrait for Migration {
         // Create handler table
         let handler_table = builder.build(schema.create_table_from_entity(Handler).if_not_exists());
         manager.get_connection().execute(handler_table).await?;
+
+        // Insert default handler templates
+        let default_templates = HandlerRule::default_templates();
+        for template in default_templates {
+            let now = chrono::Utc::now().timestamp();
+            let insert_stmt = Query::insert()
+                .into_table(handler::Entity)
+                .columns([
+                    handler::Column::HandlerType,
+                    handler::Column::Name,
+                    handler::Column::Description,
+                    handler::Column::ExecutionOrder,
+                    handler::Column::Config,
+                    handler::Column::Enabled,
+                    handler::Column::CreatedAt,
+                    handler::Column::UpdatedAt,
+                ])
+                .values_panic([
+                    HandlerType::from(&template.handler_type).into(),
+                    template.name.into(),
+                    template.description.into(),
+                    template.execution_order.into(),
+                    JsonValue::from(&template.handler_type).into(),
+                    template.enabled.into(),
+                    now.into(),
+                    now.into(),
+                ])
+                .to_owned();
+
+            manager
+                .get_connection()
+                .execute(builder.build(&insert_stmt))
+                .await?;
+        }
 
         Ok(())
     }
@@ -65,8 +98,9 @@ enum HandlerTable {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::entities::handler;
     use crate::migration::Migrator;
-    use sea_orm::{Database, DatabaseConnection};
+    use sea_orm::{ColumnTrait, Database, DatabaseConnection, EntityTrait, QueryFilter};
     use sea_orm_migration::MigratorTrait;
 
     async fn setup_test_db() -> DatabaseConnection {
@@ -79,5 +113,45 @@ mod tests {
     async fn test_migration_up() {
         let _db = setup_test_db().await;
         // Migration successful if no panic occurs
+    }
+
+    #[tokio::test]
+    async fn test_default_templates_insertion() {
+        let db = setup_test_db().await;
+
+        // Query all templates (records with rule_id = None)
+        let templates = handler::Entity::find()
+            .filter(handler::Column::RuleId.is_null())
+            .all(&db)
+            .await
+            .unwrap();
+
+        // Get expected default template count
+        let expected_templates = HandlerRule::default_templates();
+
+        // Verify the number of inserted templates is correct
+        assert_eq!(
+            templates.len(),
+            expected_templates.len(),
+            "Number of inserted templates should match default templates count"
+        );
+
+        // Verify basic attributes of each template
+        for template in templates.iter() {
+            assert_eq!(template.rule_id, None, "Template rule_id should be None");
+            assert!(!template.enabled, "All default templates should be enabled");
+            assert!(
+                !template.name.is_empty(),
+                "Template name should not be empty"
+            );
+            assert!(
+                template.description.is_some(),
+                "Template description should not be empty"
+            );
+            assert!(
+                template.config.is_object(),
+                "Template config should not be empty"
+            );
+        }
     }
 }

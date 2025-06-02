@@ -23,15 +23,15 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
   const isRequest = type === 'request';
 
   const commonStatusCodes = [
-    { value: 200, label: t('common.httpStatus.200') },
-    { value: 201, label: t('common.httpStatus.201') },
-    { value: 400, label: t('common.httpStatus.400') },
-    { value: 401, label: t('common.httpStatus.401') },
-    { value: 403, label: t('common.httpStatus.403') },
-    { value: 404, label: t('common.httpStatus.404') },
-    { value: 500, label: t('common.httpStatus.500') },
-    { value: 502, label: t('common.httpStatus.502') },
-    { value: 503, label: t('common.httpStatus.503') },
+    { value: 200, label: '200 OK' },
+    { value: 201, label: '201 Created' },
+    { value: 400, label: '400 Bad Request' },
+    { value: 401, label: '401 Unauthorized' },
+    { value: 403, label: '403 Forbidden' },
+    { value: 404, label: '404 Not Found' },
+    { value: 500, label: '500 Internal Server Error' },
+    { value: 502, label: '502 Bad Gateway' },
+    { value: 503, label: '503 Service Unavailable' },
   ];
 
   const httpMethods = [
@@ -286,7 +286,7 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
                     },
                   ]}
                 >
-                  <Input placeholder={t('common.placeholders.url')} />
+                  <Input placeholder="https://example.com/new-path" />
                 </Form.Item>
               </div>
             ),
@@ -340,7 +340,9 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
                     : t(
                         'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.body',
                       ),
-                  formats: t(isResponse ? 'common.formats.response' : 'common.formats.request'),
+                  formats: isResponse
+                    ? 'JSON、HTML、XML、文本'
+                    : 'JSON、XML、文本',
                 },
               )}
             />

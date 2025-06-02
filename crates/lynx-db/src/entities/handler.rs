@@ -68,7 +68,7 @@ impl Default for HandlerType {
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub rule_id: i32,
+    pub rule_id: Option<i32>,
     pub handler_type: HandlerType,
     #[sea_orm(column_type = "Text")]
     pub name: String,

@@ -59,7 +59,7 @@ impl RequestProcessingDao {
         for handler in rule.handlers {
             let handler_active_model = HandlerActiveModel {
                 id: NotSet,
-                rule_id: Set(rule_id),
+                rule_id: Set(Some(rule_id)),
                 handler_type: Set(HandlerType::from(&handler.handler_type)),
                 name: Set(handler.name),
                 description: Set(handler.description),
@@ -186,7 +186,7 @@ impl RequestProcessingDao {
         for handler in rule.handlers {
             let handler_active_model = HandlerActiveModel {
                 id: NotSet,
-                rule_id: Set(rule_id),
+                rule_id: Set(Some(rule_id)),
                 handler_type: Set(HandlerType::from(&handler.handler_type)),
                 name: Set(handler.name),
                 description: Set(handler.description),
