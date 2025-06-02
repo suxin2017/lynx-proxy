@@ -239,7 +239,7 @@ impl RequestProcessingDao {
     /// Get template handlers (rule_id = 0)
     pub async fn get_template_handlers(&self) -> Result<Vec<HandlerRule>> {
         let handlers = HandlerEntity::find()
-            .filter(handler::Column::RuleId.eq(0))
+            .filter(handler::Column::RuleId.is_null())
             .order_by_asc(handler::Column::ExecutionOrder)
             .all(self.db.as_ref())
             .await?;

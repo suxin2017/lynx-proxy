@@ -172,23 +172,3 @@ impl Default for HandlerRule {
         }
     }
 }
-
-impl HandlerRule {
-    /// 获取默认的 Handler 模板
-    pub fn default_templates() -> Vec<HandlerRule> {
-        vec![
-            // Block Handler 模板
-            HandlerRule {
-                id: None,
-                handler_type: HandlerRuleType::Block(BlockHandlerConfig {
-                    status_code: Some(403),
-                    reason: Some("Access blocked by proxy".to_string()),
-                }),
-                name: "Block Access".to_string(),
-                description: Some("Block all requests with 403 Forbidden".to_string()),
-                execution_order: 100,
-                enabled: false,
-            },
-        ]
-    }
-}
