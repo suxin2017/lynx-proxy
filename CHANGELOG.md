@@ -2,12 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.9-alpha.1] - 2025-06-03
+## [0.1.9-alpha.2] - 2025-06-04
 
 ### 🐛 Bug Fixes
 
 - Test case
 - Cli start error
+- Bug
+- Bug
 
 ## [0.1.6-alpha.1] - 2025-05-25
 
