@@ -12,7 +12,7 @@ use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest},
 };
 use tracing::{debug, warn};
-use ts_rs::TS;
+use ts_rs::;
 
 use crate::{
     client::request_client::RequestClientExt,
@@ -146,8 +146,7 @@ where
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SendType {
     ClientToServer,
     ServerToClient,
