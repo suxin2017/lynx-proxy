@@ -19,7 +19,6 @@ sea-orm-migration = { version = "1.1.0", features = [
     "sqlx-sqlite",
     "runtime-tokio-rustls",
 ] }
-ts-rs = { version = "10.1", features = ["serde-json-impl"] }
 serde_json = "1.0.135"
 serde = "1.0.217"
 utoipa = { version = "5.3.1" }
@@ -31,4 +30,4 @@ axum = "0.8.4"
 http = { workspace = true }
 http-body-util = { workspace = true }
 thiserror = "1.0"
-bytes = {workspace=true}
+bytes = { workspace = true }

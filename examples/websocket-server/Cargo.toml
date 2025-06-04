@@ -19,11 +19,6 @@ tokio-stream = { version = "0.1.14", default-features = false, features = [
 ] }
 futures-util = "0.3.31"
 anyhow = { workspace = true }
-rcgen = { version = "0.13.0", default-features = false, features = [
-    "x509-parser",
-    "pem",
-    "ring",
-] }
 tokio-rustls = { version = "0.26.0", default-features = false, features = [
     "ring",
     "tls12",
