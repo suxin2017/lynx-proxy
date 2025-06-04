@@ -12,7 +12,6 @@ use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest},
 };
 use tracing::{debug, warn};
-use ts_rs::;
 
 use crate::{
     client::request_client::RequestClientExt,
