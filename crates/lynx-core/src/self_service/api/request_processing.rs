@@ -7,7 +7,9 @@ use axum::{
     extract::{Path, Query, State},
 };
 use http::StatusCode;
-use lynx_db::dao::request_processing_dao::{HandlerRule, RequestProcessingDao, RequestRule, RuleValidator, CaptureRule};
+use lynx_db::dao::request_processing_dao::{
+    CaptureRule, HandlerRule, RequestProcessingDao, RequestRule, RuleValidator,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -240,7 +242,7 @@ async fn get_template_handlers(
     let dao = RequestProcessingDao::new(db);
 
     let handlers = dao.get_template_handlers().await.map_err(|e| {
-        println!("Failed to get template handlers: {}", e);
+        tracing::error!("Failed to get template handlers: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
@@ -278,19 +280,16 @@ async fn create_rule(
     };
 
     // Validate rule using validator
-    RuleValidator::validate_rule(&rule)
-        .map_err(|e| {
-            println!("Rule validation failed: {}", e);
-            StatusCode::BAD_REQUEST
-        })?;
+    RuleValidator::validate_rule(&rule).map_err(|e| {
+        tracing::error!("Rule validation failed: {}", e);
+        StatusCode::BAD_REQUEST
+    })?;
 
     // Create the rule
-    let rule_id = dao.create_rule(rule)
-        .await
-        .map_err(|e| {
-            println!("Failed to create rule: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let rule_id = dao.create_rule(rule).await.map_err(|e| {
+        tracing::error!("Failed to create rule: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let response = CreateRuleResponse { id: rule_id };
     Ok(Json(ok(response)))
@@ -319,13 +318,10 @@ async fn update_rule(
     let dao = RequestProcessingDao::new(db);
 
     // 首先检查规则是否存在
-    let existing_rule = dao
-        .get_rule(id)
-        .await
-        .map_err(|e| {
-            println!("Failed to get rule: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let existing_rule = dao.get_rule(id).await.map_err(|e| {
+        tracing::error!("Failed to get rule: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     if existing_rule.is_none() {
         return Err(StatusCode::NOT_FOUND);
@@ -343,19 +339,16 @@ async fn update_rule(
     };
 
     // Validate rule using validator
-    RuleValidator::validate_rule(&rule)
-        .map_err(|e| {
-            println!("Rule validation failed: {}", e);
-            StatusCode::BAD_REQUEST
-        })?;
+    RuleValidator::validate_rule(&rule).map_err(|e| {
+        tracing::error!("Rule validation failed: {}", e);
+        StatusCode::BAD_REQUEST
+    })?;
 
     // Update the rule
-    dao.update_rule(rule)
-        .await
-        .map_err(|e| {
-            println!("Failed to update rule: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    dao.update_rule(rule).await.map_err(|e| {
+        tracing::error!("Failed to update rule: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(Json(empty_ok()))
 }

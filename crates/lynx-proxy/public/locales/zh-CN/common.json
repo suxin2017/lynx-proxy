@@ -353,14 +353,14 @@
         "modifyConfig": {
           "common": {
             "statusCode": "状态码",
-            "enterName": "请输入{type}名称",
-            "enterValue": "请输入{type}值",
-            "headerNamePlaceholder": "{type}名称（如：{example}）",
-            "headerValuePlaceholder": "{type}值",
-            "addHeader": "添加{type}",
-            "newBody": "新的{type}内容",
-            "bodyPlaceholder": "输入新的{type}内容（{formats}）",
-            "optionalDescription": "如果不修改某项{type}，请保持对应字段为空"
+            "enterName": "请输入{{type}}名称",
+            "enterValue": "请输入{{type}}值",
+            "headerNamePlaceholder": "{{type}}名称（如：{{example}}）",
+            "headerValuePlaceholder": "{{type}}值",
+            "addHeader": "添加{{type}}",
+            "newBody": "新的{{type}}内容",
+            "bodyPlaceholder": "输入新的{{type}}内容（{{formats}}）",
+            "optionalDescription": "如果不修改某项{{type}}，请保持对应字段为空"
           },
           "request": {
             "title": "请求配置",

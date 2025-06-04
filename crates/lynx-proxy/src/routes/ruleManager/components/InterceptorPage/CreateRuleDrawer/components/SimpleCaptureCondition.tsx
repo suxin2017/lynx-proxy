@@ -100,7 +100,7 @@ const MethodInput = React.memo(
             {t('ruleManager.createRuleDrawer.captureRule.httpMethod')}
           </Text>
           <Button type="text" size="small" danger onClick={onRemove}>
-            {t('ruleManager.actions.remove')}
+            {t('ruleManager.actions.delete')}
           </Button>
         </div>
         <Select
@@ -148,7 +148,7 @@ const HostInput = React.memo(
             {t('ruleManager.createRuleDrawer.captureRule.hostname')}
           </Text>
           <Button type="text" size="small" danger onClick={onRemove}>
-            {t('ruleManager.actions.remove')}
+            {t('ruleManager.actions.delete')}
           </Button>
         </div>
         <Input
@@ -191,7 +191,7 @@ const HeadersInput = React.memo(
             {t('ruleManager.createRuleDrawer.captureRule.headers')}
           </Text>
           <Button type="text" size="small" danger onClick={onRemove}>
-            {t('ruleManager.actions.remove')}
+            {t('ruleManager.actions.delete')}
           </Button>
         </div>
         {headers.length > 0 ? (

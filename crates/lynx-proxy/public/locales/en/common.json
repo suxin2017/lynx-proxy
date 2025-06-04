@@ -352,14 +352,14 @@
         "modifyConfig": {
           "common": {
             "statusCode": "Status Code",
-            "enterName": "Please enter {type} name",
-            "enterValue": "Please enter {type} value",
-            "headerNamePlaceholder": "{type} name (e.g., {example})",
-            "headerValuePlaceholder": "{type} value",
-            "addHeader": "Add {type}",
-            "newBody": "New {type} content",
-            "bodyPlaceholder": "Enter new {type} content ({formats})",
-            "optionalDescription": "Leave fields empty for any {type} items you don't want to modify"
+            "enterName": "Please enter {{type}} name",
+            "enterValue": "Please enter {{type}} value",
+            "headerNamePlaceholder": "{{type}} name (e.g., {{example}})",
+            "headerValuePlaceholder": "{{type}} value",
+            "addHeader": "Add {{type}}",
+            "newBody": "New {{type}} content",
+            "bodyPlaceholder": "Enter new {{type}} content ({{formats}})",
+            "optionalDescription": "Leave fields empty for any {{type}} items you don't want to modify"
           },
           "request": {
             "title": "Request Configuration",

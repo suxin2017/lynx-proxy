@@ -307,11 +307,13 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
       children: (
         <div className="space-y-4">
           <Text type="secondary">
-            {t(
-              isResponse
-                ? 'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.bodyDesc'
-                : 'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.bodyDesc',
-            )}
+            {isResponse
+              ? t(
+                  'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.bodyDesc',
+                )
+              : t(
+                  'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.bodyDesc',
+                )}
           </Text>
           <Form.Item
             name={[field.name, 'handlerType', 'modifyBody']}
@@ -355,11 +357,13 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
   return (
     <div className="space-y-4">
       <Text strong>
-        {t(
-          isResponse
-            ? 'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.title'
-            : 'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.title',
-        )}
+        {isResponse
+          ? t(
+              'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.title',
+            )
+          : t(
+              'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.title',
+            )}
       </Text>
 
       <Collapse

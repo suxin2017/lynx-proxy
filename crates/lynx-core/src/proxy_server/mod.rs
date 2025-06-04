@@ -165,7 +165,7 @@ impl ProxyServer {
         let tls_acceptor = TlsAcceptor::from(self_ca);
 
         let db_connect = self.db_connect.clone();
-        Migrator::up(db_connect.as_ref(), None).await?;
+        Migrator::fresh(db_connect.as_ref()).await?;
 
         tokio::spawn(async move {
             loop {
