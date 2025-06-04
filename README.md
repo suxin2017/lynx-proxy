@@ -94,3 +94,7 @@ The project is under active development. Stay tuned and feel free to participate
 ## Roadmap
 
 https://v0-modern-proxy-tool-wq.vercel.app/
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=suxin2017/lynx-server&type=Date)](https://www.star-history.com/#suxin2017/lynx-server&Date)
