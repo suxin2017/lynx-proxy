@@ -12,6 +12,7 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAutoScroll } from '../store/autoScrollStore';
 import { useSelectRequest } from '../store/selectRequestStore';
+import { useKeyPress } from 'ahooks';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -195,7 +196,37 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
         });
       }
     }
-  }, [autoScroll, requestTable]);
+  }, [autoScroll, requestTable.length]);
+
+  useKeyPress(38, () => {
+    console.log('ArrowUp pressed', selectRequest, requestTable);
+    debugger
+    if (selectRequest) {
+      const currentIndex = requestTable.findIndex(
+        (item) => item.traceId === selectRequest?.traceId,
+      );
+      if (currentIndex > 0) {
+        setSelectRequest(requestTable[currentIndex - 1]);
+        tblRef.current?.scrollTo({
+          key: requestTable[currentIndex - 1].traceId,
+        });
+      }
+    }
+  });
+
+  useKeyPress(40, () => {
+    if (selectRequest) {
+      const currentIndex = requestTable.findIndex(
+        (item) => item.traceId === selectRequest?.traceId,
+      );
+      if (currentIndex < requestTable.length - 1) {
+        setSelectRequest(requestTable[currentIndex + 1]);
+        tblRef.current?.scrollTo({
+          key: requestTable[currentIndex - 1].traceId,
+        });
+      }
+    }
+  });
 
   return (
     <RequestContextMenu>

@@ -34,6 +34,13 @@ impl MockClientInner {
         )
     }
 
+    pub async fn proxy_ws(
+        &self,
+        url: &str,
+    ) -> Result<reqwest_websocket::UpgradeResponse, reqwest_websocket::Error> {
+        self.proxy_client.get(url).upgrade().send().await
+    }
+
     pub async fn ws(
         &self,
         url: &str,
@@ -75,14 +82,17 @@ impl PartialEq for MessageWrapper {
 }
 
 impl MockClient {
+    pub fn get_request_client(&self) -> Arc<Client> {
+        self.0.direct_client.clone()
+    }
+    pub fn get_proxy_client(&self) -> Arc<Client> {
+        self.0.proxy_client.clone()
+    }
     pub fn new(
         custom_cert: Option<Vec<Arc<rcgen::Certificate>>>,
         proxy_url: Option<String>,
     ) -> Result<Self> {
         let direct_client = Self::build_client(&custom_cert, None)?;
-        if let Some(proxy_url) = &proxy_url {
-            trace!("proxy addr: {proxy_url}");
-        }
         let proxy_client = Self::build_client(&custom_cert, proxy_url.clone())?;
         Ok(MockClient(Arc::new(MockClientInner {
             direct_client: Arc::new(direct_client),
@@ -177,6 +187,13 @@ impl MockClient {
         Ok(())
     }
 
+    pub async fn proxy_ws(
+        &self,
+        ws_path: &str,
+    ) -> Result<reqwest_websocket::UpgradeResponse, reqwest_websocket::Error> {
+        self.0.proxy_ws(ws_path).await
+    }
+
     async fn ws(
         &self,
         ws_path: &str,
@@ -241,7 +258,8 @@ async fn send_message(
     si.send(Message::Text("Hello".into())).await?;
     let msg = st.next().await;
     res.push(msg);
-    si.send(Message::Binary(b"World".into())).await?;
+    si.send(Message::Binary(bytes::Bytes::from("World")))
+        .await?;
     let msg = st.next().await;
     res.push(msg);
     si.send(Message::Close {

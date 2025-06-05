@@ -102,10 +102,6 @@ impl ProxyApp {
     pub async fn start_server(&self) -> Result<()> {
         self.init_logging()?;
 
-        rustls::crypto::ring::default_provider()
-            .install_default()
-            .map_err(|_| anyhow::anyhow!("Failed to install rustls crypto provider"))?;
-
         let data_dir = self.get_data_dir()?;
 
         println!(

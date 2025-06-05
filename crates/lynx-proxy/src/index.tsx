@@ -4,7 +4,6 @@ import './i18n';
 import App from './App';
 import '@ant-design/v5-patch-for-react-19';
 
-// 在 React 渲染前同步设置 dark class，防止主题切换闪烁
 const theme = localStorage.getItem('theme');
 if (
   theme === 'dark' ||

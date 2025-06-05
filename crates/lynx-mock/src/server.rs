@@ -25,7 +25,7 @@ pub fn mock_server_config(
     key_path: &PathBuf,
 ) -> Result<(ServerConfig, Arc<Certificate>, KeyPair)> {
     let (cert, key) = if cert_path.exists() && key_path.exists() {
-        let (cert, key) = read_cert_and_key_by_file(&key_path, &cert_path)?;
+        let (cert, key) = read_cert_and_key_by_file(key_path, cert_path)?;
         let cert = Arc::new(cert);
         (cert, key)
     } else {

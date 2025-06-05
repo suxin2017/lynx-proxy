@@ -71,6 +71,7 @@ const AppContent = () => {
           borderRadius: 6,
           colorBgBase: isDark ? '#0d0d0d' : '#f9fafb',
           colorBgContainer: isDark ? '#0d0d0d' : '#f9fafb',
+          colorBgElevated: isDark ? '#0d0d0d' : '#f9fafb',
         },
         algorithm: antdAlgorithm,
       }}
