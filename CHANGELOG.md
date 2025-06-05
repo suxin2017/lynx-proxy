@@ -2,14 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.9-alpha.4] - 2025-06-05
+## [0.2.0] - 2025-06-05
+
+### 🚀 Features
+
+- Proxy Interception Support ([#8](https://github.com/suxin2017/lynx-server/issues/8))
 
 ### 🐛 Bug Fixes
 
 - Test case
 - Cli start error
-- Bug
-- Bug
 
 ## [0.1.6-alpha.1] - 2025-05-25
 
