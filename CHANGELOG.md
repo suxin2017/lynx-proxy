@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.0] - 2025-06-05
+## [0.2.1] - 2025-06-05
 
 ### 🚀 Features
 
@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 - Test case
 - Cli start error
+- Dark mode bug
 
 ## [0.1.6-alpha.1] - 2025-05-25
 
