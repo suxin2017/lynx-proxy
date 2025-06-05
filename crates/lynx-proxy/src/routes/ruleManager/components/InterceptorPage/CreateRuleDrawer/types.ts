@@ -42,12 +42,12 @@ export interface HandlerRuleFormValues {
 export type HandlerRuleTypeFormValues =
   | HandlerRuleTypeOneOf
   | (Omit<HandlerRuleTypeOneOfFour, 'modifyHeaders'> & {
-      modifyHeaders: { key: string; value: string }[];
-    })
+    modifyHeaders: { key: string; value: string }[];
+  })
   | HandlerRuleTypeOneOfSeven
   | (Omit<HandlerRuleTypeOneOfOnezero, 'modifyHeaders'> & {
-      modifyHeaders: { key: string; value: string }[];
-    })
+    modifyHeaders: { key: string; value: string }[];
+  })
   | HandlerRuleTypeOneOfOnethree;
 
 // Simple capture condition form values - using the generated type directly
@@ -168,7 +168,7 @@ export const formValuesToRequestRule = (
       description: handler.description || null,
       enabled: handler.enabled,
       executionOrder: handler.executionOrder,
-      handlerType,
+      handlerType: newHandlerType,
     };
   });
 

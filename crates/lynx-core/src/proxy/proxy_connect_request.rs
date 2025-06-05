@@ -92,6 +92,10 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                 .map_err(|e| anyhow!(e))?;
         }
         ConnectStreamType::Https => {
+            tracing::trace!(
+                "Handling HTTPS connect request for authority: {}",
+                authority
+            );
             if !should_capture_https(db, &authority)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to check if should capture https"))?
@@ -117,7 +121,6 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                     http::uri::Scheme::HTTPS,
                 ))
                 .layer_fn(|inner| RequestMessageEventService { service: inner })
-                .layer_fn(RequestProcessingService::new)
                 .service(svc);
 
             let transform_svc = service_fn(move |req: HyperReq| {

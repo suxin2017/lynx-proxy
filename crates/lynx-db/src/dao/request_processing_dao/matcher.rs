@@ -1,14 +1,12 @@
 use super::{
+    HeaderUtils,
     error::RequestProcessingError,
-    types::{
-        CaptureCondition, CaptureRule, LogicalOperator, RequestRule,
-        SimpleCaptureCondition,
-    }, HeaderUtils,
+    types::{CaptureCondition, CaptureRule, LogicalOperator, RequestRule, SimpleCaptureCondition},
 };
 use crate::entities::capture::CaptureType;
 use anyhow::Result;
 use axum::{body::HttpBody, extract::Request};
-use glob::Pattern;
+use glob::{MatchOptions, Pattern};
 use regex::Regex;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -36,7 +34,7 @@ impl CompiledPattern {
 /// Compiled capture condition for efficient matching
 #[derive(Debug, Clone)]
 pub struct CompiledCaptureCondition {
-    pub pattern: CompiledPattern,
+    pub pattern: Option<CompiledPattern>,
     pub method: Option<String>,
     pub host: Option<String>,
     pub headers: Option<Vec<HashMap<String, String>>>,
@@ -204,22 +202,25 @@ impl RuleMatcher {
         condition: &SimpleCaptureCondition,
     ) -> Result<CompiledCaptureCondition> {
         // If url_pattern is provided, validate and compile it
-        let pattern = if let Some(ref url_pattern) = condition.url_pattern {
+
+        let mut pattern = None;
+        if let Some(ref url_pattern) = condition.url_pattern {
             match url_pattern.capture_type {
                 CaptureType::Glob => {
-                    let pattern = Pattern::new(&url_pattern.pattern)?;
-                    CompiledPattern::Glob(pattern)
+                    let glob_pattern = Pattern::new(&url_pattern.pattern)?;
+                    pattern = Some(CompiledPattern::Glob(glob_pattern))
                 }
                 CaptureType::Regex => {
                     let regex = Regex::new(&url_pattern.pattern)?;
-                    CompiledPattern::Regex(regex)
+                    pattern = Some(CompiledPattern::Regex(regex))
                 }
-                CaptureType::Exact => CompiledPattern::Exact(url_pattern.pattern.clone()),
-                CaptureType::Contains => CompiledPattern::Contains(url_pattern.pattern.clone()),
+                CaptureType::Exact => {
+                    pattern = Some(CompiledPattern::Exact(url_pattern.pattern.clone()))
+                }
+                CaptureType::Contains => {
+                    pattern = Some(CompiledPattern::Contains(url_pattern.pattern.clone()))
+                }
             }
-        } else {
-            // If no url_pattern is provided, use a wildcard pattern that matches everything
-            CompiledPattern::Glob(Pattern::new("*")?)
         };
 
         Ok(CompiledCaptureCondition {
@@ -279,15 +280,23 @@ impl RuleMatcher {
         // Extract data from axum Request
         let url = request.uri().to_string();
         let method = request.method().to_string();
-        let host = request
-            .headers()
-            .get("host")
-            .and_then(|h| h.to_str().ok())
-            .unwrap_or_default();
+        let host = request.uri().host().unwrap_or("").to_string();
         let headers = HeaderUtils::extract_headers(request.headers());
 
+        if condition.pattern.is_none()
+            && condition.method.is_none()
+            && condition.host.is_none()
+            && condition.headers.is_none()
+        {
+            // If no conditions are set, always return false
+            return Ok(false);
+        }
         // Check method
         if let Some(ref method_condition) = condition.method {
+            println!(
+                "Checking method condition: {:?} : {:?}",
+                method_condition, method
+            );
             if !method_condition.is_empty() && !method_condition.eq_ignore_ascii_case(&method) {
                 return Ok(false);
             }
@@ -295,13 +304,19 @@ impl RuleMatcher {
 
         // Check host
         if let Some(ref host_condition) = condition.host {
-            if !host_condition.is_empty() && !host_condition.eq_ignore_ascii_case(host) {
+            println!("Checking host condition: {:?} : {:?}", host_condition, host);
+            if !host_condition.is_empty() && !host_condition.eq_ignore_ascii_case(&host) {
                 return Ok(false);
             }
         }
 
         // Check headers
         if let Some(ref condition_headers) = condition.headers {
+            println!(
+                "Checking headers condition: {:?} : {:?}",
+                condition_headers, headers
+            );
+
             for header_map in condition_headers {
                 for (key, expected_value) in header_map {
                     if let Some(actual_value) = headers.get(key) {
@@ -318,8 +333,15 @@ impl RuleMatcher {
             }
         }
 
-        // Check pattern against URL
-        Ok(condition.pattern.matches(&url))
+        if let Some(ref pattern) = condition.pattern {
+            println!("Checking URL pattern: {:?} : {:?}", pattern, url);
+            // Check pattern against URL
+            if !pattern.matches(&url) {
+                return Ok(false);
+            }
+        }
+
+        Ok(true)
     }
 }
 
@@ -350,7 +372,7 @@ mod tests {
         use std::sync::atomic::{AtomicI32, Ordering};
         static COUNTER: AtomicI32 = AtomicI32::new(1);
         let id = COUNTER.fetch_add(1, Ordering::SeqCst);
-        
+
         RequestRule {
             id: Some(id),
             name: "Test Rule".to_string(),
@@ -475,5 +497,55 @@ mod tests {
         matcher.clear_cache();
         let cache = matcher.cache.read().unwrap();
         assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn test_not_and_operators() {
+        let matcher = RuleMatcher::new();
+        let request = create_test_request("GET", "https://www.examples.com/");
+        let new_request = create_test_request("GET", "https://www.examples.com/api/users");
+
+        // Test NOT operator with single condition
+        let not_rule = RequestRule {
+            id: Some(2),
+            name: "Not Rule".to_string(),
+            description: Some("Test NOT operator".to_string()),
+            enabled: true,
+            priority: 100,
+            capture: CaptureRule {
+                id: Some(2),
+                condition: CaptureCondition::Complex(ComplexCaptureRule {
+                    operator: LogicalOperator::And,
+                    conditions: vec![
+                        CaptureCondition::Simple(SimpleCaptureCondition {
+                            url_pattern: Some(UrlPattern {
+                                capture_type: CaptureType::Glob,
+                                pattern: "*www.examples.com*".to_string(),
+                            }),
+                            method: None,
+                            host: None,
+                            headers: None,
+                        }),
+                        CaptureCondition::Complex(ComplexCaptureRule {
+                            operator: LogicalOperator::Not,
+                            conditions: vec![CaptureCondition::Simple(SimpleCaptureCondition {
+                                url_pattern: Some(UrlPattern {
+                                    capture_type: CaptureType::Glob,
+                                    pattern: "*/api*".to_string(),
+                                }),
+                                method: None,
+                                host: None,
+                                headers: None,
+                            })],
+                        }),
+                    ],
+                }),
+            },
+            handlers: vec![],
+        };
+
+        // Should match because request is /api/users, NOT /web/*
+        let result = matcher.find_matching_rules(&[not_rule], &new_request).unwrap();
+        assert_eq!(result.len(), 1);
     }
 }

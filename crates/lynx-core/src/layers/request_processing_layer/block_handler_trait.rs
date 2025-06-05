@@ -17,7 +17,7 @@ impl HandlerTrait for BlockHandlerConfig {
 
         let response = Response::builder()
             .status(StatusCode::from_u16(status_code)?)
-            .header("content-type", "text/plain")
+            .header("content-type", "text/plain, charset=utf-8")
             .header("x-blocked-by", "lynx-proxy")
             .body(full(reason))?;
 

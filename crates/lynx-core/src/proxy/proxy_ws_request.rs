@@ -11,6 +11,7 @@ use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream,
     tungstenite::{self, client::IntoClientRequest},
 };
+use tower::{ServiceBuilder, ServiceExt, service_fn};
 use tracing::{debug, warn};
 
 use crate::{
@@ -18,11 +19,13 @@ use crate::{
     common::Req,
     layers::{
         message_package_layer::{MessageEventChannel, MessageEventLayerExt},
+        request_processing_layer::RequestProcessingService,
         trace_id_layer::service::{TraceId, TraceIdExt},
     },
     utils::{empty, full},
 };
 
+#[derive(Debug, Clone)]
 struct WebSocketReq(Request<()>);
 
 impl TryFrom<Req> for WebSocketReq {
@@ -57,7 +60,7 @@ pub fn is_websocket_req(req: &Req) -> bool {
     hyper_tungstenite::is_upgrade_request(req)
 }
 
-pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
+async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
     assert!(hyper_tungstenite::is_upgrade_request(&req));
     let message_channel = req.extensions().get_message_event_cannel();
     let trace_id = req.extensions().get_trace_id();
@@ -93,6 +96,17 @@ pub async fn proxy_ws_request(mut req: Req) -> anyhow::Result<Response> {
     });
 
     let res = res.map(|body| body.map(full).unwrap_or(empty()));
+    Ok(res.into_response())
+}
+
+pub async fn proxy_ws_request(req: Req) -> anyhow::Result<Response> {
+    let svc = service_fn(proxy_ws_inner);
+
+    let svc = ServiceBuilder::new()
+        .layer_fn(|s| RequestProcessingService { service: s })
+        .service(svc);
+
+    let res = svc.oneshot(req).await?;
     Ok(res.into_response())
 }
 

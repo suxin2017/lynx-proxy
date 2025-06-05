@@ -65,7 +65,7 @@ impl HandlerTrait for ProxyForwardConfig {
         let new_uri = uri_builder.build()?;
         *request.uri_mut() = new_uri;
 
-        println!(
+        tracing::trace!(
             "Proxying request from {} to {}",
             original_uri_str,
             request.uri()
