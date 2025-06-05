@@ -75,7 +75,7 @@ const RulePreview: React.FC<{
       const simpleCondition = condition as CaptureConditionOneOf;
       const urlPattern = simpleCondition.urlPattern;
       return (
-        <div key={index} className="rounded bg-gray-50 p-2 text-sm">
+        <div key={index} className="rounded p-2 text-sm">
           <Text>
             URL:{' '}
             {urlPattern?.pattern ||
@@ -95,7 +95,7 @@ const RulePreview: React.FC<{
     else if ('operator' in condition && 'conditions' in condition) {
       const complexCondition = condition as CaptureConditionOneOfFour;
       return (
-        <div key={index} className="ml-4 border-l-2 border-gray-300 pl-4">
+        <div key={index} className="ml-4 border-l-2 border-gray-400 pl-4">
           <RulePreview rule={complexCondition} depth={depth + 1} />
         </div>
       );
@@ -112,7 +112,7 @@ const RulePreview: React.FC<{
       <div className="flex items-center gap-2">
         <Badge
           count={config.label}
-          className={`${config.bgColor} ${config.color} text-xs font-bold`}
+          className={` ${config.color} text-xs font-bold`}
         />
         <Text strong className={config.color}>
           {config.label}
@@ -172,7 +172,7 @@ const ConditionEditor = React.memo<{
               <Button
                 type="text"
                 size="small"
-                icon={<RiAddLine />}
+                icon={<RiAddLine size={18} />}
                 disabled={
                   condition.conditions.length >= 1 &&
                   condition.operator === 'not'
@@ -205,7 +205,7 @@ const ConditionEditor = React.memo<{
                   condition.operator === 'not'
                 }
                 size="small"
-                icon={<RiApps2AddLine />}
+                icon={<RiApps2AddLine size={18} />}
                 onClick={() => {
                   const complexCondition = condition as ComplexCaptureRuleType;
                   const newComplexCondition: CaptureCondition = {
@@ -377,7 +377,7 @@ const AddConditionButtons = React.memo(
         </Button>
         <Button
           type="dashed"
-          icon={<PlusOutlined />}
+          icon={<RiApps2AddLine size={16} />}
           onClick={onAddComplex}
           className="flex-1"
           disabled={disabled}
@@ -409,7 +409,7 @@ NotOperatorTip.displayName = 'NotOperatorTip';
 const EmptyState = React.memo(() => {
   const { t } = useI18n();
   return (
-    <div className="rounded border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+    <div className="rounded border-2 border-dashed border-gray-500 p-8 text-center">
       <Text type="secondary">
         {t('ruleManager.createRuleDrawer.captureRule.noConditions')}
         <br />

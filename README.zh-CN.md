@@ -5,17 +5,27 @@
 [![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
-**Lynx Proxy** 是一款基于 Rust 语言开发的高性能、灵活的代理工具，专为高效处理 HTTP/HTTPS 及 WebSocket 流量而设计。项目采用 hyper、axum、tower 等主流 Rust 网络库，并配备现代化 Web 客户端（支持暗黑模式），适用于多种网络环境和需求。
+**Lynx Proxy** 是一款基于 Rust 语言开发的代理抓包工具项目采用，hyper、axum、tower 等主流 Rust 网络库，以满足不同在开发阶段的需求，比如移动端开发时候查看接口，脚本注入，web 端开发时候将静态资源指向本地服务
 
 ## 功能特性
 
-- 🚀 **高性能**：充分利用 Rust 的性能与安全性。
-- 🌐 **支持 HTTP/HTTPS**：高效代理 HTTP 和 HTTPS 流量。
-- 🔗 **支持 WebSocket**：原生支持 WebSocket 代理。
-- 🦀 **Rust 生态**：基于 hyper、axum、tower 等主流库开发。
-- 💻 **现代 Web 客户端**：提供直观易用的 Web 管理界面，支持暗黑模式。
-- 📋 **列表视图**：支持以结构化列表格式查看 HTTP 请求和响应。
-- 🌲 **树形视图**：以直观的树形结构可视化请求数据，提供更好的组织和分析体验。
+- **常见协议支持**：支持 HTTP(S) 与 WS(S)
+- **Web 客户端**：使用流行的现代 web 技术，支持亮色与暗色两种主题
+- **Rust 生态**：基于 hyper、axum、tower 等主流库开发。
+- **请求面板**：
+  - 列表视图
+    ![HTTP 代理示例](./images/http.png)
+  - 树形视图
+    ![树形结构视图示例](./images/tree.png)
+- **规则捕获与处理**
+  - 通过添加规则进行请求捕获，同时进行请求处理
+  - 规则
+    - 简单规则 （Glob 匹配，正则匹配，HostName，精确匹配）
+    - 复杂规则 （AND、OR、NOR）
+- **安装与升级脚本支持**
+  - 安装只需要一行脚本，不需要安装任何运行时
+- **跨平台支持**
+  - 支持 Window、Macos、Linux 平台
 
 ## 功能展示
 
@@ -31,7 +41,11 @@
 
 ![树形结构视图示例](./images/tree.png)
 
-## 安装
+### 规则配置
+
+![规则配置](./images/rule.png)
+
+## 使用
 
 通过一键安装脚本快速安装 Lynx Proxy：
 
@@ -39,12 +53,12 @@
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
-## 快速开始
-
 ```bash
 # 启动服务
 lynx-cli
 ```
+
+### 命令行参数
 
 ```
 A proxy service
