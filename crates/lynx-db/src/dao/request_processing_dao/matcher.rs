@@ -6,7 +6,7 @@ use super::{
 use crate::entities::capture::CaptureType;
 use anyhow::Result;
 use axum::{body::HttpBody, extract::Request};
-use glob::{MatchOptions, Pattern};
+use glob::Pattern;
 use regex::Regex;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -545,7 +545,9 @@ mod tests {
         };
 
         // Should match because request is /api/users, NOT /web/*
-        let result = matcher.find_matching_rules(&[not_rule], &new_request).unwrap();
+        let result = matcher
+            .find_matching_rules(&[not_rule], &new_request)
+            .unwrap();
         assert_eq!(result.len(), 1);
     }
 }

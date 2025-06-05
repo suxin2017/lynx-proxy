@@ -1,5 +1,8 @@
 use anyhow::Result;
-use axum::{http::StatusCode, response::{IntoResponse, Response}};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use lynx_db::dao::request_processing_dao::handlers::BlockHandlerConfig;
 
 use crate::{common::Req, utils::full};
@@ -17,7 +20,7 @@ impl HandlerTrait for BlockHandlerConfig {
 
         let response = Response::builder()
             .status(StatusCode::from_u16(status_code)?)
-            .header("content-type", "text/plain, charset=utf-8")
+            .header("content-type", "text/plain; charset=utf-8")
             .header("x-blocked-by", "lynx-proxy")
             .body(full(reason))?;
 
@@ -51,7 +54,7 @@ mod tests {
                 assert_eq!(response.status(), StatusCode::from_u16(403)?);
                 assert_eq!(
                     response.headers().get("content-type").unwrap(),
-                    "text/plain"
+                    "text/plain; charset=utf-8"
                 );
                 assert_eq!(
                     response.headers().get("x-blocked-by").unwrap(),
@@ -91,7 +94,7 @@ mod tests {
                 assert_eq!(response.status(), StatusCode::from_u16(429)?);
                 assert_eq!(
                     response.headers().get("content-type").unwrap(),
-                    "text/plain"
+                    "text/plain; charset=utf-8"
                 );
                 assert_eq!(
                     response.headers().get("x-blocked-by").unwrap(),
