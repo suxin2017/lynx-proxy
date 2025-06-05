@@ -34,7 +34,6 @@ const CodeViewer: React.FC<CodeViewerProps> = ({ arrayBuffer, type }) => {
     return 'plain';
   }, [type]);
 
-  // 分片渲染
   const displayData = useMemo(() => {
     if (!data) return '';
     const lines = data.split('\n');
@@ -64,7 +63,6 @@ const CodeViewer: React.FC<CodeViewerProps> = ({ arrayBuffer, type }) => {
     };
     worker.postMessage({ code: displayData, language: languageType });
     return () => {
-      // worker.terminate(); // 不要频繁销毁worker，除非组件卸载
     };
   }, [displayData, languageType]);
 

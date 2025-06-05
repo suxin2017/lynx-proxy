@@ -158,11 +158,10 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
     const offset = (index * 16).toString(16).padStart(8, '0').toUpperCase();
     const hexBytes = Array.from(data!.slice(index * 16, index * 16 + 16));
 
-    // 解析 decode 区域的字符及其字节范围
     type DecodedChar = {
       char: string;
-      start: number; // 在全局 data 里的起始字节
-      end: number; // 在全局 data 里的结束字节（闭区间）
+      start: number; 
+      end: number; 
     };
     const decodedChars: DecodedChar[] = [];
     let i = 0;
@@ -175,7 +174,6 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
       } else if (charset === 'HEX') {
         char = formatHex(hexBytes[i]);
       } else if (charset === 'UTF-8' || charset === 'UTF-16') {
-        // 用 TextDecoder 解码
         const decoderCharset = charset === 'UTF-8' ? 'utf-8' : 'utf-16be';
         const maxLen = charset === 'UTF-8' ? 4 : 2;
         const remain = hexBytes.length - i;
@@ -234,7 +232,6 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
           ))}
         <span className="flex flex-1 pl-4 text-gray-700">
           {decodedChars.map((item, idx) => {
-            // 判断 decode 区域是否被选中（只要有一个字节被选中就高亮）
             const selected =
               selection &&
               (() => {

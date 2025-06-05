@@ -1,3 +1,5 @@
+use anyhow::anyhow;
+use axum::body::Body as AxumBody;
 use base64::{Engine as _, engine::general_purpose};
 use bytes::Bytes;
 use http::{HeaderMap, Request, Response, Version};
@@ -119,13 +121,13 @@ impl From<&Message> for WebSocketMessage {
                 WebSocketMessage::Text(Some(MessageEventBody::new(Bytes::from(text.clone()))))
             }
             Message::Binary(bin) => {
-                WebSocketMessage::Binary(Some(MessageEventBody::new(Bytes::from(bin.clone()))))
+                WebSocketMessage::Binary(Some(MessageEventBody::new(bin.clone())))
             }
             Message::Ping(ping) => {
-                WebSocketMessage::Ping(Some(MessageEventBody::new(Bytes::from(ping.clone()))))
+                WebSocketMessage::Ping(Some(MessageEventBody::new(ping.clone())))
             }
             Message::Pong(pong) => {
-                WebSocketMessage::Pong(Some(MessageEventBody::new(Bytes::from(pong.clone()))))
+                WebSocketMessage::Pong(Some(MessageEventBody::new(pong.clone())))
             }
             Message::Close(reason) => WebSocketMessage::Close(reason.as_ref().map(|frame| {
                 let code = frame.code.into();
@@ -267,16 +269,17 @@ impl<B: Body> From<&Request<B>> for MessageEventRequest {
 }
 
 pub fn copy_body_stream(
-    mut body: BoxBody,
+    body: AxumBody,
 ) -> (
     tokio_stream::wrappers::ReceiverStream<bytes::Bytes>,
     BoxBody,
 ) {
+    let mut m_body = body.map_err(|e| anyhow!(e));
     let (tx1, rx1) = tokio::sync::mpsc::channel::<bytes::Bytes>(100);
     let (tx2, rx2) = tokio::sync::mpsc::channel(100);
 
     tokio::spawn(async move {
-        while let Some(frame) = body.frame().await {
+        while let Some(frame) = m_body.frame().await {
             if let Ok(frame) = &frame {
                 if let Some(data) = frame.data_ref() {
                     if tx1.send(data.clone()).await.is_err() {
@@ -321,7 +324,7 @@ mod tests {
 
     #[tokio::test]
     async fn copy_body_test() {
-        let test_body = full("test");
+        let test_body = AxumBody::new(full("test"));
 
         let (data_stream, frame_stream) = copy_body_stream(test_body);
         let data: Vec<Bytes> = data_stream.collect().await;

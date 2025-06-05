@@ -3,7 +3,6 @@ use axum::response::IntoResponse;
 use http::header::CONTENT_TYPE;
 use http::{HeaderMap, Uri};
 use mime_guess::from_path;
-use tracing::info;
 
 use super::RouteState;
 
@@ -11,7 +10,6 @@ pub async fn get_file(
     file_path: Uri,
     State(RouteState { static_dir, .. }): State<RouteState>,
 ) -> impl IntoResponse {
-    info!("get_file: {:?}", file_path);
     if let Some(static_dir) = static_dir {
         let file_path = file_path.path().trim_start_matches('/');
 

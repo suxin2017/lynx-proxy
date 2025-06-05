@@ -67,6 +67,10 @@ pub struct ProxyServer {
 
 impl ProxyServerBuilder {
     pub async fn build(&self) -> Result<ProxyServer> {
+        tokio_rustls::rustls::crypto::ring::default_provider()
+            .install_default()
+            .unwrap_or_default();
+
         let port = self.port.flatten().unwrap_or(0);
         let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
         let access_addr_list: Vec<SocketAddr> = network_interfaces
@@ -245,12 +249,14 @@ impl ProxyServer {
 
     async fn bind_tcp_listener_to_hyper(&mut self) -> Result<()> {
         let tcp_listeners = self.bind_tcp_listener().await?;
-        let mut addrs = vec![];
+        let bind_addrs: Vec<SocketAddr> = tcp_listeners
+            .iter()
+            .filter_map(|listener| listener.local_addr().ok())
+            .collect();
+        self.access_addr_list = bind_addrs;
         for tcp_listener in tcp_listeners {
-            addrs.push(tcp_listener.local_addr()?);
             self.bind_hyper(tcp_listener).await?;
         }
-        self.access_addr_list = addrs;
         Ok(())
     }
 }

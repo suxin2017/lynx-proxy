@@ -16,7 +16,6 @@ const initialState: RequestTableState = {
 };
 
 const isCompletedReq = (res: IViewMessageEventStoreValue) => {
-  console.log('isCompletedReq', res);
   if (res.status === 'Completed' && res.tunnel?.status === 'Disconnected') {
     return true;
   }

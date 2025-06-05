@@ -9,7 +9,7 @@ tasks:
     desc: Run tests
     dir: crates/lynx-core
     cmds:
-      - cargo test  --  --nocapture
+      - cargo test 
 
   lint:
     desc: Run clippy linter

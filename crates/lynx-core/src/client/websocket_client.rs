@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use anyhow::Result;
 use lynx_cert::gen_client_config_by_cert;
@@ -26,8 +26,9 @@ impl WebsocketClient {
         http::Response<Option<Vec<u8>>>,
     )>
     where
-        R: IntoClientRequest + Unpin,
+        R: IntoClientRequest + Unpin + Debug,
     {
+        println!("WebsocketClient request: {:?}", req);
         let websocket_stream =
             connect_async_tls_with_config(req, None, false, Some(self.connector.clone())).await?;
 

@@ -22,6 +22,7 @@ use crate::{
         extend_extension_layer::{DbExtensionsExt, ExtendExtensionsLayer, clone_extensions},
         log_layer::LogLayer,
         message_package_layer::{MessageEventLayerExt, RequestMessageEventService},
+        request_processing_layer::RequestProcessingService,
         trace_id_layer::{TraceIdLayer, service::TraceIdExt},
     },
     proxy::proxy_ws_request::proxy_ws_request,
@@ -75,6 +76,7 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                     http::uri::Scheme::HTTP,
                 ))
                 .layer_fn(|inner| RequestMessageEventService { service: inner })
+                .layer_fn(RequestProcessingService::new)
                 .service(svc);
             let transform_svc = service_fn(move |req: HyperReq| {
                 let svc = svc.clone();
@@ -90,6 +92,10 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                 .map_err(|e| anyhow!(e))?;
         }
         ConnectStreamType::Https => {
+            tracing::trace!(
+                "Handling HTTPS connect request for authority: {}",
+                authority
+            );
             if !should_capture_https(db, &authority)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to check if should capture https"))?

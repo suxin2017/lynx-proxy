@@ -9,14 +9,115 @@ export interface BaseInfo {
   accessAddrList: string[];
 }
 
+export type BlockHandlerConfigReason = string | null;
+
+/**
+ * @minimum 0
+ */
+export type BlockHandlerConfigStatusCode = number | null;
+
+/**
+ * Block handler configuration
+ */
+export interface BlockHandlerConfig {
+  reason?: BlockHandlerConfigReason;
+  /** @minimum 0 */
+  statusCode?: BlockHandlerConfigStatusCode;
+}
+
+export type CaptureConditionOneOfAllOfType =
+  (typeof CaptureConditionOneOfAllOfType)[keyof typeof CaptureConditionOneOfAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CaptureConditionOneOfAllOfType = {
+  simple: 'simple',
+} as const;
+
+export type CaptureConditionOneOfAllOf = {
+  type: CaptureConditionOneOfAllOfType;
+};
+
+export type CaptureConditionOneOf = SimpleCaptureCondition &
+  CaptureConditionOneOfAllOf;
+
+export type CaptureConditionOneOfFourAllOfType =
+  (typeof CaptureConditionOneOfFourAllOfType)[keyof typeof CaptureConditionOneOfFourAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CaptureConditionOneOfFourAllOfType = {
+  complex: 'complex',
+} as const;
+
+export type CaptureConditionOneOfFourAllOf = {
+  type: CaptureConditionOneOfFourAllOfType;
+};
+
+export type CaptureConditionOneOfFour = ComplexCaptureRule &
+  CaptureConditionOneOfFourAllOf;
+
+/**
+ * 捕获条件（简单或复杂）
+ */
+export type CaptureCondition =
+  | CaptureConditionOneOf
+  | CaptureConditionOneOfFour;
+
 export interface CaptureFilter {
   enabled: boolean;
   excludeDomains: DomainFilter[];
   includeDomains: DomainFilter[];
 }
 
+export type CaptureRuleId = number | null;
+
+/**
+ * 完整的捕获规则
+ */
+export interface CaptureRule {
+  condition: CaptureCondition;
+  id?: CaptureRuleId;
+}
+
 export interface CaptureSwitch {
   recordingStatus: RecordingStatus;
+}
+
+/**
+ * Capture type enumeration
+ */
+export type CaptureType = (typeof CaptureType)[keyof typeof CaptureType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CaptureType = {
+  glob: 'glob',
+  regex: 'regex',
+  exact: 'exact',
+  contains: 'contains',
+} as const;
+
+/**
+ * 复杂捕获规则（支持嵌套逻辑）
+ */
+export interface ComplexCaptureRule {
+  /** 子条件列表 */
+  conditions: CaptureCondition[];
+  /** 逻辑操作符 */
+  operator: LogicalOperator;
+}
+
+export type CreateRuleRequestDescription = string | null;
+
+export interface CreateRuleRequest {
+  capture: CaptureRule;
+  description?: CreateRuleRequestDescription;
+  enabled: boolean;
+  handlers: HandlerRule[];
+  name: string;
+  priority: number;
+}
+
+export interface CreateRuleResponse {
+  id: number;
 }
 
 export interface DomainFilter {
@@ -42,6 +143,134 @@ export type GetRequestsDataTraceIds = string[] | null;
 export interface GetRequestsData {
   traceIds?: GetRequestsDataTraceIds;
 }
+
+export type HandlerRuleDescription = string | null;
+
+export type HandlerRuleId = number | null;
+
+/**
+ * Handler rule configuration
+ */
+export interface HandlerRule {
+  description?: HandlerRuleDescription;
+  enabled: boolean;
+  executionOrder: number;
+  handlerType: HandlerRuleType;
+  id?: HandlerRuleId;
+  name: string;
+}
+
+export type HandlerRuleTypeOneOfAllOfType =
+  (typeof HandlerRuleTypeOneOfAllOfType)[keyof typeof HandlerRuleTypeOneOfAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfAllOfType = {
+  block: 'block',
+} as const;
+
+export type HandlerRuleTypeOneOfAllOf = {
+  type: HandlerRuleTypeOneOfAllOfType;
+};
+
+export type HandlerRuleTypeOneOf = BlockHandlerConfig &
+  HandlerRuleTypeOneOfAllOf;
+
+export type HandlerRuleTypeOneOfFourAllOfType =
+  (typeof HandlerRuleTypeOneOfFourAllOfType)[keyof typeof HandlerRuleTypeOneOfFourAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfFourAllOfType = {
+  modifyRequest: 'modifyRequest',
+} as const;
+
+export type HandlerRuleTypeOneOfFourAllOf = {
+  type: HandlerRuleTypeOneOfFourAllOfType;
+};
+
+export type HandlerRuleTypeOneOfFour = ModifyRequestConfig &
+  HandlerRuleTypeOneOfFourAllOf;
+
+export type HandlerRuleTypeOneOfSevenAllOfType =
+  (typeof HandlerRuleTypeOneOfSevenAllOfType)[keyof typeof HandlerRuleTypeOneOfSevenAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfSevenAllOfType = {
+  localFile: 'localFile',
+} as const;
+
+export type HandlerRuleTypeOneOfSevenAllOf = {
+  type: HandlerRuleTypeOneOfSevenAllOfType;
+};
+
+export type HandlerRuleTypeOneOfSeven = LocalFileConfig &
+  HandlerRuleTypeOneOfSevenAllOf;
+
+export type HandlerRuleTypeOneOfOnezeroAllOfType =
+  (typeof HandlerRuleTypeOneOfOnezeroAllOfType)[keyof typeof HandlerRuleTypeOneOfOnezeroAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfOnezeroAllOfType = {
+  modifyResponse: 'modifyResponse',
+} as const;
+
+export type HandlerRuleTypeOneOfOnezeroAllOf = {
+  type: HandlerRuleTypeOneOfOnezeroAllOfType;
+};
+
+export type HandlerRuleTypeOneOfOnezero = ModifyResponseConfig &
+  HandlerRuleTypeOneOfOnezeroAllOf;
+
+export type HandlerRuleTypeOneOfOnethreeAllOfType =
+  (typeof HandlerRuleTypeOneOfOnethreeAllOfType)[keyof typeof HandlerRuleTypeOneOfOnethreeAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfOnethreeAllOfType = {
+  proxyForward: 'proxyForward',
+} as const;
+
+export type HandlerRuleTypeOneOfOnethreeAllOf = {
+  type: HandlerRuleTypeOneOfOnethreeAllOfType;
+};
+
+export type HandlerRuleTypeOneOfOnethree = ProxyForwardConfig &
+  HandlerRuleTypeOneOfOnethreeAllOf;
+
+export type HandlerRuleType =
+  | HandlerRuleTypeOneOf
+  | HandlerRuleTypeOneOfFour
+  | HandlerRuleTypeOneOfSeven
+  | HandlerRuleTypeOneOfOnezero
+  | HandlerRuleTypeOneOfOnethree;
+
+export type LocalFileConfigContentType = string | null;
+
+/**
+ * @minimum 0
+ */
+export type LocalFileConfigStatusCode = number | null;
+
+/**
+ * Local file handler configuration
+ */
+export interface LocalFileConfig {
+  contentType?: LocalFileConfigContentType;
+  filePath: string;
+  /** @minimum 0 */
+  statusCode?: LocalFileConfigStatusCode;
+}
+
+/**
+ * 逻辑操作符
+ */
+export type LogicalOperator =
+  (typeof LogicalOperator)[keyof typeof LogicalOperator];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LogicalOperator = {
+  and: 'and',
+  or: 'or',
+  not: 'not',
+} as const;
 
 export type MessageEventBody = string;
 
@@ -198,6 +427,64 @@ export interface MessageEventWebSocket {
  */
 export type MessageHeaderSize = number;
 
+export type ModifyRequestConfigModifyBody = string | null;
+
+export type ModifyRequestConfigModifyHeadersAnyOf = { [key: string]: string };
+
+export type ModifyRequestConfigModifyHeaders =
+  ModifyRequestConfigModifyHeadersAnyOf | null;
+
+export type ModifyRequestConfigModifyMethod = string | null;
+
+export type ModifyRequestConfigModifyUrl = string | null;
+
+/**
+ * Modify request handler configuration
+ */
+export interface ModifyRequestConfig {
+  modifyBody?: ModifyRequestConfigModifyBody;
+  modifyHeaders?: ModifyRequestConfigModifyHeaders;
+  modifyMethod?: ModifyRequestConfigModifyMethod;
+  modifyUrl?: ModifyRequestConfigModifyUrl;
+}
+
+export type ModifyResponseConfigModifyBody = string | null;
+
+export type ModifyResponseConfigModifyHeadersAnyOf = { [key: string]: string };
+
+export type ModifyResponseConfigModifyHeaders =
+  ModifyResponseConfigModifyHeadersAnyOf | null;
+
+export type ModifyResponseConfigModifyMethod = string | null;
+
+/**
+ * @minimum 0
+ */
+export type ModifyResponseConfigModifyStatusCode = number | null;
+
+/**
+ * Modify request handler configuration
+ */
+export interface ModifyResponseConfig {
+  modifyBody?: ModifyResponseConfigModifyBody;
+  modifyHeaders?: ModifyResponseConfigModifyHeaders;
+  modifyMethod?: ModifyResponseConfigModifyMethod;
+  /** @minimum 0 */
+  modifyStatusCode?: ModifyResponseConfigModifyStatusCode;
+}
+
+export type ProxyForwardConfigTargetAuthority = string | null;
+
+export type ProxyForwardConfigTargetPath = string | null;
+
+export type ProxyForwardConfigTargetScheme = string | null;
+
+export interface ProxyForwardConfig {
+  targetAuthority?: ProxyForwardConfigTargetAuthority;
+  targetPath?: ProxyForwardConfigTargetPath;
+  targetScheme?: ProxyForwardConfigTargetScheme;
+}
+
 export type RecordRequestsPatchRequests = MessageEventStoreValue[] | null;
 
 export interface RecordRequests {
@@ -213,6 +500,23 @@ export const RecordingStatus = {
   startRecording: 'startRecording',
   pauseRecording: 'pauseRecording',
 } as const;
+
+export type RequestRuleDescription = string | null;
+
+export type RequestRuleId = number | null;
+
+/**
+ * 请求处理规则
+ */
+export interface RequestRule {
+  capture: CaptureRule;
+  description?: RequestRuleDescription;
+  enabled: boolean;
+  handlers: HandlerRule[];
+  id?: RequestRuleId;
+  name: string;
+  priority: number;
+}
 
 export type ResponseCode = (typeof ResponseCode)[keyof typeof ResponseCode];
 
@@ -260,6 +564,18 @@ export interface ResponseDataWrapperCaptureSwitch {
   message?: ResponseDataWrapperCaptureSwitchMessage;
 }
 
+export type ResponseDataWrapperCreateRuleResponseData = {
+  id: number;
+};
+
+export type ResponseDataWrapperCreateRuleResponseMessage = string | null;
+
+export interface ResponseDataWrapperCreateRuleResponse {
+  code: ResponseCode;
+  data: ResponseDataWrapperCreateRuleResponseData;
+  message?: ResponseDataWrapperCreateRuleResponseMessage;
+}
+
 export type ResponseDataWrapperRecordRequestsDataPatchRequests =
   | MessageEventStoreValue[]
   | null;
@@ -277,6 +593,50 @@ export interface ResponseDataWrapperRecordRequests {
   message?: ResponseDataWrapperRecordRequestsMessage;
 }
 
+export type ResponseDataWrapperRequestRuleDataDescription = string | null;
+
+export type ResponseDataWrapperRequestRuleDataId = number | null;
+
+/**
+ * 请求处理规则
+ */
+export type ResponseDataWrapperRequestRuleData = {
+  capture: CaptureRule;
+  description?: ResponseDataWrapperRequestRuleDataDescription;
+  enabled: boolean;
+  handlers: HandlerRule[];
+  id?: ResponseDataWrapperRequestRuleDataId;
+  name: string;
+  priority: number;
+};
+
+export type ResponseDataWrapperRequestRuleMessage = string | null;
+
+export interface ResponseDataWrapperRequestRule {
+  code: ResponseCode;
+  /** 请求处理规则 */
+  data: ResponseDataWrapperRequestRuleData;
+  message?: ResponseDataWrapperRequestRuleMessage;
+}
+
+export type ResponseDataWrapperRuleListResponseData = {
+  /** @minimum 0 */
+  page: number;
+  /** @minimum 0 */
+  pageSize: number;
+  rules: RequestRule[];
+  /** @minimum 0 */
+  total: number;
+};
+
+export type ResponseDataWrapperRuleListResponseMessage = string | null;
+
+export interface ResponseDataWrapperRuleListResponse {
+  code: ResponseCode;
+  data: ResponseDataWrapperRuleListResponseData;
+  message?: ResponseDataWrapperRuleListResponseMessage;
+}
+
 export type ResponseDataWrapperStringMessage = string | null;
 
 export interface ResponseDataWrapperString {
@@ -285,12 +645,64 @@ export interface ResponseDataWrapperString {
   message?: ResponseDataWrapperStringMessage;
 }
 
+export type ResponseDataWrapperTemplateHandlersResponseData = {
+  handlers: HandlerRule[];
+};
+
+export type ResponseDataWrapperTemplateHandlersResponseMessage = string | null;
+
+export interface ResponseDataWrapperTemplateHandlersResponse {
+  code: ResponseCode;
+  data: ResponseDataWrapperTemplateHandlersResponseData;
+  message?: ResponseDataWrapperTemplateHandlersResponseMessage;
+}
+
 export type ResponseDataWrapperTupleUnitMessage = string | null;
 
 export interface ResponseDataWrapperTupleUnit {
   code: ResponseCode;
   data: unknown;
   message?: ResponseDataWrapperTupleUnitMessage;
+}
+
+export interface RuleListResponse {
+  /** @minimum 0 */
+  page: number;
+  /** @minimum 0 */
+  pageSize: number;
+  rules: RequestRule[];
+  /** @minimum 0 */
+  total: number;
+}
+
+export type SimpleCaptureConditionHeadersAnyOfItem = { [key: string]: string };
+
+export type SimpleCaptureConditionHeaders =
+  | SimpleCaptureConditionHeadersAnyOfItem[]
+  | null;
+
+export type SimpleCaptureConditionHost = string | null;
+
+export type SimpleCaptureConditionMethod = string | null;
+
+export type SimpleCaptureConditionUrlPattern = null | UrlPattern;
+
+/**
+ * 简单捕获条件
+ */
+export interface SimpleCaptureCondition {
+  headers?: SimpleCaptureConditionHeaders;
+  host?: SimpleCaptureConditionHost;
+  method?: SimpleCaptureConditionMethod;
+  urlPattern?: SimpleCaptureConditionUrlPattern;
+}
+
+export interface TemplateHandlersResponse {
+  handlers: HandlerRule[];
+}
+
+export interface ToggleRuleRequest {
+  enabled: boolean;
 }
 
 export type TunnelStatus = (typeof TunnelStatus)[keyof typeof TunnelStatus];
@@ -302,6 +714,22 @@ export const TunnelStatus = {
 } as const;
 
 export interface TupleUnit {}
+
+export type UpdateRuleRequestDescription = string | null;
+
+export interface UpdateRuleRequest {
+  capture: CaptureRule;
+  description?: UpdateRuleRequestDescription;
+  enabled: boolean;
+  handlers: HandlerRule[];
+  name: string;
+  priority: number;
+}
+
+export interface UrlPattern {
+  captureType: CaptureType;
+  pattern: string;
+}
 
 export type WebSocketDirection =
   (typeof WebSocketDirection)[keyof typeof WebSocketDirection];
@@ -365,3 +793,18 @@ export type WebSocketStatus =
   | 'Connected'
   | 'Disconnected'
   | WebSocketStatusOneOf;
+
+export type ListRulesParams = {
+  /**
+   * 页码，从1开始
+   */
+  page?: number | null;
+  /**
+   * 每页数量，默认20
+   */
+  pageSize?: number | null;
+  /**
+   * 是否只获取启用的规则
+   */
+  enabledOnly?: boolean | null;
+};

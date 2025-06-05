@@ -13,7 +13,6 @@ repository.workspace = true
 rcgen = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
-tracing = { workspace = true }
 rustls-pemfile = { workspace = true }
 rsa = "0.9.7"
 time = "0.3.37"

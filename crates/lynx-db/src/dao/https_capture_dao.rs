@@ -22,6 +22,7 @@ pub struct DomainFilter {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub struct CaptureFilter {
     pub include_domains: Vec<DomainFilter>,
     pub exclude_domains: Vec<DomainFilter>,
@@ -34,16 +35,6 @@ impl Default for DomainFilter {
             domain: "".to_string(),
             enabled: false,
             port: 8080,
-        }
-    }
-}
-
-impl Default for CaptureFilter {
-    fn default() -> Self {
-        Self {
-            include_domains: vec![],
-            exclude_domains: vec![],
-            enabled: false,
         }
     }
 }

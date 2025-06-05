@@ -5,7 +5,7 @@ import { useAutoScroll } from '../store/autoScrollStore';
 
 export const AutoScrollToBottom: React.FC = () => {
   const { t } = useTranslation();
-  const { setAutoScroll } = useAutoScroll();
+  const { autoScroll, setAutoScroll } = useAutoScroll();
 
   return (
     <div className="flex items-center gap-1">
@@ -14,6 +14,7 @@ export const AutoScrollToBottom: React.FC = () => {
       </div>
       <div className="">
         <Switch
+          value={autoScroll}
           size="small"
           onChange={(val) => {
             setAutoScroll(val);

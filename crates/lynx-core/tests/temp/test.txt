@@ -1,0 +1,5 @@
+This is a plain text file for testing the local file handler.
+It contains multiple lines of text.
+Line 3
+Line 4
+End of test file.

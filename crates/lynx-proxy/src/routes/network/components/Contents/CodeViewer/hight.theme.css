@@ -165,7 +165,6 @@
      background: linear-gradient(to right, rgba(193, 222, 241, 0.2) 70%, rgba(221, 222, 241, 0));
  }
  
- /* 暗色模式下的高亮主题 */
 html.dark pre[class*="language-"],
 html.dark code[class*="language-"] {
   color: #d4d4d4;

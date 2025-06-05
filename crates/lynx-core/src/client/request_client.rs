@@ -56,7 +56,7 @@ pub trait RequestClientExt {
 
 impl RequestClientExt for Extensions {
     fn get_request_client(&self) -> Option<ShareRequestClient> {
-        self.get::<ShareRequestClient>().map(|c| Arc::clone(c))
+        self.get::<ShareRequestClient>().map(Arc::clone)
     }
 
     fn get_http_client(&self) -> Arc<HttpClient> {
