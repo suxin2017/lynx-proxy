@@ -5,7 +5,7 @@ English | [简体中文](README.zh-CN.md)
 [![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
-**Lynx Proxy** is a proxy and packet capture tool developed in Rust, using mainstream Rust networking libraries like hyper, axum, and tower to meet different development needs, such as viewing APIs during mobile development, script injection, and pointing static resources to local services during web development.
+**Lynx Proxy** is a proxy and traffic capture tool developed in Rust, built with mainstream Rust networking libraries including hyper, axum, and tower to address various development needs, such as API inspection during mobile development, script injection, and redirecting static resources to local services during web development
 
 ## Features
 
