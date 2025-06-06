@@ -10,7 +10,7 @@ import { Button } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface IRecordingStatusButtonProps {}
+interface IRecordingStatusButtonProps { }
 
 export const RecordingStatusButton: React.FC<
   IRecordingStatusButtonProps
@@ -31,28 +31,34 @@ export const RecordingStatusButton: React.FC<
   const recordingStatus = netWorkCaptureStatusData?.data.recordingStatus;
   return (
     <Button
-      type="text"
       onClick={async () => {
         await toggleCapture.mutateAsync();
       }}
+      type="text"
+      className={
+        recordingStatus === RecordingStatus.pauseRecording
+          ? 'bg-red-500 dark:bg-red-600  text-white dark:text-green-50'
+          :
+          'bg-emerald-500 dark:bg-emerald-600 text-white dark:text-green-50'
+      }
+      loading={toggleCapture.isPending}
       icon={
         recordingStatus === RecordingStatus.startRecording ? (
           <RiPlayLargeFill
             size={18}
-            className="align-bottom text-emerald-500 dark:text-emerald-400"
+            className="align-bottom"
           />
         ) : (
           <RiPauseLargeFill
             size={18}
-            className="align-bottom text-red-400 dark:text-red-500"
+            className="align-bottom"
           />
         )
       }
-      title={
-        recordingStatus === RecordingStatus.startRecording
-          ? t('recording.stop')
-          : t('recording.start')
-      }
-    ></Button>
+    >
+      {recordingStatus === RecordingStatus.pauseRecording
+        ? t('recording.stop')
+        : t('recording.start')}
+    </Button>
   );
 };

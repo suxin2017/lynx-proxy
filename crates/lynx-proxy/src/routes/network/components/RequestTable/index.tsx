@@ -1,23 +1,23 @@
-import { RequestContextMenu } from '@/components/RequestContextMenu';
 import { MessageEventTimings } from '@/services/generated/utoipaAxum.schemas';
 import { IViewMessageEventStoreValue } from '@/store';
 import { useFilteredTableData } from '@/store/requestTableStore';
-import type { TableProps } from 'antd';
-import { Table } from 'antd';
+import { useKeyPress } from 'ahooks';
+import { Empty, theme } from 'antd';
 import dayjs from 'dayjs';
+import { get } from 'lodash';
+import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AutoSizer, List, ListRowRenderer } from 'react-virtualized';
+import { useSelectRequest } from '../store/selectRequestStore';
+import prettyMs from 'pretty-ms';
 import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import prettyMs from 'pretty-ms';
-import React, { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useAutoScroll } from '../store/autoScrollStore';
-import { useSelectRequest } from '../store/selectRequestStore';
-import { useKeyPress } from 'ahooks';
+import { RequestContextMenu, useRequestContextMenuContext } from '@/components/RequestContextMenu';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
 
-type ColumnsType<T extends object> = TableProps<T>['columns'];
+const { useToken } = theme;
 
 export const getDurationTime = (timings: MessageEventTimings) => {
   const {
@@ -29,7 +29,7 @@ export const getDurationTime = (timings: MessageEventTimings) => {
     reponseBodyEnd,
     websocketEnd,
     websocketStart,
-  } = timings;
+  } = timings ?? {};
 
   if (tunnelStart) {
     return prettyMs((tunnelEnd ?? Date.now()) - tunnelStart);
@@ -46,39 +46,37 @@ export const getDurationTime = (timings: MessageEventTimings) => {
 
   return '-';
 };
-
-export const RequestTable: React.FC<{ maxHeight: number }> = ({
-  maxHeight,
-}) => {
+export const RequestTable: React.FC = () => {
   const { t } = useTranslation();
   const requestTable = useFilteredTableData();
+  const listRef = React.useRef<List>(null);
   const { selectRequest, setSelectRequest } = useSelectRequest();
-  const tblRef: Parameters<typeof Table>[0]['ref'] = React.useRef(null);
+  const { token } = useToken();
 
-  const { autoScroll } = useAutoScroll();
-
-  const columns: ColumnsType<IViewMessageEventStoreValue> = [
+  const columns = useMemo(() => [
     {
       title: '#',
       width: 50,
       dataIndex: 'traceId',
+      key: 'traceId',
       align: 'center',
       ellipsis: true,
-      render: (_traceId: string, _raw, index) => {
+      render: (_traceId: string, _raw: IViewMessageEventStoreValue, index: number) => {
         return <span>{index}</span>;
       },
     },
     {
       title: t('network.table.status'),
       width: 100,
+      key: 'status',
       dataIndex: ['response', 'status'],
       ellipsis: true,
-      render: (status: number, raw) => {
-        if (raw.request?.headers?.['connection'] === 'Upgrade') {
+      render: (status: number, raw: IViewMessageEventStoreValue) => {
+        if (raw?.request?.headers?.['connection'] === 'Upgrade') {
           return <span>101</span>;
         }
-        if (raw.tunnel) {
-          return <span>{raw.tunnel.status}</span>;
+        if (raw?.tunnel) {
+          return <span>{raw.tunnel?.status}</span>;
         }
         if (!status) {
           return '-';
@@ -89,17 +87,18 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
     {
       title: t('network.table.path'),
       key: 'uri',
-      width: 400,
+      minWidth: 60,
       ellipsis: true,
       dataIndex: ['request', 'url'],
     },
     {
       title: t('network.table.schema'),
       width: 80,
+      key: 'schema',
       dataIndex: ['request', 'url'],
       ellipsis: true,
-      render: (url: string, raw) => {
-        if (raw.tunnel) {
+      render: (url: string, raw: IViewMessageEventStoreValue) => {
+        if (raw?.tunnel) {
           return <span>Tunnel</span>;
         }
         if (!url) {
@@ -109,9 +108,9 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
           const protocol = new URL(url).protocol;
 
           if (
-            raw.request?.headers?.['connection'] === 'Upgrade' &&
-            raw.request?.headers?.['upgrade'] === 'websocket' &&
-            raw.request?.headers?.['sec-websocket-key'] !== undefined
+            raw?.request?.headers?.['connection'] === 'Upgrade' &&
+            raw?.request?.headers?.['upgrade'] === 'websocket' &&
+            raw?.request?.headers?.['sec-websocket-key'] !== undefined
           ) {
             if (protocol === 'http:') {
               return <span>ws</span>;
@@ -132,6 +131,7 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
       title: t('network.table.version'),
       width: 80,
       ellipsis: true,
+      key: 'version',
       dataIndex: ['request', 'version'],
     },
     {
@@ -148,8 +148,8 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
       width: 200,
       ellipsis: true,
       dataIndex: ['response', 'headers', 'content-type'],
-      render: (type: string, raw) => {
-        if (raw.request?.headers?.['connection'] === 'Upgrade') {
+      render: (type: string, raw: IViewMessageEventStoreValue) => {
+        if (raw?.request?.headers?.['connection'] === 'Upgrade') {
           return <span>Upgrade</span>;
         }
         if (!type) {
@@ -162,7 +162,7 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
     },
     {
       title: t('network.table.startTime'),
-      key: 'time',
+      key: 'startTime',
       width: 160,
       dataIndex: ['timings', 'requestStart'],
       render: (requestStart: number) => {
@@ -177,39 +177,33 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
     {
       title: t('network.table.time'),
       key: 'time',
-      width: 80,
+      width: 140,
       dataIndex: ['timings'],
       render: (timings: MessageEventTimings) => {
         return getDurationTime(timings);
       },
     },
-  ];
-  console.log(maxHeight, 'maxHeight');
-  useEffect(() => {
-    console.log('requestTable', requestTable, autoScroll);
-    if (autoScroll && requestTable.length > 0) {
-      const lastItem = requestTable[requestTable.length - 1];
-      console.log('autoScroll', lastItem, tblRef.current);
-      if (lastItem && tblRef.current) {
-        tblRef.current.scrollTo({
-          key: lastItem.traceId,
-        });
-      }
-    }
-  }, [autoScroll, requestTable.length]);
+  ] as {
+    title: string;
+    width?: number;
+    minWidth?: number;
+    dataIndex: string | string[];
+    key?: string;
+    align?: 'left' | 'center' | 'right';
+    ellipsis?: boolean;
+    render?: (value: unknown, record: unknown, index: number) => React.ReactNode;
+  }[], [t]);
+
 
   useKeyPress(38, () => {
     console.log('ArrowUp pressed', selectRequest, requestTable);
-    debugger
     if (selectRequest) {
       const currentIndex = requestTable.findIndex(
         (item) => item.traceId === selectRequest?.traceId,
       );
       if (currentIndex > 0) {
         setSelectRequest(requestTable[currentIndex - 1]);
-        tblRef.current?.scrollTo({
-          key: requestTable[currentIndex - 1].traceId,
-        });
+        listRef.current?.scrollToRow(currentIndex + 1);
       }
     }
   });
@@ -221,44 +215,84 @@ export const RequestTable: React.FC<{ maxHeight: number }> = ({
       );
       if (currentIndex < requestTable.length - 1) {
         setSelectRequest(requestTable[currentIndex + 1]);
-        tblRef.current?.scrollTo({
-          key: requestTable[currentIndex - 1].traceId,
-        });
+        listRef.current?.scrollToRow(currentIndex - 1);
       }
     }
   });
 
-  return (
-    <RequestContextMenu>
-      {({ handleContextMenu }) => (
-        <div className="flex-1">
-          <Table<IViewMessageEventStoreValue>
-            ref={tblRef}
-            style={{ height: maxHeight }}
-            sticky
-            className="flex-1"
-            columns={columns}
-            rowKey="traceId"
-            size="small"
-            rowClassName={(record) => {
-              if (selectRequest?.traceId === record.traceId) {
-                return 'cursor-pointer ant-table-row-selected';
-              }
-              return 'cursor-pointer';
-            }}
-            onRow={(record) => ({
-              onClick: () => {
-                setSelectRequest(record);
-              },
-              onContextMenu: (event) => handleContextMenu(record, event),
-            })}
-            virtual
-            scroll={{ x: 800, y: maxHeight - 40 }}
-            pagination={false}
-            dataSource={requestTable}
-          />
-        </div>
-      )}
-    </RequestContextMenu>
+  const noRowsRenderer = () => (
+    <div className="flex items-center justify-center h-full">
+      <Empty description={null} />
+    </div>
   );
-};
+
+  const { handleContextMenu } = useRequestContextMenuContext();
+
+
+  const rowRenderer: ListRowRenderer = useCallback(({ index, key, style }) => {
+    const data = requestTable[index];
+    const activeClass = selectRequest?.traceId === data?.traceId ? 'bg-blue-100 dark:bg-blue-500' : '';
+    return (
+      <div key={key} style={{
+        ...style,
+        borderColor: token.colorBorder,
+      }}
+        onContextMenu={(e) => {
+          handleContextMenu(data, e);
+        }}
+        className={`flex items-center cursor-pointer hover:bg-gray-100 border-b dark:hover:bg-gray-700 transition-colors ${activeClass}`} onClick={() => {
+          if (data) {
+            setSelectRequest(data);
+          }
+        }} >
+        {columns.map((column) => {
+          const col = get(data, column.dataIndex);
+          const columnNode = column.render?.(col, data, index);
+          return (
+            <div key={column.key} style={{ display: 'inline-block', minWidth: column.minWidth, width: column.width, textAlign: column.align as React.CSSProperties['textAlign'] ?? "left", flex: column.width ? 'none' : 1 }}
+              className="text-ellipsis overflow-hidden whitespace-nowrap  ">
+              {columnNode ? columnNode : col}
+            </div>
+          )
+        })}
+      </div>
+    );
+  }, [columns, requestTable, selectRequest?.traceId, setSelectRequest, token.colorBorder])
+
+  const width = columns.reduce((total, column) => total + (column.width || 60), 0);
+  return <div className="w-full h-full overflow-x-auto overflow-y-hidden">
+    <div className="w-full flex border-b border-gray-200 dark:border-gray-500 h-10 items-center">
+      {columns.map((column) => (
+        <div key={column.key} style={{ display: 'inline-block', minWidth: column.minWidth, width: column.width, textAlign: column.align as React.CSSProperties['textAlign'] ?? "left", flex: column.width ? 'none' : 1 }} className="text-center">
+          <strong>{column.title}</strong>
+        </div>
+      ))}
+    </div>
+    <RequestContextMenu>
+
+      <div className="w-full h-full">
+
+        <AutoSizer>
+          {({ width: contentWidth, height }) => {
+            const maxWidth = Math.max(contentWidth, width);
+            return <List
+              ref={listRef}
+              height={height}
+              overscanRowCount={10}
+              noRowsRenderer={noRowsRenderer}
+              rowCount={requestTable?.length ?? 0}
+              rowHeight={
+                36
+              }
+              rowRenderer={rowRenderer}
+              width={maxWidth}
+            />
+
+          }}
+        </AutoSizer>
+      </div>
+    </RequestContextMenu>
+
+
+  </div >
+}

@@ -15,7 +15,7 @@ export function generateCurlCommand(
   } = request.request;
 
   // Start with curl and URL, add line continuation
-  let curlCommand = `curl \\\n  '${url}'`;
+  let curlCommand = `curl  '${url}'`;
 
   // Add method if not GET
   if (method !== 'GET') {
@@ -24,6 +24,9 @@ export function generateCurlCommand(
 
   // Add headers
   Object.entries(headers).forEach(([key, value]) => {
+    if (key === 'accept-encoding') {
+      return;
+    }
     // Skip connection headers as they're handled by curl automatically
     if (!['connection', 'content-length'].includes(key.toLowerCase())) {
       curlCommand += ` \\\n  -H '${key}: ${value}'`;
