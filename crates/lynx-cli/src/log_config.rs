@@ -1,6 +1,6 @@
 use crate::LogLevel;
 use anyhow::Result;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
@@ -107,15 +107,14 @@ impl LogConfig {
         Ok(())
     }
 
-    fn ensure_log_dir(&self, file_path: &PathBuf) -> Result<()> {
+    fn ensure_log_dir(&self, file_path: &Path) -> Result<()> {
         if let Some(parent) = file_path.parent() {
             std::fs::create_dir_all(parent)?;
         }
         Ok(())
     }
 
-    pub fn lynx_log_file(project_dir: &PathBuf) -> PathBuf {
-        let log_dir = project_dir.join("logs");
-        log_dir
+    pub fn lynx_log_file(project_dir: &Path) -> PathBuf {
+        project_dir.join("logs")
     }
 }

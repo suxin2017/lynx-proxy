@@ -4,7 +4,10 @@ use lynx_db::dao::request_processing_dao::RequestProcessingDao;
 use reqwest::{Method, StatusCode};
 use serde_json::{Value, json};
 
-use setup::{base_url, mock_rule::create_test_rule, setup_self_service_test_server::setup_self_service_test_server};
+use setup::{
+    base_url, mock_rule::create_test_rule,
+    setup_self_service_test_server::setup_self_service_test_server,
+};
 mod setup;
 // Core functionality tests - reduced to essential features
 
@@ -532,4 +535,3 @@ async fn test_update_rule_not_found() -> Result<()> {
 }
 
 // Helper functions
-

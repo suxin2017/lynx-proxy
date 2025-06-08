@@ -140,7 +140,7 @@ impl ProxyServerApp {
         let name = sock_path_name.as_str().to_fs_name::<GenericFilePath>()?;
 
         let mut coon = Stream::connect(name)?;
-        let addr_list = format!("{}", serde_json::to_string(addr_list)?);
+        let addr_list = serde_json::to_string(addr_list)?;
 
         coon.write_all(addr_list.as_bytes())?;
 

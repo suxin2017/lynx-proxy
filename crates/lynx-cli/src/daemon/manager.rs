@@ -2,9 +2,7 @@ use anyhow::{Result, anyhow};
 use console::style;
 use directories::ProjectDirs;
 use interprocess::local_socket::traits::ListenerExt;
-use interprocess::local_socket::{
-    GenericFilePath, Listener, ListenerOptions, ToFsName,
-};
+use interprocess::local_socket::{GenericFilePath, Listener, ListenerOptions, ToFsName};
 use std::fs;
 use std::io::BufReader;
 use std::net::SocketAddr;
@@ -389,7 +387,7 @@ impl DaemonManager {
         println!("{}", style("Lynx Proxy Started").green());
         println!(
             "Available on:\n {}",
-            style(format!("{}", connect_urls_str)).cyan()
+            style(connect_urls_str.to_string()).cyan()
         );
         println!(
             "Web UI is available on: {}",
@@ -399,7 +397,7 @@ impl DaemonManager {
     }
 
     fn wait_for_connection_info(&self, listener: Listener) -> Result<Vec<SocketAddr>> {
-        for conn in listener.incoming().filter_map(|r| r.ok()) {
+        if let Some(conn) = listener.incoming().filter_map(|r| r.ok()).next() {
             let recver = BufReader::new(conn);
             let socket_addr = serde_json::from_reader::<BufReader<_>, Vec<SocketAddr>>(recver)?;
             return Ok(socket_addr);

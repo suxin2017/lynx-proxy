@@ -89,9 +89,6 @@ impl Display for LogLevel {
     }
 }
 
-/// Get the default data directory for the application
-///
-
 pub fn get_default_data_dir() -> Result<PathBuf> {
     let project = ProjectDirs::from("cc", "suxin2017", "lynx")
         .ok_or_else(|| anyhow::anyhow!("Failed to get project directories"))?;
