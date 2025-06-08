@@ -47,32 +47,69 @@
 
 ## 使用
 
-通过一键安装脚本快速安装 Lynx Proxy：
+### 安装
 
+#### Bash
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
+#### Powershell 
+
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.ps1 | iex"
+```
+
+### 快速开始
+
 ```bash
-# 启动服务
-lynx-cli
+lynx-cli run
 ```
 
 ### 命令行参数
 
 ```
-A proxy service
+Lynx Proxy Server
 
-Usage: lynx-cli [OPTIONS]
+Usage: lynx-cli.exe <COMMAND>
+
+Commands:
+  start    Start the background proxy service
+  stop     Stop the background proxy service
+  restart  Restart the background proxy service
+  status   Show background proxy service status
+  run      Start the proxy server in foreground mode
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+### Start
+```
+Start the background proxy service
+
+Usage: lynx-cli.exe start [OPTIONS]
+
+Options:
+  -p, --port <PORT>          proxy server port [default: 3000]
+      --data-dir <DATA_DIR>  data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
+  -h, --help                 Print help
+```
+
+### Run
+```
+Start the proxy server in foreground mode
+
+Usage: lynx-cli.exe run [OPTIONS]
 
 Options:
   -p, --port <PORT>            proxy server port [default: 3000]
-      --log-level <LOG_LEVEL>  log level [default: silent] [possible values: silent, info, error, debug, trace]
-      --data-dir <DATA_DIR>    data dir if not set, use default data dir
+      --data-dir <DATA_DIR>    data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
+      --log-level <LOG_LEVEL>  Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
   -h, --help                   Print help
-  -V, --version                Print version
 ```
-
 ## 贡献指南
 
 欢迎社区贡献！请按照以下流程参与开发：
