@@ -9,7 +9,7 @@ tasks:
     desc: Run tests
     dir: crates/lynx-core
     cmds:
-      - cargo test 
+      - cargo test
 
   lint:
     desc: Run clippy linter
@@ -20,6 +20,11 @@ tasks:
     desc: Run cargo fix
     cmds:
       - cargo fix --allow-dirty
+
+  fmt:
+    desc: Run cargo fmt
+    cmds:
+      - cargo fmt --all -- --check
 
   setup-ui:
     desc: Setup UI dependencies

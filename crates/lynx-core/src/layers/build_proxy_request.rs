@@ -14,10 +14,7 @@ use http::{
 use tower::Service;
 use url::Url;
 
-use crate::{
-    common::Req,
-    layers::extend_extension_layer::clone_extensions,
-};
+use crate::{common::Req, layers::extend_extension_layer::clone_extensions};
 
 #[derive(Clone)]
 pub struct BuildProxyRequestService<S> {
