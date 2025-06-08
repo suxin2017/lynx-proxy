@@ -11,7 +11,7 @@ import { RootState } from '@/store';
 import constate from 'constate';
 import { useDebugMode } from '@/hooks';
 
-export const [RequestContextMenuProvicer, useRequestContextMenuContext] = constate(() => {
+export const [RequestContextMenuProvider, useRequestContextMenuContext] = constate(() => {
   const [selectedRecord, setSelectedRecord] =
     useState<IViewMessageEventStoreValue | null>(null);
 
@@ -111,7 +111,6 @@ export const RequestContextMenu: React.FC<PropsWithChildren> = ({ children }) =>
       trigger={['contextMenu']}
       open={!!selectedRecord}
       onOpenChange={(visible) => {
-        console.log('Dropdown visibility changed:', visible);
         if (!visible) {
           setSelectedRecord(null);
         }

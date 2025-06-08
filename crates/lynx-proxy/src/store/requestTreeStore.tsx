@@ -40,7 +40,6 @@ const dfsFilter = (
     .filter(callback)
     .map((node) => {
       const children = dfsFilter(node.children, callback);
-      console.log(children, 'children');
       return {
         ...node,
         children,
@@ -127,7 +126,6 @@ const requestTreeSlice = createSlice({
 export const useTreeData = () => {
   return useSelector((state: RootState) => {
     return dfsFilter(state.requestTree.requestTree, (node) => {
-      console.log('node.record', node.record);
 
       if (!node.record) {
         return true;
@@ -136,7 +134,6 @@ export const useTreeData = () => {
         state.requestTable.filterUri &&
         !node.record?.request?.url?.includes(state.requestTable.filterUri)
       ) {
-        console.log('filterUri', state.requestTable.filterUri);
         return false;
       }
 

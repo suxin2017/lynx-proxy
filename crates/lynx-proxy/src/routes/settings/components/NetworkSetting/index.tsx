@@ -187,9 +187,6 @@ export const NetworkSetting: React.FC = () => {
         layout="vertical"
         form={form}
         initialValues={initialValues}
-        onValuesChange={(changedValues) => {
-          console.log('changedValues', changedValues);
-        }}
       >
         <div className="flex-1 overflow-y-auto">
           <div className="my-2 flex items-center justify-between">

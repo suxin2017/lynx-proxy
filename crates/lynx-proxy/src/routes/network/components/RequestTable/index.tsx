@@ -202,7 +202,7 @@ export const RequestTable: React.FC = () => {
       );
       if (currentIndex > 0) {
         setSelectRequest(requestTable[currentIndex - 1]);
-        listRef.current?.scrollToRow(currentIndex + 1);
+        listRef.current?.scrollToRow(currentIndex - 1);
       }
     }
   });
@@ -214,7 +214,7 @@ export const RequestTable: React.FC = () => {
       );
       if (currentIndex < requestTable.length - 1) {
         setSelectRequest(requestTable[currentIndex + 1]);
-        listRef.current?.scrollToRow(currentIndex - 1);
+        listRef.current?.scrollToRow(currentIndex + 1);
       }
     }
   });

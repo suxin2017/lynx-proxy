@@ -1,4 +1,4 @@
-import { RequestContextMenuProvicer } from '@/components/RequestContextMenu';
+import { RequestContextMenuProvider } from '@/components/RequestContextMenu';
 import { useI18n } from '@/contexts';
 import { createFileRoute } from '@tanstack/react-router';
 import { Typography } from 'antd';
@@ -27,7 +27,7 @@ function InnerComponent() {
 
   return (
     <AutoScrollProvider>
-      <RequestContextMenuProvicer>
+      <RequestContextMenuProvider>
         <CommonCard>
           <div className="flex h-full w-full flex-1 gap-2 flex-col overflow-hidden">
             <div className='flex items-center justify-between gap-2'>
@@ -48,7 +48,7 @@ function InnerComponent() {
             {state === 'Structure' && <Structure />}
           </div>
         </CommonCard>
-      </RequestContextMenuProvicer>
+      </RequestContextMenuProvider>
     </AutoScrollProvider>
 
   );
