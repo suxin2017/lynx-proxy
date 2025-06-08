@@ -6,7 +6,6 @@ use tokio::signal;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("Welcome to Lynx Proxy CLI!");
     let args = Args::parse();
 
     match args.command {
