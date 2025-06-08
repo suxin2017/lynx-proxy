@@ -140,7 +140,9 @@ impl ProxyServer {
             .access_addr_list
             .iter()
             .map(|addr| async move {
-                let listener = TcpListener::bind(*addr).await?;
+                let listener = TcpListener::bind(*addr)
+                    .await
+                    .map_err(|e| anyhow!("Failed to bind TCP listener on {}:\n\t{}", addr, e))?;
                 trace!("Server started on: http://{}", listener.local_addr()?);
                 trace!("Server started on: https://{}", listener.local_addr()?);
                 Ok(listener)

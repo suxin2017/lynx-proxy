@@ -13,4 +13,3 @@ pub async fn setup_self_service_test_server() -> Result<(ProxyServer, MockClient
 
     Ok((proxy_server, client))
 }
-

@@ -91,13 +91,21 @@ impl RuleValidator {
     pub fn validate_simple_condition(condition: &SimpleCaptureCondition) -> Result<()> {
         // Check if at least one field is not empty/None
         let has_url_pattern = condition.url_pattern.is_some();
-        let has_method = condition.method.as_ref().is_some_and(|m| !m.trim().is_empty());
-        let has_host = condition.host.as_ref().is_some_and(|h| !h.trim().is_empty());
-        let has_headers = condition.headers.as_ref().is_some_and(|headers| 
-            !headers.is_empty() && headers.iter().any(|h| 
-                h.iter().any(|(k, v)| !k.trim().is_empty() || !v.trim().is_empty())
-            )
-        );
+        let has_method = condition
+            .method
+            .as_ref()
+            .is_some_and(|m| !m.trim().is_empty());
+        let has_host = condition
+            .host
+            .as_ref()
+            .is_some_and(|h| !h.trim().is_empty());
+        let has_headers = condition.headers.as_ref().is_some_and(|headers| {
+            !headers.is_empty()
+                && headers.iter().any(|h| {
+                    h.iter()
+                        .any(|(k, v)| !k.trim().is_empty() || !v.trim().is_empty())
+                })
+        });
 
         if !has_url_pattern && !has_method && !has_host && !has_headers {
             return Err(RequestProcessingError::RuleValidation {

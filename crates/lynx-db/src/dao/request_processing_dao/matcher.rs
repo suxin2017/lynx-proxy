@@ -502,7 +502,6 @@ mod tests {
     #[test]
     fn test_not_and_operators() {
         let matcher = RuleMatcher::new();
-        let request = create_test_request("GET", "https://www.examples.com/");
         let new_request = create_test_request("GET", "https://www.examples.com/api/users");
 
         // Test NOT operator with single condition

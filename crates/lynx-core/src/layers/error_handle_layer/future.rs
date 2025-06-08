@@ -9,7 +9,6 @@ use http::StatusCode;
 use pin_project_lite::pin_project;
 use tracing::error;
 
-
 pin_project! {
     pub struct ErrorHandleFuture<F> {
         #[pin]

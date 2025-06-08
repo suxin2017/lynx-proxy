@@ -1,5 +1,8 @@
 use anyhow::Result;
-use axum::{http::StatusCode, response::{IntoResponse, Response}};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use lynx_db::dao::request_processing_dao::handlers::LocalFileConfig;
 use mime_guess::from_path;
 use std::path::Path;
@@ -112,7 +115,12 @@ mod tests {
                     "text/plain"
                 );
                 assert_eq!(
-                    response.headers().get("content-length").unwrap().to_str().unwrap(),
+                    response
+                        .headers()
+                        .get("content-length")
+                        .unwrap()
+                        .to_str()
+                        .unwrap(),
                     &file_content.len().to_string()
                 );
                 assert_eq!(
@@ -161,7 +169,12 @@ mod tests {
                     "application/json"
                 );
                 assert_eq!(
-                    response.headers().get("content-length").unwrap().to_str().unwrap(),
+                    response
+                        .headers()
+                        .get("content-length")
+                        .unwrap()
+                        .to_str()
+                        .unwrap(),
                     &file_content.len().to_string()
                 );
 
@@ -201,10 +214,7 @@ mod tests {
         match result {
             HandleRequestType::Response(response) => {
                 assert_eq!(response.status(), StatusCode::OK);
-                assert_eq!(
-                    response.headers().get("content-type").unwrap(),
-                    "text/html"
-                );
+                assert_eq!(response.headers().get("content-type").unwrap(), "text/html");
 
                 // Verify response body
                 let body_bytes = response.into_body().collect().await?.to_bytes();
@@ -322,12 +332,14 @@ mod tests {
         match result {
             HandleRequestType::Response(response) => {
                 assert_eq!(response.status(), StatusCode::OK);
+                assert_eq!(response.headers().get("content-type").unwrap(), "image/png");
                 assert_eq!(
-                    response.headers().get("content-type").unwrap(),
-                    "image/png"
-                );
-                assert_eq!(
-                    response.headers().get("content-length").unwrap().to_str().unwrap(),
+                    response
+                        .headers()
+                        .get("content-length")
+                        .unwrap()
+                        .to_str()
+                        .unwrap(),
                     &binary_content.len().to_string()
                 );
 
@@ -370,7 +382,12 @@ mod tests {
                     "text/plain"
                 );
                 assert_eq!(
-                    response.headers().get("content-length").unwrap().to_str().unwrap(),
+                    response
+                        .headers()
+                        .get("content-length")
+                        .unwrap()
+                        .to_str()
+                        .unwrap(),
                     "0"
                 );
 
@@ -410,7 +427,12 @@ mod tests {
             HandleRequestType::Response(response) => {
                 assert_eq!(response.status(), StatusCode::OK);
                 assert_eq!(
-                    response.headers().get("content-length").unwrap().to_str().unwrap(),
+                    response
+                        .headers()
+                        .get("content-length")
+                        .unwrap()
+                        .to_str()
+                        .unwrap(),
                     "10000"
                 );
 
