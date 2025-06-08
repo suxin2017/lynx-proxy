@@ -1,3 +1,4 @@
+import { useI18n } from '@/contexts';
 import { filterUri } from '@/store/requestTableStore';
 import { Input } from 'antd';
 import React from 'react';
@@ -7,12 +8,14 @@ interface ISearchRequestUrlInputProps { }
 
 export const SearchRequestUrlInput: React.FC<ISearchRequestUrlInputProps> = () => {
   const dispatch = useDispatch();
+  const {t} = useI18n();
+
 
   return (
     <Input
       className="flex-1"
       allowClear
-      placeholder="搜素请求..."
+      placeholder={t('network.network.filterUriPlaceholder')}
       onChange={(e) => {
         dispatch(filterUri(e.target.value));
       }}

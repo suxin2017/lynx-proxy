@@ -256,7 +256,7 @@ export const RequestTable: React.FC = () => {
         })}
       </div>
     );
-  }, [columns, requestTable, selectRequest?.traceId, setSelectRequest, token.colorBorder])
+  }, [columns, handleContextMenu, requestTable, selectRequest?.traceId, setSelectRequest, token.colorBorder])
 
   const width = columns.reduce((total, column) => total + (column.width || 60), 0);
   return <div className="w-full h-full overflow-x-auto overflow-y-hidden">

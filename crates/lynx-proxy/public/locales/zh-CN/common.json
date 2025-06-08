@@ -154,6 +154,7 @@
     "reset": "重置"
   },
   "network": {
+    "filterUriPlaceholder":"搜素请求...",
     "contextMenu": {
       "copyCurl": "复制为 cURL"
     },
