@@ -2,18 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.2-alpha.2] - 2025-06-08
+## [0.2.2] - 2025-06-08
 
 ### 🚀 Features
 
 - Proxy Interception Support ([#8](https://github.com/suxin2017/lynx-server/issues/8))
+- The command line supports daemons ([#15](https://github.com/suxin2017/lynx-server/issues/15))
 
 ### 🐛 Bug Fixes
 
 - Test case
 - Cli start error
 - Dark mode bug
-- Update interprocess socket name handling to use GenericNamespaced
 
 ## [0.1.6-alpha.1] - 2025-05-25
 
