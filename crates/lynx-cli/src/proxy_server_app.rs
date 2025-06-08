@@ -45,13 +45,10 @@ impl ProxyServerApp {
         if !self.daemon {
             println!(
                 "The proxy service data directory: \n{}",
-                style(data_dir.to_string_lossy()).yellow()
+                style(data_dir.display()).yellow()
             );
         } else {
-            info!(
-                "The proxy service data directory: {}",
-                data_dir.to_string_lossy()
-            );
+            info!("The proxy service data directory: {}", data_dir.display());
         }
 
         let assets_dir = include_dir!("$CARGO_MANIFEST_DIR/assets");
