@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.1] - 2025-06-05
+## [0.2.2-alpha.2] - 2025-06-08
 
 ### 🚀 Features
 
@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Test case
 - Cli start error
 - Dark mode bug
+- Update interprocess socket name handling to use GenericNamespaced
 
 ## [0.1.6-alpha.1] - 2025-05-25
 

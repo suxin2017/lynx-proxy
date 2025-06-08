@@ -1,7 +1,7 @@
 //! Capture Entity for defining capture rules
 
 use async_trait::async_trait;
-use sea_orm::{entity::prelude::*, Set};
+use sea_orm::{Set, entity::prelude::*};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use utoipa::ToSchema;
