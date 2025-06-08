@@ -1,61 +1,67 @@
 import { MimeTypeIcon } from '@/components/MimeTypeIcon';
-import { RequestContextMenu } from '@/components/RequestContextMenu';
+import { RequestContextMenu, useRequestContextMenuContext } from '@/components/RequestContextMenu';
 import { IRequestTreeNode, useTreeData } from '@/store/requestTreeStore';
 import {
   RiArrowDropDownLine,
   RiArrowDropRightLine,
-  RiFolder6Line,
   RiLink,
-  RiTimeLine,
+  RiTimeLine
 } from '@remixicon/react';
 import { useSize } from 'ahooks';
-import { Tag, theme, Typography } from 'antd';
+import { Empty, theme, Typography } from 'antd';
 import { first, get, keys } from 'lodash';
 import React, { useRef } from 'react';
-import { NodeApi, NodeRendererProps, Tree } from 'react-arborist';
+import { NodeRendererProps, Tree } from 'react-arborist';
 import { getDurationTime } from '../RequestTable';
 import { useSelectRequest } from '../store/selectRequestStore';
 
 export const RequestTree: React.FC = () => {
   const treeData = useTreeData();
-  console.log(treeData, 'treeData');
   const ref = useRef(null);
   const size = useSize(ref);
   const { setSelectRequest } = useSelectRequest();
+  const { handleContextMenu } = useRequestContextMenuContext();
+
+  if (!treeData?.length) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Empty description={null} />
+      </div>
+    );
+  }
 
   return (
     <RequestContextMenu>
-      {({ handleContextMenu }) => (
-        <div ref={ref} className="h-full w-full">
-          <Tree
-            height={size?.height}
-            width={size?.width}
-            data={treeData}
-            indent={24}
-            rowHeight={32}
-            disableDrag
-            openByDefault={false}
-            onSelect={(node) => {
-              const selectedNode = first(node);
-              if (selectedNode && selectedNode.data.record) {
-                setSelectRequest(selectedNode.data.record);
-              }
-            }}
-          >
-            {(props) => (
-              <TreeNode
-                {...props}
-                onContextMenu={(e) => {
-                  if (props.node.data.record) {
-                    handleContextMenu(props.node.data.record, e);
-                  }
-                }}
-              />
-            )}
-          </Tree>
-        </div>
-      )}
-    </RequestContextMenu>
+      <div ref={ref} className="h-full w-full">
+        <Tree
+          height={size?.height}
+          width={size?.width}
+          data={treeData}
+          indent={32}
+          rowHeight={36}
+          disableDrag
+          openByDefault={false}
+          onSelect={(node) => {
+            const selectedNode = first(node);
+            if (selectedNode && selectedNode.data.record) {
+              setSelectRequest(selectedNode.data.record);
+            }
+          }}
+        >
+          {(props) => (
+            <TreeNode
+              {...props}
+              onContextMenu={(e) => {
+                if (props.node.data.record) {
+                  handleContextMenu(props.node.data.record, e);
+                }
+              }}
+            />
+          )}
+        </Tree>
+      </div>
+    </RequestContextMenu >
+
   );
 };
 
@@ -63,15 +69,6 @@ interface TreeNodeProps extends NodeRendererProps<IRequestTreeNode> {
   onContextMenu?: (event: React.MouseEvent) => void;
 }
 
-const dfsSumChildrenCount = (treeNode: NodeApi<IRequestTreeNode>): number => {
-  let count = 0;
-  if (treeNode.children) {
-    for (const child of treeNode.children) {
-      count += dfsSumChildrenCount(child);
-    }
-  }
-  return count + (treeNode.isLeaf ? 1 : 0);
-};
 
 const TreeNode = ({
   node,
@@ -97,7 +94,7 @@ const TreeNode = ({
         ...style,
         backgroundColor: node.isSelected ? token.token.colorPrimaryBg : '',
       }}
-      className={'flex h-full w-full items-center text-sm'}
+      className={'flex h-full w-full items-center text-sm whitespace-nowrap'}
       ref={dragHandle}
       onClick={() => {
         node.select();
@@ -132,19 +129,14 @@ const TreeNode = ({
           />
         </span>
       )}
-      {!isRoot && !isLeaf && (
+      {/* {!isRoot && !isLeaf && (
         <span className="mr-1 flex items-center">
-          <RiFolder6Line color={token.token['orange-5']} size={18} />
+          <RiFolder6Line color={token.token['orange-5']} size={16} />
         </span>
-      )}
+      )} */}
       <Typography.Text ellipsis className="w-full">
         {node.data.name}
       </Typography.Text>
-      {isRoot && node.data.children.length > 0 && (
-        <Tag className="rounded-xl text-xs" color="blue">
-          {dfsSumChildrenCount(node)}
-        </Tag>
-      )}
 
       {isLeaf && (
         <div className="flex items-center gap-2 pr-2 text-xs text-gray-400 dark:text-gray-500">

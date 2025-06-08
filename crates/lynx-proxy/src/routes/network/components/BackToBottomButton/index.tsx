@@ -9,13 +9,9 @@ export const AutoScrollToBottom: React.FC = () => {
 
   return (
     <div className="flex items-center gap-1">
-      <div className="text-sm whitespace-pre">
-        {t('network.toolbar.autoScrollLabel')}:
-      </div>
       <div className="">
         <Switch
           value={autoScroll}
-          size="small"
           onChange={(val) => {
             setAutoScroll(val);
           }}

@@ -154,6 +154,7 @@
     }
   },
   "network": {
+    "filterUriPlaceholder": "Search Request...",
     "contextMenu": {
       "copyCurl": "Copy as cURL"
     },
@@ -187,7 +188,7 @@
     "start": "Start Recording",
     "stop": "Stop Recording"
   },
-  "clearRequests": "Clear all requests",
+  "clearRequests": "Clear",
   "ruleManager": {
     "title": "Interception Rules List",
     "description": "Manage rules for intercepting and modifying network requests",

@@ -115,7 +115,7 @@ export const useUpdateRequestLog = () => {
         }
         return true;
       })
-      .map(formatItem);
+      .map(formatItem)
     const patchRequests =
       cacheRequestsData?.data.patchRequests?.map(formatItem);
     const cacheNewData = {
@@ -143,11 +143,7 @@ export const useUpdateRequestLog = () => {
       const updateCurrentRequest = cacheNewData.data?.data.patchRequests.find(
         (item) => item.traceId === selectRequest?.traceId,
       );
-      console.log(
-        'updateCurrentRequest',
-        updateCurrentRequest,
-        selectRequest?.traceId,
-      );
+
       if (updateCurrentRequest) {
         setSelectRequest(updateCurrentRequest);
       }

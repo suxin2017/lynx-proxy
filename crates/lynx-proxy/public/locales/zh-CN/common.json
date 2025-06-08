@@ -154,10 +154,11 @@
     "reset": "重置"
   },
   "network": {
+    "filterUriPlaceholder":"搜索请求...",
     "contextMenu": {
       "copyCurl": "复制为 cURL"
     },
-    "title": "网络",
+    "title": "网络请求",
     "sequence": "表格",
     "structure": "树形",
     "overview": "概览",
@@ -184,10 +185,10 @@
     "settings": "设置"
   },
   "recording": {
-    "start": "开始录制",
-    "stop": "停止录制"
+    "start": "开始捕获",
+    "stop": "停止捕获"
   },
-  "clearRequests": "清除所有请求",
+  "clearRequests": "清除",
   "startTime": "开始时间",
   "ruleManager": {
     "title": "拦截规则列表",

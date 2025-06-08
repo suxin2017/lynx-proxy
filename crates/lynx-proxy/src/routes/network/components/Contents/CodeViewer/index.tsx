@@ -58,7 +58,6 @@ const CodeViewer: React.FC<CodeViewerProps> = ({ arrayBuffer, type }) => {
     }
     const worker = workerRef.current;
     worker.onmessage = (e) => {
-      console.log('worker message', e.data);
       setHighlightedHtml(e.data.html);
     };
     worker.postMessage({ code: displayData, language: languageType });

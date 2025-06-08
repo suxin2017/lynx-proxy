@@ -15,7 +15,6 @@ export const [RequestDetailDrawerStateProvider, useRequestDetailDrawerState] =
 export const RequestDetailDrawer: React.FC<{}> = () => {
   const { visible, setVisible } = useRequestDetailDrawerState();
 
-  console.log('RequestDetailDrawer', visible);
   return (
     <div
       className="relative [&_.ant-drawer-content-wrapper]:shadow-inner"

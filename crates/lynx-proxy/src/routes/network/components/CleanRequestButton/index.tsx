@@ -21,8 +21,10 @@ export const CleanRequestButton: React.FC = () => {
         dispatch(clearRequestTree());
         dispatch(clearRequestTable());
       }}
+      className="border-gray-300 dark:border-gray-500"
       icon={<RiDeleteBin7Line size={18} />}
-      title={t('clearRequests')}
-    />
+    >
+      {t('clearRequests')}
+    </Button>
   );
 };
