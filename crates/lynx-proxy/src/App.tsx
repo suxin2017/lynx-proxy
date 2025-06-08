@@ -13,6 +13,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import { useAntdLocale } from './contexts/useAntdLocale';
 
 const hashHistory = createHashHistory();
+
 // Set up a Router instance
 const router = createRouter({
   routeTree,
@@ -60,6 +61,7 @@ const AppContent = () => {
   const antdAlgorithm = useMemo(() => {
     return isDark ? [theme.darkAlgorithm] : [];
   }, [isDark]);
+
 
   return (
     <ConfigProvider

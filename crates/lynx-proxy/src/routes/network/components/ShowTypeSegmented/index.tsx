@@ -1,7 +1,7 @@
-import { Segmented, Tag } from 'antd';
-import { useState } from 'react';
+import { RiListUnordered, RiNodeTree } from '@remixicon/react';
+import { Segmented } from 'antd';
 import constate from 'constate';
-import { useRequestLogCount } from '@/store/requestTableStore';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const [
@@ -19,20 +19,19 @@ export const [
 export function ShowTypeSegmented() {
   const { t } = useTranslation();
   const { state, setState } = useShowTypeSegmentedStateContext();
-  const requestCount = useRequestLogCount();
 
-  const options = [t('network.sequence'), t('network.structure')];
 
   return (
-    <div className="mb-2">
-      <Segmented
-        options={options}
-        value={t(`network.${state.toLowerCase()}`)}
-        onChange={(value) => {
-          setState(value === t('network.sequence') ? 'Sequence' : 'Structure');
-        }}
-      />
-      <Tag className="ml-2">{requestCount}</Tag>
-    </div>
+    <Segmented
+      className='h-9 [&_.ant-segmented-item-label]:h-8 [&_.ant-segmented-item-label]:flex [&_.ant-segmented-item-label]:items-center'
+      options={[
+        { label: <RiListUnordered className="align-sub" size={18} />, value: t('network.sequence') },
+        { label: <RiNodeTree className="align-sub" size={18} />, value: t('network.structure') },
+      ]}
+      value={t(`network.${state.toLowerCase()}`)}
+      onChange={(value) => {
+        setState(value === t('network.sequence') ? 'Sequence' : 'Structure');
+      }}
+    />
   );
 }

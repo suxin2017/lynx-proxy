@@ -1,3 +1,4 @@
+import { faker } from '@faker-js/faker';
 import { getDefaultMock } from '../services/generated/default/default.msw';
 import {
   getGetCachedRequestsMockHandler,
@@ -8,13 +9,13 @@ import { getRequestProcessingMock } from '../services/generated/request-processi
 import { ResponseCode } from '../services/generated/utoipaAxum.schemas';
 
 export const handlers = [
-  getGetCachedRequestsMockHandler({
+  getGetCachedRequestsMockHandler(() => ({
     code: ResponseCode.ok,
     data: {
       newRequests: [
         {
           status: 'RequestStarted',
-          traceId: 'u1_xbtl7IGuoJSgzcyPOW',
+          traceId: faker.string.uuid(),
           isNew: true,
           request: {
             method: 'GET',
@@ -56,7 +57,7 @@ export const handlers = [
       ],
     },
     message: null,
-  }),
+  })),
   getGetCaptureStatusMockHandler(),
   getToggleCaptureMockHandler(),
   ...getDefaultMock(),

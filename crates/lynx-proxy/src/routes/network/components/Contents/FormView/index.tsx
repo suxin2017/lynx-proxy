@@ -85,7 +85,6 @@ const FormViewer: React.FC<{
 
     return data;
   }, [data, formType]);
-  console.log(jsonData, 'jsonData');
 
   if (!data) return null;
 
