@@ -5,7 +5,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use console::style;
 use include_dir::include_dir;
-use interprocess::local_socket::{GenericFilePath, Stream, prelude::*};
+use interprocess::local_socket::{GenericNamespaced, Stream, prelude::*};
 
 use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
@@ -132,12 +132,7 @@ impl ProxyServerApp {
         ipc_socket_path: &str,
         addr_list: &[std::net::SocketAddr],
     ) -> Result<()> {
-        let sock_path_name = ipc_socket_path.to_string();
-        println!(
-            "Sending connection info to parent process via IPC socket: {}",
-            sock_path_name
-        );
-        let name = sock_path_name.as_str().to_fs_name::<GenericFilePath>()?;
+        let name = ipc_socket_path.to_ns_name::<GenericNamespaced>()?;
 
         let mut coon = Stream::connect(name)?;
         let addr_list = serde_json::to_string(addr_list)?;

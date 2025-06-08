@@ -32,7 +32,7 @@ include_dir = { workspace = true }
 sea-orm = { workspace = true, features = ["sqlx-sqlite"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-rustls = { version = "0.23.26", features = ["ring"] }
+rustls = { version = "0.23.26", default-features = false, features = ["ring"] }
 chrono = { version = "0.4", features = ["serde"] }
 interprocess = { version = "2.2.1", default-features = false, features = [
     "tokio",

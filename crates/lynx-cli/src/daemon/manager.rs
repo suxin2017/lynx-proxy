@@ -2,7 +2,9 @@ use anyhow::{Result, anyhow};
 use console::style;
 use directories::ProjectDirs;
 use interprocess::local_socket::traits::ListenerExt;
-use interprocess::local_socket::{GenericFilePath, Listener, ListenerOptions, ToFsName};
+use interprocess::local_socket::{
+    GenericNamespaced, Listener, ListenerOptions, ToNsName,
+};
 use std::fs;
 use std::io::BufReader;
 use std::net::SocketAddr;
@@ -338,7 +340,7 @@ impl DaemonManager {
         }
 
         let sock_path_name = sock_path.to_string_lossy().to_string();
-        let name = sock_path_name.as_str().to_fs_name::<GenericFilePath>()?;
+        let name = sock_path_name.as_str().to_ns_name::<GenericNamespaced>()?;
 
         let listener = ListenerOptions::new().name(name);
 
