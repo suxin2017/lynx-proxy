@@ -196,7 +196,6 @@ export const RequestTable: React.FC = () => {
 
 
   useKeyPress(38, () => {
-    console.log('ArrowUp pressed', selectRequest, requestTable);
     if (selectRequest) {
       const currentIndex = requestTable.findIndex(
         (item) => item.traceId === selectRequest?.traceId,
