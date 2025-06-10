@@ -15,6 +15,7 @@ use utoipa::openapi::{KnownFormat, ObjectBuilder, RefOr, SchemaFormat, Type};
 use utoipa::{PartialSchema, ToSchema};
 
 use crate::common::BoxBody;
+use crate::utils::empty;
 
 #[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]
 pub struct MessageHeaderSize(pub usize);
@@ -274,6 +275,13 @@ pub fn copy_body_stream(
     tokio_stream::wrappers::ReceiverStream<bytes::Bytes>,
     BoxBody,
 ) {
+    if let Some(0) = body.size_hint().upper() {
+        // If the body size is known to be 0, return empty streams
+        let (tx1, rx1) = tokio::sync::mpsc::channel::<bytes::Bytes>(100);
+        drop(tx1);
+        let empty_stream = tokio_stream::wrappers::ReceiverStream::new(rx1);
+        return (empty_stream, empty());
+    }
     let mut m_body = body.map_err(|e| anyhow!(e));
     let (tx1, rx1) = tokio::sync::mpsc::channel::<bytes::Bytes>(100);
     let (tx2, rx2) = tokio::sync::mpsc::channel(100);

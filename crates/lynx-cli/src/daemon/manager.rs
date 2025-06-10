@@ -1,15 +1,11 @@
 use anyhow::{Result, anyhow};
 use console::style;
 use directories::ProjectDirs;
-use interprocess::local_socket::traits::ListenerExt;
-use interprocess::local_socket::{
-    GenericNamespaced, Listener, ListenerOptions, ToNsName,
-};
 use std::fs;
-use std::io::BufReader;
-use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::thread::sleep;
+use std::time::Duration;
 use tracing::{error, info, warn};
 
 use crate::daemon::status::{DaemonStatus, ProcessStatus};
@@ -333,19 +329,6 @@ impl DaemonManager {
 
     /// 启动守护进程
     async fn spawn_daemon_process(&self, port: u16, data_dir: PathBuf) -> Result<DaemonStatus> {
-        let sock_path = data_dir.join("daemon").join("ipc.sock");
-
-        if sock_path.exists() {
-            fs::remove_file(&sock_path)?;
-        }
-
-        let sock_path_name = sock_path.to_string_lossy().to_string();
-        let name = sock_path_name.as_str().to_ns_name::<GenericNamespaced>()?;
-
-        let listener = ListenerOptions::new().name(name);
-
-        let listener = listener.create_sync()?;
-
         let current_exe = std::env::current_exe()?;
 
         let mut command = Command::new(&current_exe);
@@ -356,8 +339,6 @@ impl DaemonManager {
             .arg(port.to_string())
             .arg("--data-dir")
             .arg(data_dir.to_string_lossy().to_string())
-            .arg("--ipc-socket")
-            .arg(sock_path_name)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .stdin(Stdio::null());
@@ -371,7 +352,7 @@ impl DaemonManager {
 
         std::mem::forget(child);
 
-        let socket_addrs = self.wait_for_connection_info(listener)?;
+        let socket_addrs = self.wait_for_connection_info(port).await?;
 
         let connection_urls = socket_addrs
             .iter()
@@ -381,10 +362,6 @@ impl DaemonManager {
         let connect_urls_str = connection_urls.join("\n");
         let ui_addr = connection_urls.first().cloned();
         status.set_connection_url(connection_urls);
-
-        if sock_path.exists() {
-            let _ = fs::remove_file(&sock_path);
-        }
 
         println!("{}", style("Lynx Proxy Started").green());
         println!(
@@ -398,16 +375,18 @@ impl DaemonManager {
         Ok(status)
     }
 
-    fn wait_for_connection_info(&self, listener: Listener) -> Result<Vec<SocketAddr>> {
-        if let Some(conn) = listener.incoming().filter_map(|r| r.ok()).next() {
-            let recver = BufReader::new(conn);
-            let socket_addr = serde_json::from_reader::<BufReader<_>, Vec<SocketAddr>>(recver)?;
-            return Ok(socket_addr);
-        }
+    async fn wait_for_connection_info(&self, port: u16) -> Result<Vec<String>> {
+        sleep(Duration::from_millis(500));
+        let res = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()?
+            .get(format!("http://127.0.0.1:{port}/api/base_info/address"))
+            .send()
+            .await?;
 
-        Err(anyhow!(
-            "Failed to receive connection info from Lynx proxy service"
-        ))
+        let res = res.json::<Vec<String>>().await?;
+
+        Ok(res)
     }
 }
 

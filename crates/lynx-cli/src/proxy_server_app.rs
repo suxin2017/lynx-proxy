@@ -1,11 +1,9 @@
-use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::Result;
 use console::style;
 use include_dir::include_dir;
-use interprocess::local_socket::{GenericNamespaced, Stream, prelude::*};
 
 use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
@@ -17,21 +15,14 @@ pub struct ProxyServerApp {
     port: u16,
     data_dir: Option<String>,
     daemon: bool,
-    ipc_socket: Option<String>,
 }
 
 impl ProxyServerApp {
-    pub fn new(
-        port: u16,
-        data_dir: Option<String>,
-        daemon: bool,
-        ipc_socket: Option<String>,
-    ) -> Self {
+    pub fn new(port: u16, data_dir: Option<String>, daemon: bool) -> Self {
         Self {
             port,
             data_dir,
             daemon,
-            ipc_socket,
         }
     }
 
@@ -94,16 +85,6 @@ impl ProxyServerApp {
             .collect::<Vec<String>>()
             .join("\n");
 
-        // 如果是daemon模式且有IPC套接字，发送连接地址给父进程
-        if self.daemon && self.ipc_socket.is_some() {
-            if let Some(ipc_socket_path) = &self.ipc_socket {
-                self.send_connection_info_to_parent(
-                    ipc_socket_path,
-                    &proxy_server.access_addr_list,
-                )?;
-            }
-        }
-
         if !self.daemon {
             println!("The proxy service was started");
             println!("{}{}", style("Available on: \n").green(), addrs);
@@ -120,21 +101,6 @@ impl ProxyServerApp {
                 tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
             }
         }
-
-        Ok(())
-    }
-
-    fn send_connection_info_to_parent(
-        &self,
-        ipc_socket_path: &str,
-        addr_list: &[std::net::SocketAddr],
-    ) -> Result<()> {
-        let name = ipc_socket_path.to_ns_name::<GenericNamespaced>()?;
-
-        let mut coon = Stream::connect(name)?;
-        let addr_list = serde_json::to_string(addr_list)?;
-
-        coon.write_all(addr_list.as_bytes())?;
 
         Ok(())
     }
@@ -159,7 +125,7 @@ mod tests {
     use super::*;
 
     fn create_test_app(data_dir: Option<String>) -> ProxyServerApp {
-        ProxyServerApp::new(3000, data_dir, false, None)
+        ProxyServerApp::new(3000, data_dir, false)
     }
 
     #[tokio::test]
