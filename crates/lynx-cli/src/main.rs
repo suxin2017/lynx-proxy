@@ -33,7 +33,6 @@ async fn main() -> Result<()> {
         Commands::Run {
             server_args: ServerArgs { port, data_dir },
             daemon,
-            ipc_socket,
             log_level,
         } => {
             let resolved_data_dir = resolve_data_dir(data_dir)?;
@@ -50,7 +49,6 @@ async fn main() -> Result<()> {
                 port,
                 Some(resolved_data_dir.to_string_lossy().to_string()),
                 daemon,
-                ipc_socket,
             );
             app.start_server().await?;
 
