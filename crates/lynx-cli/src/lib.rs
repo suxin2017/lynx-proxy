@@ -61,10 +61,6 @@ pub enum Commands {
         /// Run in daemon mode (hidden)
         #[arg(long, hide = true, default_value_t = false)]
         daemon: bool,
-
-        /// IPC socket path for parent-child communication (hidden)
-        #[arg(long, hide = true)]
-        ipc_socket: Option<String>,
     },
 }
 

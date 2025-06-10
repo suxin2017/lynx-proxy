@@ -449,7 +449,7 @@ where
         let db = request.extensions().get_db();
 
         let (part, old_body) = request.into_parts();
-
+        println!("RequestMessageEventService call: {:?}", part);
         let old_body = old_body.map_err(|e| anyhow!(e)).boxed();
 
         let (copy_stream, old_body) = copy_body_stream(AxumBody::new(old_body));
