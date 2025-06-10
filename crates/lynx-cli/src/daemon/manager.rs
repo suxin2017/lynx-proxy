@@ -386,11 +386,6 @@ impl DaemonManager {
 
         let res = res.json::<Vec<String>>().await?;
 
-        if res.is_empty() {
-            return Err(anyhow!(
-                "Failed to get connection info from the proxy server"
-            ));
-        }
         Ok(res)
     }
 }
