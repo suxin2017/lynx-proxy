@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.2] - 2025-06-08
+## [0.2.3] - 2025-06-10
 
 ### 🚀 Features
 
@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file.
 - Test case
 - Cli start error
 - Dark mode bug
+- Daemons don't behave as expected with empty bodies   ([#20](https://github.com/suxin2017/lynx-server/issues/20))
+
+### 🚜 Refactor
+
+- Refactor Network UI ([#16](https://github.com/suxin2017/lynx-server/issues/16))
 
 ## [0.1.6-alpha.1] - 2025-05-25
 
