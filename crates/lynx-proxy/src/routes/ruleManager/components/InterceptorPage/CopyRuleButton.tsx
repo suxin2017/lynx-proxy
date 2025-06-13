@@ -46,10 +46,11 @@ export const CopyRuleButton: React.FC<CopyRuleButtonProps> = ({
     return newObj;
   };
 
+  const [modal, conextHolder] = Modal.useModal();
   const handleCopy = () => {
     if (!record) return;
 
-    Modal.confirm({
+    modal.confirm({
       title: t('ruleManager.copyConfirm.title'),
       content: t('ruleManager.copyConfirm.content', { name: record.name }),
       okText: t('ruleManager.copyConfirm.okText'),
@@ -71,10 +72,14 @@ export const CopyRuleButton: React.FC<CopyRuleButtonProps> = ({
   };
 
   return (
-    <Button
-      type="text"
-      icon={<RiFileCopyLine size={14} />}
-      onClick={handleCopy}
-    />
+    <>
+      {conextHolder}
+      <Button
+        type="text"
+        icon={<RiFileCopyLine size={14} />}
+        onClick={handleCopy}
+      />
+    </>
+
   );
 };

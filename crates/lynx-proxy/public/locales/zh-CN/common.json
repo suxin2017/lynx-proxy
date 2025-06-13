@@ -154,7 +154,7 @@
     "reset": "重置"
   },
   "network": {
-    "filterUriPlaceholder":"搜索请求...",
+    "filterUriPlaceholder": "搜索请求...",
     "contextMenu": {
       "copyCurl": "复制为 cURL"
     },
@@ -190,6 +190,32 @@
   },
   "clearRequests": "清除",
   "startTime": "开始时间",
+  "contextMenu": {
+    "downloadAllRequests": "下载所有请求",
+    "copySelectedRequest": "复制选中请求",
+    "addToRule": "添加到规则",
+    "blockRequest": "拦截请求",
+    "blockDomain": "拦截域名",
+    "blockUrl": "拦截链接",
+    "overrideResponse": "覆盖响应",
+    "overrideHeaders": "覆盖响应头",
+    "overrideBody": "覆盖响应体",
+    "overrideFullResponse": "覆盖响应",
+    "ruleCreateSuccess": "规则创建成功",
+    "ruleCreateFailed": "规则创建失败",
+    "noSelectedRecord": "没有选中的请求记录或请求数据",
+    "noResponseData": "没有选中的请求记录或响应数据",
+    "blockReason": "访问被阻止",
+    "blockDomainName": "拦截域名 - {{hostname}}",
+    "blockUrlName": "拦截链接 - {{url}}",
+    "overrideHeadersName": "覆盖响应头 - {{url}}",
+    "overrideBodyName": "覆盖响应体 - {{url}}",
+    "overrideResponseName": "覆盖响应 - {{url}}",
+    "handlerNames": {
+      "blockRequest": "阻止请求",
+      "modifyResponse": "修改响应"
+    }
+  },
   "ruleManager": {
     "title": "拦截规则列表",
     "description": "管理用于拦截和修改网络请求的规则",
@@ -209,17 +235,17 @@
     },
     "deleteConfirm": {
       "title": "确认删除",
-      "content": "确定要删除规则 \"{name}\" 吗？此操作不可恢复。",
+      "content": "确定要删除规则 \"{{name}}\" 吗？此操作不可恢复。",
       "okText": "删除",
       "cancelText": "取消"
     },
     "copyConfirm": {
       "title": "确认复制",
-      "content": "确定要复制规则 \"{name}\" 吗？",
+      "content": "确定要复制规则 \"{{name}}\" 吗？",
       "okText": "复制",
       "cancelText": "取消"
     },
-    "copyRuleName": "{name} (副本)",
+    "copyRuleName": "{{name}} (副本)",
     "copyRuleError": "复制规则失败:",
     "noActions": "无动作",
     "allActionsDisabled": "所有动作已禁用",
@@ -255,19 +281,19 @@
       }
     },
     "handlerDescriptions": {
-      "statusCode": "状态码: {code}",
+      "statusCode": "状态码: {{code}}",
       "reason": "访问被阻止",
       "modifyHeaders": "修改请求头",
       "modifyBody": "修改请求体",
-      "modifyMethod": "方法: {method}",
+      "modifyMethod": "方法: {{method}}",
       "modifyUrl": "修改URL",
       "modifyRequest": "修改请求",
       "modifyResponseHeaders": "修改响应头",
       "modifyResponseBody": "修改响应体",
       "modifyResponse": "修改响应",
-      "file": "文件: {path}",
+      "file": "文件: {{path}}",
       "returnLocalFile": "返回本地文件",
-      "forwardTo": "转发到: {host}",
+      "forwardTo": "转发到: {{host}}",
       "proxyForward": "代理转发"
     },
     "captureTypes": {

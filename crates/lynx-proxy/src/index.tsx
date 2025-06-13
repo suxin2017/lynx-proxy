@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import './i18n';
 import App from './App';
 import '@ant-design/v5-patch-for-react-19';
+import { registerSW, setupInstallPrompt } from './pwa';
+import { initThemeColorObserver } from './utils/themeColor';
 
 const theme = localStorage.getItem('theme');
 if (
@@ -23,3 +25,10 @@ if (rootEl) {
     </React.StrictMode>,
   );
 }
+
+// Register PWA functionality
+registerSW();
+setupInstallPrompt();
+
+// 初始化主题颜色观察器
+initThemeColorObserver();

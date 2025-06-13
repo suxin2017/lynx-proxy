@@ -189,6 +189,32 @@
     "stop": "Stop Recording"
   },
   "clearRequests": "Clear",
+  "contextMenu": {
+    "downloadAllRequests": "Download All Requests",
+    "copySelectedRequest": "Copy Selected Request",
+    "addToRule": "Add to Rule",
+    "blockRequest": "Block Request",
+    "blockDomain": "Block Domain",
+    "blockUrl": "Block URL",
+    "overrideResponse": "Override Response",
+    "overrideHeaders": "Override Headers",
+    "overrideBody": "Override Body",
+    "overrideFullResponse": "Override Response",
+    "ruleCreateSuccess": "Rule created successfully",
+    "ruleCreateFailed": "Failed to create rule",
+    "noSelectedRecord": "No selected request record or request data",
+    "noResponseData": "No selected request record or response data",
+    "blockReason": "Access blocked",
+    "blockDomainName": "Block Domain - {{hostname}}",
+    "blockUrlName": "Block URL - {{url}}",
+    "overrideHeadersName": "Override Headers - {{url}}",
+    "overrideBodyName": "Override Body - {{url}}",
+    "overrideResponseName": "Override Response - {{url}}",
+    "handlerNames": {
+      "blockRequest": "Block Request",
+      "modifyResponse": "Modify Response"
+    }
+  },
   "ruleManager": {
     "title": "Interception Rules List",
     "description": "Manage rules for intercepting and modifying network requests",
@@ -208,17 +234,17 @@
     },
     "deleteConfirm": {
       "title": "Confirm Delete",
-      "content": "Are you sure you want to delete rule \"{name}\"? This action cannot be undone.",
+      "content": "Are you sure you want to delete rule \"{{name}}\"? This action cannot be undone.",
       "okText": "Delete",
       "cancelText": "Cancel"
     },
     "copyConfirm": {
       "title": "Confirm Copy",
-      "content": "Are you sure you want to copy rule \"{name}\"?",
+      "content": "Are you sure you want to copy rule \"{{name}}\"?",
       "okText": "Copy",
       "cancelText": "Cancel"
     },
-    "copyRuleName": "{name} (Copy)",
+    "copyRuleName": "{{name}} (Copy)",
     "copyRuleError": "Failed to copy rule:",
     "noActions": "No Actions",
     "allActionsDisabled": "All actions disabled",
@@ -254,19 +280,19 @@
       }
     },
     "handlerDescriptions": {
-      "statusCode": "Status Code: {code}",
+      "statusCode": "Status Code: {{code}}",
       "reason": "Access blocked",
       "modifyHeaders": "Modify request headers",
       "modifyBody": "Modify request body",
-      "modifyMethod": "Method: {method}",
+      "modifyMethod": "Method: {{method}}",
       "modifyUrl": "Modify URL",
       "modifyRequest": "Modify request",
       "modifyResponseHeaders": "Modify response headers",
       "modifyResponseBody": "Modify response body",
       "modifyResponse": "Modify response",
-      "file": "File: {path}",
+      "file": "File: {{path}}",
       "returnLocalFile": "Return local file",
-      "forwardTo": "Forward to: {host}",
+      "forwardTo": "Forward to: {{host}}",
       "proxyForward": "Proxy forward"
     },
     "captureTypes": {

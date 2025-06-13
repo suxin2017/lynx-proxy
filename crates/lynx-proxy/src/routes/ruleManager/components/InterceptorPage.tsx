@@ -175,6 +175,13 @@ const InnerInterceptorPage: React.FC = () => {
         </Text>
 
         <Table
+          // rowSelection={{
+          //   onChange(selectedRowKeys, selectedRows, info) {
+          //     // 这里可以处理选中行的逻辑
+          //     console.log('Selected Row Keys:', selectedRowKeys);
+          //     console.log('Selected Rows:', selectedRows);
+          //   },
+          // }}
           columns={columns}
           dataSource={listRulesData?.data.rules}
           rowKey="id"
