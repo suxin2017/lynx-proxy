@@ -2,12 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.3] - 2025-06-10
+## [0.2.4] - 2025-06-13
 
 ### 🚀 Features
 
 - Proxy Interception Support ([#8](https://github.com/suxin2017/lynx-server/issues/8))
 - The command line supports daemons ([#15](https://github.com/suxin2017/lynx-server/issues/15))
+- Pwa and one click add block rule ([#23](https://github.com/suxin2017/lynx-server/issues/23))
+- Support jaeger log ([#25](https://github.com/suxin2017/lynx-server/issues/25))
 
 ### 🐛 Bug Fixes
 

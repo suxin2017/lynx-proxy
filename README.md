@@ -10,13 +10,11 @@ English | [简体中文](README.zh-CN.md)
 ## Features
 
 - **Common Protocol Support**: Supports HTTP(S) and WS(S)
-- **Web Client**: Built with modern web technologies, supports both light and dark themes
+- **Web Client**: Built with modern web technologies, supports both light and dark themes,support PWA
 - **Rust Ecosystem**: Built on mainstream libraries like hyper, axum, and tower
 - **Request Panel**:
   - List View
-    ![HTTP Proxy Example](./images/http.png)
-  - Tree View
-    ![Tree Structure View Example](./images/tree.png)
+  - Tree View 
 - **Rule Capture and Processing**
   - Capture and process requests by adding rules
   - Rules
@@ -31,19 +29,37 @@ English | [简体中文](README.zh-CN.md)
 
 ### HTTP/HTTPS Proxy
 
-![HTTP Proxy Example](./images/http.png)
+![HTTP Proxy Example](./images/newhttp.png)
 
 ### WebSocket Proxy
 
-![WebSocket Proxy Example](./images/webscoket.png)
+![WebSocket Proxy Example](./images/newws.png)
 
 ### Tree Structure View
 
-![Tree Structure View Example](./images/tree.png)
+![Tree Structure View Example](./images/newtree.png)
 
 ### Rule Configuration
 
 ![Rule Configuration](./images/rule.png)
+
+### One Click Add Rule
+
+![Context Menu](./images/contextmenu.png)
+![Context Menu2](./images/contextmenu2.png)
+
+### Cli 
+
+```bash
+PS C:\Users\xx> lynx-cli status
+=== Lynx Proxy Service Status ===
+PID: 101744
+Port: 3000
+Status: Running
+Data Directory: Your Data Dir
+Start Time: 1749816127 seconds since epoch
+Process Running: Yes
+```
 
 ## Usage
 

@@ -12,7 +12,7 @@ use lynx_db::dao::https_capture_dao::HttpsCaptureDao;
 use tokio::spawn;
 use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn, util::Oneshot};
-use tracing::{Instrument, instrument, span};
+use tracing::{Instrument, instrument};
 
 use crate::{
     common::{HyperReq, Req},

@@ -12,7 +12,6 @@ use opentelemetry_sdk::Resource;
 use opentelemetry_sdk::trace::Sampler;
 use sea_orm::ConnectOptions;
 use tokio::signal;
-use tracing::{Instrument, info, instrument, span};
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;

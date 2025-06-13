@@ -23,7 +23,7 @@ use tokio::{spawn, sync::mpsc::channel};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tokio_tungstenite::tungstenite;
 use tower::Service;
-use tracing::{Instrument, info, instrument, trace, trace_span, warn};
+use tracing::{Instrument, instrument, trace, trace_span, warn};
 
 use crate::proxy::proxy_ws_request::SendType;
 use crate::{

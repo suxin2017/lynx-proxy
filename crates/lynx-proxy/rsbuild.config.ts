@@ -13,6 +13,8 @@ if (useMock) {
   server.listen();
 }
 
+const isDevelopment = env.NODE_ENV === 'development';
+
 export default defineConfig({
   plugins: [
     pluginReact(),
@@ -109,7 +111,7 @@ export default defineConfig({
     rspack: {
       plugins: [
         TanStackRouterRspack(),
-        new GenerateSW({
+       !isDevelopment && new GenerateSW({
           clientsClaim: true,
           skipWaiting: true,
           runtimeCaching: [
