@@ -1,0 +1,42 @@
+[package]
+name = "log-jaeger"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "simple_demo"
+path = "src/main.rs"
+
+[[bin]]
+name = "proxy_server_demo"
+path = "src/proxy_server_with_jaeger.rs"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-opentelemetry = "0.23"
+opentelemetry = { version = "0.22", features = ["trace"] }
+opentelemetry_sdk = { version = "0.22", features = ["trace", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.15", features = [
+    "http-proto",
+    "reqwest-client",
+] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4"] }
+rand = "0.8"
+anyhow = "1.0"
+sea-orm = { version = "1.1.0", features = [
+    "runtime-tokio-rustls",
+    "sqlx-sqlite",
+] }
+
+# Lynx 内部依赖
+lynx-core = { path = "../../crates/lynx-core" }

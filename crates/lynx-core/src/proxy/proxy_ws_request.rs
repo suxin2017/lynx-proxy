@@ -12,7 +12,7 @@ use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest},
 };
 use tower::{ServiceBuilder, ServiceExt, service_fn};
-use tracing::{debug, warn};
+use tracing::{debug, instrument, warn};
 
 use crate::{
     client::request_client::RequestClientExt,
@@ -99,6 +99,7 @@ async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
     Ok(res.into_response())
 }
 
+#[instrument(skip_all)]
 pub async fn proxy_ws_request(req: Req) -> anyhow::Result<Response> {
     let svc = service_fn(proxy_ws_inner);
 

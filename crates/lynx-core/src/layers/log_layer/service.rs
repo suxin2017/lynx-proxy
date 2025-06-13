@@ -35,20 +35,14 @@ where
     }
 
     fn call(&mut self, request: Req) -> Self::Future {
-        // Insert log statement here or other functionality
-        let span = trace_span!("log service", trace_id = ?request.extensions().get_trace_id(),url = %request.uri());
         let mut inner = self.service.clone();
-        let _enter = span.enter();
 
-        Box::pin(
-            async move {
-                info!("Processing request: {}", request.uri());
-                let future = inner.call(request);
+        Box::pin(async move {
+            info!("Processing request: {}", request.uri());
+            let future = inner.call(request);
 
-                let response = future.await?;
-                Ok(response)
-            }
-            .instrument(span.clone()),
-        )
+            let response = future.await?;
+            Ok(response)
+        })
     }
 }

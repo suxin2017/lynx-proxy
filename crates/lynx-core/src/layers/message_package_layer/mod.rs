@@ -23,7 +23,7 @@ use tokio::{spawn, sync::mpsc::channel};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tokio_tungstenite::tungstenite;
 use tower::Service;
-use tracing::{Instrument, info, trace, warn};
+use tracing::{Instrument, info, instrument, trace, trace_span, warn};
 
 use crate::proxy::proxy_ws_request::SendType;
 use crate::{
@@ -160,7 +160,6 @@ pub async fn handle_message_event(
                 });
             }
             MessageEvent::OnWebSocketError(id, error_reason) => {
-                tracing::trace!("Received OnWebSocketError event {}", id);
                 let value = cache.get_mut(&id);
                 if value.is_none() {
                     continue;
@@ -250,12 +249,12 @@ impl MessageEventChannel {
         Self { sender: tx }
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_request_start<T: Body>(
         &self,
         request: &Request<T>,
         mut body: ReceiverStream<Bytes>,
     ) {
-        trace!("Dispatching OnRequestStart event");
         let sender = self.sender.clone();
         let trace_id = request.extensions().get_trace_id().clone();
         spawn(async move {
@@ -280,6 +279,7 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_request_end(&self, request_id: TraceId) {
         let _ = self
             .sender
@@ -287,6 +287,7 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_before_proxy(&self, request_id: TraceId) {
         let _ = self
             .sender
@@ -294,10 +295,12 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_after_proxy(&self, request_id: TraceId) {
         let _ = self.sender.send(MessageEvent::OnProxyEnd(request_id)).await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_tunnel_start(&self, request_id: TraceId) {
         let _ = self
             .sender
@@ -305,6 +308,7 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_tunnel_end(&self, request_id: TraceId) {
         let _ = self
             .sender
@@ -312,6 +316,7 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_error(&self, request_id: TraceId, error_reason: String) {
         let _ = self
             .sender
@@ -319,6 +324,7 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_response_start(&self, res: &Res, mut body: ReceiverStream<Bytes>) {
         let sender = self.sender.clone();
         let trace_id = res.extensions().get_trace_id().clone();
@@ -350,6 +356,7 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_websocket_start(&self, request_id: TraceId) {
         let _ = self
             .sender
@@ -357,12 +364,15 @@ impl MessageEventChannel {
             .await;
     }
 
+    #[instrument(skip_all)]
     pub async fn dispatch_on_websocket_error(&self, request_id: TraceId, error_reason: String) {
         let _ = self
             .sender
             .send(MessageEvent::OnWebSocketError(request_id, error_reason))
             .await;
     }
+
+    #[instrument(skip_all)]
     pub async fn dispatch_on_websocket_message(
         &self,
         request_id: TraceId,
@@ -425,6 +435,7 @@ where
         if is_self_service(&request) {
             return Box::pin(self.service.call(request));
         }
+        let span = trace_span!("request_message_event_service");
         let message_event_channel = request.extensions().get_message_event_cannel();
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();
@@ -440,33 +451,36 @@ where
 
         let mut inner = self.service.clone();
 
-        Box::pin(async move {
-            let capture_dao = CaptureSwitchDao::new(db.clone());
-            let capture_switch = capture_dao.get_capture_switch().await;
-            let need_capture = if let Ok(capture_switch) = capture_switch {
-                matches!(
-                    capture_switch.recording_status,
-                    RecordingStatus::PauseRecording
-                )
-            } else {
-                false
-            };
+        Box::pin(
+            async move {
+                let capture_dao = CaptureSwitchDao::new(db.clone());
+                let capture_switch = capture_dao.get_capture_switch().await;
+                let need_capture = if let Ok(capture_switch) = capture_switch {
+                    matches!(
+                        capture_switch.recording_status,
+                        RecordingStatus::PauseRecording
+                    )
+                } else {
+                    false
+                };
 
-            if need_capture {
+                if !need_capture {
+                    let future = inner.call(request);
+                    return future.await;
+                }
                 message_event_channel_clone
                     .dispatch_on_request_start(&request, copy_stream)
                     .await;
+                let future = inner.call(request);
+                let result = future.await;
+                message_event_channel_clone
+                    .dispatch_on_request_end(trace_id_clone)
+                    .await;
+
+                result
             }
-
-            let future = inner.call(request);
-            let result = future.await;
-
-            message_event_channel_clone
-                .dispatch_on_request_end(trace_id_clone)
-                .await;
-
-            result
-        })
+            .instrument(span),
+        )
     }
 }
 
@@ -493,16 +507,32 @@ where
     }
 
     fn call(&mut self, request: Req) -> Self::Future {
+        let span = trace_span!("proxy_message_event_service");
         let message_event_channel = request.extensions().get_message_event_cannel();
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();
+        let db = request.extensions().get_db();
 
         let mut inner = self.service.clone();
-        let span = tracing::Span::current();
 
         Box::pin(
             async move {
-                trace!("Dispatching OnProxyStart event");
+                let capture_dao = CaptureSwitchDao::new(db.clone());
+                let capture_switch = capture_dao.get_capture_switch().await;
+                let need_capture = if let Ok(capture_switch) = capture_switch {
+                    matches!(
+                        capture_switch.recording_status,
+                        RecordingStatus::PauseRecording
+                    )
+                } else {
+                    false
+                };
+
+                if !need_capture {
+                    let future = inner.call(request);
+                    return future.await;
+                }
+
                 message_event_channel_clone
                     .dispatch_on_before_proxy(trace_id.clone())
                     .await;
@@ -510,7 +540,6 @@ where
                 let future = inner.call(request);
                 let result = future.await;
 
-                trace!("Dispatching OnProxyEnd event");
                 message_event_channel_clone
                     .dispatch_on_after_proxy(trace_id.clone())
                     .await;
@@ -520,14 +549,12 @@ where
                         let (part, old_body) = res.into_parts();
                         let (copy_stream, old_body) = copy_body_stream(old_body);
                         let res = Res::from_parts(part, old_body);
-                        trace!("Dispatching OnResponseStart event");
                         message_event_channel_clone
                             .dispatch_on_response_start(&res, copy_stream)
                             .await;
                         Ok(res.into_response())
                     }
                     Err(e) => {
-                        trace!("Dispatching OnError event: {:?}", e);
                         message_event_channel_clone
                             .dispatch_on_error(trace_id, format!("{:?}", e))
                             .await;

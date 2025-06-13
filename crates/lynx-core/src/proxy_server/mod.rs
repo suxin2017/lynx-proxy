@@ -21,7 +21,7 @@ use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
-use tracing::{debug, span, trace, warn};
+use tracing::{Instrument, debug, instrument, span, trace, trace_span, warn};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::common::{HyperReq, is_https_tcp_stream};
@@ -32,6 +32,7 @@ use crate::layers::message_package_layer::message_event_store::MessageEventCache
 use crate::layers::message_package_layer::{MessageEventChannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
+use crate::layers::trace_id_layer::service::TraceIdExt;
 
 pub mod server_ca_manage;
 pub mod server_config;
@@ -130,6 +131,7 @@ impl ClientAddrRequestExt for Extensions {
 }
 
 impl ProxyServer {
+    #[instrument(skip(self))]
     pub async fn run(&mut self) -> Result<()> {
         self.bind_tcp_listener_to_hyper().await?;
         Ok(())
@@ -153,6 +155,7 @@ impl ProxyServer {
         tcp_listener.into_iter().collect()
     }
 
+    #[instrument(skip(self))]
     async fn bind_hyper(&self, listener: TcpListener) -> Result<()> {
         let access_addr_list: Arc<Vec<SocketAddr>> = Arc::new(self.access_addr_list.clone());
         let client_custom_certs = self.custom_certs.clone();
@@ -167,6 +170,7 @@ impl ProxyServer {
         let tls_acceptor = TlsAcceptor::from(self_ca);
 
         let db_connect = self.db_connect.clone();
+
         Migrator::up(db_connect.as_ref(), None).await?;
 
         tokio::spawn(async move {
@@ -207,11 +211,13 @@ impl ProxyServer {
                         .layer(ErrorHandlerLayer)
                         .service(svc);
                     let transform_svc = service_fn(move |req: HyperReq| {
+                        let span = trace_span!("hyper_service");
                         let svc = svc.clone();
                         async move {
                             let req = req.map(|b| b.map_err(|e| anyhow!(e)).boxed());
                             Oneshot::new(svc, req).await
                         }
+                        .instrument(span)
                     });
 
                     let svc = TowerToHyperService::new(transform_svc);
@@ -249,6 +255,7 @@ impl ProxyServer {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn bind_tcp_listener_to_hyper(&mut self) -> Result<()> {
         let tcp_listeners = self.bind_tcp_listener().await?;
         let bind_addrs: Vec<SocketAddr> = tcp_listeners

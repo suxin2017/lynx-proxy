@@ -17,6 +17,7 @@ pub fn is_http_req(req: &Req) -> bool {
     req.headers().get("Upgrade").is_none()
 }
 
+#[instrument(skip_all)]
 async fn proxy_http_request_inner(req: Req) -> Result<Response> {
     let trace_id = req.extensions().get_trace_id().clone();
     let http_client = req.extensions().get_http_client();
@@ -31,6 +32,7 @@ async fn proxy_http_request_inner(req: Req) -> Result<Response> {
         .map(|res| res.into_response())
 }
 
+#[instrument(skip_all)]
 pub async fn proxy_http_request(req: Req) -> Result<Response> {
     let svc = service_fn(proxy_http_request_inner);
 

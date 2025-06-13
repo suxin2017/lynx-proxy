@@ -12,7 +12,7 @@ use lynx_db::dao::https_capture_dao::HttpsCaptureDao;
 use tokio::spawn;
 use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn, util::Oneshot};
-use tracing::{Instrument, span};
+use tracing::{Instrument, instrument, span};
 
 use crate::{
     common::{HyperReq, Req},
@@ -39,6 +39,7 @@ pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
     req.method() == Method::CONNECT
 }
 
+#[instrument(skip_all)]
 async fn proxy_connect_request_future(req: Req) -> Result<()> {
     let db = req.extensions().get_db();
     let event_cannel = req.extensions().get_message_event_cannel();
@@ -185,6 +186,7 @@ pub async fn should_capture_https(
     Ok(true)
 }
 
+#[instrument(skip_all)]
 pub async fn proxy_connect_request(req: Req) -> Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
