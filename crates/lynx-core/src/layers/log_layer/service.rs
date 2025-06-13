@@ -1,10 +1,16 @@
-use std::task::{Context, Poll};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use axum::response::Response;
 use tower::Service;
-use tracing::{info, info_span};
+use tracing::{Instrument, info, info_span, span, trace_span};
 
-use crate::{common::Req, layers::log_layer::LogFuture};
+use crate::{
+    common::Req,
+    layers::{log_layer::LogFuture, trace_id_layer::service::TraceIdExt},
+};
 
 #[derive(Debug, Clone)]
 pub struct LogService<S> {
@@ -13,23 +19,30 @@ pub struct LogService<S> {
 
 impl<S> Service<Req> for LogService<S>
 where
-    S: Service<Req, Response = Response, Error = anyhow::Error>,
+    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+    S::Future: Send,
 {
     type Response = S::Response;
     type Error = S::Error;
-    type Future = LogFuture<S::Future>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
     fn call(&mut self, request: Req) -> Self::Future {
-        // Insert log statement here or other functionality
-        let span = info_span!("log_service",);
-        let future = {
-            info!("handling request for {:?}", request.uri());
-            self.service.call(request)
-        };
-        LogFuture { f: future, span }
+        let mut inner = self.service.clone();
+
+        Box::pin(async move {
+            info!("Processing request: {}", request.uri());
+            let future = inner.call(request);
+
+            let response = future.await?;
+            Ok(response)
+        })
     }
 }
