@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useI18n } from '@/contexts';
+import { updateThemeColor } from '@/utils/themeColor';
 
 export const SideBar: React.FC = (_props) => {
   const navigate = useNavigate();
@@ -50,6 +51,8 @@ export const SideBar: React.FC = (_props) => {
       document.documentElement.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
+    // 动态更新标题栏主题颜色
+    updateThemeColor(theme as 'light' | 'dark');
   }, [theme]);
 
   const toggleTheme = () => {
