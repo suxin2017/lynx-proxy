@@ -21,7 +21,7 @@ use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
-use tracing::{Instrument, debug, instrument, span, trace, trace_span, warn};
+use tracing::{Instrument, debug, instrument, trace, trace_span, warn};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::common::{HyperReq, is_https_tcp_stream};
@@ -32,7 +32,6 @@ use crate::layers::message_package_layer::message_event_store::MessageEventCache
 use crate::layers::message_package_layer::{MessageEventChannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::TraceIdLayer;
-use crate::layers::trace_id_layer::service::TraceIdExt;
 
 pub mod server_ca_manage;
 pub mod server_config;

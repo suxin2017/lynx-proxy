@@ -5,12 +5,9 @@ use std::{
 
 use axum::response::Response;
 use tower::Service;
-use tracing::{Instrument, info, info_span, span, trace_span};
+use tracing::info;
 
-use crate::{
-    common::Req,
-    layers::{log_layer::LogFuture, trace_id_layer::service::TraceIdExt},
-};
+use crate::common::Req;
 
 #[derive(Debug, Clone)]
 pub struct LogService<S> {
