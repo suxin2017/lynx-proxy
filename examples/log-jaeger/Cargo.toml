@@ -13,9 +13,6 @@ repository.workspace = true
 name = "simple_demo"
 path = "src/main.rs"
 
-[[bin]]
-name = "proxy_server_demo"
-path = "src/proxy_server_with_jaeger.rs"
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
