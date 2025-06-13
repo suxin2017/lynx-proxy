@@ -22,7 +22,7 @@ const TextView: React.FC<TextViewProps> = ({ arrayBuffer, text }) => {
     );
 
   return (
-    <div className="flex h-full flex-col rounded-sm border border-gray-300 bg-white p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+    <div className="flex h-full flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
       <pre className="break-all whitespace-normal">{data}</pre>
     </div>
   );
