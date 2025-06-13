@@ -10,13 +10,11 @@
 ## 功能特性
 
 - **常见协议支持**：支持 HTTP(S) 与 WS(S)
-- **Web 客户端**：使用流行的现代 web 技术，支持亮色与暗色两种主题
+- **Web 客户端**：使用流行的现代 web 技术，支持亮色与暗色两种主题,支持PWA
 - **Rust 生态**：基于 hyper、axum、tower 等主流库开发。
 - **请求面板**：
   - 列表视图
-    ![HTTP 代理示例](./images/http.png)
   - 树形视图
-    ![树形结构视图示例](./images/tree.png)
 - **规则捕获与处理**
   - 通过添加规则进行请求捕获，同时进行请求处理
   - 规则
@@ -31,19 +29,38 @@
 
 ### HTTP/HTTPS 代理
 
-![HTTP 代理示例](./images/http.png)
+![HTTP 代理示例](./images/newhttp.png)
 
 ### WebSocket 代理
 
-![WebSocket 代理示例](./images/webscoket.png)
+![WebSocket 代理示例](./images/newws.png)
 
 ### 树形结构视图
 
-![树形结构视图示例](./images/tree.png)
+![树形结构视图示例](./images/newtree.png)
 
 ### 规则配置
 
 ![规则配置](./images/rule.png)
+
+### 一键添加规则
+
+![Context Menu](./images/contextmenu.png)
+![Context Menu2](./images/contextmenu2.png)
+
+### Cli 查询状态
+
+```bash
+PS C:\Users\xx> lynx-cli status
+=== Lynx Proxy Service Status ===
+PID: 101744
+Port: 3000
+Status: Running
+Data Directory: Your Data Dir
+Start Time: 1749816127 seconds since epoch
+Process Running: Yes
+```
+
 
 ## 使用
 
