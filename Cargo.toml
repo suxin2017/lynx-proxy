@@ -7,7 +7,6 @@ members = [
     "crates/lynx-mock",
     "crates/lynx-db",
 ]
-exclude = ["third-libs"]
 resolver = "2"
 
 [workspace.package]

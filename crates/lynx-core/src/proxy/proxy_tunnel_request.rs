@@ -3,7 +3,7 @@ use axum::body::Body;
 use axum::response::Response;
 use hyper::Method;
 use hyper_util::rt::TokioIo;
-use tracing::error;
+use tracing::{error, instrument};
 
 use crate::common::Req;
 use crate::layers::message_package_layer::MessageEventLayerExt;
@@ -16,6 +16,7 @@ fn handle_tunnel_error(err: anyhow::Error) {
     error!("Error handling tunnel: {}", err);
 }
 
+#[instrument(skip_all)]
 pub async fn proxy_tunnel_proxy(req: Req) -> anyhow::Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
 
@@ -29,6 +30,7 @@ pub async fn proxy_tunnel_proxy(req: Req) -> anyhow::Result<Response> {
     Ok(Response::new(Body::empty()))
 }
 
+#[instrument(skip_all)]
 pub async fn tunnel_proxy_by_req(req: Req) -> Result<()> {
     let trace_id = req.extensions().get_trace_id();
     let event_cannel = req.extensions().get_message_event_cannel();

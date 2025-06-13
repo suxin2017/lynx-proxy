@@ -27,6 +27,7 @@ where
     }
 
     fn call(&mut self, mut request: Request<Body>) -> Self::Future {
+        
         request.extensions_mut().insert(Arc::new(nanoid!()));
         self.service.call(request)
     }
