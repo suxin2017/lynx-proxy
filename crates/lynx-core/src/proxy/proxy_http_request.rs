@@ -1,6 +1,7 @@
 use anyhow::Result;
 use axum::response::{IntoResponse, Response};
 use tower::{ServiceBuilder, ServiceExt, service_fn};
+use tracing::instrument;
 
 use crate::{
     client::request_client::RequestClientExt,

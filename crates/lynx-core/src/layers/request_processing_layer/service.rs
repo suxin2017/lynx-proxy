@@ -72,8 +72,6 @@ where
                 return inner.call(request).await;
             }
 
-            // 按优先级排序（已经在 find_matching_rules 中排序了）
-            // 按执行顺序处理所有匹配的规则中的处理器
             let mut all_handlers = Vec::new();
 
             for rule in &matching_rules {
