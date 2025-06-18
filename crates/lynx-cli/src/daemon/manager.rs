@@ -5,7 +5,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{error, info, warn};
 
 use crate::daemon::status::{DaemonStatus, ProcessStatus};
@@ -152,10 +152,11 @@ impl DaemonManager {
                     style(status.data_dir.display()).cyan()
                 );
 
-                if let Ok(start_time) = status.start_time.duration_since(std::time::UNIX_EPOCH) {
+                if let Ok(_start_time) = status.start_time.duration_since(std::time::UNIX_EPOCH) {
+                    let formatted_time = self.format_start_time(&status.start_time);
                     println!(
-                        "Start Time: {}",
-                        style(format!("{} seconds since epoch", start_time.as_secs())).cyan()
+                        "Running: {}",
+                        style(formatted_time).cyan()
                     );
                 }
 
@@ -296,6 +297,55 @@ impl DaemonManager {
         }
     }
 
+    /// Format start time for human-readable display
+    fn format_start_time(&self, start_time: &SystemTime) -> String {
+        match start_time.duration_since(UNIX_EPOCH) {
+            Ok(duration) => {
+                let secs = duration.as_secs();
+                
+                // Calculate uptime by comparing with current time
+                if let Ok(now) = SystemTime::now().duration_since(UNIX_EPOCH) {
+                    let now_secs = now.as_secs();
+                    
+                    // Handle edge case where start_time is in the future
+                    if secs > now_secs {
+                        return "Invalid start time".to_string();
+                    }
+                    
+                    let uptime_secs = now_secs - secs;
+                    let uptime_days = uptime_secs / 86400;
+                    let uptime_hours = (uptime_secs % 86400) / 3600;
+                    let uptime_minutes = (uptime_secs % 3600) / 60;
+                    let uptime_seconds = uptime_secs % 60;
+                    
+                    let mut parts = Vec::new();
+                    
+                    if uptime_days > 0 {
+                        let unit = if uptime_days == 1 { "day" } else { "days" };
+                        parts.push(format!("{} {}", uptime_days, unit));
+                    }
+                    if uptime_hours > 0 {
+                        let unit = if uptime_hours == 1 { "hour" } else { "hours" };
+                        parts.push(format!("{} {}", uptime_hours, unit));
+                    }
+                    if uptime_minutes > 0 {
+                        let unit = if uptime_minutes == 1 { "minute" } else { "minutes" };
+                        parts.push(format!("{} {}", uptime_minutes, unit));
+                    }
+                    if uptime_seconds > 0 || parts.is_empty() {
+                        let unit = if uptime_seconds == 1 { "second" } else { "seconds" };
+                        parts.push(format!("{} {}", uptime_seconds, unit));
+                    }
+                    
+                    format!("{} ago", parts.join(" "))
+                } else {
+                    format!("{} seconds since epoch", secs)
+                }
+            }
+            Err(_) => "Unknown".to_string()
+        }
+    }
+
     /// 配置平台特定的守护进程选项
     fn configure_daemon_process(command: &mut Command) -> Result<()> {
         #[cfg(unix)]
@@ -404,4 +454,145 @@ fn test_log() {
         "Web UI is available on: {}",
         style("http://:127.0.1:3000").cyan()
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, Duration};
+
+    fn create_test_manager() -> DaemonManager {
+        DaemonManager::new(Some(PathBuf::from("/tmp/test_lynx"))).unwrap()
+    }
+
+    #[test]
+    fn test_format_start_time_seconds() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(30);
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "30 seconds ago");
+    }
+
+    #[test]
+    fn test_format_start_time_single_second() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(1);
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "1 second ago");
+    }
+
+    #[test]
+    fn test_format_start_time_minutes() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(150); // 2 minutes 30 seconds
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "2 minutes 30 seconds ago");
+    }
+
+    #[test]
+    fn test_format_start_time_single_minute() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(90); // 1 minute 30 seconds
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "1 minute 30 seconds ago");
+    }
+
+    #[test]
+    fn test_format_start_time_hours() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(7290); // 2 hours 1 minute 30 seconds
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "2 hours 1 minute 30 seconds ago");
+    }
+
+    #[test]
+    fn test_format_start_time_single_hour() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(3661); // 1 hour 1 minute 1 second
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "1 hour 1 minute 1 second ago");
+    }
+
+    #[test]
+    fn test_format_start_time_days() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(176461); // 2 days 1 hour 1 minute 1 second
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "2 days 1 hour 1 minute 1 second ago");
+    }
+
+    #[test]
+    fn test_format_start_time_single_day() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(90061); // 1 day 1 hour 1 minute 1 second
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "1 day 1 hour 1 minute 1 second ago");
+    }
+
+    #[test]
+    fn test_format_start_time_only_minutes() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(300); // 5 minutes exactly
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "5 minutes ago");
+    }
+
+    #[test]
+    fn test_format_start_time_only_hours() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        let start_time = now - Duration::from_secs(7200); // 2 hours exactly
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "2 hours ago");
+    }
+
+    #[test]
+    fn test_format_start_time_just_started() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        
+        let formatted = manager.format_start_time(&now);
+        assert!(formatted == "0 seconds ago" || formatted.contains("second"));
+    }
+
+    #[test]
+    fn test_format_start_time_complex_combination() {
+        let manager = create_test_manager();
+        let now = SystemTime::now();
+        // 3 days, 5 hours, 23 minutes, 45 seconds
+        let total_seconds = 3 * 86400 + 5 * 3600 + 23 * 60 + 45;
+        let start_time = now - Duration::from_secs(total_seconds);
+        
+        let formatted = manager.format_start_time(&start_time);
+        assert_eq!(formatted, "3 days 5 hours 23 minutes 45 seconds ago");
+    }
+
+    #[test]
+    fn test_format_start_time_invalid_time() {
+        let manager = create_test_manager();
+        // Create a time that's in the future (invalid for start time)
+        let future_time = SystemTime::now() + Duration::from_secs(3600);
+        
+        let formatted = manager.format_start_time(&future_time);
+        assert_eq!(formatted, "Invalid start time");
+    }
 }
