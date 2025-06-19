@@ -213,6 +213,21 @@ export const getListRulesResponseMock = (
             },
             ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
           },
+          {
+            ...{
+              content: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+              injectionPosition: faker.helpers.arrayElement([
+                faker.helpers.arrayElement([faker.string.alpha(20), null]),
+                undefined,
+              ]),
+            },
+            ...{
+              type: faker.helpers.arrayElement(['htmlScriptInjector'] as const),
+            },
+          },
         ]),
         id: faker.helpers.arrayElement([
           faker.helpers.arrayElement([
@@ -412,6 +427,21 @@ export const getGetRuleResponseMock = (
           },
           ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
         },
+        {
+          ...{
+            content: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            injectionPosition: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
+          ...{
+            type: faker.helpers.arrayElement(['htmlScriptInjector'] as const),
+          },
+        },
       ]),
       id: faker.helpers.arrayElement([
         faker.helpers.arrayElement([
@@ -585,6 +615,21 @@ export const getGetTemplateHandlersResponseMock = (
             ]),
           },
           ...{ type: faker.helpers.arrayElement(['proxyForward'] as const) },
+        },
+        {
+          ...{
+            content: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+            injectionPosition: faker.helpers.arrayElement([
+              faker.helpers.arrayElement([faker.string.alpha(20), null]),
+              undefined,
+            ]),
+          },
+          ...{
+            type: faker.helpers.arrayElement(['htmlScriptInjector'] as const),
+          },
         },
       ]),
       id: faker.helpers.arrayElement([

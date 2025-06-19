@@ -148,6 +148,13 @@ where
                             );
                             proxy_forward_config.handle_request(current_request).await
                         }
+                        HandlerRuleType::HtmlScriptInjector(html_script_injector_config) => {
+                            tracing::trace!(
+                                "Executing HTML script injector handler for '{}'",
+                                handler.name
+                            );
+                            html_script_injector_config.handle_request(current_request).await
+                        }
                     };
 
                     match handler_result {
@@ -210,6 +217,13 @@ where
                                     handler.name
                                 );
                                 response = modify_response_config.handle_response(response).await?;
+                            }
+                            HandlerRuleType::HtmlScriptInjector(html_script_injector_config) => {
+                                tracing::trace!(
+                                    "Executing HTML script injector response handler for '{}'",
+                                    handler.name
+                                );
+                                response = html_script_injector_config.handle_response(response).await?;
                             }
                             _ => {
                                 tracing::warn!(

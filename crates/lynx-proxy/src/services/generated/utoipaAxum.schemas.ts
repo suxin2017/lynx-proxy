@@ -5,10 +5,6 @@
  * Utoipa's axum bindings for seamless integration for the two
  * OpenAPI spec version: 0.2.0
  */
-export interface BaseInfo {
-  accessAddrList: string[];
-}
-
 export type BlockHandlerConfigReason = string | null;
 
 /**
@@ -235,12 +231,48 @@ export type HandlerRuleTypeOneOfOnethreeAllOf = {
 export type HandlerRuleTypeOneOfOnethree = ProxyForwardConfig &
   HandlerRuleTypeOneOfOnethreeAllOf;
 
+export type HandlerRuleTypeOneOfOnesixAllOfType =
+  (typeof HandlerRuleTypeOneOfOnesixAllOfType)[keyof typeof HandlerRuleTypeOneOfOnesixAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfOnesixAllOfType = {
+  htmlScriptInjector: 'htmlScriptInjector',
+} as const;
+
+export type HandlerRuleTypeOneOfOnesixAllOf = {
+  type: HandlerRuleTypeOneOfOnesixAllOfType;
+};
+
+export type HandlerRuleTypeOneOfOnesix = HtmlScriptInjectorConfig &
+  HandlerRuleTypeOneOfOnesixAllOf;
+
 export type HandlerRuleType =
   | HandlerRuleTypeOneOf
   | HandlerRuleTypeOneOfFour
   | HandlerRuleTypeOneOfSeven
   | HandlerRuleTypeOneOfOnezero
-  | HandlerRuleTypeOneOfOnethree;
+  | HandlerRuleTypeOneOfOnethree
+  | HandlerRuleTypeOneOfOnesix;
+
+/**
+ * Content to inject into HTML pages
+ */
+export type HtmlScriptInjectorConfigContent = string | null;
+
+/**
+ * Position to inject the content (head, body-start, body-end)
+ */
+export type HtmlScriptInjectorConfigInjectionPosition = string | null;
+
+/**
+ * HTML script injection handler configuration
+ */
+export interface HtmlScriptInjectorConfig {
+  /** Content to inject into HTML pages */
+  content?: HtmlScriptInjectorConfigContent;
+  /** Position to inject the content (head, body-start, body-end) */
+  injectionPosition?: HtmlScriptInjectorConfigInjectionPosition;
+}
 
 export type LocalFileConfigContentType = string | null;
 
@@ -525,18 +557,6 @@ export const ResponseCode = {
   ok: 'ok',
   validateError: 'validateError',
 } as const;
-
-export type ResponseDataWrapperBaseInfoData = {
-  accessAddrList: string[];
-};
-
-export type ResponseDataWrapperBaseInfoMessage = string | null;
-
-export interface ResponseDataWrapperBaseInfo {
-  code: ResponseCode;
-  data: ResponseDataWrapperBaseInfoData;
-  message?: ResponseDataWrapperBaseInfoMessage;
-}
 
 export type ResponseDataWrapperCaptureFilterData = {
   enabled: boolean;

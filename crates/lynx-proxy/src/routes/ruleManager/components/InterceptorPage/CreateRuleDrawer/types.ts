@@ -9,6 +9,7 @@ import {
   HandlerRuleTypeOneOfSeven,
   HandlerRuleTypeOneOfOnezero,
   HandlerRuleTypeOneOfOnethree,
+  HandlerRuleTypeOneOfOnesix,
   HandlerRuleType,
 } from '@/services/generated/utoipaAxum.schemas';
 import { FormInstance } from 'antd';
@@ -48,7 +49,8 @@ export type HandlerRuleTypeFormValues =
   | (Omit<HandlerRuleTypeOneOfOnezero, 'modifyHeaders'> & {
     modifyHeaders: { key: string; value: string }[];
   })
-  | HandlerRuleTypeOneOfOnethree;
+  | HandlerRuleTypeOneOfOnethree
+  | HandlerRuleTypeOneOfOnesix;
 
 // Simple capture condition form values - using the generated type directly
 export interface UrlPatternFormValues {
@@ -116,6 +118,8 @@ export const requestRuleToFormValues = (
           ...handler.handlerType,
           modifyHeaders,
         };
+      } else {
+        newHandlerType = handler.handlerType;
       }
       return {
         name: handler.name,
@@ -123,6 +127,7 @@ export const requestRuleToFormValues = (
         enabled: handler.enabled,
         executionOrder: handler.executionOrder,
         handlerType: newHandlerType,
+
       };
     }),
   };
@@ -139,7 +144,7 @@ export const safeSetFormFields = (
 export const formValuesToRequestRule = (
   formValues: CreateRuleFormValues,
 ): Omit<RequestRule, 'id'> => {
-  const handlers = formValues.handlers.map((handler) => {
+  const handlers = formValues.handlers.map((handler, index) => {
     let newHandlerType = handler.handlerType as HandlerRuleType;
     if (
       newHandlerType.type === 'modifyRequest' ||
@@ -167,7 +172,7 @@ export const formValuesToRequestRule = (
       name: handler.name,
       description: handler.description || null,
       enabled: handler.enabled,
-      executionOrder: handler.executionOrder,
+      executionOrder: index,
       handlerType: newHandlerType,
     };
   });
@@ -217,16 +222,3 @@ export const getInitialFormValues = (): CreateRuleFormValues => ({
   },
   handlers: [],
 });
-
-// Form validation rules
-export const formValidationRules = {
-  name: [
-    { required: true, message: '请输入规则名称' },
-    { max: 255, message: '规则名称不能超过255个字符' },
-  ],
-  description: [{ max: 500, message: '规则描述不能超过500个字符' }],
-  priority: [
-    { required: true, message: '请输入优先级' },
-    { type: 'number' as const, min: 0, max: 100, message: '优先级范围：0-100' },
-  ],
-};

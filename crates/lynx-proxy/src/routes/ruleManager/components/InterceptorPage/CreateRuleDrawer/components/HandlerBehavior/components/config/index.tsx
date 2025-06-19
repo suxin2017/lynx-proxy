@@ -5,6 +5,7 @@ import { ModifyRequestConfig } from './ModifyRequestConfig';
 import { ModifyResponseConfig } from './ModifyResponseConfig';
 import { LocalFileConfig } from './LocalFileConfig';
 import { ProxyForwardConfig } from './ProxyForwardConfig';
+import { HtmlScriptInjectorConfig } from './HtmlScriptInjectorConfig';
 
 interface HandlerConfigProps {
   field: {
@@ -44,11 +45,11 @@ export const HandlerConfig: React.FC<HandlerConfigProps> = ({
       return <LocalFileConfig field={field} />;
     case 'proxyForward':
       return <ProxyForwardConfig field={field} />;
+    case 'htmlScriptInjector':
+      return <HtmlScriptInjectorConfig field={field} />;
     default:
       return (
-        <div className="py-4 text-center text-gray-500">
-          不支持的处理器类型: {handlerType}
-        </div>
+        <></>
       );
   }
 };

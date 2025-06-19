@@ -92,7 +92,7 @@ export default defineConfig({
     port: 8080,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        target: 'http://127.0.0.1:7788',
         onProxyRes(proxyRes, _req, res) {
           res.on('close', () => {
             proxyRes.destroy();
