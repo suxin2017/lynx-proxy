@@ -287,15 +287,16 @@
           "content": {
             "label": "Injection Content",
             "placeholder": "<script>console.log('Hello from injected script!');</script>",
-            "extra": "Content to be injected into HTML, can be scripts, styles, or other HTML elements"
+            "extra": "Content to be injected into HTML, can be scripts, styles, or other HTML elements",
+            "required": "Please enter the content to inject"
           },
           "injectionPosition": {
             "label": "Injection Position",
             "placeholder": "Select content injection position",
             "options": {
               "head": "Head (before </head>)",
-              "body-start": "Body Start (after <body>)",
-              "body-end": "Body End (before </body>)"
+              "bodyStart": "Body Start (after <body>)",
+              "bodyEnd": "Body End (before </body>)"
             }
           },
           "tips": {
