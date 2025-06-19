@@ -85,6 +85,11 @@ impl HandlerTrait for HtmlScriptInjectorConfig {
         // Generate content tag
         let content_tag = self.generate_content_tag();
         if content_tag.is_empty() {
+            // Need to restore the original body since it was consumed
+            let new_body = Full::new(decompressed_bytes.clone())
+                .map_err(|e| anyhow::anyhow!("Body error: {}", e))
+                .boxed();
+            *response.body_mut() = Body::new(new_body);
             return Ok(response); // No content to inject
         }
 
@@ -221,7 +226,6 @@ mod tests {
     use super::*;
     use axum::{body::Body, response::Response};
     use http_body_util::Empty;
-    use std::collections::HashMap;
 
     fn create_test_response_with_html(html_content: &str) -> Response {
         let body_bytes = html_content.as_bytes().to_vec();
