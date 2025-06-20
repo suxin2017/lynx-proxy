@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_compression::tokio::bufread::{BrotliDecoder, DeflateDecoder, GzipDecoder};
 use axum::{body::Body, response::Response};
 use bytes::Bytes;
-use http::header::CONTENT_ENCODING;
+use http::header::{CONTENT_ENCODING, CONTENT_LENGTH};
 use http_body_util::{BodyExt, Full};
 use lynx_db::dao::request_processing_dao::handlers::HtmlScriptInjectorConfig;
 use regex::Regex;
@@ -104,13 +104,35 @@ impl HandlerTrait for HtmlScriptInjectorConfig {
 
         // Remove content-encoding header since we're returning uncompressed content
         response.headers_mut().remove(CONTENT_ENCODING);
+        response.headers_mut().remove(CONTENT_LENGTH);
+        
+        // Remove cache-related headers to prevent caching of modified content
+        response.headers_mut().remove("cache-control");
+        response.headers_mut().remove("etag");
+        response.headers_mut().remove("last-modified");
+        response.headers_mut().remove("expires");
+        response.headers_mut().remove("if-none-match");
+        response.headers_mut().remove("if-modified-since");
 
-        // Update content-length header
+        // Handle content-length and transfer-encoding headers properly
         let new_body_bytes = body_str.as_bytes();
-        if let Ok(content_length) = new_body_bytes.len().to_string().parse() {
-            response
-                .headers_mut()
-                .insert("content-length", content_length);
+        let headers = response.headers_mut();
+
+        // Check if transfer-encoding is chunked
+        let is_chunked = headers
+            .get("transfer-encoding")
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.to_lowercase().contains("chunked"))
+            .unwrap_or(false);
+
+        if is_chunked {
+            // If transfer-encoding is chunked, remove content-length (HTTP/1.1 spec requirement)
+            headers.remove("content-length");
+        } else {
+            // Only set content-length if not using chunked encoding
+            if let Ok(content_length) = new_body_bytes.len().to_string().parse() {
+                headers.insert("content-length", content_length);
+            }
         }
 
         // Replace the body with the modified content
@@ -344,9 +366,11 @@ mod tests {
     #[tokio::test]
     async fn test_script_with_attributes() -> Result<()> {
         let html = "<html><body></body></html>";
-        
+
         let config = HtmlScriptInjectorConfig {
-            content: Some("<script async=\"true\" defer=\"defer\">console.log('test');</script>".to_string()),
+            content: Some(
+                "<script async=\"true\" defer=\"defer\">console.log('test');</script>".to_string(),
+            ),
             injection_position: Some("body-end".to_string()),
         };
 
@@ -482,7 +506,10 @@ mod tests {
     async fn test_inject_html_content() -> Result<()> {
         let html = "<html><head></head><body><h1>Test</h1></body></html>";
         let config = HtmlScriptInjectorConfig {
-            content: Some("<script>console.log('test');</script><style>body { margin: 0; }</style>".to_string()),
+            content: Some(
+                "<script>console.log('test');</script><style>body { margin: 0; }</style>"
+                    .to_string(),
+            ),
             injection_position: Some("body-end".to_string()),
         };
 
@@ -498,14 +525,14 @@ mod tests {
         // Should contain both script and style tags
         assert!(body_str.contains("<script>console.log('test');</script>"));
         assert!(body_str.contains("<style>body { margin: 0; }</style>"));
-        
+
         Ok(())
     }
 
     #[tokio::test]
     async fn test_empty_content_skipped() -> Result<()> {
         let html = "<html><body></body></html>";
-        
+
         let config = HtmlScriptInjectorConfig {
             content: Some("   ".to_string()), // Only whitespace
             injection_position: Some("body-end".to_string()),
@@ -522,6 +549,57 @@ mod tests {
 
         // Should be unchanged since content is empty
         assert_eq!(body_str, html);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_transfer_encoding_chunked_removes_content_length() -> Result<()> {
+        let html = "<html><body></body></html>";
+        let config = HtmlScriptInjectorConfig {
+            content: Some("<script>console.log('test');</script>".to_string()),
+            injection_position: Some("body-end".to_string()),
+        };
+
+        // Create response with both transfer-encoding: chunked and content-length
+        let body = Full::new(Bytes::from(html.as_bytes().to_vec()))
+            .map_err(|e| anyhow::anyhow!("Body error: {}", e))
+            .boxed();
+
+        let response = Response::builder()
+            .status(200)
+            .header("content-type", "text/html; charset=utf-8")
+            .header("content-length", html.len().to_string())
+            .header("transfer-encoding", "chunked")
+            .body(Body::new(body))
+            .unwrap();
+
+        let result = config.handle_response(response).await?;
+
+        // Content-Length should be removed due to transfer-encoding: chunked
+        assert!(result.headers().get("content-length").is_none());
+        assert_eq!(
+            result.headers().get("transfer-encoding").unwrap(),
+            "chunked"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_content_length_kept_without_chunked_encoding() -> Result<()> {
+        let html = "<html><body></body></html>";
+        let config = HtmlScriptInjectorConfig {
+            content: Some("<script>console.log('test');</script>".to_string()),
+            injection_position: Some("body-end".to_string()),
+        };
+
+        let response = create_test_response_with_html(html);
+        let result = config.handle_response(response).await?;
+
+        // Content-Length should be present and updated
+        assert!(result.headers().get("content-length").is_some());
+        assert!(result.headers().get("transfer-encoding").is_none());
+
         Ok(())
     }
 }
