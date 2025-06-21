@@ -255,6 +255,7 @@
       "modifyResponse": "修改响应",
       "localFile": "本地文件",
       "proxyForward": "代理转发",
+      "htmlScriptInjector": "HTML内容注入器",
       "unknown": "未知动作"
     },
     "quickAdd": {
@@ -278,6 +279,34 @@
       "proxyForward": {
         "name": "代理转发",
         "description": "将请求转发到其他服务器"
+      },
+      "htmlScriptInjector": {
+        "name": "HTML内容注入器",
+        "description": "在HTML响应中注入自定义内容",
+        "config": {
+          "title": "HTML 内容注入器配置",
+          "description": "此处理器会在HTML响应中注入自定义内容。可以注入JavaScript脚本、CSS样式或其他HTML元素。只对HTML类型的响应生效。",
+          "content": {
+            "label": "注入内容",
+            "placeholder": "<script>console.log('Hello from injected script!');</script>",
+            "extra": "要注入到HTML中的内容，可以是脚本、样式或其他HTML元素",
+            "required": "请输入要注入的内容"
+          },
+          "injectionPosition": {
+            "label": "注入位置",
+            "placeholder": "选择内容注入位置",
+            "options": {
+              "head": "Head (</head> 之前)",
+              "bodyStart": "Body 开始 (<body> 之后)",
+              "bodyEnd": "Body 结束 (</body> 之前)"
+            }
+          },
+          "tips": {
+            "tip1": "支持注入任何HTML内容，包括脚本、样式、meta标签等",
+            "tip2": "内容注入会在响应处理的最后阶段执行，确保HTML结构完整",
+            "tip3": "建议将脚本注入到body结束位置，以确保DOM元素已加载完成"
+          }
+        }
       }
     },
     "handlerDescriptions": {
@@ -294,7 +323,9 @@
       "file": "文件: {{path}}",
       "returnLocalFile": "返回本地文件",
       "forwardTo": "转发到: {{host}}",
-      "proxyForward": "代理转发"
+      "proxyForward": "代理转发",
+      "htmlScriptInjector": "HTML内容注入器",
+      "injectScript": "注入内容到: {{position}}"
     },
     "captureTypes": {
       "glob": "Glob",
@@ -321,6 +352,13 @@
       "createSuccess": "规则创建成功",
       "updateSuccess": "规则更新成功",
       "operationFailed": "操作失败，请重试",
+      "validation": {
+        "nameRequired": "请输入规则名称",
+        "nameMaxLength": "规则名称不能超过255个字符",
+        "descriptionMaxLength": "规则描述不能超过500个字符",
+        "priorityRequired": "请输入优先级",
+        "priorityRange": "优先级范围：0-100"
+      },
       "basicInfo": {
         "title": "基础信息",
         "description": "配置规则的基本属性，包括名称、描述和执行优先级",

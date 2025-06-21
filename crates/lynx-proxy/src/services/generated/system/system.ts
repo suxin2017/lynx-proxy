@@ -18,20 +18,18 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { ResponseDataWrapperBaseInfo } from '../utoipaAxum.schemas';
-
 import { customInstance } from '../../customInstance';
 
 export const getBaseInfo = (signal?: AbortSignal) => {
-  return customInstance<ResponseDataWrapperBaseInfo>({
-    url: `/base_info/base_info`,
+  return customInstance<string[]>({
+    url: `/base_info/address`,
     method: 'GET',
     signal,
   });
 };
 
 export const getGetBaseInfoQueryKey = () => {
-  return [`/base_info/base_info`] as const;
+  return [`/base_info/address`] as const;
 };
 
 export const getGetBaseInfoQueryOptions = <

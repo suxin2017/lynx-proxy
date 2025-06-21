@@ -125,7 +125,7 @@ mod tests {
     use super::*;
 
     fn create_test_app(data_dir: Option<String>) -> ProxyServerApp {
-        ProxyServerApp::new(3000, data_dir, false)
+        ProxyServerApp::new(7788, data_dir, false)
     }
 
     #[tokio::test]

@@ -123,7 +123,7 @@ mod tests {
 
         let request = Request::builder()
             .method(Method::POST)
-            .uri("http://localhost:3000/api/users")
+            .uri("http://localhost:7788/api/users")
             .body(empty())
             .unwrap();
 
@@ -209,7 +209,7 @@ mod tests {
 
         let request = Request::builder()
             .method(Method::DELETE)
-            .uri("https://frontend.app:3000/delete/item/123?confirm=true")
+            .uri("https://frontend.app:7788/delete/item/123?confirm=true")
             .body(empty())
             .unwrap();
 
@@ -320,7 +320,7 @@ mod tests {
             ("localhost:80", "Standard HTTP port"),
             ("localhost:443", "Standard HTTPS port"),
             ("localhost:8080", "Common proxy port"),
-            ("localhost:3000", "Development port"),
+            ("localhost:7788", "Development port"),
             ("localhost:9000", "High numbered port"),
             ("localhost:65535", "Maximum port number"),
         ];
@@ -362,7 +362,7 @@ mod tests {
 
         let request = Request::builder()
             .method(Method::POST)
-            .uri("http://frontend:3000/api/data?id=123")
+            .uri("http://frontend:7788/api/data?id=123")
             .body(empty())
             .unwrap();
         let result = config.handle_request(request).await.unwrap();

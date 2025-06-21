@@ -54,7 +54,7 @@
 PS C:\Users\xx> lynx-cli status
 === Lynx Proxy Service Status ===
 PID: 101744
-Port: 3000
+Port: 7788
 Status: Running
 Data Directory: Your Data Dir
 Start Time: 1749816127 seconds since epoch
@@ -110,7 +110,7 @@ Start the background proxy service
 Usage: lynx-cli.exe start [OPTIONS]
 
 Options:
-  -p, --port <PORT>          proxy server port [default: 3000]
+  -p, --port <PORT>          proxy server port [default: 7788]
       --data-dir <DATA_DIR>  data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
   -h, --help                 Print help
 ```
@@ -122,7 +122,7 @@ Start the proxy server in foreground mode
 Usage: lynx-cli.exe run [OPTIONS]
 
 Options:
-  -p, --port <PORT>            proxy server port [default: 3000]
+  -p, --port <PORT>            proxy server port [default: 7788]
       --data-dir <DATA_DIR>    data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
       --log-level <LOG_LEVEL>  Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
   -h, --help                   Print help

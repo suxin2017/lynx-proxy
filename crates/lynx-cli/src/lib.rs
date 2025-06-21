@@ -24,7 +24,7 @@ pub struct Args {
 #[derive(ClapArgs, Debug, Clone)]
 pub struct ServerArgs {
     /// proxy server port
-    #[arg(short, long, default_value_t = 3000)]
+    #[arg(short, long, default_value_t = 7788)]
     pub port: u16,
 
     /// data dir

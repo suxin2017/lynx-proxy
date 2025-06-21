@@ -14,7 +14,7 @@ async fn main() {
         .install_default()
         .unwrap_or_default();
 
-    let url = Url::parse("ws://localhost:3000").unwrap();
+    let url = Url::parse("ws://localhost:7788").unwrap();
 
     // create root cert store
     let mut root_cert_store: RootCertStore = RootCertStore::empty();

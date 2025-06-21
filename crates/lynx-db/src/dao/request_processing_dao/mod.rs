@@ -7,10 +7,10 @@ pub mod validator;
 
 pub use common::{BodyUtils, HeaderUtils};
 pub use error::RequestProcessingError;
-pub use handlers::HandlerRule;
+pub use types::{CaptureRule, LocalFileConfig, ModifyRequestConfig, RequestRule};
+pub use handlers::{HandlerRule, HtmlScriptInjectorConfig};
 use handlers::handler_rule::HandlerRuleType;
 pub use matcher::RuleMatcher;
-pub use types::{CaptureRule, LocalFileConfig, ModifyRequestConfig, RequestRule};
 pub use validator::RuleValidator;
 
 use crate::entities::{

@@ -161,7 +161,7 @@ mod tests {
 
     #[tokio::test]
     async fn start_server() {
-        let mut server = MockServer::new(Some(3000));
+        let mut server = MockServer::new(Some(7788));
         let res = server.start_server().await;
 
         assert!(res.is_ok());

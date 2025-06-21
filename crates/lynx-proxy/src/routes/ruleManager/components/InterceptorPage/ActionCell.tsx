@@ -41,6 +41,12 @@ const useHandlerRuleTypeConfig = (type?: HandlerRuleType) => {
           color: 'purple',
           text: t('ruleManager.handlerTypes.proxyForward'),
         };
+      case 'htmlScriptInjector':
+        return {
+          color: 'cyan',
+          text: t('ruleManager.handlerTypes.htmlScriptInjector'),
+        };
+
       default:
         return {
           color: 'default',
@@ -141,6 +147,9 @@ const useGetHandlerDescription = (handler: HandlerRule): string => {
       return targetHost
         ? t('ruleManager.handlerDescriptions.forwardTo', { host: targetHost })
         : t('ruleManager.handlerDescriptions.proxyForward');
+
+    case 'htmlScriptInjector':
+      return t('ruleManager.handlerDescriptions.htmlScriptInjector');
 
     default:
       return handler.description || t('ruleManager.handlerTypes.unknown');

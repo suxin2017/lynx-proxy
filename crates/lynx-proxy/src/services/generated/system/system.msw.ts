@@ -9,34 +9,19 @@ import { faker } from '@faker-js/faker';
 
 import { HttpResponse, delay, http } from 'msw';
 
-import { ResponseCode } from '../utoipaAxum.schemas';
-import type { ResponseDataWrapperBaseInfo } from '../utoipaAxum.schemas';
-
-export const getGetBaseInfoResponseMock = (
-  overrideResponse: Partial<ResponseDataWrapperBaseInfo> = {},
-): ResponseDataWrapperBaseInfo => ({
-  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
-  data: {
-    accessAddrList: Array.from(
-      { length: faker.number.int({ min: 1, max: 10 }) },
-      (_, i) => i + 1,
-    ).map(() => faker.string.alpha(20)),
-  },
-  message: faker.helpers.arrayElement([
-    faker.helpers.arrayElement([faker.string.alpha(20), null]),
-    undefined,
-  ]),
-  ...overrideResponse,
-});
+export const getGetBaseInfoResponseMock = (): string[] =>
+  Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, () =>
+    faker.word.sample(),
+  );
 
 export const getGetBaseInfoMockHandler = (
   overrideResponse?:
-    | ResponseDataWrapperBaseInfo
+    | string[]
     | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Promise<ResponseDataWrapperBaseInfo> | ResponseDataWrapperBaseInfo),
+      ) => Promise<string[]> | string[]),
 ) => {
-  return http.get('*/base_info/base_info', async (info) => {
+  return http.get('*/base_info/address', async (info) => {
     await delay(1000);
 
     return new HttpResponse(

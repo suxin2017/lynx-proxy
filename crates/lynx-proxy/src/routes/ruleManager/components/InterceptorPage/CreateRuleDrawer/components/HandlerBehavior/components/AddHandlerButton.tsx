@@ -67,6 +67,16 @@ export const AddHandlerButton: React.FC<AddHandlerButtonProps> = ({ add }) => {
         statusCode: null,
       },
     },
+    {
+      key: 'htmlScriptInjector',
+      type: 'htmlScriptInjector' as const,
+      name: t('ruleManager.quickAdd.htmlScriptInjector.name'),
+      config: {
+        type: 'htmlScriptInjector',
+        content: null,
+        injectionPosition: 'body-end',
+      },
+    },
   ];
 
   return (
@@ -80,7 +90,6 @@ export const AddHandlerButton: React.FC<AddHandlerButtonProps> = ({ add }) => {
                 handlerType: item.config,
                 name: item.name,
                 enabled: true,
-                executionOrder: 0,
               })
             }
           >
