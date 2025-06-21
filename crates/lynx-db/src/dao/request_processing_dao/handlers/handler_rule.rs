@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use super::{
-    BlockHandlerConfig, LocalFileConfig, ModifyRequestConfig,
+    BlockHandlerConfig, HtmlScriptInjectorConfig, LocalFileConfig, ModifyRequestConfig,
     modify_response_handler::ModifyResponseConfig, proxy_forward_handler::ProxyForwardConfig,
 };
 
@@ -15,6 +15,7 @@ pub enum HandlerRuleType {
     LocalFile(LocalFileConfig),
     ModifyResponse(ModifyResponseConfig),
     ProxyForward(ProxyForwardConfig),
+    HtmlScriptInjector(HtmlScriptInjectorConfig),
 }
 
 impl From<&handler::Model> for HandlerRuleType {
@@ -44,6 +45,11 @@ impl From<&handler::Model> for HandlerRuleType {
                 let config: ProxyForwardConfig =
                     serde_json::from_value(model.config.clone()).unwrap_or_default();
                 HandlerRuleType::ProxyForward(config)
+            }
+            HandlerType::HtmlScriptInjector => {
+                let config: HtmlScriptInjectorConfig =
+                    serde_json::from_value(model.config.clone()).unwrap_or_default();
+                HandlerRuleType::HtmlScriptInjector(config)
             }
         }
     }
@@ -152,6 +158,23 @@ impl HandlerRule {
             name: "Proxy Forward Handler".to_string(),
             description: Some("Forward requests to specified proxy target".to_string()),
             execution_order: 10,
+            enabled: true,
+        }
+    }
+
+    pub fn html_script_injector_handler(
+        content: Option<String>,
+        injection_position: Option<String>,
+    ) -> Self {
+        Self {
+            id: None,
+            handler_type: HandlerRuleType::HtmlScriptInjector(HtmlScriptInjectorConfig {
+                content,
+                injection_position: injection_position.or(Some("body-end".to_string())),
+            }),
+            name: "HTML Content Injector Handler".to_string(),
+            description: Some("Inject HTML content into HTML responses".to_string()),
+            execution_order: 85,
             enabled: true,
         }
     }

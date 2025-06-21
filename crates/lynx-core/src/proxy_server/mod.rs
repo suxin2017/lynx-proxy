@@ -109,7 +109,7 @@ pub struct ServerConfig {
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
-            port: 3000,
+            port: 7788,
             only_localhost: false,
         }
     }

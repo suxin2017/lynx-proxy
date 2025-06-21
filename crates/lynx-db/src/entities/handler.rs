@@ -25,6 +25,8 @@ pub enum HandlerType {
     ModifyResponse,
     #[sea_orm(string_value = "proxy_forward")]
     ProxyForward,
+    #[sea_orm(string_value = "html_script_injector")]
+    HtmlScriptInjector,
 }
 
 impl From<&HandlerRuleType> for HandlerType {
@@ -35,6 +37,7 @@ impl From<&HandlerRuleType> for HandlerType {
             HandlerRuleType::LocalFile(_) => Self::LocalFile,
             HandlerRuleType::ModifyResponse(_) => Self::ModifyResponse,
             HandlerRuleType::ProxyForward(_) => Self::ProxyForward,
+            HandlerRuleType::HtmlScriptInjector(_) => Self::HtmlScriptInjector,
         }
     }
 }
@@ -51,6 +54,9 @@ impl From<&HandlerRuleType> for JsonValue {
                 serde_json::to_value(config).unwrap_or_default()
             }
             HandlerRuleType::ProxyForward(config) => {
+                serde_json::to_value(config).unwrap_or_default()
+            }
+            HandlerRuleType::HtmlScriptInjector(config) => {
                 serde_json::to_value(config).unwrap_or_default()
             }
         }

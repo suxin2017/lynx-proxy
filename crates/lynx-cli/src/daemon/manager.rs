@@ -452,7 +452,7 @@ fn test_log() {
     println!("Proxy server :\n {}", style("http://127.0.0.1:300").cyan());
     println!(
         "Web UI is available on: {}",
-        style("http://:127.0.1:3000").cyan()
+        style("http://127.0.0.1:7788").cyan()
     );
 }
 

@@ -45,6 +45,7 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
         modifyResponse: t('ruleManager.handlerTypes.modifyResponse'),
         localFile: t('ruleManager.handlerTypes.localFile'),
         proxyForward: t('ruleManager.handlerTypes.proxyForward'),
+        htmlScriptInjector: t('ruleManager.handlerTypes.htmlScriptInjector'),
       };
 
       return (
@@ -80,6 +81,9 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
               'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.notSet',
             ),
         }),
+        htmlScriptInjector: t(
+          'ruleManager.handlerDescriptions.htmlScriptInjector',
+        ),
       };
 
       return descMap[handlerType.type as keyof typeof descMap] || '';
