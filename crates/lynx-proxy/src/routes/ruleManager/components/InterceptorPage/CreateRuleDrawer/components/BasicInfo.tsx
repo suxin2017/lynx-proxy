@@ -1,6 +1,5 @@
 import { Form, Input, Slider, Space, Switch, Typography } from 'antd';
 import React from 'react';
-import { formValidationRules } from '../types';
 import { useI18n } from '@/contexts';
 
 const { Title, Text } = Typography;
@@ -9,6 +8,19 @@ interface BasicInfoProps {}
 
 export const BasicInfo: React.FC<BasicInfoProps> = () => {
   const { t } = useI18n();
+
+  // Form validation rules with internationalization
+  const formValidationRules = {
+    name: [
+      { required: true, message: t('ruleManager.createRuleDrawer.validation.nameRequired') },
+      { max: 255, message: t('ruleManager.createRuleDrawer.validation.nameMaxLength') },
+    ],
+    description: [{ max: 500, message: t('ruleManager.createRuleDrawer.validation.descriptionMaxLength') }],
+    priority: [
+      { required: true, message: t('ruleManager.createRuleDrawer.validation.priorityRequired') },
+      { type: 'number' as const, min: 0, max: 100, message: t('ruleManager.createRuleDrawer.validation.priorityRange') },
+    ],
+  };
 
   return (
     <Space direction="vertical" className="w-full">

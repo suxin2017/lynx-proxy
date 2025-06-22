@@ -412,12 +412,48 @@ export type HandlerRuleTypeOneOfOnethreeAllOf = {
 export type HandlerRuleTypeOneOfOnethree = ProxyForwardConfig &
   HandlerRuleTypeOneOfOnethreeAllOf;
 
+export type HandlerRuleTypeOneOfOnesixAllOfType =
+  (typeof HandlerRuleTypeOneOfOnesixAllOfType)[keyof typeof HandlerRuleTypeOneOfOnesixAllOfType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HandlerRuleTypeOneOfOnesixAllOfType = {
+  htmlScriptInjector: 'htmlScriptInjector',
+} as const;
+
+export type HandlerRuleTypeOneOfOnesixAllOf = {
+  type: HandlerRuleTypeOneOfOnesixAllOfType;
+};
+
+export type HandlerRuleTypeOneOfOnesix = HtmlScriptInjectorConfig &
+  HandlerRuleTypeOneOfOnesixAllOf;
+
 export type HandlerRuleType =
   | HandlerRuleTypeOneOf
   | HandlerRuleTypeOneOfFour
   | HandlerRuleTypeOneOfSeven
   | HandlerRuleTypeOneOfOnezero
-  | HandlerRuleTypeOneOfOnethree;
+  | HandlerRuleTypeOneOfOnethree
+  | HandlerRuleTypeOneOfOnesix;
+
+/**
+ * Content to inject into HTML pages
+ */
+export type HtmlScriptInjectorConfigContent = string | null;
+
+/**
+ * Position to inject the content (head, body-start, body-end)
+ */
+export type HtmlScriptInjectorConfigInjectionPosition = string | null;
+
+/**
+ * HTML script injection handler configuration
+ */
+export interface HtmlScriptInjectorConfig {
+  /** Content to inject into HTML pages */
+  content?: HtmlScriptInjectorConfigContent;
+  /** Position to inject the content (head, body-start, body-end) */
+  injectionPosition?: HtmlScriptInjectorConfigInjectionPosition;
+}
 
 /**
  * HTTP method enumeration

@@ -279,6 +279,34 @@
       "proxyForward": {
         "name": "Proxy Forward",
         "description": "Forward request to another server"
+      },
+      "htmlScriptInjector": {
+        "name": "HTML Content Injector",
+        "description": "Inject custom content into HTML responses",
+        "config": {
+          "title": "HTML Content Injector Configuration",
+          "description": "This handler injects custom content into HTML responses. You can inject JavaScript scripts, CSS styles, or other HTML elements. Only works with HTML content types.",
+          "content": {
+            "label": "Injection Content",
+            "placeholder": "<script>console.log('Hello from injected script!');</script>",
+            "extra": "Content to be injected into HTML, can be scripts, styles, or other HTML elements",
+            "required": "Please enter the content to inject"
+          },
+          "injectionPosition": {
+            "label": "Injection Position",
+            "placeholder": "Select content injection position",
+            "options": {
+              "head": "Head (before </head>)",
+              "bodyStart": "Body Start (after <body>)",
+              "bodyEnd": "Body End (before </body>)"
+            }
+          },
+          "tips": {
+            "tip1": "Supports injecting any HTML content including scripts, styles, meta tags, etc.",
+            "tip2": "Content injection occurs at the final stage of response processing to ensure HTML structure integrity",
+            "tip3": "Recommend injecting scripts at body end position to ensure DOM elements are loaded"
+          }
+        }
       }
     },
     "handlerDescriptions": {
@@ -295,7 +323,9 @@
       "file": "File: {{path}}",
       "returnLocalFile": "Return local file",
       "forwardTo": "Forward to: {{host}}",
-      "proxyForward": "Proxy forward"
+      "proxyForward": "Proxy forward",
+      "htmlScriptInjector": "HTML Content Injector",
+      "injectScript": "Inject content to: {{position}}"
     },
     "captureTypes": {
       "glob": "Glob",

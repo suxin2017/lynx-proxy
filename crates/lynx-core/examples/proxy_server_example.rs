@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
 
     let mut proxy_server = ProxyServerBuilder::default()
         .config(Arc::new(server_config))
-        .port(3000)
+        .port(7788)
         .server_ca_manager(Arc::new(server_ca_manager))
         .db_config(ConnectOptions::new(format!(
             "sqlite://{}/lynx.db?mode=rwc",
