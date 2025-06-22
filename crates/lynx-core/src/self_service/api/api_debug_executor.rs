@@ -84,12 +84,14 @@ async fn execute_api_request(
         }
     }
 
-    // Set content-type if provided
-    if let Some(content_type) = &request.content_type {
-        if let Ok(header_value) = HeaderValue::from_str(content_type) {
-            header_map.insert("content-type", header_value);
-        }
-    }
+    // Note: content_type is no longer used here to avoid conflicts with headers.
+    // Users should set Content-Type directly in the headers field.
+
+    // Extract actual content-type from headers for database storage
+    let actual_content_type = header_map
+        .get("content-type")
+        .and_then(|value| value.to_str().ok())
+        .map(|s| s.to_string());
 
     // Create the initial debug entry
     let create_request = CreateApiDebugRequest {
@@ -101,7 +103,7 @@ async fn execute_api_request(
             .as_ref()
             .map(|h| serde_json::to_value(h).unwrap_or(JsonValue::Null)),
         body: request.body.clone(),
-        content_type: request.content_type.clone(),
+        content_type: actual_content_type, // Use the actual content-type from headers
         timeout: request.timeout.map(|t| t as i32),
     };
 

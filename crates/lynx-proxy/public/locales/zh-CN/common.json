@@ -182,6 +182,8 @@
   "sideBar": {
     "network": "网络",
     "certificates": "证书",
+    "rules": "规则",
+    "apiDebug": "API调试",
     "settings": "设置"
   },
   "recording": {
@@ -445,5 +447,33 @@
         }
       }
     }
+  },
+  "apiDebug": {
+    "title": "API调试",
+    "newRequest": "新建请求",
+    "request": "请求",
+    "response": "响应",
+    "history": "历史记录",
+    "params": "参数",
+    "headers": "请求头",
+    "body": "请求体",
+    "cookies": "Cookies",
+    "save": "保存",
+    "send": "发送",
+    "cancel": "取消",
+    "copy": "复制",
+    "format": "格式化",
+    "noResponse": "暂无响应",
+    "sending": "发送中...",
+    "requestName": "请求名称",
+    "method": "请求方法",
+    "url": "请求地址",
+    "contentType": "内容类型",
+    "timeout": "超时时间",
+    "responseTime": "响应时间",
+    "status": "状态",
+    "size": "大小",
+    "noHeaders": "无请求头",
+    "noBody": "无请求体"
   }
 }

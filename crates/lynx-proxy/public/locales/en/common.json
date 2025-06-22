@@ -182,6 +182,8 @@
   "sideBar": {
     "network": "Network",
     "certificates": "Certificates",
+    "rules": "Rules",
+    "apiDebug": "API Debug",
     "settings": "Settings"
   },
   "recording": {
@@ -445,5 +447,33 @@
       }
     }
   },
-  "startTime": "Start Time"
+  "startTime": "Start Time",
+  "apiDebug": {
+    "title": "API Debug",
+    "newRequest": "New Request",
+    "request": "Request",
+    "response": "Response",
+    "history": "History",
+    "params": "Params",
+    "headers": "Headers",
+    "body": "Body",
+    "cookies": "Cookies",
+    "save": "Save",
+    "send": "Send",
+    "cancel": "Cancel",
+    "copy": "Copy",
+    "format": "Format",
+    "noResponse": "No response yet",
+    "sending": "Sending...",
+    "requestName": "Request Name",
+    "method": "Method",
+    "url": "URL",
+    "contentType": "Content Type",
+    "timeout": "Timeout",
+    "responseTime": "Response Time",
+    "status": "Status",
+    "size": "Size",
+    "noHeaders": "No headers",
+    "noBody": "No body"
+  }
 }

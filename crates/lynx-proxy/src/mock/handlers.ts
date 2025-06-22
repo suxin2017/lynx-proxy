@@ -6,6 +6,7 @@ import {
   getToggleCaptureMockHandler,
 } from '../services/generated/net-request/net-request.msw';
 import { getRequestProcessingMock } from '../services/generated/request-processing/request-processing.msw';
+import { getApiDebugExecutorMock } from '../services/generated/api-debug-executor/api-debug-executor.msw';
 import { ResponseCode } from '../services/generated/utoipaAxum.schemas';
 
 export const handlers = [
@@ -60,6 +61,7 @@ export const handlers = [
   })),
   getGetCaptureStatusMockHandler(),
   getToggleCaptureMockHandler(),
+  ...getApiDebugExecutorMock(),
   ...getDefaultMock(),
-  ...getRequestProcessingMock()
+  ...getRequestProcessingMock(),
 ];
