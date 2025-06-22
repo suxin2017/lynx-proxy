@@ -194,6 +194,10 @@
   "contextMenu": {
     "downloadAllRequests": "Download All Requests",
     "copySelectedRequest": "Copy Selected Request",
+    "addToApiDebug": "Add to API Debug",
+    "addToApiDebugSuccess": "Successfully added to API Debug",
+    "addToApiDebugFailed": "Failed to add to API Debug",
+    "noRequestData": "No request data available",
     "addToRule": "Add to Rule",
     "blockRequest": "Block Request",
     "blockDomain": "Block Domain",

@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { HeaderItem, QueryParamItem, FormattedResponse } from '../types';
 import { HttpMethod } from '../../../../services/generated/utoipaAxum.schemas';
+import { IViewMessageEventStoreValue } from '../../../../store';
 
 // 定义状态类型
 export interface ApiDebugState {
@@ -140,6 +141,59 @@ const apiDebugSlice = createSlice({
       state.body = body;
     },
 
+    setFromRequest: (
+      state,
+      action: PayloadAction<IViewMessageEventStoreValue>,
+    ) => {
+      const request = action.payload;
+
+      // Extract request data
+      const method = request.request?.method || HttpMethod.GET;
+      const url = request.request?.url || '';
+
+      // Convert headers object to HeaderItem array
+      const headersArray: HeaderItem[] = [];
+      if (
+        request.request?.headers &&
+        typeof request.request.headers === 'object'
+      ) {
+        Object.entries(request.request.headers).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            headersArray.push({ key, value, enabled: true });
+          }
+        });
+      }
+
+      // Parse query parameters from URL
+      const parsedParams = parseUrlParams(url);
+
+      // Get request body
+      let body = '';
+      if (
+        request.request?.bodyArrayBuffer &&
+        request.request.bodyArrayBuffer.byteLength > 0
+      ) {
+        try {
+          body = new TextDecoder('utf-8').decode(
+            request.request.bodyArrayBuffer,
+          );
+        } catch (error) {
+          console.warn('Failed to decode request body:', error);
+          body = '';
+        }
+      }
+
+      // Update state
+      state.method = method;
+      state.url = url;
+      state.headers = headersArray;
+      state.queryParams = parsedParams;
+      state.body = body;
+
+      // Clear any previous response
+      state.response = null;
+    },
+
     updateUrlAndParams: (state, action: PayloadAction<string>) => {
       const newUrl = action.payload;
       const parsedParams = parseUrlParams(newUrl);
@@ -181,6 +235,7 @@ export const {
   setCurlModalVisible,
   setIsLoading,
   importCurl,
+  setFromRequest,
   updateUrlAndParams,
   updateParamsAndUrl,
   resetState,

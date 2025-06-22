@@ -10,11 +10,13 @@ import {
   setCurlModalVisible,
   setIsLoading,
   importCurl,
+  setFromRequest,
   updateUrlAndParams,
   updateParamsAndUrl,
   resetState,
 } from './apiDebugSlice';
 import { HeaderItem, QueryParamItem, FormattedResponse } from '../types';
+import { IViewMessageEventStoreValue } from '../../../../store';
 
 export const useApiDebug = () => {
   const dispatch = useDispatch();
@@ -44,6 +46,9 @@ export const useApiDebug = () => {
       headers: Record<string, string>;
       body: string;
     }) => dispatch(importCurl(data)),
+
+    setFromRequest: (request: IViewMessageEventStoreValue) =>
+      dispatch(setFromRequest(request)),
 
     updateUrlAndParams: (url: string) => dispatch(updateUrlAndParams(url)),
     updateParamsAndUrl: (params: QueryParamItem[]) =>

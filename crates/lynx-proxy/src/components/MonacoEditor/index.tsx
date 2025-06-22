@@ -64,6 +64,12 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const [isMinimapVisible, setIsMinimapVisible] = React.useState(showMinimap);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
+  const [isEditorLoading, setIsEditorLoading] = React.useState(true);
+
+  // 当编辑器属性发生变化时重置加载状态
+  React.useEffect(() => {
+    setIsEditorLoading(true);
+  }, [language]);
 
   // 检测系统主题
   const [isDark, setIsDark] = React.useState(() => {
@@ -135,6 +141,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const handleEditorDidMount = useCallback(
     (editor: editor.IStandaloneCodeEditor) => {
       editorRef.current = editor;
+      setIsEditorLoading(false);
 
       // 设置更好的占位符效果
       if (placeholder && !safeValue) {
@@ -828,24 +835,26 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
           onMount={handleEditorDidMount}
           options={editorOptions}
           loading={
-            <div
-              className="flex h-full items-center justify-center"
-              style={{ backgroundColor: token.colorBgContainer }}
-            >
-              <Spin
-                style={{
-                  color: token.colorPrimary,
-                }}
-              />
+            isEditorLoading ? (
               <div
-                className="ml-3 text-sm font-medium"
-                style={{
-                  color: token.colorTextSecondary,
-                }}
+                className="flex h-full items-center justify-center"
+                style={{ backgroundColor: token.colorBgContainer }}
               >
-                Loading Editor...
+                <Spin
+                  style={{
+                    color: token.colorPrimary,
+                  }}
+                />
+                <div
+                  className="ml-3 text-sm font-medium"
+                  style={{
+                    color: token.colorTextSecondary,
+                  }}
+                >
+                  Loading Editor...
+                </div>
               </div>
-            </div>
+            ) : undefined
           }
         />
       </div>
