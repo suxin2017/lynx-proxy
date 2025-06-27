@@ -2056,22 +2056,18 @@ checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 
 [[package]]
 name = "log-jaeger"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "anyhow",
  "lynx-core",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
- "rand 0.8.5",
  "sea-orm",
- "serde",
- "serde_json",
  "tokio",
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
@@ -2089,7 +2085,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-cert"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "anyhow",
  "rand 0.8.5",
@@ -2104,7 +2100,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-cli"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -2126,7 +2122,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-core"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -2186,11 +2182,12 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "utoipa-swagger-ui",
+ "webpki-roots 0.26.8",
 ]
 
 [[package]]
 name = "lynx-db"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2214,7 +2211,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-mock"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -2231,6 +2228,7 @@ dependencies = [
  "rcgen",
  "reqwest 0.12.18",
  "reqwest-websocket",
+ "serde_json",
  "tokio",
  "tokio-rustls",
  "tokio-stream",
@@ -3706,7 +3704,7 @@ dependencies = [
 
 [[package]]
 name = "self_signed_ca"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "rcgen",
 ]
@@ -5077,7 +5075,7 @@ dependencies = [
 
 [[package]]
 name = "websocket-client"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "futures-util",
  "http 1.2.0",
@@ -5091,7 +5089,7 @@ dependencies = [
 
 [[package]]
 name = "websocket-server"
-version = "0.2.5"
+version = "0.2.6-alpha.1"
 dependencies = [
  "anyhow",
  "futures-util",

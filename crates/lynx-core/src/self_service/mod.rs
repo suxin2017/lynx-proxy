@@ -1,6 +1,8 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use crate::client::ReqwestClient;
+use crate::client::request_client::RequestClientExt;
 use crate::common::Req;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
@@ -68,6 +70,7 @@ pub struct RouteState {
     pub proxy_config: Arc<ProxyServerConfig>,
     pub access_addr_list: Arc<Vec<SocketAddr>>,
     pub static_dir: Option<Arc<StaticDir>>,
+    pub client: Arc<ReqwestClient>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
@@ -83,11 +86,11 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
             .expect("access_addr_list not found")
             .clone(),
         static_dir: static_dir.cloned().flatten(),
+        client: req.extensions().get_reqwest_client(),
     };
     let cors = CorsLayer::new()
         .allow_methods([Method::GET])
         .allow_origin(Any);
-
     let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
         .routes(routes!(get_health))
         .layer(cors)
@@ -96,6 +99,11 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         .nest("/certificate", api::certificate::router(state.clone()))
         .nest("/base_info", base_info::router(state.clone()))
         .nest("/https_capture", api::https_capture::router(state.clone()))
+        .nest("/api_debug", api::api_debug::router(state.clone()))
+        .nest(
+            "/api_debug_executor",
+            api::api_debug_executor::router(state.clone()),
+        )
         .nest(
             "/request_processing",
             api::request_processing::router(state.clone()),

@@ -17,6 +17,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as SettingsIndexImport } from './routes/settings/index'
 import { Route as RuleManagerIndexImport } from './routes/ruleManager/index'
 import { Route as NetworkIndexImport } from './routes/network/index'
+import { Route as ApiDebugIndexImport } from './routes/apiDebug/index'
 import { Route as SettingsNetworkImport } from './routes/settings/network'
 import { Route as SettingsGeneralImport } from './routes/settings/general'
 import { Route as SettingsCertificatesImport } from './routes/settings/certificates'
@@ -56,6 +57,12 @@ const RuleManagerIndexRoute = RuleManagerIndexImport.update({
 const NetworkIndexRoute = NetworkIndexImport.update({
   id: '/network/',
   path: '/network/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ApiDebugIndexRoute = ApiDebugIndexImport.update({
+  id: '/apiDebug/',
+  path: '/apiDebug/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -123,6 +130,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsNetworkImport
       parentRoute: typeof SettingsImport
     }
+    '/apiDebug/': {
+      id: '/apiDebug/'
+      path: '/apiDebug'
+      fullPath: '/apiDebug'
+      preLoaderRoute: typeof ApiDebugIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/network/': {
       id: '/network/'
       path: '/network'
@@ -174,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/network': typeof SettingsNetworkRoute
+  '/apiDebug': typeof ApiDebugIndexRoute
   '/network': typeof NetworkIndexRoute
   '/ruleManager': typeof RuleManagerIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -185,6 +200,7 @@ export interface FileRoutesByTo {
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/network': typeof SettingsNetworkRoute
+  '/apiDebug': typeof ApiDebugIndexRoute
   '/network': typeof NetworkIndexRoute
   '/ruleManager': typeof RuleManagerIndexRoute
   '/settings': typeof SettingsIndexRoute
@@ -198,6 +214,7 @@ export interface FileRoutesById {
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/network': typeof SettingsNetworkRoute
+  '/apiDebug/': typeof ApiDebugIndexRoute
   '/network/': typeof NetworkIndexRoute
   '/ruleManager/': typeof RuleManagerIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -212,6 +229,7 @@ export interface FileRouteTypes {
     | '/settings/certificates'
     | '/settings/general'
     | '/settings/network'
+    | '/apiDebug'
     | '/network'
     | '/ruleManager'
     | '/settings/'
@@ -222,6 +240,7 @@ export interface FileRouteTypes {
     | '/settings/certificates'
     | '/settings/general'
     | '/settings/network'
+    | '/apiDebug'
     | '/network'
     | '/ruleManager'
     | '/settings'
@@ -233,6 +252,7 @@ export interface FileRouteTypes {
     | '/settings/certificates'
     | '/settings/general'
     | '/settings/network'
+    | '/apiDebug/'
     | '/network/'
     | '/ruleManager/'
     | '/settings/'
@@ -243,6 +263,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  ApiDebugIndexRoute: typeof ApiDebugIndexRoute
   NetworkIndexRoute: typeof NetworkIndexRoute
   RuleManagerIndexRoute: typeof RuleManagerIndexRoute
 }
@@ -251,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  ApiDebugIndexRoute: ApiDebugIndexRoute,
   NetworkIndexRoute: NetworkIndexRoute,
   RuleManagerIndexRoute: RuleManagerIndexRoute,
 }
@@ -268,6 +290,7 @@ export const routeTree = rootRoute
         "/",
         "/about",
         "/settings",
+        "/apiDebug/",
         "/network/",
         "/ruleManager/"
       ]
@@ -298,6 +321,9 @@ export const routeTree = rootRoute
     "/settings/network": {
       "filePath": "settings/network.tsx",
       "parent": "/settings"
+    },
+    "/apiDebug/": {
+      "filePath": "apiDebug/index.tsx"
     },
     "/network/": {
       "filePath": "network/index.tsx"

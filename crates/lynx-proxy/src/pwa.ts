@@ -6,17 +6,20 @@ export const registerSW = () => {
         .register('/sw.js')
         .then((registration) => {
           console.log('SW registered: ', registration);
-          
+
           // Check for updates
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                if (
+                  newWorker.state === 'installed' &&
+                  navigator.serviceWorker.controller
+                ) {
                   // New content is available, show update notification
-                  if (confirm('新版本可用，是否刷新页面以更新？')) {
-                    window.location.reload();
-                  }
+                  // if (confirm('新版本可用，是否刷新页面以更新？')) {
+                  window.location.reload();
+                  // }
                 }
               });
             }
@@ -43,7 +46,7 @@ export const setupInstallPrompt = () => {
     e.preventDefault();
     // Stash the event so it can be triggered later
     deferredPrompt = e as BeforeInstallPromptEvent;
-    
+
     // Show install button or notification
     showInstallPromotion();
   });
@@ -67,16 +70,16 @@ export const installPWA = async () => {
   if (deferredPrompt) {
     // Show the install prompt
     deferredPrompt.prompt();
-    
+
     // Wait for the user to respond to the prompt
     const choiceResult = await deferredPrompt.userChoice;
-    
+
     if (choiceResult.outcome === 'accepted') {
       console.log('User accepted the install prompt');
     } else {
       console.log('User dismissed the install prompt');
     }
-    
+
     deferredPrompt = null;
   }
 };
