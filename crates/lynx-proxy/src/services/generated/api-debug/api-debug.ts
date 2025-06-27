@@ -28,6 +28,7 @@ import type {
   ResponseDataWrapperApiDebugResponse,
   ResponseDataWrapperApiDebugStats,
   ResponseDataWrapperTupleUnit,
+  ResponseDataWrapperU64,
   UpdateApiDebugRequest,
 } from '../utoipaAxum.schemas';
 
@@ -261,6 +262,74 @@ export const useCreateDebugEntry = <TError = void, TContext = unknown>(
   TContext
 > => {
   const mutationOptions = getCreateDebugEntryMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const clearAllDebugEntries = () => {
+  return customInstance<ResponseDataWrapperU64>({
+    url: `/api_debug/debug`,
+    method: 'DELETE',
+  });
+};
+
+export const getClearAllDebugEntriesMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof clearAllDebugEntries>>,
+    TError,
+    void,
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof clearAllDebugEntries>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ['clearAllDebugEntries'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof clearAllDebugEntries>>,
+    void
+  > = () => {
+    return clearAllDebugEntries();
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClearAllDebugEntriesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof clearAllDebugEntries>>
+>;
+
+export type ClearAllDebugEntriesMutationError = void;
+
+export const useClearAllDebugEntries = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof clearAllDebugEntries>>,
+      TError,
+      void,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof clearAllDebugEntries>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions = getClearAllDebugEntriesMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

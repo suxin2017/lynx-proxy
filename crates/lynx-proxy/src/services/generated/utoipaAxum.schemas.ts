@@ -1053,6 +1053,15 @@ export interface ResponseDataWrapperTupleUnit {
   message?: ResponseDataWrapperTupleUnitMessage;
 }
 
+export type ResponseDataWrapperU64Message = string | null;
+
+export interface ResponseDataWrapperU64 {
+  code: ResponseCode;
+  /** @minimum 0 */
+  data: number;
+  message?: ResponseDataWrapperU64Message;
+}
+
 export interface RuleListResponse {
   /** @minimum 0 */
   page: number;

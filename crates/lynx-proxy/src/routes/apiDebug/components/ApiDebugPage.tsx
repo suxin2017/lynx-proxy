@@ -1,16 +1,24 @@
-import { message, Segmented } from 'antd';
+import { message, Segmented, Button } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import { RequestBuilder } from './RequestBuilder';
 import { HeadersEditor } from './HeadersEditor';
 import { QueryParamsEditor } from './QueryParamsEditor';
 import { BodyEditor } from './BodyEditor';
 import { ResponseViewer } from './ResponseViewer';
 import { CurlImportModal } from './CurlImportModal';
+import { RequestHistory } from './RequestHistory';
 import { useExecuteApiRequest } from '../../../services/generated/api-debug-executor/api-debug-executor';
-import { HttpMethod } from '../../../services/generated/utoipaAxum.schemas';
+import { getListDebugEntriesQueryKey } from '../../../services/generated/api-debug/api-debug';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  HttpMethod,
+  ApiDebugResponse,
+} from '../../../services/generated/utoipaAxum.schemas';
 import { QueryParamItem, FormattedResponse } from './types';
 import { CommonCard } from '@/routes/settings/components/CommonCard';
 import { useApiDebug } from './store';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const TAB_KEYS = {
   PARAMS: 'params',
@@ -20,6 +28,9 @@ const TAB_KEYS = {
 
 export function ApiDebugPage() {
   const [activeTab, setActiveTab] = useState<string>(TAB_KEYS.PARAMS);
+  const [historyVisible, setHistoryVisible] = useState<boolean>(true);
+  const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const {
     method,
@@ -37,6 +48,7 @@ export function ApiDebugPage() {
     importCurl,
     updateUrlAndParams,
     updateParamsAndUrl,
+    loadFromApiDebugResponse,
   } = useApiDebug();
 
   // 自定义的查询参数设置函数，同时更新URL
@@ -67,11 +79,15 @@ export function ApiDebugPage() {
           };
           setResponse(formattedResponse);
         }
-        message.success('Request completed successfully');
+        // 自动刷新历史记录
+        queryClient.invalidateQueries({
+          queryKey: getListDebugEntriesQueryKey(),
+        });
+        message.success(t('apiDebug.requestCompleted'));
       },
       onError: (error) => {
         console.error('Request failed:', error);
-        message.error('Request failed');
+        message.error(t('apiDebug.requestFailed'));
         setResponse(null);
       },
     },
@@ -93,7 +109,7 @@ export function ApiDebugPage() {
 
   const handleSendRequest = () => {
     if (!url) {
-      message.warning('Please enter a URL');
+      message.warning(t('apiDebug.enterUrl'));
       return;
     }
 
@@ -148,10 +164,14 @@ export function ApiDebugPage() {
     importCurl(data);
   };
 
+  const handleLoadFromHistory = (request: ApiDebugResponse) => {
+    loadFromApiDebugResponse(request);
+  };
+
   const tabItems = [
     {
       key: TAB_KEYS.PARAMS,
-      label: `Params (${queryParams.filter((p) => p.enabled).length})`,
+      label: `${t('apiDebug.params')} (${queryParams.filter((p) => p.enabled).length})`,
       children: (
         <QueryParamsEditor
           queryParams={queryParams}
@@ -161,12 +181,12 @@ export function ApiDebugPage() {
     },
     {
       key: TAB_KEYS.HEADERS,
-      label: `Headers (${headers.filter((h) => h.enabled).length})`,
+      label: `${t('apiDebug.headers')} (${headers.filter((h) => h.enabled).length})`,
       children: <HeadersEditor headers={headers} onChange={setHeaders} />,
     },
     {
       key: TAB_KEYS.BODY,
-      label: 'Body',
+      label: t('apiDebug.body'),
       children: (
         <BodyEditor body={body} onBodyChange={setBody} headers={headers} />
       ),
@@ -179,53 +199,84 @@ export function ApiDebugPage() {
   };
 
   return (
-    <CommonCard title="API Debugger" className="flex flex-col">
-      {/* Request Builder */}
-      <div className="mt-2 shadow-sm">
-        <RequestBuilder
-          method={method}
-          url={url}
-          onMethodChange={setMethod}
-          onUrlChange={handleUrlChange}
-          onSend={handleSendRequest}
-          onImportCurl={() => setCurlModalVisible(true)}
-          isLoading={executeRequestMutation.isPending}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="mt-px flex flex-1 overflow-hidden">
-        {/* Left Panel - Request Configuration */}
-        <div className="w-1/2 overflow-auto border-r border-gray-300 dark:border-gray-500">
-          <div className="py-4">
-            <Segmented
-              value={activeTab}
-              onChange={setActiveTab}
-              options={tabItems.map((item) => ({
-                label: item.label,
-                value: item.key,
-              }))}
-            />
-            <div className="h-full">{renderTabContent()}</div>
-          </div>
-        </div>
-
-        {/* Right Panel - Response */}
-        <div className="w-1/2 overflow-auto">
-          <ResponseViewer
-            response={response}
-            isLoading={executeRequestMutation.isPending}
-            error={executeRequestMutation.error?.message}
+    <div className="flex flex-1 overflow-hidden">
+      {/* History Sidebar */}
+      {historyVisible && (
+        <div className="w-80 flex-shrink-0 border-r border-gray-300 dark:border-gray-500">
+          <RequestHistory
+            onLoadRequest={handleLoadFromHistory}
+            className="h-full"
           />
         </div>
-      </div>
+      )}
 
-      {/* cURL Import Modal */}
-      <CurlImportModal
-        visible={curlModalVisible}
-        onClose={() => setCurlModalVisible(false)}
-        onImport={handleImportCurl}
-      />
-    </CommonCard>
+      {/* Main Content */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <CommonCard
+          title={
+            <div className="flex items-center gap-2">
+              <Button
+                type="text"
+                size="small"
+                icon={
+                  historyVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
+                }
+                onClick={() => setHistoryVisible(!historyVisible)}
+                className="text-gray-500 hover:text-blue-500"
+              />
+              <span>{t('apiDebug.title')}</span>
+            </div>
+          }
+          className="flex flex-1 flex-col"
+        >
+          {/* Request Builder */}
+          <div className="mt-2 shadow-sm">
+            <RequestBuilder
+              method={method}
+              url={url}
+              onMethodChange={setMethod}
+              onUrlChange={handleUrlChange}
+              onSend={handleSendRequest}
+              onImportCurl={() => setCurlModalVisible(true)}
+              isLoading={executeRequestMutation.isPending}
+            />
+          </div>
+
+          {/* Main Content */}
+          <div className="mt-px flex flex-1 overflow-hidden">
+            {/* Left Panel - Request Configuration */}
+            <div className="w-1/2 overflow-auto border-r border-gray-300 dark:border-gray-500">
+              <div className="py-4">
+                <Segmented
+                  value={activeTab}
+                  onChange={setActiveTab}
+                  options={tabItems.map((item) => ({
+                    label: item.label,
+                    value: item.key,
+                  }))}
+                />
+                <div className="h-full">{renderTabContent()}</div>
+              </div>
+            </div>
+
+            {/* Right Panel - Response */}
+            <div className="w-1/2 overflow-auto">
+              <ResponseViewer
+                response={response}
+                isLoading={executeRequestMutation.isPending}
+                error={executeRequestMutation.error?.message}
+              />
+            </div>
+          </div>
+
+          {/* cURL Import Modal */}
+          <CurlImportModal
+            visible={curlModalVisible}
+            onClose={() => setCurlModalVisible(false)}
+            onImport={handleImportCurl}
+          />
+        </CommonCard>
+      </div>
+    </div>
   );
 }

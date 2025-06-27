@@ -206,6 +206,28 @@ async fn get_debug_stats(
     Ok(Json(ok(result)))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/debug",
+    tags = ["API Debug"],
+    responses(
+        (status = 200, description = "All API debug entries cleared successfully", body = ResponseDataWrapper<u64>),
+        (status = 500, description = "Failed to clear API debug entries")
+    )
+)]
+async fn clear_all_debug_entries(
+    State(RouteState { db, .. }): State<RouteState>,
+) -> Result<Json<ResponseDataWrapper<u64>>, StatusCode> {
+    let dao = ApiDebugDao::new(db);
+
+    let result = dao.clear_all().await.map_err(|e| {
+        tracing::error!("Failed to clear all API debug entries: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    Ok(Json(ok(result)))
+}
+
 pub fn router(state: RouteState) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(create_debug_entry))
@@ -214,5 +236,6 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(update_debug_entry))
         .routes(routes!(delete_debug_entry))
         .routes(routes!(get_debug_stats))
+        .routes(routes!(clear_all_debug_entries))
         .with_state(state)
 }

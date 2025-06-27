@@ -71,7 +71,8 @@ pub struct Model {
     pub method: HttpMethod,
     /// Request URL
     #[sea_orm(column_type = "Text")]
-    pub url: String,    /// Request headers as JSON
+    pub url: String,
+    /// Request headers as JSON
     #[sea_orm(column_type = "Json", nullable)]
     pub headers: Option<JsonValue>,
     /// Request body content (binary data)
@@ -85,14 +86,16 @@ pub struct Model {
     /// Request status
     pub status: RequestStatus,
     /// Response status code
-    pub response_status: Option<i32>,    /// Response headers as JSON
+    pub response_status: Option<i32>,
+    /// Response headers as JSON
     #[sea_orm(column_type = "Json", nullable)]
     pub response_headers: Option<JsonValue>,
     /// Response body content (binary data)
     #[sea_orm(column_type = "Blob", nullable)]
     pub response_body: Option<Vec<u8>>,
     /// Response time in milliseconds
-    pub response_time: Option<i32>,    /// Error message if request failed
+    pub response_time: Option<i32>,
+    /// Error message if request failed
     #[sea_orm(column_type = "Text", nullable)]
     pub error_message: Option<String>,
     #[serde(skip)]
@@ -136,7 +139,8 @@ impl ActiveModelBehavior for ActiveModel {
     }
 }
 
-impl Model {    /// Create a new API debug request
+impl Model {
+    /// Create a new API debug request
     pub fn new_request(name: String, method: HttpMethod, url: String) -> Self {
         let now = chrono::Utc::now().timestamp();
         Self {
@@ -192,7 +196,9 @@ impl Model {    /// Create a new API debug request
 
     /// Get request body as string (if it's valid UTF-8)
     pub fn get_body_as_string(&self) -> Option<String> {
-        self.body.as_ref().and_then(|bytes| String::from_utf8(bytes.clone()).ok())
+        self.body
+            .as_ref()
+            .and_then(|bytes| String::from_utf8(bytes.clone()).ok())
     }
 
     /// Set request body from bytes
@@ -212,7 +218,9 @@ impl Model {    /// Create a new API debug request
 
     /// Get response body as string (if it's valid UTF-8)
     pub fn get_response_body_as_string(&self) -> Option<String> {
-        self.response_body.as_ref().and_then(|bytes| String::from_utf8(bytes.clone()).ok())
+        self.response_body
+            .as_ref()
+            .and_then(|bytes| String::from_utf8(bytes.clone()).ok())
     }
 
     /// Set response body from bytes
@@ -254,7 +262,10 @@ impl Model {    /// Create a new API debug request
     }
 
     /// Set response body from JSON value
-    pub fn set_response_body_from_json(&mut self, json: &JsonValue) -> Result<(), serde_json::Error> {
+    pub fn set_response_body_from_json(
+        &mut self,
+        json: &JsonValue,
+    ) -> Result<(), serde_json::Error> {
         let json_string = serde_json::to_string(json)?;
         self.response_body = Some(json_string.into_bytes());
         Ok(())

@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { HeaderItem, QueryParamItem, FormattedResponse } from '../types';
-import { HttpMethod } from '../../../../services/generated/utoipaAxum.schemas';
+import {
+  HttpMethod,
+  ApiDebugResponse,
+} from '../../../../services/generated/utoipaAxum.schemas';
 import { IViewMessageEventStoreValue } from '../../../../store';
 
 // 定义状态类型
@@ -221,8 +224,68 @@ const apiDebugSlice = createSlice({
     resetState: () => {
       return initialState;
     },
+
+    loadFromApiDebugResponse: (
+      state,
+      action: PayloadAction<ApiDebugResponse>,
+    ) => {
+      const request = action.payload;
+
+      // Set basic request data
+      state.method = request.method;
+      state.url = request.url;
+
+      // Convert headers to HeaderItem array
+      const headersArray: HeaderItem[] = [];
+      if (request.headers && typeof request.headers === 'object') {
+        Object.entries(request.headers).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            headersArray.push({ key, value, enabled: true });
+          }
+        });
+      }
+      state.headers = headersArray;
+
+      // Parse query parameters from URL
+      state.queryParams = parseUrlParams(request.url);
+
+      // Set body
+      state.body = request.body || '';
+
+      // Set response if available
+      if (request.responseStatus) {
+        const formattedResponse: FormattedResponse = {
+          status: request.responseStatus,
+          statusText: getStatusText(request.responseStatus),
+          headers: (request.responseHeaders as Record<string, string>) || {},
+          body: request.responseBody || '',
+          responseTime: request.responseTime || 0,
+          size: request.responseBody
+            ? new Blob([request.responseBody]).size
+            : 0,
+        };
+        state.response = formattedResponse;
+      } else {
+        state.response = null;
+      }
+    },
   },
 });
+
+// Helper function to get status text
+const getStatusText = (status: number): string => {
+  const statusTexts: Record<number, string> = {
+    200: 'OK',
+    201: 'Created',
+    204: 'No Content',
+    400: 'Bad Request',
+    401: 'Unauthorized',
+    403: 'Forbidden',
+    404: 'Not Found',
+    500: 'Internal Server Error',
+  };
+  return statusTexts[status] || 'Unknown';
+};
 
 // 导出 actions
 export const {
@@ -239,6 +302,7 @@ export const {
   updateUrlAndParams,
   updateParamsAndUrl,
   resetState,
+  loadFromApiDebugResponse,
 } = apiDebugSlice.actions;
 
 // 导出 reducer

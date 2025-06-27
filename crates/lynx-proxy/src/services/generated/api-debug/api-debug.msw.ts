@@ -15,6 +15,7 @@ import type {
   ResponseDataWrapperApiDebugResponse,
   ResponseDataWrapperApiDebugStats,
   ResponseDataWrapperTupleUnit,
+  ResponseDataWrapperU64,
 } from '../utoipaAxum.schemas';
 
 export const getListDebugEntriesResponseMock = (
@@ -149,6 +150,18 @@ export const getCreateDebugEntryResponseMock = (
     updatedAt: faker.number.int({ min: undefined, max: undefined }),
     url: faker.string.alpha(20),
   },
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getClearAllDebugEntriesResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperU64> = {},
+): ResponseDataWrapperU64 => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: faker.number.int({ min: 0, max: undefined }),
   message: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.string.alpha(20), null]),
     undefined,
@@ -365,6 +378,29 @@ export const getCreateDebugEntryMockHandler = (
   });
 };
 
+export const getClearAllDebugEntriesMockHandler = (
+  overrideResponse?:
+    | ResponseDataWrapperU64
+    | ((
+        info: Parameters<Parameters<typeof http.delete>[1]>[0],
+      ) => Promise<ResponseDataWrapperU64> | ResponseDataWrapperU64),
+) => {
+  return http.delete('*/api_debug/debug', async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getClearAllDebugEntriesResponseMock(),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  });
+};
+
 export const getGetDebugStatsMockHandler = (
   overrideResponse?:
     | ResponseDataWrapperApiDebugStats
@@ -467,6 +503,7 @@ export const getDeleteDebugEntryMockHandler = (
 export const getApiDebugMock = () => [
   getListDebugEntriesMockHandler(),
   getCreateDebugEntryMockHandler(),
+  getClearAllDebugEntriesMockHandler(),
   getGetDebugStatsMockHandler(),
   getGetDebugEntryMockHandler(),
   getUpdateDebugEntryMockHandler(),

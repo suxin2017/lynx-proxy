@@ -14,9 +14,11 @@ import {
   updateUrlAndParams,
   updateParamsAndUrl,
   resetState,
+  loadFromApiDebugResponse,
 } from './apiDebugSlice';
 import { HeaderItem, QueryParamItem, FormattedResponse } from '../types';
 import { IViewMessageEventStoreValue } from '../../../../store';
+import { ApiDebugResponse } from '../../../../services/generated/utoipaAxum.schemas';
 
 export const useApiDebug = () => {
   const dispatch = useDispatch();
@@ -53,6 +55,9 @@ export const useApiDebug = () => {
     updateUrlAndParams: (url: string) => dispatch(updateUrlAndParams(url)),
     updateParamsAndUrl: (params: QueryParamItem[]) =>
       dispatch(updateParamsAndUrl(params)),
+
+    loadFromApiDebugResponse: (request: ApiDebugResponse) =>
+      dispatch(loadFromApiDebugResponse(request)),
 
     resetState: () => dispatch(resetState()),
   };

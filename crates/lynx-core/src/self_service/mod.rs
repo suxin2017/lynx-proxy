@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use crate::client::ReqwestClient;
 use crate::client::request_client::RequestClientExt;
-use crate::client::{RequestClient, ReqwestClient};
 use crate::common::Req;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
@@ -17,7 +17,6 @@ use axum::response::Response;
 use file_service::get_file;
 use http::Method;
 use tower::ServiceExt;
-use tracing_subscriber::field::debug;
 use utoipa::openapi::OpenApi;
 use utoipa::openapi::Server;
 use utoipa_axum::router::OpenApiRouter;

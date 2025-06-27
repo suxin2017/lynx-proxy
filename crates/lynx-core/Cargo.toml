@@ -43,7 +43,7 @@ hyper-rustls = { version = "0.27.3", default-features = false, features = [
     "http2",
     "tls12",
 ] }
-reqwest = { version = "0.12.18", features = [
+reqwest = { version = "0.12.18", default-features = false, features = [
     "rustls-tls-manual-roots",
     "gzip",
     "json",
@@ -79,7 +79,12 @@ mime_guess = "=2.0.5"
 glob-match = "0.2.1"
 regex = "1.11.1"
 base64 = "0.22.1"
-async-compression = { version = "0.4.18", features = ["gzip", "deflate", "brotli", "tokio"] }
+async-compression = { version = "0.4.18", features = [
+    "gzip",
+    "deflate",
+    "brotli",
+    "tokio",
+] }
 lynx-cert = { path = "../lynx-cert" }
 lynx-db = { path = "../lynx-db" }
 pin-project-lite = { workspace = true }

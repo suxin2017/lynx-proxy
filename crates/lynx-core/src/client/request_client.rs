@@ -1,10 +1,10 @@
-use std::{fmt::Debug, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use http::Extensions;
 use rcgen::Certificate;
 
-use crate::client::{ReqwestClient, ReqwestClientBuilder, request_client};
+use crate::client::{ReqwestClient, ReqwestClientBuilder};
 
 use super::{
     http_client::{HttpClient, HttpClientBuilder},
