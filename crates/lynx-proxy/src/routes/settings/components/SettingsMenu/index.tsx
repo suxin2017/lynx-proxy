@@ -15,6 +15,11 @@ const menuConfig = [
     path: '/settings/network',
   },
   {
+    key: 'clientProxy',
+    translationKey: 'settings.menu.clientProxy',
+    path: '/settings/client-proxy',
+  },
+  {
     key: 'certificates',
     translationKey: 'settings.menu.certificates',
     path: '/settings/certificates',

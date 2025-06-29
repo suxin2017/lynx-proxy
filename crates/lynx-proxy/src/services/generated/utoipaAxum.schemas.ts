@@ -160,6 +160,11 @@ export const CaptureType = {
   contains: 'contains',
 } as const;
 
+export interface ClientProxyConfig {
+  apiDebug: ProxyConfig;
+  proxyRequests: ProxyConfig;
+}
+
 /**
  * 复杂捕获规则（支持嵌套逻辑）
  */
@@ -702,6 +707,13 @@ export interface ModifyResponseConfig {
   modifyStatusCode?: ModifyResponseConfigModifyStatusCode;
 }
 
+export type ProxyConfigUrl = string | null;
+
+export interface ProxyConfig {
+  type: string;
+  url?: ProxyConfigUrl;
+}
+
 export type ProxyForwardConfigTargetAuthority = string | null;
 
 export type ProxyForwardConfigTargetPath = string | null;
@@ -891,6 +903,19 @@ export interface ResponseDataWrapperCaptureSwitch {
   code: ResponseCode;
   data: ResponseDataWrapperCaptureSwitchData;
   message?: ResponseDataWrapperCaptureSwitchMessage;
+}
+
+export type ResponseDataWrapperClientProxyConfigData = {
+  apiDebug: ProxyConfig;
+  proxyRequests: ProxyConfig;
+};
+
+export type ResponseDataWrapperClientProxyConfigMessage = string | null;
+
+export interface ResponseDataWrapperClientProxyConfig {
+  code: ResponseCode;
+  data: ResponseDataWrapperClientProxyConfigData;
+  message?: ResponseDataWrapperClientProxyConfigMessage;
 }
 
 export type ResponseDataWrapperCreateRuleResponseData = {

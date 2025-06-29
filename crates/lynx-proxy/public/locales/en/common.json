@@ -31,7 +31,34 @@
       }
     },
     "messages": {
-      "saveSuccess": "Saved successfully"
+      "saveSuccess": "Saved successfully",
+      "saveError": "Save failed, please try again"
+    },
+    "clientProxy": {
+      "title": "Client Proxy Configuration",
+      "description": "Configure client proxy settings for proxy requests and API debugging",
+      "proxyRequests": {
+        "title": "Proxy Requests Client Proxy",
+        "description": "Set the client proxy used for proxy requests"
+      },
+      "apiDebug": {
+        "title": "API Debug Client Proxy",
+        "description": "Set the client proxy used for API debugging"
+      },
+      "proxyType": {
+        "label": "Proxy Type",
+        "none": "No Proxy",
+        "system": "Use System Proxy",
+        "custom": "Custom Proxy"
+      },
+      "proxyUrl": {
+        "label": "Proxy URL",
+        "placeholder": "http://proxy.example.com:8080",
+        "validation": {
+          "required": "Please enter proxy URL",
+          "format": "Invalid proxy URL format, only http or https protocols are supported"
+        }
+      }
     }
   },
   "settings": {
@@ -39,7 +66,8 @@
     "menu": {
       "general": "General Settings",
       "certificates": "Certificates",
-      "network": "Network"
+      "network": "Network",
+      "clientProxy": "Client Proxy"
     },
     "certificate": {
       "title": "Certificate Management",

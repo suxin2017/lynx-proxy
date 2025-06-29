@@ -8,7 +8,8 @@
     "menu": {
       "general": "常规",
       "certificates": "证书",
-      "network": "网络"
+      "network": "网络",
+      "clientProxy": "客户端代理"
     },
     "general": {
       "title": "通用设置",
@@ -150,6 +151,32 @@
     },
     "messages": {
       "saveSuccess": "保存成功"
+    },
+    "clientProxy": {
+      "title": "客户端代理配置",
+      "description": "配置代理请求和API调试的客户端代理设置",
+      "proxyRequests": {
+        "title": "代理请求客户端代理",
+        "description": "设置代理请求时使用的客户端代理"
+      },
+      "apiDebug": {
+        "title": "API调试客户端代理",
+        "description": "设置API调试时使用的客户端代理"
+      },
+      "proxyType": {
+        "label": "代理类型",
+        "none": "不使用代理",
+        "system": "使用系统代理",
+        "custom": "自定义代理"
+      },
+      "proxyUrl": {
+        "label": "代理地址",
+        "placeholder": "http://proxy.example.com:8080",
+        "validation": {
+          "required": "请输入代理地址",
+          "format": "代理地址格式错误，仅支持 http 或 https 协议"
+        }
+      }
     },
     "reset": "重置"
   },

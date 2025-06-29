@@ -13,6 +13,7 @@ use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
+use lynx_db::dao::client_proxy_dao::ClientProxyDao;
 use lynx_db::migration::Migrator;
 use rcgen::Certificate;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
@@ -180,12 +181,41 @@ impl ProxyServer {
         tokio::spawn(async move {
             loop {
                 let (tcp_stream, client_addr) = listener.accept().await.expect("accept failed");
-
                 let tls_acceptor = tls_acceptor.clone();
+
+                // 获取客户端代理配置
+                let client_proxy_dao = ClientProxyDao::new(db_connect.clone());
+                let client_proxy_config = client_proxy_dao
+                    .get_client_proxy_config()
+                    .await
+                    .unwrap_or_default();
+
+                tracing::info!("Client proxy configuration loaded:");
+                tracing::info!(
+                    "  Proxy requests: type={}, url={:?}",
+                    client_proxy_config.proxy_requests.proxy_type,
+                    client_proxy_config.proxy_requests.url
+                );
+                tracing::info!(
+                    "  API debug: type={}, url={:?}",
+                    client_proxy_config.api_debug.proxy_type,
+                    client_proxy_config.api_debug.url
+                );
+
+                let proxy_requests_type = crate::client::ProxyType::from_proxy_config(
+                    &client_proxy_config.proxy_requests.proxy_type,
+                    client_proxy_config.proxy_requests.url.as_ref(),
+                );
+                let api_debug_proxy_type = crate::client::ProxyType::from_proxy_config(
+                    &client_proxy_config.api_debug.proxy_type,
+                    client_proxy_config.api_debug.url.as_ref(),
+                );
 
                 let request_client = Arc::new(
                     RequestClientBuilder::default()
                         .custom_certs(client_custom_certs.clone())
+                        .proxy_requests_config(proxy_requests_type)
+                        .api_debug_proxy_config(api_debug_proxy_type)
                         .build()
                         .expect("build request client error"),
                 );
