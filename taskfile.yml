@@ -96,15 +96,8 @@ tasks:
       - git cliff -o CHANGELOG.md
       - git add .
       - git commit --amend --no-edit
-      - git push
-      - git push --tags
-
-  generate-type-defined:
-    aliases: [gen-ty]
-    dir: crates/lynx-core
-    desc: Generate type defined
-    cmds:
-      - cargo test export_bindings
+      # - git push
+      # - git push --tags
 
   update-main-branch:
     desc: Update remote branch
