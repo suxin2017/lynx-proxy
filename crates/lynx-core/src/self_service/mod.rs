@@ -99,6 +99,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         .nest("/certificate", api::certificate::router(state.clone()))
         .nest("/base_info", base_info::router(state.clone()))
         .nest("/https_capture", api::https_capture::router(state.clone()))
+        .nest("/client_proxy", api::client_proxy::router(state.clone()))
         .nest("/api_debug", api::api_debug::router(state.clone()))
         .nest(
             "/api_debug_executor",

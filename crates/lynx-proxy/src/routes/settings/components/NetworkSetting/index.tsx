@@ -155,6 +155,19 @@ export const NetworkSetting: React.FC = () => {
   const initialValues = httpsCaptureData?.data;
 
   const [messageApi, context] = message.useMessage();
+
+  const handleSave = async () => {
+    try {
+      const formData = await form.validateFields();
+      await updateHttpsCaptureFilter({
+        data: formData,
+      });
+      messageApi.success(t('networkSetting.messages.saveSuccess'));
+    } catch (error) {
+      console.error('Save failed:', error);
+    }
+  };
+
   if (isLoading) {
     return <PageLoading />;
   }
@@ -168,13 +181,7 @@ export const NetworkSetting: React.FC = () => {
           <Button
             loading={isSubmiting}
             type="primary"
-            onClick={async () => {
-              const formData = await form.validateFields();
-              await updateHttpsCaptureFilter({
-                data: formData,
-              });
-              messageApi.success(t('networkSetting.messages.saveSuccess'));
-            }}
+            onClick={handleSave}
           >
             {t('networkSetting.save')}
           </Button>
