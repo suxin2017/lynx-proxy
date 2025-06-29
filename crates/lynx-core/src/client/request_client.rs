@@ -4,7 +4,7 @@ use anyhow::Result;
 use http::Extensions;
 use rcgen::Certificate;
 
-use crate::client::{ReqwestClient, ReqwestClientBuilder};
+use crate::client::{ProxyType, ReqwestClient, ReqwestClientBuilder};
 
 use super::{
     http_client::{HttpClient, HttpClientBuilder},
@@ -22,6 +22,8 @@ pub struct RequestClient {
 pub struct RequestClientBuilder {
     custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
     api_custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
+    proxy_requests_config: ProxyType,
+    api_debug_proxy_config: ProxyType,
 }
 
 impl RequestClientBuilder {
@@ -37,12 +39,23 @@ impl RequestClientBuilder {
         self
     }
 
+    pub fn proxy_requests_config(mut self, proxy_config: ProxyType) -> Self {
+        self.proxy_requests_config = proxy_config;
+        self
+    }
+
+    pub fn api_debug_proxy_config(mut self, proxy_config: ProxyType) -> Self {
+        self.api_debug_proxy_config = proxy_config;
+        self
+    }
+
     pub fn build(&self) -> Result<RequestClient> {
         let custom_certs = self.custom_certs.clone();
 
         let http_client = Arc::new(
             HttpClientBuilder::default()
                 .custom_certs(custom_certs.clone())
+                .proxy_config(self.proxy_requests_config.clone())
                 .build()?,
         );
         let websocket_client = Arc::new(
@@ -54,6 +67,7 @@ impl RequestClientBuilder {
         let reqwest_client = Arc::new(
             ReqwestClientBuilder::default()
                 .custom_certs(self.api_custom_certs.clone())
+                .proxy_config(self.api_debug_proxy_config.clone())
                 .build()?,
         );
 

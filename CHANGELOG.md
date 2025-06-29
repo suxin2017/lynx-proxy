@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.0] - 2025-06-27
+## [unreleased]
 
 ### 🚀 Features
 
@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Better display of status time ([#28](https://github.com/suxin2017/lynx-server/issues/28))
 - Support inject script ([#29](https://github.com/suxin2017/lynx-server/issues/29))
 - *(core)* Support api request ([#27](https://github.com/suxin2017/lynx-server/issues/27))
+- Support client proxy ([#32](https://github.com/suxin2017/lynx-server/issues/32))
 
 ### 🐛 Bug Fixes
 
@@ -39,7 +40,6 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
-- Ui assert not found
 - Window local ip ([#33](https://github.com/suxin2017/lynx-server/issues/33))
 - *(ui)* Clear request log and content ui bug in request tree struce  ([#35](https://github.com/suxin2017/lynx-server/issues/35))
 - Unable to create dir on startup  ([#36](https://github.com/suxin2017/lynx-server/issues/36))
@@ -53,6 +53,12 @@ All notable changes to this project will be documented in this file.
 
 - Use include dir replace static dir ([#32](https://github.com/suxin2017/lynx-server/issues/32))
 - Refactoring everything ([#44](https://github.com/suxin2017/lynx-server/issues/44))
+
+## [0.1.1] - 2025-02-14
+
+### 🐛 Bug Fixes
+
+- Ui assert not found
 
 ## [0.1.0] - 2025-02-13
 

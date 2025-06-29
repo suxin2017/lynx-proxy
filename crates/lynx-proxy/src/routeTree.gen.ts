@@ -20,6 +20,7 @@ import { Route as NetworkIndexImport } from './routes/network/index'
 import { Route as ApiDebugIndexImport } from './routes/apiDebug/index'
 import { Route as SettingsNetworkImport } from './routes/settings/network'
 import { Route as SettingsGeneralImport } from './routes/settings/general'
+import { Route as SettingsClientProxyImport } from './routes/settings/client-proxy'
 import { Route as SettingsCertificatesImport } from './routes/settings/certificates'
 
 // Create/Update Routes
@@ -78,6 +79,12 @@ const SettingsGeneralRoute = SettingsGeneralImport.update({
   getParentRoute: () => SettingsRoute,
 } as any)
 
+const SettingsClientProxyRoute = SettingsClientProxyImport.update({
+  id: '/client-proxy',
+  path: '/client-proxy',
+  getParentRoute: () => SettingsRoute,
+} as any)
+
 const SettingsCertificatesRoute = SettingsCertificatesImport.update({
   id: '/certificates',
   path: '/certificates',
@@ -114,6 +121,13 @@ declare module '@tanstack/react-router' {
       path: '/certificates'
       fullPath: '/settings/certificates'
       preLoaderRoute: typeof SettingsCertificatesImport
+      parentRoute: typeof SettingsImport
+    }
+    '/settings/client-proxy': {
+      id: '/settings/client-proxy'
+      path: '/client-proxy'
+      fullPath: '/settings/client-proxy'
+      preLoaderRoute: typeof SettingsClientProxyImport
       parentRoute: typeof SettingsImport
     }
     '/settings/general': {
@@ -165,6 +179,7 @@ declare module '@tanstack/react-router' {
 
 interface SettingsRouteChildren {
   SettingsCertificatesRoute: typeof SettingsCertificatesRoute
+  SettingsClientProxyRoute: typeof SettingsClientProxyRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
   SettingsNetworkRoute: typeof SettingsNetworkRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -172,6 +187,7 @@ interface SettingsRouteChildren {
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsCertificatesRoute: SettingsCertificatesRoute,
+  SettingsClientProxyRoute: SettingsClientProxyRoute,
   SettingsGeneralRoute: SettingsGeneralRoute,
   SettingsNetworkRoute: SettingsNetworkRoute,
   SettingsIndexRoute: SettingsIndexRoute,
@@ -186,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/certificates': typeof SettingsCertificatesRoute
+  '/settings/client-proxy': typeof SettingsClientProxyRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/network': typeof SettingsNetworkRoute
   '/apiDebug': typeof ApiDebugIndexRoute
@@ -198,6 +215,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/settings/certificates': typeof SettingsCertificatesRoute
+  '/settings/client-proxy': typeof SettingsClientProxyRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/network': typeof SettingsNetworkRoute
   '/apiDebug': typeof ApiDebugIndexRoute
@@ -212,6 +230,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/certificates': typeof SettingsCertificatesRoute
+  '/settings/client-proxy': typeof SettingsClientProxyRoute
   '/settings/general': typeof SettingsGeneralRoute
   '/settings/network': typeof SettingsNetworkRoute
   '/apiDebug/': typeof ApiDebugIndexRoute
@@ -227,6 +246,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/settings'
     | '/settings/certificates'
+    | '/settings/client-proxy'
     | '/settings/general'
     | '/settings/network'
     | '/apiDebug'
@@ -238,6 +258,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/settings/certificates'
+    | '/settings/client-proxy'
     | '/settings/general'
     | '/settings/network'
     | '/apiDebug'
@@ -250,6 +271,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/settings'
     | '/settings/certificates'
+    | '/settings/client-proxy'
     | '/settings/general'
     | '/settings/network'
     | '/apiDebug/'
@@ -305,6 +327,7 @@ export const routeTree = rootRoute
       "filePath": "settings.tsx",
       "children": [
         "/settings/certificates",
+        "/settings/client-proxy",
         "/settings/general",
         "/settings/network",
         "/settings/"
@@ -312,6 +335,10 @@ export const routeTree = rootRoute
     },
     "/settings/certificates": {
       "filePath": "settings/certificates.tsx",
+      "parent": "/settings"
+    },
+    "/settings/client-proxy": {
+      "filePath": "settings/client-proxy.tsx",
       "parent": "/settings"
     },
     "/settings/general": {
