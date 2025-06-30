@@ -195,6 +195,11 @@ function parseCurlCommand(curlCommand: string): ParsedCurlResult {
     }
   }
 
+  // 如果有请求体但没有明确指定方法，默认为POST（符合curl行为）
+  if (result.body && result.method === 'GET') {
+    result.method = 'POST';
+  }
+
   return result;
 }
 

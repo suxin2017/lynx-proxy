@@ -590,7 +590,38 @@
     "success": "Success",
     "failed": "Failed",
     "pending": "Pending",
-    "timeout": "Timeout",
-    "importCurl": "Import cURL"
+    "importCurl": "Import cURL",
+    "responseViewer": {
+      "sendingRequest": "Sending request...",
+      "requestFailed": "Request Failed",
+      "noResponse": "No Response",
+      "noResponseDescription": "Send a request to see the response here",
+      "response": "Response",
+      "time": "Time",
+      "size": "Size",
+      "bytes": "bytes",
+      "status": "Status",
+      "responseTime": "Response Time",
+      "contentSize": "Content Size",
+      "headers": "Headers",
+      "body": "Body",
+      "noHeaders": "No headers",
+      "noBodyContent": "No body content"
+    },
+    "queryParamsEditor": {
+      "title": "Query Parameters",
+      "addParameter": "Add Parameter",
+      "noParameters": "No query parameters. Click \"Add Parameter\" to get started.",
+      "parameterKey": "Parameter key",
+      "parameterValue": "Parameter value"
+    },
+    "headersEditor": {
+      "title": "Headers",
+      "quickAdd": "Quick Add",
+      "addHeader": "Add Header",
+      "noHeaders": "No headers added. Click \"Add Header\" to add one.",
+      "key": "Key",
+      "value": "Value"
+    }
   }
 }

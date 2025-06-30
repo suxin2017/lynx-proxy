@@ -202,7 +202,7 @@ export function ApiDebugPage() {
     <div className="flex flex-1 overflow-hidden">
       {/* History Sidebar */}
       {historyVisible && (
-        <div className="w-80 flex-shrink-0 border-r border-gray-300 dark:border-gray-500">
+        <div className="w-80 flex-shrink-0 ">
           <RequestHistory
             onLoadRequest={handleLoadFromHistory}
             className="h-full"
