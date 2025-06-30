@@ -1,4 +1,5 @@
 import {
+  RiCodeBoxLine,
   RiFileListLine,
   RiMoonLine,
   RiPlanetFill,
@@ -32,6 +33,11 @@ export const SideBar: React.FC = (_props) => {
       key: '/ruleManager',
       title: t('sideBar.rules'),
       icon: <RiFileListLine className="text-slate-600" size={24} />,
+    },
+    {
+      key: '/apiDebug',
+      title: t('sideBar.apiDebug'),
+      icon: <RiCodeBoxLine className="text-slate-600" size={24} />,
     },
   ];
   const bottomMenuConfig = [

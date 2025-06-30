@@ -8,7 +8,8 @@
     "menu": {
       "general": "常规",
       "certificates": "证书",
-      "network": "网络"
+      "network": "网络",
+      "clientProxy": "客户端代理"
     },
     "general": {
       "title": "通用设置",
@@ -151,6 +152,32 @@
     "messages": {
       "saveSuccess": "保存成功"
     },
+    "clientProxy": {
+      "title": "客户端代理配置",
+      "description": "配置代理请求和API调试的客户端代理设置",
+      "proxyRequests": {
+        "title": "代理请求客户端代理",
+        "description": "设置代理请求时使用的客户端代理"
+      },
+      "apiDebug": {
+        "title": "API调试客户端代理",
+        "description": "设置API调试时使用的客户端代理"
+      },
+      "proxyType": {
+        "label": "代理类型",
+        "none": "不使用代理",
+        "system": "使用系统代理",
+        "custom": "自定义代理"
+      },
+      "proxyUrl": {
+        "label": "代理地址",
+        "placeholder": "http://proxy.example.com:8080",
+        "validation": {
+          "required": "请输入代理地址",
+          "format": "代理地址格式错误，仅支持 http 或 https 协议"
+        }
+      }
+    },
     "reset": "重置"
   },
   "network": {
@@ -182,6 +209,8 @@
   "sideBar": {
     "network": "网络",
     "certificates": "证书",
+    "rules": "规则",
+    "apiDebug": "API调试",
     "settings": "设置"
   },
   "recording": {
@@ -193,6 +222,10 @@
   "contextMenu": {
     "downloadAllRequests": "下载所有请求",
     "copySelectedRequest": "复制选中请求",
+    "addToApiDebug": "添加到 API Debug",
+    "addToApiDebugSuccess": "成功添加到 API Debug",
+    "addToApiDebugFailed": "添加到 API Debug 失败",
+    "noRequestData": "没有可用的请求数据",
     "addToRule": "添加到规则",
     "blockRequest": "拦截请求",
     "blockDomain": "拦截域名",
@@ -510,5 +543,60 @@
         }
       }
     }
+  },
+  "apiDebug": {
+    "title": "API调试",
+    "newRequest": "新建请求",
+    "request": "请求",
+    "response": "响应",
+    "history": "历史记录",
+    "params": "参数",
+    "headers": "请求头",
+    "body": "请求体",
+    "cookies": "Cookies",
+    "save": "保存",
+    "send": "发送",
+    "cancel": "取消",
+    "copy": "复制",
+    "format": "格式化",
+    "noResponse": "暂无响应",
+    "sending": "发送中...",
+    "requestName": "请求名称",
+    "method": "请求方法",
+    "url": "请求地址",
+    "contentType": "内容类型",
+    "timeoutDuration": "超时时间",
+    "responseTime": "响应时间",
+    "status": "状态",
+    "size": "大小",
+    "noHeaders": "无请求头",
+    "noBody": "无请求体",
+    "requestHistory": "请求历史",
+    "clearAllHistory": "清除所有历史记录",
+    "clearAllHistoryConfirm": "确认清除所有历史记录",
+    "clearAllHistoryWarning": "此操作将删除所有请求历史记录，且无法恢复。您确定要继续吗？",
+    "confirmClear": "确认清除",
+    "clearSuccess": "已清除所有历史记录",
+    "clearFailed": "清除历史记录失败，请重试",
+    "requestCompleted": "请求完成",
+    "requestFailed": "请求失败",
+    "enterUrl": "请输入URL",
+    "loadHistory": "从历史记录加载",
+    "deleteHistory": "删除",
+    "refresh": "刷新",
+    "noHistory": "暂无请求历史",
+    "loadHistoryFailed": "加载历史记录失败",
+    "retry": "重试",
+    "loadMore": "加载更多",
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前",
+    "unknownTime": "未知时间",
+    "success": "成功",
+    "failed": "失败",
+    "pending": "待处理",
+    "timeout": "超时",
+    "importCurl": "导入cURL"
   }
 }

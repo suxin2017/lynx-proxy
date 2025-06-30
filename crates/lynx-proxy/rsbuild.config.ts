@@ -56,6 +56,26 @@ export default defineConfig({
         },
       },
       {
+        tag: 'link',
+        attrs: {
+          rel: 'preload',
+          href: '/tree-sitter.wasm',
+          as: 'fetch',
+          type: 'application/wasm',
+          crossorigin: '',
+        },
+      },
+      {
+        tag: 'link',
+        attrs: {
+          rel: 'preload',
+          href: '/tree-sitter-bash.wasm',
+          as: 'fetch',
+          type: 'application/wasm',
+          crossorigin: '',
+        },
+      },
+      {
         tag: 'meta',
         attrs: {
           name: 'apple-mobile-web-app-capable',

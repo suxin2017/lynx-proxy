@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.5] - 2025-06-21
+## [0.3.0] - 2025-06-27
 
 ### 🚀 Features
 
@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Support jaeger log ([#25](https://github.com/suxin2017/lynx-server/issues/25))
 - Better display of status time ([#28](https://github.com/suxin2017/lynx-server/issues/28))
 - Support inject script ([#29](https://github.com/suxin2017/lynx-server/issues/29))
+- *(core)* Support api request ([#27](https://github.com/suxin2017/lynx-server/issues/27))
 
 ### 🐛 Bug Fixes
 

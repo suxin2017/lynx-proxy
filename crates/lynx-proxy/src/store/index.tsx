@@ -23,6 +23,7 @@ import {
   replaceTreeNode,
   requestTreeReducer,
 } from './requestTreeStore';
+import { apiDebugReducer } from '../routes/apiDebug/components/store';
 import pako from 'pako';
 import { useSelectRequest } from '@/routes/network/components/store/selectRequestStore';
 
@@ -30,6 +31,7 @@ export const store = configureStore({
   reducer: {
     requestTable: requestTableReducer,
     requestTree: requestTreeReducer,
+    apiDebug: apiDebugReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }),
@@ -115,7 +117,7 @@ export const useUpdateRequestLog = () => {
         }
         return true;
       })
-      .map(formatItem)
+      .map(formatItem);
     const patchRequests =
       cacheRequestsData?.data.patchRequests?.map(formatItem);
     const cacheNewData = {

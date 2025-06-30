@@ -5,6 +5,75 @@
  * Utoipa's axum bindings for seamless integration for the two
  * OpenAPI spec version: 0.2.0
  */
+/**
+ * Paginated response for API debug entries
+ */
+export interface ApiDebugListResponse {
+  data: ApiDebugResponse[];
+  /** @minimum 0 */
+  page: number;
+  /** @minimum 0 */
+  perPage: number;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 0 */
+  totalPages: number;
+}
+
+export type ApiDebugResponseBody = string | null;
+
+export type ApiDebugResponseContentType = string | null;
+
+export type ApiDebugResponseErrorMessage = string | null;
+
+export type ApiDebugResponseHeaders = null | Value;
+
+export type ApiDebugResponseResponseBody = string | null;
+
+export type ApiDebugResponseResponseHeaders = null | Value;
+
+export type ApiDebugResponseResponseStatus = number | null;
+
+export type ApiDebugResponseResponseTime = number | null;
+
+export type ApiDebugResponseTimeout = number | null;
+
+/**
+ * Response for API debug operations
+ */
+export interface ApiDebugResponse {
+  body?: ApiDebugResponseBody;
+  contentType?: ApiDebugResponseContentType;
+  createdAt: number;
+  errorMessage?: ApiDebugResponseErrorMessage;
+  headers?: ApiDebugResponseHeaders;
+  id: number;
+  method: HttpMethod;
+  name: string;
+  responseBody?: ApiDebugResponseResponseBody;
+  responseHeaders?: ApiDebugResponseResponseHeaders;
+  responseStatus?: ApiDebugResponseResponseStatus;
+  responseTime?: ApiDebugResponseResponseTime;
+  status: RequestStatus;
+  timeout?: ApiDebugResponseTimeout;
+  updatedAt: number;
+  url: string;
+}
+
+/**
+ * Statistics for API debug entries
+ */
+export interface ApiDebugStats {
+  /** @minimum 0 */
+  failedCount: number;
+  /** @minimum 0 */
+  pendingCount: number;
+  /** @minimum 0 */
+  successCount: number;
+  /** @minimum 0 */
+  total: number;
+}
+
 export type BlockHandlerConfigReason = string | null;
 
 /**
@@ -91,6 +160,11 @@ export const CaptureType = {
   contains: 'contains',
 } as const;
 
+export interface ClientProxyConfig {
+  apiDebug: ProxyConfig;
+  proxyRequests: ProxyConfig;
+}
+
 /**
  * 复杂捕获规则（支持嵌套逻辑）
  */
@@ -99,6 +173,27 @@ export interface ComplexCaptureRule {
   conditions: CaptureCondition[];
   /** 逻辑操作符 */
   operator: LogicalOperator;
+}
+
+export type CreateApiDebugRequestBody = string | null;
+
+export type CreateApiDebugRequestContentType = string | null;
+
+export type CreateApiDebugRequestHeaders = null | Value;
+
+export type CreateApiDebugRequestTimeout = number | null;
+
+/**
+ * Request for creating a new API debug entry
+ */
+export interface CreateApiDebugRequest {
+  body?: CreateApiDebugRequestBody;
+  contentType?: CreateApiDebugRequestContentType;
+  headers?: CreateApiDebugRequestHeaders;
+  method: HttpMethod;
+  name: string;
+  timeout?: CreateApiDebugRequestTimeout;
+  url: string;
 }
 
 export type CreateRuleRequestDescription = string | null;
@@ -168,6 +263,97 @@ export interface ErrorResponse {
   /** @minimum 0 */
   code: number;
   message: string;
+}
+
+/**
+ * Request body
+ */
+export type ExecuteApiDebugRequestBody = string | null;
+
+/**
+ * Content type header
+ */
+export type ExecuteApiDebugRequestContentType = string | null;
+
+/**
+ * HTTP headers as key-value pairs
+ */
+export type ExecuteApiDebugRequestHeadersAnyOf = { [key: string]: string };
+
+/**
+ * HTTP headers as key-value pairs
+ */
+export type ExecuteApiDebugRequestHeaders =
+  ExecuteApiDebugRequestHeadersAnyOf | null;
+
+/**
+ * Timeout in seconds (default: 30)
+ * @minimum 0
+ */
+export type ExecuteApiDebugRequestTimeout = number | null;
+
+/**
+ * Request for executing an API debug entry
+ */
+export interface ExecuteApiDebugRequest {
+  /** Request body */
+  body?: ExecuteApiDebugRequestBody;
+  /** Content type header */
+  contentType?: ExecuteApiDebugRequestContentType;
+  /** HTTP headers as key-value pairs */
+  headers?: ExecuteApiDebugRequestHeaders;
+  /** HTTP method */
+  method: HttpMethod;
+  /** Name of the API request */
+  name: string;
+  /**
+   * Timeout in seconds (default: 30)
+   * @minimum 0
+   */
+  timeout?: ExecuteApiDebugRequestTimeout;
+  /** Target URL */
+  url: string;
+}
+
+/**
+ * Error message if request failed
+ */
+export type ExecuteApiDebugResponseErrorMessage = string | null;
+
+/**
+ * Response body
+ */
+export type ExecuteApiDebugResponseResponseBody = string | null;
+
+export type ExecuteApiDebugResponseResponseHeaders = null | Value;
+
+/**
+ * HTTP response status code
+ */
+export type ExecuteApiDebugResponseResponseStatus = number | null;
+
+/**
+ * Response time in milliseconds
+ */
+export type ExecuteApiDebugResponseResponseTime = number | null;
+
+/**
+ * Response for executing an API debug entry
+ */
+export interface ExecuteApiDebugResponse {
+  /** Error message if request failed */
+  errorMessage?: ExecuteApiDebugResponseErrorMessage;
+  /** ID of the created debug entry */
+  id: number;
+  /** Response body */
+  responseBody?: ExecuteApiDebugResponseResponseBody;
+  responseHeaders?: ExecuteApiDebugResponseResponseHeaders;
+  /** HTTP response status code */
+  responseStatus?: ExecuteApiDebugResponseResponseStatus;
+  /** Response time in milliseconds */
+  responseTime?: ExecuteApiDebugResponseResponseTime;
+  /** Request execution status */
+  status: RequestStatus;
 }
 
 export type GetRequestsDataTraceIds = string[] | null;
@@ -325,6 +511,22 @@ export interface HtmlScriptInjectorConfig {
   /** Position to inject the content (head, body-start, body-end) */
   injectionPosition?: HtmlScriptInjectorConfigInjectionPosition;
 }
+
+/**
+ * HTTP method enumeration
+ */
+export type HttpMethod = (typeof HttpMethod)[keyof typeof HttpMethod];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const HttpMethod = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  DELETE: 'DELETE',
+  PATCH: 'PATCH',
+  HEAD: 'HEAD',
+  OPTIONS: 'OPTIONS',
+} as const;
 
 export type LocalFileConfigContentType = string | null;
 
@@ -557,6 +759,13 @@ export interface ModifyResponseConfig {
   modifyStatusCode?: ModifyResponseConfigModifyStatusCode;
 }
 
+export type ProxyConfigUrl = string | null;
+
+export interface ProxyConfig {
+  type: string;
+  url?: ProxyConfigUrl;
+}
+
 export type ProxyForwardConfigTargetAuthority = string | null;
 
 export type ProxyForwardConfigTargetPath = string | null;
@@ -602,6 +811,19 @@ export interface RequestRule {
   priority: number;
 }
 
+/**
+ * Request status enumeration
+ */
+export type RequestStatus = (typeof RequestStatus)[keyof typeof RequestStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RequestStatus = {
+  pending: 'pending',
+  success: 'success',
+  failed: 'failed',
+  timeout: 'timeout',
+} as const;
+
 export type ResponseCode = (typeof ResponseCode)[keyof typeof ResponseCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -609,6 +831,105 @@ export const ResponseCode = {
   ok: 'ok',
   validateError: 'validateError',
 } as const;
+
+/**
+ * Paginated response for API debug entries
+ */
+export type ResponseDataWrapperApiDebugListResponseData = {
+  data: ApiDebugResponse[];
+  /** @minimum 0 */
+  page: number;
+  /** @minimum 0 */
+  perPage: number;
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 0 */
+  totalPages: number;
+};
+
+export type ResponseDataWrapperApiDebugListResponseMessage = string | null;
+
+export interface ResponseDataWrapperApiDebugListResponse {
+  code: ResponseCode;
+  /** Paginated response for API debug entries */
+  data: ResponseDataWrapperApiDebugListResponseData;
+  message?: ResponseDataWrapperApiDebugListResponseMessage;
+}
+
+export type ResponseDataWrapperApiDebugResponseDataBody = string | null;
+
+export type ResponseDataWrapperApiDebugResponseDataContentType = string | null;
+
+export type ResponseDataWrapperApiDebugResponseDataErrorMessage = string | null;
+
+export type ResponseDataWrapperApiDebugResponseDataHeaders = null | Value;
+
+export type ResponseDataWrapperApiDebugResponseDataResponseBody = string | null;
+
+export type ResponseDataWrapperApiDebugResponseDataResponseHeaders =
+  null | Value;
+
+export type ResponseDataWrapperApiDebugResponseDataResponseStatus =
+  | number
+  | null;
+
+export type ResponseDataWrapperApiDebugResponseDataResponseTime = number | null;
+
+export type ResponseDataWrapperApiDebugResponseDataTimeout = number | null;
+
+/**
+ * Response for API debug operations
+ */
+export type ResponseDataWrapperApiDebugResponseData = {
+  body?: ResponseDataWrapperApiDebugResponseDataBody;
+  contentType?: ResponseDataWrapperApiDebugResponseDataContentType;
+  createdAt: number;
+  errorMessage?: ResponseDataWrapperApiDebugResponseDataErrorMessage;
+  headers?: ResponseDataWrapperApiDebugResponseDataHeaders;
+  id: number;
+  method: HttpMethod;
+  name: string;
+  responseBody?: ResponseDataWrapperApiDebugResponseDataResponseBody;
+  responseHeaders?: ResponseDataWrapperApiDebugResponseDataResponseHeaders;
+  responseStatus?: ResponseDataWrapperApiDebugResponseDataResponseStatus;
+  responseTime?: ResponseDataWrapperApiDebugResponseDataResponseTime;
+  status: RequestStatus;
+  timeout?: ResponseDataWrapperApiDebugResponseDataTimeout;
+  updatedAt: number;
+  url: string;
+};
+
+export type ResponseDataWrapperApiDebugResponseMessage = string | null;
+
+export interface ResponseDataWrapperApiDebugResponse {
+  code: ResponseCode;
+  /** Response for API debug operations */
+  data: ResponseDataWrapperApiDebugResponseData;
+  message?: ResponseDataWrapperApiDebugResponseMessage;
+}
+
+/**
+ * Statistics for API debug entries
+ */
+export type ResponseDataWrapperApiDebugStatsData = {
+  /** @minimum 0 */
+  failedCount: number;
+  /** @minimum 0 */
+  pendingCount: number;
+  /** @minimum 0 */
+  successCount: number;
+  /** @minimum 0 */
+  total: number;
+};
+
+export type ResponseDataWrapperApiDebugStatsMessage = string | null;
+
+export interface ResponseDataWrapperApiDebugStats {
+  code: ResponseCode;
+  /** Statistics for API debug entries */
+  data: ResponseDataWrapperApiDebugStatsData;
+  message?: ResponseDataWrapperApiDebugStatsMessage;
+}
 
 export type ResponseDataWrapperCaptureFilterData = {
   enabled: boolean;
@@ -636,6 +957,19 @@ export interface ResponseDataWrapperCaptureSwitch {
   message?: ResponseDataWrapperCaptureSwitchMessage;
 }
 
+export type ResponseDataWrapperClientProxyConfigData = {
+  apiDebug: ProxyConfig;
+  proxyRequests: ProxyConfig;
+};
+
+export type ResponseDataWrapperClientProxyConfigMessage = string | null;
+
+export interface ResponseDataWrapperClientProxyConfig {
+  code: ResponseCode;
+  data: ResponseDataWrapperClientProxyConfigData;
+  message?: ResponseDataWrapperClientProxyConfigMessage;
+}
+
 export type ResponseDataWrapperCreateRuleResponseData = {
   id: number;
 };
@@ -646,6 +980,65 @@ export interface ResponseDataWrapperCreateRuleResponse {
   code: ResponseCode;
   data: ResponseDataWrapperCreateRuleResponseData;
   message?: ResponseDataWrapperCreateRuleResponseMessage;
+}
+
+/**
+ * Error message if request failed
+ */
+export type ResponseDataWrapperExecuteApiDebugResponseDataErrorMessage =
+  | string
+  | null;
+
+/**
+ * Response body
+ */
+export type ResponseDataWrapperExecuteApiDebugResponseDataResponseBody =
+  | string
+  | null;
+
+export type ResponseDataWrapperExecuteApiDebugResponseDataResponseHeaders =
+  null | Value;
+
+/**
+ * HTTP response status code
+ */
+export type ResponseDataWrapperExecuteApiDebugResponseDataResponseStatus =
+  | number
+  | null;
+
+/**
+ * Response time in milliseconds
+ */
+export type ResponseDataWrapperExecuteApiDebugResponseDataResponseTime =
+  | number
+  | null;
+
+/**
+ * Response for executing an API debug entry
+ */
+export type ResponseDataWrapperExecuteApiDebugResponseData = {
+  /** Error message if request failed */
+  errorMessage?: ResponseDataWrapperExecuteApiDebugResponseDataErrorMessage;
+  /** ID of the created debug entry */
+  id: number;
+  /** Response body */
+  responseBody?: ResponseDataWrapperExecuteApiDebugResponseDataResponseBody;
+  responseHeaders?: ResponseDataWrapperExecuteApiDebugResponseDataResponseHeaders;
+  /** HTTP response status code */
+  responseStatus?: ResponseDataWrapperExecuteApiDebugResponseDataResponseStatus;
+  /** Response time in milliseconds */
+  responseTime?: ResponseDataWrapperExecuteApiDebugResponseDataResponseTime;
+  /** Request execution status */
+  status: RequestStatus;
+};
+
+export type ResponseDataWrapperExecuteApiDebugResponseMessage = string | null;
+
+export interface ResponseDataWrapperExecuteApiDebugResponse {
+  code: ResponseCode;
+  /** Response for executing an API debug entry */
+  data: ResponseDataWrapperExecuteApiDebugResponseData;
+  message?: ResponseDataWrapperExecuteApiDebugResponseMessage;
 }
 
 export type ResponseDataWrapperRecordRequestsDataPatchRequests =
@@ -737,6 +1130,15 @@ export interface ResponseDataWrapperTupleUnit {
   message?: ResponseDataWrapperTupleUnitMessage;
 }
 
+export type ResponseDataWrapperU64Message = string | null;
+
+export interface ResponseDataWrapperU64 {
+  code: ResponseCode;
+  /** @minimum 0 */
+  data: number;
+  message?: ResponseDataWrapperU64Message;
+}
+
 export interface RuleListResponse {
   /** @minimum 0 */
   page: number;
@@ -787,6 +1189,51 @@ export const TunnelStatus = {
 
 export interface TupleUnit {}
 
+export type UpdateApiDebugRequestBody = string | null;
+
+export type UpdateApiDebugRequestContentType = string | null;
+
+export type UpdateApiDebugRequestErrorMessage = string | null;
+
+export type UpdateApiDebugRequestHeaders = null | Value;
+
+export type UpdateApiDebugRequestMethod = null | HttpMethod;
+
+export type UpdateApiDebugRequestName = string | null;
+
+export type UpdateApiDebugRequestResponseBody = string | null;
+
+export type UpdateApiDebugRequestResponseHeaders = null | Value;
+
+export type UpdateApiDebugRequestResponseStatus = number | null;
+
+export type UpdateApiDebugRequestResponseTime = number | null;
+
+export type UpdateApiDebugRequestStatus = null | RequestStatus;
+
+export type UpdateApiDebugRequestTimeout = number | null;
+
+export type UpdateApiDebugRequestUrl = string | null;
+
+/**
+ * Request for updating an API debug entry
+ */
+export interface UpdateApiDebugRequest {
+  body?: UpdateApiDebugRequestBody;
+  contentType?: UpdateApiDebugRequestContentType;
+  errorMessage?: UpdateApiDebugRequestErrorMessage;
+  headers?: UpdateApiDebugRequestHeaders;
+  method?: UpdateApiDebugRequestMethod;
+  name?: UpdateApiDebugRequestName;
+  responseBody?: UpdateApiDebugRequestResponseBody;
+  responseHeaders?: UpdateApiDebugRequestResponseHeaders;
+  responseStatus?: UpdateApiDebugRequestResponseStatus;
+  responseTime?: UpdateApiDebugRequestResponseTime;
+  status?: UpdateApiDebugRequestStatus;
+  timeout?: UpdateApiDebugRequestTimeout;
+  url?: UpdateApiDebugRequestUrl;
+}
+
 export type UpdateRuleRequestDescription = string | null;
 
 export interface UpdateRuleRequest {
@@ -802,6 +1249,8 @@ export interface UrlPattern {
   captureType: CaptureType;
   pattern: string;
 }
+
+export interface Value {}
 
 export type WebSocketDirection =
   (typeof WebSocketDirection)[keyof typeof WebSocketDirection];
@@ -865,6 +1314,29 @@ export type WebSocketStatus =
   | 'Connected'
   | 'Disconnected'
   | WebSocketStatusOneOf;
+
+export type ListDebugEntriesParams = {
+  /**
+   * Page number, starting from 1
+   */
+  page?: number | null;
+  /**
+   * Number of items per page, default 20
+   */
+  perPage?: number | null;
+  /**
+   * Filter by HTTP method
+   */
+  method?: null | HttpMethod;
+  /**
+   * Filter by request status
+   */
+  status?: null | RequestStatus;
+  /**
+   * Search in name and URL
+   */
+  search?: string | null;
+};
 
 export type ListRulesParams = {
   /**
