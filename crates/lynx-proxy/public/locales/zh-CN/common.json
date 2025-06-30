@@ -302,6 +302,10 @@
         "name": "延迟处理",
         "description": "为请求处理添加延迟，模拟网络延迟"
       },
+      "delay5s": {
+        "name": "延迟5秒",
+        "description": "为请求处理添加5秒延迟"
+      },
       "modifyRequest": {
         "name": "修改请求",
         "description": "修改请求头、请求体、方法或 URL"
@@ -345,6 +349,14 @@
             "tip3": "建议将脚本注入到body结束位置，以确保DOM元素已加载完成"
           }
         }
+      },
+      "injectEruda": {
+        "name": "注入Eruda",
+        "description": "注入Eruda移动端调试工具"
+      },
+      "injectReactScan": {
+        "name": "注入React Scan",
+        "description": "注入React Scan性能调试工具"
       }
     },
     "handlerDescriptions": {

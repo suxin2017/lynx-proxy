@@ -302,6 +302,10 @@
         "name": "Delay Processing",
         "description": "Add delay to request processing, simulate network latency"
       },
+      "delay5s": {
+        "name": "Delay 5s",
+        "description": "Add 5 second delay to request processing"
+      },
       "modifyRequest": {
         "name": "Modify Request",
         "description": "Modify request headers, body, method or URL"
@@ -345,6 +349,14 @@
             "tip3": "Recommend injecting scripts at body end position to ensure DOM elements are loaded"
           }
         }
+      },
+      "injectEruda": {
+        "name": "Inject Eruda",
+        "description": "Inject Eruda mobile debugging tool"
+      },
+      "injectReactScan": {
+        "name": "Inject React Scan",
+        "description": "Inject React Scan performance debugging tool"
       }
     },
     "handlerDescriptions": {

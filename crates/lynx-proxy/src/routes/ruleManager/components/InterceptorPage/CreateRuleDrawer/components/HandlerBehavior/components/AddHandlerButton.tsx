@@ -33,6 +33,17 @@ export const AddHandlerButton: React.FC<AddHandlerButtonProps> = ({ add }) => {
       },
     },
     {
+      key: 'delay5s',
+      type: 'delay' as const,
+      name: t('ruleManager.quickAdd.delay5s.name'),
+      config: {
+        type: 'delay',
+        delayMs: 5000,
+        varianceMs: null,
+        delayType: 'beforeRequest',
+      },
+    },
+    {
       key: 'modifyRequest',
       type: 'modifyRequest' as const,
       name: t('ruleManager.quickAdd.modifyRequest.name'),
@@ -86,6 +97,32 @@ export const AddHandlerButton: React.FC<AddHandlerButtonProps> = ({ add }) => {
         type: 'htmlScriptInjector',
         content: null,
         injectionPosition: 'body-end',
+      },
+    },
+    {
+      key: 'injectEruda',
+      type: 'htmlScriptInjector' as const,
+      name: t('ruleManager.quickAdd.injectEruda.name'),
+      config: {
+        type: 'htmlScriptInjector',
+        content: `<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>`,
+        injectionPosition: 'head',
+      },
+    },
+    {
+      key: 'injectReactScan',
+      type: 'htmlScriptInjector' as const,
+      name: t('ruleManager.quickAdd.injectReactScan.name'),
+      config: {
+        type: 'htmlScriptInjector',
+        content: `<!-- paste this BEFORE any scripts -->
+<script
+  crossOrigin="anonymous"
+  src="//unpkg.com/react-scan/dist/auto.global.js"
+></script>
+`,
+        injectionPosition: 'head',
       },
     },
   ];
