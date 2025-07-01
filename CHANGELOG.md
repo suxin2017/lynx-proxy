@@ -2,17 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.1-alpha.3] - 2025-07-01
-
-### 🐛 Bug Fixes
-
-- Change log
-
-## [0.3.1-alpha.2] - 2025-07-01
+## [unreleased]
 
 ### 🚀 Features
 
-- Support client proxy ([#32](https://github.com/suxin2017/lynx-server/issues/32))
 - Support client proxy ([#32](https://github.com/suxin2017/lynx-server/issues/32))
 
 ## [0.3.0] - 2025-06-27
