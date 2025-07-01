@@ -91,7 +91,7 @@ tasks:
     cmds:
       - git cliff -o CHANGELOG.md
       - git add .
-      - 'git commit -m"chore: Update CHANGELOG.md" --no-verify'
+      - 'git commit -m"chore: Update CHANGELOG.md" --no-verify || true'
       - git push
 
   update-main-branch:
