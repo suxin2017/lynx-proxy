@@ -284,6 +284,7 @@
     "allActionsDisabled": "所有动作已禁用",
     "handlerTypes": {
       "block": "阻止",
+      "delay": "延迟",
       "modifyRequest": "修改请求",
       "modifyResponse": "修改响应",
       "localFile": "本地文件",
@@ -296,6 +297,14 @@
       "blockRequest": {
         "name": "阻止请求",
         "description": "使用 403 状态码阻止请求"
+      },
+      "delay": {
+        "name": "延迟处理",
+        "description": "为请求处理添加延迟，模拟网络延迟"
+      },
+      "delay5s": {
+        "name": "延迟5秒",
+        "description": "为请求处理添加5秒延迟"
       },
       "modifyRequest": {
         "name": "修改请求",
@@ -340,11 +349,20 @@
             "tip3": "建议将脚本注入到body结束位置，以确保DOM元素已加载完成"
           }
         }
+      },
+      "injectEruda": {
+        "name": "注入Eruda",
+        "description": "注入Eruda移动端调试工具"
+      },
+      "injectReactScan": {
+        "name": "注入React Scan",
+        "description": "注入React Scan性能调试工具"
       }
     },
     "handlerDescriptions": {
       "statusCode": "状态码: {{code}}",
       "reason": "访问被阻止",
+      "delay": "延迟: {{delayMs}}ms ({{delayType}})",
       "modifyHeaders": "修改请求头",
       "modifyBody": "修改请求体",
       "modifyMethod": "方法: {{method}}",
@@ -506,6 +524,27 @@
           "reason": "阻止原因",
           "description": "阻止请求将返回指定的HTTP状态码和原因，常用状态码：403 (禁止访问)、404 (未找到)、503 (服务不可用)"
         },
+        "delayHandler": {
+          "title": "延迟处理配置",
+          "delayMs": "延迟时间 (毫秒)",
+          "delayMsRequired": "请输入延迟时间",
+          "delayMsMin": "延迟时间必须大于等于0",
+          "varianceMs": "随机变化范围 (毫秒)",
+          "varianceMsExtra": "可选，为延迟添加随机变化，实际延迟为 延迟时间 ± 变化范围",
+          "delayTypeLabel": "延迟类型",
+          "delayTypePlaceholder": "选择延迟应用时机",
+          "delayType": {
+            "beforeRequest": "请求处理前",
+            "afterRequest": "请求处理后",
+            "both": "处理前后都延迟"
+          },
+          "description": "为请求处理添加延迟，可以模拟网络延迟或限制处理速度。支持固定延迟或随机延迟范围。",
+          "tips": {
+            "tip1": "延迟时间单位为毫秒，1000ms = 1秒",
+            "tip2": "随机变化可以让延迟更加真实，模拟不稳定的网络环境",
+            "tip3": "选择延迟类型可以控制延迟在请求处理流程中的应用时机"
+          }
+        },
         "proxyForward": {
           "title": "代理转发配置",
           "scheme": "协议",
@@ -570,6 +609,38 @@
     "failed": "失败",
     "pending": "待处理",
     "timeout": "超时",
-    "importCurl": "导入cURL"
+    "importCurl": "导入cURL",
+    "responseViewer": {
+      "sendingRequest": "发送请求中...",
+      "requestFailed": "请求失败",
+      "noResponse": "暂无响应",
+      "noResponseDescription": "发送请求后在此查看响应",
+      "response": "响应",
+      "time": "时间",
+      "size": "大小",
+      "bytes": "字节",
+      "status": "状态",
+      "responseTime": "响应时间",
+      "contentSize": "内容大小",
+      "headers": "响应头",
+      "body": "响应体",
+      "noHeaders": "无响应头",
+      "noBodyContent": "无响应体内容"
+    },
+    "queryParamsEditor": {
+      "title": "查询参数",
+      "addParameter": "添加参数",
+      "noParameters": "暂无查询参数。点击\"添加参数\"开始。",
+      "parameterKey": "参数键",
+      "parameterValue": "参数值"
+    },
+    "headersEditor": {
+      "title": "请求头",
+      "quickAdd": "快速添加",
+      "addHeader": "添加请求头",
+      "noHeaders": "暂无请求头。点击\"添加请求头\"添加一个。",
+      "key": "键",
+      "value": "值"
+    }
   }
 }

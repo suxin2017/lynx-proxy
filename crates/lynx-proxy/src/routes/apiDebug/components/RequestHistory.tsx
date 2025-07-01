@@ -258,6 +258,7 @@ export function RequestHistory({
   return (
     <Card
       size="small"
+      variant="borderless"
       className={className}
       title={
         <div className="flex items-center justify-between">
