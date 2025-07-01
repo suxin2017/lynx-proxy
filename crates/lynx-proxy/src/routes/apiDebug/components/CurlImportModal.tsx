@@ -40,7 +40,8 @@ function parseCurlCommand(curlCommand: string): ParsedCurlResult {
     const char = cmd[i];
 
     if (escaped) {
-      current += char;
+      // 保持转义字符的完整性，包括反斜杠
+      current += '\\' + char;
       escaped = false;
       continue;
     }
@@ -51,7 +52,7 @@ function parseCurlCommand(curlCommand: string): ParsedCurlResult {
     }
 
     if (inQuotes) {
-      if (char === quoteChar) {
+      if (char === quoteChar && !escaped) {
         inQuotes = false;
         quoteChar = '';
       } else {
@@ -151,6 +152,13 @@ function parseCurlCommand(curlCommand: string): ParsedCurlResult {
           bodyData = bodyData.replace(/\\([0-7]{1,3})/g, (_, oct) => {
             return String.fromCharCode(parseInt(oct, 8));
           });
+        } else if (token === '--data-raw') {
+          // 对于 --data-raw，保持原始字符串，完全不处理转义字符
+          // 只处理外层的引号包装
+          if ((bodyData.startsWith('"') && bodyData.endsWith('"')) || 
+              (bodyData.startsWith("'") && bodyData.endsWith("'"))) {
+            bodyData = bodyData.slice(1, -1);
+          }
         }
 
         result.body = bodyData;
@@ -195,6 +203,11 @@ function parseCurlCommand(curlCommand: string): ParsedCurlResult {
     }
   }
 
+  // 如果有请求体但没有明确指定方法，默认为POST（符合curl行为）
+  if (result.body && result.method === 'GET') {
+    result.method = 'POST';
+  }
+
   return result;
 }
 
@@ -234,11 +247,28 @@ export function CurlImportModal({
         return;
       }
 
+      // 尝试格式化 JSON 请求体
+      let formattedBody = result.body;
+      const contentType = result.headers['Content-Type'] || result.headers['content-type'];
+      
+      if (result.body && contentType?.includes('application/json')) {
+        try {
+          console.log(result.body);
+          // 尝试解析并重新格式化 JSON，但保持嵌套的 JSON 字符串格式
+          const parsed = JSON.parse(result.body);
+          formattedBody = JSON.stringify(parsed, null, 2);
+        } catch (error) {
+          console.warn('Body is not valid JSON, keeping original format:', error);
+          // 如果解析失败，保持原始格式，但给用户提示
+          message.warning('Request body appears to be JSON but contains syntax errors. Please verify the format.');
+        }
+      }
+
       onImport({
         method: result.method.toUpperCase(),
         url: result.url,
         headers: result.headers,
-        body: result.body,
+        body: formattedBody,
       });
 
       message.success('cURL command imported successfully');

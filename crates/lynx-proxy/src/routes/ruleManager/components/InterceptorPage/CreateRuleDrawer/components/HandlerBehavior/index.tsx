@@ -6,7 +6,7 @@ import { useI18n } from '@/contexts';
 
 const { Title, Text } = Typography;
 
-interface HandlerBehaviorProps {}
+interface HandlerBehaviorProps { }
 
 export const HandlerBehavior: React.FC<HandlerBehaviorProps> = () => {
   const { t } = useI18n();
@@ -23,8 +23,8 @@ export const HandlerBehavior: React.FC<HandlerBehaviorProps> = () => {
       <Form.List name="handlers">
         {(fields, { add, remove }) => (
           <div className="space-y-4">
-            <HandlerList fields={fields} remove={remove} />
             <AddHandlerButton add={add} />
+            <HandlerList fields={fields} remove={remove} />
           </div>
         )}
       </Form.List>

@@ -1,5 +1,6 @@
 import { Button, Input, Switch, Typography, Dropdown } from 'antd';
 import { PlusOutlined, DeleteOutlined, DownOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { HeaderItem } from './types';
 
 const { Title, Text } = Typography;
@@ -19,6 +20,8 @@ interface HeadersEditorProps {
 }
 
 export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
+  const { t } = useTranslation();
+
   const handleAddHeader = () => {
     const newHeaders = [...headers, { key: '', value: '', enabled: true }];
     onChange(newHeaders);
@@ -49,7 +52,7 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
     <div className="p-4">
       <div className="mb-4 flex items-center justify-between">
         <Title level={5} className="m-0">
-          Headers
+          {t('apiDebug.headersEditor.title')}
         </Title>
         <div className="flex gap-2">
           <Dropdown
@@ -62,14 +65,14 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
             }}
             trigger={['click']}
           >
-            <Button icon={<DownOutlined />}>Quick Add</Button>
+            <Button icon={<DownOutlined />}>{t('apiDebug.headersEditor.quickAdd')}</Button>
           </Dropdown>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddHeader}
           >
-            Add Header
+            {t('apiDebug.headersEditor.addHeader')}
           </Button>
         </div>
       </div>
@@ -84,14 +87,14 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
               }
             />
             <Input
-              placeholder="Key"
+              placeholder={t('apiDebug.headersEditor.key')}
               value={header.key}
               onChange={(e) => handleHeaderChange(index, 'key', e.target.value)}
               className="flex-1"
               disabled={!header.enabled}
             />
             <Input
-              placeholder="Value"
+              placeholder={t('apiDebug.headersEditor.value')}
               value={header.value}
               onChange={(e) =>
                 handleHeaderChange(index, 'value', e.target.value)
@@ -111,7 +114,7 @@ export function HeadersEditor({ headers, onChange }: HeadersEditorProps) {
         {headers.length === 0 && (
           <div className="rounded border border-dashed border-gray-300 p-6 text-center dark:border-gray-500">
             <Text type="secondary">
-              No headers added. Click &quot;Add Header&quot; to add one.
+              {t('apiDebug.headersEditor.noHeaders')}
             </Text>
           </div>
         )}
