@@ -69,25 +69,22 @@ tasks:
       - cargo run --package lynx-core --example proxy_server_example
 
   release-minor:
-    deps: [update-main-branch, build-ui, test]
+    deps: [update-main-branch, build-ui, test,generate-change-log]
     desc: Release minor version
     cmds:
       - cargo release minor --execute
-      # - task: publish
-      - task: generate-change-log
+      
   release-patch:
-    deps: [update-main-branch, build-ui, test]
+    deps: [update-main-branch, build-ui, test,generate-change-log]
     desc: Release patch version
     cmds:
       - cargo release patch --execute
-      # - task: publish
-      - task: generate-change-log
+
   release-alpha:
     deps: [update-main-branch, build-ui, test, generate-change-log]
     desc: Release alpha version
     cmds:
       - cargo release alpha --execute
-      # - task: publish
 
   generate-change-log:
     desc: Generate change log
