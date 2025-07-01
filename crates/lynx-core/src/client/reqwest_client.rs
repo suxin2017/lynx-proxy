@@ -4,7 +4,7 @@ use anyhow::{Result, anyhow};
 use rcgen::Certificate;
 use reqwest::{Client, ClientBuilder, Proxy};
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
-use tracing::info;
+use tracing::trace;
 
 use super::ProxyType;
 
@@ -50,7 +50,7 @@ impl ReqwestClientBuilder {
 
         // Configure custom certificates if provided
         if let Some(cert_chain) = &self.custom_certs {
-            info!(
+            trace!(
                 "Using custom certificates: {} certificates loaded",
                 cert_chain.len()
             );
@@ -70,7 +70,7 @@ impl ReqwestClientBuilder {
 
             client_builder = client_builder.use_preconfigured_tls(client_config);
         } else {
-            info!("Using default TLS configuration with webpki roots");
+            trace!("Using default TLS configuration with webpki roots");
             // Use default TLS configuration with webpki roots
             client_builder = client_builder.use_rustls_tls();
         }
@@ -78,17 +78,17 @@ impl ReqwestClientBuilder {
         // Configure proxy if provided
         match &self.proxy_config {
             ProxyType::None => {
-                info!("Proxy configuration: None (explicitly disabled)");
+                trace!("Proxy configuration: None (explicitly disabled)");
                 // Explicitly disable proxy
                 client_builder = client_builder.no_proxy();
             }
             ProxyType::System => {
-                info!("Proxy configuration: System (using system proxy settings)");
+                trace!("Proxy configuration: System (using system proxy settings)");
                 // Use system proxy (default behavior in reqwest)
                 // Don't set any explicit proxy configuration
             }
             ProxyType::Custom(url) => {
-                info!("Proxy configuration: Custom proxy URL: {}", url);
+                trace!("Proxy configuration: Custom proxy URL: {}", url);
                 let proxy = Proxy::all(url)
                     .map_err(|e| anyhow!("failed to configure custom proxy: {:?}", e))?;
                 client_builder = client_builder.proxy(proxy);
@@ -99,7 +99,7 @@ impl ReqwestClientBuilder {
             .build()
             .map_err(|e| anyhow!(e).context("failed to build reqwest client"))?;
 
-        info!("ReqwestClient built successfully");
+        trace!("ReqwestClient built successfully");
 
         Ok(ReqwestClient { client })
     }

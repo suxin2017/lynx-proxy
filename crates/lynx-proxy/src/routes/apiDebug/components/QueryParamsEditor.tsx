@@ -1,5 +1,6 @@
 import { Button, Input, Switch, Typography } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { QueryParamItem } from './types';
 
 const { Title } = Typography;
@@ -13,6 +14,8 @@ export function QueryParamsEditor({
   queryParams,
   onChange,
 }: QueryParamsEditorProps) {
+  const { t } = useTranslation();
+
   const addQueryParam = () => {
     const newQueryParam: QueryParamItem = {
       key: '',
@@ -41,17 +44,17 @@ export function QueryParamsEditor({
     <div className="flex h-full flex-col p-4">
       <div className="mb-4 flex items-center justify-between">
         <Title level={5} className="m-0">
-          Query Parameters
+          {t('apiDebug.queryParamsEditor.title')}
         </Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={addQueryParam}>
-          Add Parameter
+          {t('apiDebug.queryParamsEditor.addParameter')}
         </Button>
       </div>
 
       <div className="flex-1 space-y-2">
         {queryParams.length === 0 ? (
           <div className="flex h-32 items-center justify-center text-gray-500">
-            No query parameters. Click &quot;Add Parameter&quot; to get started.
+            {t('apiDebug.queryParamsEditor.noParameters')}
           </div>
         ) : (
           queryParams.map((param, index) => (
@@ -67,14 +70,14 @@ export function QueryParamsEditor({
               />
 
               <Input
-                placeholder="Parameter key"
+                placeholder={t('apiDebug.queryParamsEditor.parameterKey')}
                 value={param.key}
                 onChange={(e) => updateQueryParam(index, 'key', e.target.value)}
                 className="flex-1"
               />
 
               <Input
-                placeholder="Parameter value"
+                placeholder={t('apiDebug.queryParamsEditor.parameterValue')}
                 value={param.value}
                 onChange={(e) =>
                   updateQueryParam(index, 'value', e.target.value)

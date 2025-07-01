@@ -3,17 +3,13 @@ import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { MonacoEditor } from '../../../components/MonacoEditor';
 import { FormattedResponse } from './types';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
 const TAB_KEYS = {
   HEADERS: 'headers',
   BODY: 'body',
-} as const;
-
-const TAB_LABELS = {
-  HEADERS: 'Headers',
-  BODY: 'Body',
 } as const;
 
 const STATUS_COLORS = {
@@ -53,14 +49,15 @@ export function ResponseViewer({
   isLoading,
   error,
 }: ResponseViewerProps) {
-  const [activeTab, setActiveTab] = useState<string>(TAB_KEYS.HEADERS);
+  const [activeTab, setActiveTab] = useState<string>(TAB_KEYS.BODY);
+  const { t } = useTranslation();
 
   if (isLoading) {
     return (
       <div className="p-12 text-center">
         <Spin size="large" />
         <div className="mt-4">
-          <Text>Sending request...</Text>
+          <Text>{t('apiDebug.responseViewer.sendingRequest')}</Text>
         </div>
       </div>
     );
@@ -75,7 +72,7 @@ export function ResponseViewer({
               className="mb-4 text-5xl"
               style={{ color: THEME_COLORS.ERROR }}
             />
-            <Title level={4}>Request Failed</Title>
+            <Title level={4}>{t('apiDebug.responseViewer.requestFailed')}</Title>
             <Text>{error}</Text>
           </div>
         </Card>
@@ -87,9 +84,9 @@ export function ResponseViewer({
     return (
       <div className="flex h-full flex-col items-center justify-center p-12 text-center">
         <Title level={4} type="secondary">
-          No Response
+          {t('apiDebug.responseViewer.noResponse')}
         </Title>
-        <Text type="secondary">Send a request to see the response here</Text>
+        <Text type="secondary">{t('apiDebug.responseViewer.noResponseDescription')}</Text>
       </div>
     );
   }
@@ -135,25 +132,25 @@ export function ResponseViewer({
                 />
               )}
               <Title level={4} className="m-0">
-                Response
+                {t('apiDebug.responseViewer.response')}
               </Title>
             </div>
             <Tag color={getStatusColor(response.status)}>
               {response.status} {response.statusText}
             </Tag>
-            <Text>Time: {response.responseTime}ms</Text>
-            <Text>Size: {response.size} bytes</Text>
+            <Text>{t('apiDebug.responseViewer.time')}: {response.responseTime}ms</Text>
+            <Text>{t('apiDebug.responseViewer.size')}: {response.size} {t('apiDebug.responseViewer.bytes')}</Text>
           </div>
 
           <Descriptions size="small" column={1}>
-            <Descriptions.Item label="Status">
+            <Descriptions.Item label={t('apiDebug.responseViewer.status')}>
               {response.status} {response.statusText}
             </Descriptions.Item>
-            <Descriptions.Item label="Response Time">
+            <Descriptions.Item label={t('apiDebug.responseViewer.responseTime')}>
               {response.responseTime}ms
             </Descriptions.Item>
-            <Descriptions.Item label="Content Size">
-              {response.size} bytes
+            <Descriptions.Item label={t('apiDebug.responseViewer.contentSize')}>
+              {response.size} {t('apiDebug.responseViewer.bytes')}
             </Descriptions.Item>
           </Descriptions>
         </div>
@@ -164,8 +161,8 @@ export function ResponseViewer({
               value={activeTab}
               onChange={setActiveTab}
               options={[
-                { label: TAB_LABELS.HEADERS, value: TAB_KEYS.HEADERS },
-                { label: TAB_LABELS.BODY, value: TAB_KEYS.BODY },
+                { label: t('apiDebug.responseViewer.headers'), value: TAB_KEYS.HEADERS },
+                { label: t('apiDebug.responseViewer.body'), value: TAB_KEYS.BODY },
               ]}
             />
           </div>
@@ -181,7 +178,7 @@ export function ResponseViewer({
                   ))}
                 </Descriptions>
               ) : (
-                <Text type="secondary">No headers</Text>
+                <Text type="secondary">{t('apiDebug.responseViewer.noHeaders')}</Text>
               )}
             </Card>
           )}
@@ -207,7 +204,7 @@ export function ResponseViewer({
                 />
               ) : (
                 <div className="p-4">
-                  <Text type="secondary">No body content</Text>
+                  <Text type="secondary">{t('apiDebug.responseViewer.noBodyContent')}</Text>
                 </div>
               )}
             </Card>

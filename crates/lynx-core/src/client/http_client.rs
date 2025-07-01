@@ -7,7 +7,7 @@ use http_body_util::combinators::BoxBody;
 use hyper_http_proxy::{Intercept, Proxy, ProxyConnector};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use tokio_rustls::TlsConnector;
-use tracing::info;
+use tracing::trace;
 
 use hyper_util::{
     client::{
@@ -37,14 +37,14 @@ impl HttpClient {
     pub async fn request(&self, req: Req) -> Result<HyperRes> {
         match self {
             HttpClient::Direct(client) => {
-                info!("HTTP Client: Making direct request to {}", req.uri());
+                trace!("HTTP Client: Making direct request to {}", req.uri());
                 client
                     .request(req)
                     .await
                     .map_err(|e| anyhow!(e).context("http request client error"))
             }
             HttpClient::Proxy(client) => {
-                info!("HTTP Client: Making proxied request to {}", req.uri());
+                trace!("HTTP Client: Making proxied request to {}", req.uri());
                 client
                     .request(req)
                     .await
@@ -71,7 +71,7 @@ impl HttpClientBuilder {
 
         match &self.proxy_config {
             ProxyType::None => {
-                info!("HTTP Client: Using direct connection (no proxy)");
+                trace!("HTTP Client: Using direct connection (no proxy)");
                 // 直接使用 HTTPS 连接器
                 let connector = HttpsConnectorBuilder::new()
                     .with_tls_config(client_config)
@@ -83,7 +83,7 @@ impl HttpClientBuilder {
                 Ok(HttpClient::Direct(client))
             }
             ProxyType::System => {
-                info!("HTTP Client: Checking for system proxy configuration");
+                trace!("HTTP Client: Checking for system proxy configuration");
                 let matcher = matcher::Matcher::from_system();
 
                 let http_uri = Uri::from_static("http://example.com");
@@ -94,7 +94,7 @@ impl HttpClientBuilder {
 
                 if let Some(intercept) = intercept {
                     let proxy_uri = intercept.uri().clone();
-                    info!("HTTP Client: Using system proxy: {}", proxy_uri);
+                    trace!("HTTP Client: Using system proxy: {}", proxy_uri);
                     let proxy = Proxy::new(Intercept::All, proxy_uri);
 
                     let base_connector = HttpConnector::new();
@@ -104,7 +104,7 @@ impl HttpClientBuilder {
                     let client = Client::builder(TokioExecutor::new()).build(proxy_connector);
                     Ok(HttpClient::Proxy(client))
                 } else {
-                    info!("HTTP Client: No system proxy found, using direct connection");
+                    trace!("HTTP Client: No system proxy found, using direct connection");
                     let connector = HttpsConnectorBuilder::new()
                         .with_tls_config(client_config)
                         .https_or_http()
@@ -116,7 +116,7 @@ impl HttpClientBuilder {
                 }
             }
             ProxyType::Custom(proxy_url) => {
-                info!("HTTP Client: Using custom proxy: {}", proxy_url);
+                trace!("HTTP Client: Using custom proxy: {}", proxy_url);
                 let proxy_uri = proxy_url
                     .parse()
                     .map_err(|e| anyhow!("Invalid proxy URL '{}': {}", proxy_url, e))?;
