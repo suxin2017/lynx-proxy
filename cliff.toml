@@ -76,6 +76,8 @@ commit_parsers = [
   { message = "^revert", group = "<!-- 9 -->◀️ Revert" },
   { message = ".*", group = "<!-- 10 -->💼 Other" },
 ]
+
+tag_pattern= "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
 # filter out the commits that are not matched by commit parsers
 filter_commits = false
 # sort the tags topologically
