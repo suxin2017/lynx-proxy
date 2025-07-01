@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.3] - 2025-07-01
+
+### 🚀 Features
+
+- Support request delay ([#30](https://github.com/suxin2017/lynx-server/issues/30))
+
 ## [0.3.1] - 2025-07-01
 
 ### 🚀 Features
