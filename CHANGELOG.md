@@ -2,30 +2,83 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1-alpha.3] - 2025-07-01
+
+### 🐛 Bug Fixes
+
+- Change log
+
+## [0.3.1-alpha.2] - 2025-07-01
+
+### 🚀 Features
+
+- Support client proxy ([#32](https://github.com/suxin2017/lynx-server/issues/32))
+- Support client proxy ([#32](https://github.com/suxin2017/lynx-server/issues/32))
+
 ## [0.3.0] - 2025-06-27
 
 ### 🚀 Features
 
-- Proxy Interception Support ([#8](https://github.com/suxin2017/lynx-server/issues/8))
-- The command line supports daemons ([#15](https://github.com/suxin2017/lynx-server/issues/15))
-- Pwa and one click add block rule ([#23](https://github.com/suxin2017/lynx-server/issues/23))
-- Support jaeger log ([#25](https://github.com/suxin2017/lynx-server/issues/25))
+- *(core)* Support api request ([#27](https://github.com/suxin2017/lynx-server/issues/27))
+
+## [0.2.5] - 2025-06-21
+
+### 🚀 Features
+
 - Better display of status time ([#28](https://github.com/suxin2017/lynx-server/issues/28))
 - Support inject script ([#29](https://github.com/suxin2017/lynx-server/issues/29))
-- *(core)* Support api request ([#27](https://github.com/suxin2017/lynx-server/issues/27))
+
+## [0.2.4] - 2025-06-13
+
+### 🚀 Features
+
+- Pwa and one click add block rule ([#23](https://github.com/suxin2017/lynx-server/issues/23))
+- Support jaeger log ([#25](https://github.com/suxin2017/lynx-server/issues/25))
+
+## [0.2.3] - 2025-06-10
 
 ### 🐛 Bug Fixes
 
-- Test case
-- Cli start error
-- Dark mode bug
 - Daemons don't behave as expected with empty bodies   ([#20](https://github.com/suxin2017/lynx-server/issues/20))
 
 ### 🚜 Refactor
 
 - Refactor Network UI ([#16](https://github.com/suxin2017/lynx-server/issues/16))
 
-## [0.1.6-alpha.1] - 2025-05-25
+## [0.2.2] - 2025-06-08
+
+### 🚀 Features
+
+- The command line supports daemons ([#15](https://github.com/suxin2017/lynx-server/issues/15))
+
+## [0.2.1] - 2025-06-05
+
+### 🐛 Bug Fixes
+
+- Dark mode bug
+
+## [0.2.0] - 2025-06-05
+
+### 🚀 Features
+
+- Proxy Interception Support ([#8](https://github.com/suxin2017/lynx-server/issues/8))
+
+## [0.1.7] - 2025-05-26
+
+### 🐛 Bug Fixes
+
+- Cli start error
+
+## [0.1.6] - 2025-05-26
+
+### 🐛 Bug Fixes
+
+- Table style and websocket log ([#6](https://github.com/suxin2017/lynx-server/issues/6))
+- Record time error ([#7](https://github.com/suxin2017/lynx-server/issues/7))
+- Record time error
+- Test case
+
+## [0.1.5] - 2025-05-22
 
 ### 🚀 Features
 
@@ -39,20 +92,37 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
-- Ui assert not found
-- Window local ip ([#33](https://github.com/suxin2017/lynx-server/issues/33))
-- *(ui)* Clear request log and content ui bug in request tree struce  ([#35](https://github.com/suxin2017/lynx-server/issues/35))
+- A lot of bugs
+
+### 🚜 Refactor
+
+- Refactoring everything ([#44](https://github.com/suxin2017/lynx-server/issues/44))
+
+## [0.1.4] - 2025-02-17
+
+### 🐛 Bug Fixes
+
 - Unable to create dir on startup  ([#36](https://github.com/suxin2017/lynx-server/issues/36))
 - Http1.1, http 1.0 proxy request and lose some header ([#34](https://github.com/suxin2017/lynx-server/issues/34))
-- A lot of bugs
-- Table style and websocket log ([#6](https://github.com/suxin2017/lynx-server/issues/6))
-- Record time error ([#7](https://github.com/suxin2017/lynx-server/issues/7))
-- Record time error
+
+## [0.1.3] - 2025-02-15
+
+### 🐛 Bug Fixes
+
+- Window local ip ([#33](https://github.com/suxin2017/lynx-server/issues/33))
+- *(ui)* Clear request log and content ui bug in request tree struce  ([#35](https://github.com/suxin2017/lynx-server/issues/35))
+
+## [0.1.2] - 2025-02-14
 
 ### 🚜 Refactor
 
 - Use include dir replace static dir ([#32](https://github.com/suxin2017/lynx-server/issues/32))
-- Refactoring everything ([#44](https://github.com/suxin2017/lynx-server/issues/44))
+
+## [0.1.1] - 2025-02-14
+
+### 🐛 Bug Fixes
+
+- Ui assert not found
 
 ## [0.1.0] - 2025-02-13
 

@@ -69,25 +69,24 @@ tasks:
       - cargo run --package lynx-core --example proxy_server_example
 
   release-minor:
-    deps: [update-main-branch, build-ui, test]
+    deps: [update-main-branch, build-ui, test,generate-change-log]
     desc: Release minor version
     cmds:
       - cargo release minor --execute
-      # - task: publish
       - task: generate-change-log
+
   release-patch:
-    deps: [update-main-branch, build-ui, test]
+    deps: [update-main-branch, build-ui, test,generate-change-log]
     desc: Release patch version
     cmds:
       - cargo release patch --execute
-      # - task: publish
       - task: generate-change-log
+
   release-alpha:
     deps: [update-main-branch, build-ui, test]
     desc: Release alpha version
     cmds:
       - cargo release alpha --execute
-      # - task: publish
       - task: generate-change-log
 
   generate-change-log:
@@ -95,16 +94,8 @@ tasks:
     cmds:
       - git cliff -o CHANGELOG.md
       - git add .
-      - git commit --amend --no-edit
+      - 'git commit -m"chore: Update CHANGELOG.md" --no-verify || true'
       - git push
-      - git push --tags
-
-  generate-type-defined:
-    aliases: [gen-ty]
-    dir: crates/lynx-core
-    desc: Generate type defined
-    cmds:
-      - cargo test export_bindings
 
   update-main-branch:
     desc: Update remote branch
