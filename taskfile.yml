@@ -83,21 +83,18 @@ tasks:
       # - task: publish
       - task: generate-change-log
   release-alpha:
-    deps: [update-main-branch, build-ui, test]
+    deps: [update-main-branch, build-ui, test, generate-change-log]
     desc: Release alpha version
     cmds:
       - cargo release alpha --execute
       # - task: publish
-      - task: generate-change-log
 
   generate-change-log:
     desc: Generate change log
     cmds:
       - git cliff -o CHANGELOG.md
       - git add .
-      - git commit --amend --no-edit
-      # - git push
-      # - git push --tags
+      - 'git commit -m"chore: Update CHANGELOG.md"'
 
   update-main-branch:
     desc: Update remote branch
