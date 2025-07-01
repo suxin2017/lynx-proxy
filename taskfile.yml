@@ -73,7 +73,7 @@ tasks:
     desc: Release minor version
     cmds:
       - cargo release minor --execute
-      
+
   release-patch:
     deps: [update-main-branch, build-ui, test,generate-change-log]
     desc: Release patch version
@@ -92,6 +92,7 @@ tasks:
       - git cliff -o CHANGELOG.md
       - git add .
       - 'git commit -m"chore: Update CHANGELOG.md"'
+      - git push
 
   update-main-branch:
     desc: Update remote branch
