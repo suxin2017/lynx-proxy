@@ -17,12 +17,10 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 #[derive(Debug, ToSchema, Serialize, Deserialize, IntoParams)]
 #[serde(rename_all = "camelCase")]
 pub struct RuleListQuery {
-    /// 页码，从1开始
     pub page: Option<u32>,
-    /// 每页数量，默认20
     pub page_size: Option<u32>,
-    /// 是否只获取启用的规则
     pub enabled_only: Option<bool>,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, ToSchema, Serialize)]
@@ -106,11 +104,14 @@ async fn list_rules(
         rules.retain(|rule| rule.enabled);
     }
 
+    if let Some(name) = query.name {
+        rules.retain(|rule| rule.name.to_lowercase().contains(&name.to_lowercase()));
+    }
+
     let total = rules.len();
     let page = query.page.unwrap_or(1);
     let page_size = query.page_size.unwrap_or(20);
 
-    // 分页处理
     let start = ((page - 1) * page_size) as usize;
     let end = (start + page_size as usize).min(total);
 

@@ -272,6 +272,16 @@
       "okText": "删除",
       "cancelText": "取消"
     },
+    "searchPlaceholder": "搜索规则名称",
+    "batchDelete": "批量删除",
+    "batchEnable": "批量启用",
+    "batchDisable": "批量禁用",
+    "batchDeleteConfirm": {
+      "title": "确认批量删除",
+      "content": "确定要删除选中的规则吗？此操作不可恢复。",
+      "okText": "删除",
+      "cancelText": "取消"
+    },
     "copyConfirm": {
       "title": "确认复制",
       "content": "确定要复制规则 \"{{name}}\" 吗？",
