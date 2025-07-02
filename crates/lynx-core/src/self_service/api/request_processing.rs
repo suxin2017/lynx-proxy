@@ -74,6 +74,13 @@ pub struct UpdateRuleRequest {
     pub handlers: Vec<HandlerRule>,
 }
 
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchRuleIdsRequest {
+    /// 规则ID列表
+    pub ids: Vec<i32>,
+}
+
 #[utoipa::path(
     get,
     path = "/rules",
@@ -353,6 +360,69 @@ async fn update_rule(
     Ok(Json(empty_ok()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/rules/batch-delete",
+    tags = ["Request Processing"],
+    request_body = BatchRuleIdsRequest,
+    responses(
+        (status = 200, description = "Rules deleted successfully", body = EmptyOkResponse),
+        (status = 500, description = "Failed to delete rules")
+    )
+)]
+async fn batch_delete_rules(
+    State(RouteState { db, .. }): State<RouteState>,
+    Json(request): Json<BatchRuleIdsRequest>,
+) -> Result<Json<EmptyOkResponse>, StatusCode> {
+    let dao = RequestProcessingDao::new(db);
+    dao.batch_delete_rules(&request.ids)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(empty_ok()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rules/batch-enable",
+    tags = ["Request Processing"],
+    request_body = BatchRuleIdsRequest,
+    responses(
+        (status = 200, description = "Rules enabled successfully", body = EmptyOkResponse),
+        (status = 500, description = "Failed to enable rules")
+    )
+)]
+async fn batch_enable_rules(
+    State(RouteState { db, .. }): State<RouteState>,
+    Json(request): Json<BatchRuleIdsRequest>,
+) -> Result<Json<EmptyOkResponse>, StatusCode> {
+    let dao = RequestProcessingDao::new(db);
+    dao.batch_toggle_rules(&request.ids, true)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(empty_ok()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/rules/batch-disable",
+    tags = ["Request Processing"],
+    request_body = BatchRuleIdsRequest,
+    responses(
+        (status = 200, description = "Rules disabled successfully", body = EmptyOkResponse),
+        (status = 500, description = "Failed to disable rules")
+    )
+)]
+async fn batch_disable_rules(
+    State(RouteState { db, .. }): State<RouteState>,
+    Json(request): Json<BatchRuleIdsRequest>,
+) -> Result<Json<EmptyOkResponse>, StatusCode> {
+    let dao = RequestProcessingDao::new(db);
+    dao.batch_toggle_rules(&request.ids, false)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(empty_ok()))
+}
+
 pub fn router(state: RouteState) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(list_rules))
@@ -362,5 +432,8 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(delete_rule))
         .routes(routes!(toggle_rule))
         .routes(routes!(get_template_handlers))
+        .routes(routes!(batch_delete_rules))
+        .routes(routes!(batch_enable_rules))
+        .routes(routes!(batch_disable_rules))
         .with_state(state)
 }
