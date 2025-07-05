@@ -269,6 +269,42 @@ export const getListRulesResponseMock = (
   ...overrideResponse,
 });
 
+export const getBatchDeleteRulesResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperTupleUnit> = {},
+): ResponseDataWrapperTupleUnit => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: {},
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getBatchDisableRulesResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperTupleUnit> = {},
+): ResponseDataWrapperTupleUnit => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: {},
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
+export const getBatchEnableRulesResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperTupleUnit> = {},
+): ResponseDataWrapperTupleUnit => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: {},
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
 export const getGetRuleResponseUrlPatternMock = (
   overrideResponse: Partial<UrlPattern> = {},
 ): UrlPattern => ({
@@ -733,6 +769,81 @@ export const getListRulesMockHandler = (
   });
 };
 
+export const getBatchDeleteRulesMockHandler = (
+  overrideResponse?:
+    | ResponseDataWrapperTupleUnit
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) =>
+        | Promise<ResponseDataWrapperTupleUnit>
+        | ResponseDataWrapperTupleUnit),
+) => {
+  return http.post('*/request_processing/rules/batch-delete', async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getBatchDeleteRulesResponseMock(),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  });
+};
+
+export const getBatchDisableRulesMockHandler = (
+  overrideResponse?:
+    | ResponseDataWrapperTupleUnit
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) =>
+        | Promise<ResponseDataWrapperTupleUnit>
+        | ResponseDataWrapperTupleUnit),
+) => {
+  return http.post('*/request_processing/rules/batch-disable', async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getBatchDisableRulesResponseMock(),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  });
+};
+
+export const getBatchEnableRulesMockHandler = (
+  overrideResponse?:
+    | ResponseDataWrapperTupleUnit
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) =>
+        | Promise<ResponseDataWrapperTupleUnit>
+        | ResponseDataWrapperTupleUnit),
+) => {
+  return http.post('*/request_processing/rules/batch-enable', async (info) => {
+    await delay(1000);
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getBatchEnableRulesResponseMock(),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  });
+};
+
 export const getGetRuleMockHandler = (
   overrideResponse?:
     | ResponseDataWrapperRequestRule
@@ -860,6 +971,9 @@ export const getGetTemplateHandlersMockHandler = (
 export const getRequestProcessingMock = () => [
   getCreateRuleMockHandler(),
   getListRulesMockHandler(),
+  getBatchDeleteRulesMockHandler(),
+  getBatchDisableRulesMockHandler(),
+  getBatchEnableRulesMockHandler(),
   getGetRuleMockHandler(),
   getUpdateRuleMockHandler(),
   getDeleteRuleMockHandler(),

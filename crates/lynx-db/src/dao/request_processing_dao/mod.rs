@@ -7,10 +7,10 @@ pub mod validator;
 
 pub use common::{BodyUtils, HeaderUtils};
 pub use error::RequestProcessingError;
-pub use types::{CaptureRule, LocalFileConfig, ModifyRequestConfig, RequestRule};
-pub use handlers::{HandlerRule, HtmlScriptInjectorConfig};
 use handlers::handler_rule::HandlerRuleType;
+pub use handlers::{HandlerRule, HtmlScriptInjectorConfig};
 pub use matcher::RuleMatcher;
+pub use types::{CaptureRule, LocalFileConfig, ModifyRequestConfig, RequestRule};
 pub use validator::RuleValidator;
 
 use crate::entities::{
@@ -20,6 +20,7 @@ use crate::entities::{
 };
 use anyhow::{Result, anyhow};
 use axum::{body::HttpBody, extract::Request};
+use sea_orm::sea_query::Expr;
 use sea_orm::*;
 use std::sync::Arc;
 
@@ -223,6 +224,42 @@ impl RequestProcessingDao {
         RuleEntity::delete_by_id(rule_id).exec(&txn).await?;
 
         txn.commit().await?;
+        Ok(())
+    }
+
+    /// 批量删除规则及其相关的捕获和处理器
+    pub async fn batch_delete_rules(&self, ids: &[i32]) -> Result<()> {
+        let txn = self.db.begin().await?;
+
+        // 删除相关的 captures
+        CaptureEntity::delete_many()
+            .filter(capture::Column::RuleId.is_in(ids.to_vec()))
+            .exec(&txn)
+            .await?;
+
+        // 删除相关的 handlers
+        HandlerEntity::delete_many()
+            .filter(handler::Column::RuleId.is_in(ids.to_vec()))
+            .exec(&txn)
+            .await?;
+
+        // 删除规则本身
+        RuleEntity::delete_many()
+            .filter(rule::Column::Id.is_in(ids.to_vec()))
+            .exec(&txn)
+            .await?;
+
+        txn.commit().await?;
+        Ok(())
+    }
+
+    /// 批量启用/禁用规则
+    pub async fn batch_toggle_rules(&self, ids: &[i32], enabled: bool) -> Result<()> {
+        RuleEntity::update_many()
+            .col_expr(rule::Column::Enabled, Expr::value(enabled))
+            .filter(rule::Column::Id.is_in(ids.to_vec()))
+            .exec(self.db.as_ref())
+            .await?;
         Ok(())
     }
 
