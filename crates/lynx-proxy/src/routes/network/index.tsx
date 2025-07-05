@@ -43,7 +43,7 @@ function InnerComponent() {
             {/* ToolBar */}
             <div className="flex gap-2">
               <SearchRequestUrlInput />
-              <FilterTemplate />
+              {/* <FilterTemplate /> */}
               <ShowTypeSegmented />
             </div>
             {state === 'Sequence' && <Sequence />}
