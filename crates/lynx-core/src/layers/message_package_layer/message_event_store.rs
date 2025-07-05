@@ -293,13 +293,56 @@ impl MessageEventCache {
         self.map.get_mut(key)
     }
 
+    async fn decode_body(value: &mut MessageEventStoreValue) -> Result<()> {
+        use super::message_event_data::MessageEventBody;
+        use async_compression::tokio::bufread::{BrotliDecoder, GzipDecoder, ZlibDecoder};
+        use tokio::io::AsyncReadExt;
+
+        if let Some(response) = &mut value.response {
+            if let Some(content_encoding) = response.headers.get("content-encoding") {
+                let encoding = content_encoding.to_string().to_lowercase();
+
+                if !response.body.is_empty() {
+                    let mut decoded = Vec::new();
+                    let body_bytes = &response.body;
+
+                    match encoding.as_str() {
+                        "gzip" => {
+                            let mut decoder = GzipDecoder::new(body_bytes.as_bytes());
+                            decoder.read_to_end(&mut decoded).await?;
+                        }
+                        "deflate" => {
+                            let mut decoder = ZlibDecoder::new(body_bytes.as_bytes());
+                            decoder.read_to_end(&mut decoded).await?;
+                        }
+                        "br" => {
+                            let mut decoder = BrotliDecoder::new(body_bytes.as_bytes());
+                            decoder.read_to_end(&mut decoded).await?;
+                        }
+                        _ => {
+                            decoded = body_bytes.as_bytes().to_vec();
+                        }
+                    }
+
+                    // Update the body with decoded content
+                    response.body = MessageEventBody::new(Bytes::from(decoded));
+                    // Remove content-encoding header since we've decoded the body
+                    // response.headers.remove(&encoding);
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub async fn get_new_requests(&self) -> Result<Vec<MessageEventStoreValue>> {
         let mut new_requests = Vec::new();
 
         for mut entry in self.map.iter_mut() {
             if entry.is_new {
+                let mut value = entry.clone();
+                Self::decode_body(&mut value).await?;
                 // 收集副本
-                new_requests.push(entry.clone());
+                new_requests.push(value);
                 // 标记为已处理
                 entry.is_new = false;
             }
@@ -308,7 +351,10 @@ impl MessageEventCache {
         Ok(new_requests)
     }
 
-    pub async fn get_request_by_keys(&self, keys: Vec<String>) -> Vec<MessageEventStoreValue> {
+    pub async fn get_request_by_keys(
+        &self,
+        keys: Vec<String>,
+    ) -> Result<Vec<MessageEventStoreValue>> {
         let mut requests = Vec::new();
 
         for key in keys {
@@ -320,17 +366,19 @@ impl MessageEventCache {
                     || value.is_cancelled();
 
                 if filter_flag {
-                    requests.push(value.clone());
+                    let mut value = value.clone();
+                    Self::decode_body(&mut value).await?;
+                    requests.push(value);
                 }
             }
         }
-        requests
+        Ok(requests)
     }
 }
 
 impl Default for MessageEventCache {
     fn default() -> Self {
-        Self::new(10_000) // Default cache capacity is 10000
+        Self::new(100)
     }
 }
 

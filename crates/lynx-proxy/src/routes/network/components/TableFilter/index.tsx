@@ -4,18 +4,19 @@ import { Input } from 'antd';
 import React from 'react';
 import { useDispatch } from 'react-redux';
 
-interface ISearchRequestUrlInputProps { }
+interface ISearchRequestUrlInputProps {}
 
-export const SearchRequestUrlInput: React.FC<ISearchRequestUrlInputProps> = () => {
+export const SearchRequestUrlInput: React.FC<
+  ISearchRequestUrlInputProps
+> = () => {
   const dispatch = useDispatch();
-  const {t} = useI18n();
-
+  const { t } = useI18n();
 
   return (
     <Input
       className="flex-1"
       allowClear
-      placeholder={t('network.network.filterUriPlaceholder')}
+      placeholder={t('network.filterUriPlaceholder')}
       onChange={(e) => {
         dispatch(filterUri(e.target.value));
       }}

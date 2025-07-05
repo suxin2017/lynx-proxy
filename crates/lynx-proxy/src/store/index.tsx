@@ -4,7 +4,6 @@ import {
 } from '@/services/generated/net-request/net-request';
 import {
   MessageEventBody,
-  MessageEventRequestHeaders,
   MessageEventStoreValue,
   ResponseDataWrapperRecordRequests,
 } from '@/services/generated/utoipaAxum.schemas';
@@ -24,7 +23,6 @@ import {
   requestTreeReducer,
 } from './requestTreeStore';
 import { apiDebugReducer } from '../routes/apiDebug/components/store';
-import pako from 'pako';
 import { useSelectRequest } from '@/routes/network/components/store/selectRequestStore';
 
 export const store = configureStore({
@@ -52,29 +50,17 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
-export function decodeGzipBase64(base64: string): ArrayBuffer {
-  const bytes = base64ToArrayBuffer(base64);
-  const decompressed = pako.ungzip(bytes);
-  return decompressed.buffer;
-}
-
-export function bodyToArrayBuffer(
-  headers: MessageEventRequestHeaders,
-  body: MessageEventBody,
-) {
-  if (headers['content-encoding'] === 'gzip') {
-    return decodeGzipBase64(body as string);
-  }
+export function bodyToArrayBuffer(body: MessageEventBody) {
   return base64ToArrayBuffer(body);
 }
 
 const formatItem = (item: MessageEventStoreValue) => {
   const { request, response } = item;
   const reqBodyArrayBuffer = request?.body
-    ? bodyToArrayBuffer(request.headers, request.body)
+    ? bodyToArrayBuffer(request.body)
     : undefined;
   const resBodyArrayBuffer = response?.body
-    ? bodyToArrayBuffer(response.headers, response.body)
+    ? bodyToArrayBuffer(response.body)
     : undefined;
   return {
     ...item,

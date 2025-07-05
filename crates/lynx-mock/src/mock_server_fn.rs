@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use async_compression::tokio::bufread::GzipEncoder;
+use async_compression::tokio::bufread::{BrotliEncoder, GzipEncoder, ZlibEncoder};
 use bytes::Bytes;
 use futures_util::{SinkExt, TryStreamExt};
 use http::{
@@ -12,9 +12,9 @@ use hyper::{
     body::{Frame, Incoming},
 };
 use hyper_tungstenite::tungstenite::Message;
+use serde_json;
 use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 use tracing::{instrument, trace, warn};
-use serde_json;
 
 use std::{fmt::Display, time::Duration};
 use tokio::sync::broadcast;
@@ -25,6 +25,8 @@ pub const HELLO_WORLD: &str = "Hello, World!";
 
 pub const HELLO_PATH: &str = "/hello";
 pub const GZIP_PATH: &str = "/gzip";
+pub const BROTLI_PATH: &str = "/brotli";
+pub const DEFLATE_PATH: &str = "/deflate";
 pub const ECHO_PATH: &str = "/echo";
 pub const WEBSOCKET_PATH: &str = "/ws";
 pub const PUSH_MSG_PATH: &str = "/push_msg";
@@ -38,6 +40,8 @@ pub const TIMEOUT_PATH: &str = "/timeout";
 pub enum MockPath {
     Hello,
     Gzip,
+    Brotli,
+    Deflate,
     Echo,
     PushMsg,
     Websocket,
@@ -50,9 +54,11 @@ pub enum MockPath {
     NotFound,
 }
 
-pub static HTTP_PATH_LIST: [MockPath; 10] = [
+pub static HTTP_PATH_LIST: [MockPath; 12] = [
     MockPath::Hello,
     MockPath::Gzip,
+    MockPath::Brotli,
+    MockPath::Deflate,
     MockPath::Echo,
     MockPath::PushMsg,
     MockPath::Headers,
@@ -70,6 +76,8 @@ impl From<&str> for MockPath {
         match value {
             HELLO_PATH => MockPath::Hello,
             GZIP_PATH => MockPath::Gzip,
+            BROTLI_PATH => MockPath::Brotli,
+            DEFLATE_PATH => MockPath::Deflate,
             ECHO_PATH => MockPath::Echo,
             PUSH_MSG_PATH => MockPath::PushMsg,
             WEBSOCKET_PATH => MockPath::Websocket,
@@ -89,6 +97,8 @@ impl Display for MockPath {
         match self {
             MockPath::Hello => write!(f, "{}", HELLO_PATH),
             MockPath::Gzip => write!(f, "{}", GZIP_PATH),
+            MockPath::Brotli => write!(f, "{}", BROTLI_PATH),
+            MockPath::Deflate => write!(f, "{}", DEFLATE_PATH),
             MockPath::Echo => write!(f, "{}", ECHO_PATH),
             MockPath::PushMsg => write!(f, "{}", PUSH_MSG_PATH),
             MockPath::Websocket => write!(f, "{}", WEBSOCKET_PATH),
@@ -158,8 +168,36 @@ pub async fn mock_server_fn(
                     .map_ok(Frame::data)
                     .map_err(|err| anyhow!("{err}")),
             );
+
             let res = Response::builder()
                 .header(CONTENT_ENCODING, "gzip")
+                .header(CONTENT_TYPE, "text/plain")
+                .status(StatusCode::OK)
+                .body(BoxBody::new(stream_body))?;
+            Ok(res)
+        }
+        (&Method::GET, MockPath::Brotli) => {
+            let stream_body = StreamBody::new(
+                ReaderStream::new(BrotliEncoder::new(HELLO_WORLD.as_bytes()))
+                    .map_ok(Frame::data)
+                    .map_err(|err| anyhow!("{err}")),
+            );
+            let res = Response::builder()
+                .header(CONTENT_ENCODING, "br")
+                .header(CONTENT_TYPE, "text/plain")
+                .status(StatusCode::OK)
+                .body(BoxBody::new(stream_body))?;
+            Ok(res)
+        }
+        (&Method::GET, MockPath::Deflate) => {
+            let stream_body = StreamBody::new(
+                ReaderStream::new(ZlibEncoder::new(HELLO_WORLD.as_bytes()))
+                    .map_ok(Frame::data)
+                    .map_err(|err| anyhow!("{err}")),
+            );
+            let res = Response::builder()
+                .header(CONTENT_ENCODING, "deflate")
+                .header(CONTENT_TYPE, "text/plain")
                 .status(StatusCode::OK)
                 .body(BoxBody::new(stream_body))?;
             Ok(res)
@@ -197,7 +235,8 @@ pub async fn mock_server_fn(
             let stream = BroadcastStream::new(rx);
             let stream = stream
                 .map_ok(|data| Frame::data(Bytes::from(data)))
-                .map_err(|err| anyhow!(err));            let body = BodyExt::boxed(StreamBody::new(stream));
+                .map_err(|err| anyhow!(err));
+            let body = BodyExt::boxed(StreamBody::new(stream));
             let res = Response::new(body);
             Ok(res)
         }
@@ -213,7 +252,8 @@ pub async fn mock_server_fn(
                 .map_err(|err| anyhow!("{err}"))
                 .boxed();
             let mut res = Response::new(body);
-            res.headers_mut().insert(CONTENT_TYPE, "application/json".parse().unwrap());
+            res.headers_mut()
+                .insert(CONTENT_TYPE, "application/json".parse().unwrap());
             Ok(res)
         }
         (&Method::GET, MockPath::Slow) => {
@@ -230,12 +270,18 @@ pub async fn mock_server_fn(
             // Return status based on query parameter
             let query = req.uri().query().unwrap_or("");
             let status_code = if query.contains("code=") {
-                let code_str = query.split("code=").nth(1).unwrap_or("200").split('&').next().unwrap_or("200");
+                let code_str = query
+                    .split("code=")
+                    .nth(1)
+                    .unwrap_or("200")
+                    .split('&')
+                    .next()
+                    .unwrap_or("200");
                 code_str.parse::<u16>().unwrap_or(200)
             } else {
                 200
             };
-            
+
             let status = StatusCode::from_u16(status_code).unwrap_or(StatusCode::OK);
             let body = Full::new(Bytes::from(format!("Status: {}", status_code)))
                 .map_err(|err| anyhow!("{err}"))
@@ -261,7 +307,8 @@ pub async fn mock_server_fn(
                 .map_err(|err| anyhow!("{err}"))
                 .boxed();
             let mut res = Response::new(body);
-            res.headers_mut().insert(CONTENT_TYPE, "application/json".parse().unwrap());
+            res.headers_mut()
+                .insert(CONTENT_TYPE, "application/json".parse().unwrap());
             Ok(res)
         }
         (&Method::POST, MockPath::PostEcho) => {

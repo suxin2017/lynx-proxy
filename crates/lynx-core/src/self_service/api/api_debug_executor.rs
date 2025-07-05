@@ -211,7 +211,6 @@ async fn execute_http_request(
                 .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
                 .collect();
             let response_headers_json = serde_json::to_value(response_headers).ok();
-
             // Get response body
             match response.text().await {
                 Ok(body) => {
@@ -220,7 +219,6 @@ async fn execute_http_request(
                     } else {
                         RequestStatus::Failed
                     };
-
                     (
                         status,
                         Some(status_code),
