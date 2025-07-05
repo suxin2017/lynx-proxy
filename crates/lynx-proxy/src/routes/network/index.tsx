@@ -14,7 +14,6 @@ import {
 import { AutoScrollProvider } from './components/store/autoScrollStore';
 import { Structure } from './components/Structure';
 import { SearchRequestUrlInput } from './components/TableFilter';
-import { FilterTemplate } from './components/FilterTemplate';
 
 const { Title } = Typography;
 

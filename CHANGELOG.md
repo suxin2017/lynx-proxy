@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.4] - 2025-07-05
+
+### 🚀 Features
+
+- Batch handler rule ([#34](https://github.com/suxin2017/lynx-server/issues/34))
+
+### 🐛 Bug Fixes
+
+- Compression bug ([#36](https://github.com/suxin2017/lynx-server/issues/36))
+- Style
+
 ## [0.3.3] - 2025-07-01
 
 ### 🚀 Features
