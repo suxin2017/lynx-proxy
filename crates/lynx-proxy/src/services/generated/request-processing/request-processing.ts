@@ -22,6 +22,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BatchRuleIdsRequest,
   CreateRuleRequest,
   ListRulesParams,
   ResponseDataWrapperCreateRuleResponse,
@@ -240,6 +241,234 @@ export function useListRules<
   return query;
 }
 
+export const batchDeleteRules = (
+  batchRuleIdsRequest: BatchRuleIdsRequest,
+  signal?: AbortSignal,
+) => {
+  return customInstance<ResponseDataWrapperTupleUnit>({
+    url: `/request_processing/rules/batch-delete`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: batchRuleIdsRequest,
+    signal,
+  });
+};
+
+export const getBatchDeleteRulesMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof batchDeleteRules>>,
+    TError,
+    { data: BatchRuleIdsRequest },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof batchDeleteRules>>,
+  TError,
+  { data: BatchRuleIdsRequest },
+  TContext
+> => {
+  const mutationKey = ['batchDeleteRules'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof batchDeleteRules>>,
+    { data: BatchRuleIdsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return batchDeleteRules(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BatchDeleteRulesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof batchDeleteRules>>
+>;
+export type BatchDeleteRulesMutationBody = BatchRuleIdsRequest;
+export type BatchDeleteRulesMutationError = void;
+
+export const useBatchDeleteRules = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof batchDeleteRules>>,
+      TError,
+      { data: BatchRuleIdsRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof batchDeleteRules>>,
+  TError,
+  { data: BatchRuleIdsRequest },
+  TContext
+> => {
+  const mutationOptions = getBatchDeleteRulesMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const batchDisableRules = (
+  batchRuleIdsRequest: BatchRuleIdsRequest,
+  signal?: AbortSignal,
+) => {
+  return customInstance<ResponseDataWrapperTupleUnit>({
+    url: `/request_processing/rules/batch-disable`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: batchRuleIdsRequest,
+    signal,
+  });
+};
+
+export const getBatchDisableRulesMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof batchDisableRules>>,
+    TError,
+    { data: BatchRuleIdsRequest },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof batchDisableRules>>,
+  TError,
+  { data: BatchRuleIdsRequest },
+  TContext
+> => {
+  const mutationKey = ['batchDisableRules'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof batchDisableRules>>,
+    { data: BatchRuleIdsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return batchDisableRules(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BatchDisableRulesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof batchDisableRules>>
+>;
+export type BatchDisableRulesMutationBody = BatchRuleIdsRequest;
+export type BatchDisableRulesMutationError = void;
+
+export const useBatchDisableRules = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof batchDisableRules>>,
+      TError,
+      { data: BatchRuleIdsRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof batchDisableRules>>,
+  TError,
+  { data: BatchRuleIdsRequest },
+  TContext
+> => {
+  const mutationOptions = getBatchDisableRulesMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const batchEnableRules = (
+  batchRuleIdsRequest: BatchRuleIdsRequest,
+  signal?: AbortSignal,
+) => {
+  return customInstance<ResponseDataWrapperTupleUnit>({
+    url: `/request_processing/rules/batch-enable`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: batchRuleIdsRequest,
+    signal,
+  });
+};
+
+export const getBatchEnableRulesMutationOptions = <
+  TError = void,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof batchEnableRules>>,
+    TError,
+    { data: BatchRuleIdsRequest },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof batchEnableRules>>,
+  TError,
+  { data: BatchRuleIdsRequest },
+  TContext
+> => {
+  const mutationKey = ['batchEnableRules'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof batchEnableRules>>,
+    { data: BatchRuleIdsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return batchEnableRules(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type BatchEnableRulesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof batchEnableRules>>
+>;
+export type BatchEnableRulesMutationBody = BatchRuleIdsRequest;
+export type BatchEnableRulesMutationError = void;
+
+export const useBatchEnableRules = <TError = void, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof batchEnableRules>>,
+      TError,
+      { data: BatchRuleIdsRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof batchEnableRules>>,
+  TError,
+  { data: BatchRuleIdsRequest },
+  TContext
+> => {
+  const mutationOptions = getBatchEnableRulesMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const getRule = (id: number, signal?: AbortSignal) => {
   return customInstance<ResponseDataWrapperRequestRule>({
     url: `/request_processing/rules/${id}`,
