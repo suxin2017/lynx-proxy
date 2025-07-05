@@ -8,10 +8,3 @@ export interface RequestContextMenuState {
     event: React.MouseEvent,
   ) => void;
 }
-
-export interface MenuItemClickHandlers {
-  onCopyCurl: () => void;
-  onDownloadAllRequests: () => void;
-  onCopySelectedRequest: () => void;
-  onAddToApiDebug: () => void;
-}
