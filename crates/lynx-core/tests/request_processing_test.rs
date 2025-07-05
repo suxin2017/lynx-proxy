@@ -534,4 +534,78 @@ async fn test_update_rule_not_found() -> Result<()> {
     Ok(())
 }
 
+#[tokio::test]
+async fn test_batch_rule_operations() -> Result<()> {
+    let (server, client) = setup_self_service_test_server().await?;
+    let base_url = base_url(&server);
+    let dao = RequestProcessingDao::new(server.db_connect.clone());
+
+    // 创建多条规则
+    let mut rule_ids = Vec::new();
+    for i in 1..=3 {
+        let id = create_test_rule(&dao, &format!("Batch Rule {}", i), true).await?;
+        rule_ids.push(id);
+    }
+
+    // 批量禁用
+    let disable_req = json!({ "ids": rule_ids });
+    let disable_resp = client
+        .get_request_client()
+        .post(format!("{}/request_processing/rules/batch-disable", base_url))
+        .json(&disable_req)
+        .send()
+        .await?;
+    assert_eq!(disable_resp.status(), StatusCode::OK);
+    // 检查全部为 disabled
+    for id in &rule_ids {
+        let resp = client
+            .get_request_client()
+            .get(format!("{}/request_processing/rules/{}", base_url, id))
+            .send()
+            .await?;
+        let body: Value = resp.json().await?;
+        assert_eq!(body["data"]["enabled"], false);
+    }
+
+    // 批量启用
+    let enable_req = json!({ "ids": rule_ids });
+    let enable_resp = client
+        .get_request_client()
+        .post(format!("{}/request_processing/rules/batch-enable", base_url))
+        .json(&enable_req)
+        .send()
+        .await?;
+    assert_eq!(enable_resp.status(), StatusCode::OK);
+    // 检查全部为 enabled
+    for id in &rule_ids {
+        let resp = client
+            .get_request_client()
+            .get(format!("{}/request_processing/rules/{}", base_url, id))
+            .send()
+            .await?;
+        let body: Value = resp.json().await?;
+        assert_eq!(body["data"]["enabled"], true);
+    }
+
+    // 批量删除
+    let delete_req = json!({ "ids": rule_ids });
+    let delete_resp = client
+        .get_request_client()
+        .post(format!("{}/request_processing/rules/batch-delete", base_url))
+        .json(&delete_req)
+        .send()
+        .await?;
+    assert_eq!(delete_resp.status(), StatusCode::OK);
+    // 检查全部被删除
+    for id in &rule_ids {
+        let resp = client
+            .get_request_client()
+            .get(format!("{}/request_processing/rules/{}", base_url, id))
+            .send()
+            .await?;
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+    Ok(())
+}
+
 // Helper functions

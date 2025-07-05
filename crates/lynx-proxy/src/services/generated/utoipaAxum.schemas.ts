@@ -74,6 +74,11 @@ export interface ApiDebugStats {
   total: number;
 }
 
+export interface BatchRuleIdsRequest {
+  /** 规则ID列表 */
+  ids: number[];
+}
+
 export type BlockHandlerConfigReason = string | null;
 
 /**
@@ -1339,16 +1344,8 @@ export type ListDebugEntriesParams = {
 };
 
 export type ListRulesParams = {
-  /**
-   * 页码，从1开始
-   */
   page?: number | null;
-  /**
-   * 每页数量，默认20
-   */
   pageSize?: number | null;
-  /**
-   * 是否只获取启用的规则
-   */
   enabledOnly?: boolean | null;
+  name?: string | null;
 };

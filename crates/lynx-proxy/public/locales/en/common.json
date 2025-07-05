@@ -272,6 +272,16 @@
       "okText": "Delete",
       "cancelText": "Cancel"
     },
+    "searchPlaceholder": "Search rule name",
+    "batchDelete": "Batch Delete",
+    "batchEnable": "Batch Enable",
+    "batchDisable": "Batch Disable",
+    "batchDeleteConfirm": {
+      "title": "Confirm Batch Delete",
+      "content": "Are you sure you want to delete the selected rules? This action cannot be undone.",
+      "okText": "Delete",
+      "cancelText": "Cancel"
+    },
     "copyConfirm": {
       "title": "Confirm Copy",
       "content": "Are you sure you want to copy rule \"{{name}}\"?",

@@ -1,6 +1,6 @@
 import { CommonCard } from '@/routes/settings/components/CommonCard';
 import { RiAddLine, RiDeleteBinLine, RiEditLine } from '@remixicon/react';
-import { Button, Modal, Space, Switch, Table, Typography } from 'antd';
+import { Button, Input, Modal, Space, Switch, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { RequestRule } from '@/services/generated/utoipaAxum.schemas';
@@ -8,6 +8,9 @@ import {
   useDeleteRule,
   useListRules,
   useToggleRule,
+  useBatchDeleteRules,
+  useBatchEnableRules,
+  useBatchDisableRules,
 } from '@/services/generated/request-processing/request-processing';
 import { ConditionsText } from './InterceptorPage/ConditionsText';
 import { ActionCell } from './InterceptorPage/ActionCell';
@@ -18,6 +21,7 @@ import {
 } from './InterceptorPage/CreateRuleDrawer';
 import { CopyRuleButton } from './InterceptorPage/CopyRuleButton';
 import { useI18n } from '@/contexts';
+import { useDebounce } from 'ahooks';
 
 const { Title, Text } = Typography;
 
@@ -27,6 +31,7 @@ const InnerInterceptorPage: React.FC = () => {
     page: 1,
     pageSize: 10,
   });
+
   const { data: listRulesData, refetch: refetchRules } =
     useListRules(pageParameters);
   const { openDrawer, openEditDrawer } = useCreateRuleDrawer();
@@ -46,6 +51,25 @@ const InnerInterceptorPage: React.FC = () => {
       onSuccess: () => {
         refetchRules();
       },
+    },
+  });
+
+  const [selectedRowKeys, setSelectedRowKeys] = React.useState<React.Key[]>([]);
+
+  // 批量操作 hooks
+  const batchDeleteMutation = useBatchDeleteRules({
+    mutation: {
+      onSuccess: () => refetchRules(),
+    },
+  });
+  const batchEnableMutation = useBatchEnableRules({
+    mutation: {
+      onSuccess: () => refetchRules(),
+    },
+  });
+  const batchDisableMutation = useBatchDisableRules({
+    mutation: {
+      onSuccess: () => refetchRules(),
     },
   });
 
@@ -152,6 +176,53 @@ const InnerInterceptorPage: React.FC = () => {
     },
   ];
 
+  // 批量操作按钮
+  const batchButtons = (
+    <Space>
+      <Button
+        danger
+        icon={<RiDeleteBinLine size={16} />}
+        disabled={selectedRowKeys.length === 0}
+        loading={batchDeleteMutation.isPending}
+        onClick={() => {
+          Modal.confirm({
+            title: t('ruleManager.batchDeleteConfirm.title'),
+            content: t('ruleManager.batchDeleteConfirm.content'),
+            okType: 'danger',
+            onOk: () =>
+              batchDeleteMutation.mutate({
+                data: { ids: selectedRowKeys as number[] },
+              }),
+          });
+        }}
+      >
+        {t('ruleManager.batchDelete')}
+      </Button>
+      <Button
+        onClick={() =>
+          batchEnableMutation.mutate({
+            data: { ids: selectedRowKeys as number[] },
+          })
+        }
+        disabled={selectedRowKeys.length === 0}
+        loading={batchEnableMutation.isPending}
+      >
+        {t('ruleManager.batchEnable')}
+      </Button>
+      <Button
+        onClick={() =>
+          batchDisableMutation.mutate({
+            data: { ids: selectedRowKeys as number[] },
+          })
+        }
+        disabled={selectedRowKeys.length === 0}
+        loading={batchDisableMutation.isPending}
+      >
+        {t('ruleManager.batchDisable')}
+      </Button>
+    </Space>
+  );
+
   return (
     <>
       <CommonCard>
@@ -160,6 +231,7 @@ const InnerInterceptorPage: React.FC = () => {
             {t('ruleManager.title')}
           </Title>
           <Space>
+            {batchButtons}
             <Button
               type="primary"
               icon={<RiAddLine size={16} />}
@@ -170,18 +242,23 @@ const InnerInterceptorPage: React.FC = () => {
           </Space>
         </div>
 
-        <Text type="secondary" className="mb-4 block">
-          {t('ruleManager.description')}
-        </Text>
+        <Input.Search
+          className="mb-1 flex-1"
+          allowClear
+          placeholder={t('ruleManager.searchPlaceholder')}
+          onSearch={(value) => {
+            setPageParameters((prev) => ({
+              ...prev,
+              name: value,
+            }));
+          }}
+        />
 
         <Table
-          // rowSelection={{
-          //   onChange(selectedRowKeys, selectedRows, info) {
-          //     // 这里可以处理选中行的逻辑
-          //     console.log('Selected Row Keys:', selectedRowKeys);
-          //     console.log('Selected Rows:', selectedRows);
-          //   },
-          // }}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
           columns={columns}
           dataSource={listRulesData?.data.rules}
           rowKey="id"
@@ -189,7 +266,7 @@ const InnerInterceptorPage: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             onChange(page, pageSize) {
-              setPageParameters({ page, pageSize });
+              setPageParameters((prev) => ({ ...prev, page, pageSize }));
             },
           }}
         />
