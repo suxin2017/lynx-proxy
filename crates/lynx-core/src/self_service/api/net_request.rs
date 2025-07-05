@@ -97,7 +97,11 @@ async fn get_cached_requests(
     })?;
     let patch_requests = net_request_cache
         .get_request_by_keys(params.trace_ids.unwrap_or_default())
-        .await;
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get patch requests: {:?}", e);
+            AppError::DatabaseError(e.to_string())
+        })?;
     Ok(Json(ok(RecordRequests {
         new_requests,
         patch_requests: Some(patch_requests),
