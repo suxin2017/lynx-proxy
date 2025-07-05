@@ -4,10 +4,15 @@ import { useRequestContextMenuContext } from './hooks';
 import { useContextMenuItems } from './menuItems';
 
 // Re-export the context provider and hook for external use
-export { RequestContextMenuProvider, useRequestContextMenuContext } from './context';
-export type { MenuItemClickHandlers, RequestContextMenuState } from './types';
+export {
+  RequestContextMenuProvider,
+  useRequestContextMenuContext,
+} from './context';
+export type { RequestContextMenuState } from './types';
 
-export const RequestContextMenu: React.FC<PropsWithChildren> = ({ children }) => {
+export const RequestContextMenu: React.FC<PropsWithChildren> = ({
+  children,
+}) => {
   const { selectedRecord, setSelectedRecord } = useRequestContextMenuContext();
 
   const contextMenuItems = useContextMenuItems();

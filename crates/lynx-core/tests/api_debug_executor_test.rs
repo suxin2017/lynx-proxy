@@ -294,3 +294,63 @@ async fn test_api_debug_executor_status_endpoint() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_api_debug_executor_compression_endpoints() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_api_debug_server().await?;
+    let base_url = base_url(&proxy_server);
+    let mock_base_url = mock_base_url(&mock_server);
+
+    // Test cases for different compression methods
+    let compression_tests = vec![
+        ("gzip", "/gzip", "gzip"),
+        ("brotli", "/brotli", "br"),
+        ("deflate", "/deflate", "deflate"),
+    ];
+
+    for (name, path, encoding) in compression_tests {
+        let execute_request = json!({
+            "name": format!("Test {} Compression", name),
+            "method": "GET",
+            "url": format!("{}{}", mock_base_url, path),
+            "headers": {
+                "Accept":"*/*",
+                "Accept-Encoding": encoding
+            },
+            "timeout": 30
+        });
+
+        let response = client
+            .get_request_client()
+            .post(format!("{}/api_debug_executor/execute", base_url))
+            .json(&execute_request)
+            .send()
+            .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body: Value = response.json().await?;
+        assert_eq!(body["code"], "ok");
+
+        let status = body["data"]["status"].as_str().unwrap();
+        let response_status = body["data"]["responseStatus"].as_i64().unwrap();
+        let response_body = body["data"]["responseBody"].as_str().unwrap();
+
+        // Verify the execution was successful
+        assert_eq!(status, "success", "Failed for {} compression", name);
+        assert_eq!(
+            response_status, 200,
+            "Wrong status code for {} compression",
+            name
+        );
+
+        // The compressed response should still be readable as "Hello, World!"
+        assert_eq!(
+            response_body, "Hello, World!",
+            "Wrong response body for {} compression",
+            name
+        );
+    }
+
+    Ok(())
+}

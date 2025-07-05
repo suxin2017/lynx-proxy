@@ -14,6 +14,7 @@ import {
 import { AutoScrollProvider } from './components/store/autoScrollStore';
 import { Structure } from './components/Structure';
 import { SearchRequestUrlInput } from './components/TableFilter';
+import { FilterTemplate } from './components/FilterTemplate';
 
 const { Title } = Typography;
 
@@ -29,19 +30,20 @@ function InnerComponent() {
     <AutoScrollProvider>
       <RequestContextMenuProvider>
         <CommonCard>
-          <div className="flex h-full w-full flex-1 gap-2 flex-col overflow-hidden">
-            <div className='flex items-center justify-between gap-2'>
+          <div className="flex h-full w-full flex-1 flex-col gap-2 overflow-hidden">
+            <div className="flex items-center justify-between gap-2">
               <Title level={4} style={{ margin: 0 }}>
                 {t('network.title')}
               </Title>
-              <div className='flex items-center gap-2'>
+              <div className="flex items-center gap-2">
                 <RecordingStatusButton />
                 <CleanRequestButton />
               </div>
             </div>
             {/* ToolBar */}
-            <div className='flex gap-2'>
+            <div className="flex gap-2">
               <SearchRequestUrlInput />
+              <FilterTemplate />
               <ShowTypeSegmented />
             </div>
             {state === 'Sequence' && <Sequence />}
@@ -50,7 +52,6 @@ function InnerComponent() {
         </CommonCard>
       </RequestContextMenuProvider>
     </AutoScrollProvider>
-
   );
 }
 

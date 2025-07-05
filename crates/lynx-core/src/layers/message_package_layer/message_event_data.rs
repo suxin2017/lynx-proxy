@@ -163,8 +163,13 @@ impl MessageEventBody {
     pub fn new(bytes: Bytes) -> Self {
         MessageEventBody(bytes)
     }
+
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_ref()
     }
 }
 

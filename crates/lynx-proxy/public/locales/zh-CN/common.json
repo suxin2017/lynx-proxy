@@ -183,7 +183,18 @@
   "network": {
     "filterUriPlaceholder": "搜索请求...",
     "contextMenu": {
-      "copyCurl": "复制为 cURL"
+      "copyCurl": "复制为 cURL",
+      "copyUrl": "复制 URL",
+      "copyCookie": "复制 Cookie",
+      "copyReqHeader": "复制请求头",
+      "copyResHeader": "复制响应头",
+      "copyReqBody": "复制请求体",
+      "copyResBody": "复制响应体",
+      "noCookieToCopy": "没有可复制的 cookie",
+      "noReqHeaderToCopy": "没有可复制的请求头",
+      "noResHeaderToCopy": "没有可复制的响应头",
+      "noReqBodyToCopy": "没有可复制的请求体",
+      "noResBodyToCopy": "没有可复制的响应体"
     },
     "title": "网络请求",
     "sequence": "表格",
