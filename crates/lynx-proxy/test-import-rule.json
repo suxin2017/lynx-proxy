@@ -1,0 +1,34 @@
+{
+  "version": "1.0.0",
+  "exportTime": "2025-01-11T10:00:00.000Z",
+  "rules": [
+    {
+      "name": "从v",
+      "description": "的发射点",
+      "enabled": true,
+      "priority": 50,
+      "capture": {
+        "condition": {
+          "type": "simple",
+          "urlPattern": {
+            "captureType": "glob",
+            "pattern": "撒地方"
+          }
+        }
+      },
+      "handlers": [
+        {
+          "name": "阻止请求",
+          "description": null,
+          "enabled": true,
+          "executionOrder": 0,
+          "handlerType": {
+            "type": "block",
+            "statusCode": 403,
+            "reason": "访问被阻止"
+          }
+        }
+      ]
+    }
+  ]
+}
