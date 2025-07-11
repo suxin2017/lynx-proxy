@@ -1,0 +1,64 @@
+{
+  "version": "1.0.0",
+  "exportTime": "2025-01-11T10:00:00.000Z",
+  "rules": [
+    {
+      "name": "测试规则 - 阻止请求",
+      "description": "这是一个测试规则，用于验证导入功能",
+      "enabled": true,
+      "priority": 50,
+      "capture": {
+        "condition": {
+          "type": "simple",
+          "urlPattern": {
+            "captureType": "glob",
+            "pattern": "https://example.com/*"
+          }
+        }
+      },
+      "handlers": [
+        {
+          "name": "阻止请求",
+          "description": "阻止访问示例网站",
+          "enabled": true,
+          "executionOrder": 0,
+          "handlerType": {
+            "type": "block",
+            "statusCode": 403,
+            "reason": "访问被阻止"
+          }
+        }
+      ]
+    },
+    {
+      "name": "测试规则 - 延迟处理",
+      "description": "添加延迟的测试规则",
+      "enabled": true,
+      "priority": 30,
+      "capture": {
+        "condition": {
+          "type": "simple",
+          "urlPattern": {
+            "captureType": "glob",
+            "pattern": "https://api.example.com/*"
+          },
+          "method": "GET"
+        }
+      },
+      "handlers": [
+        {
+          "name": "延迟处理",
+          "description": "为API请求添加延迟",
+          "enabled": true,
+          "executionOrder": 0,
+          "handlerType": {
+            "type": "delay",
+            "delayMs": 1000,
+            "varianceMs": 200,
+            "delayType": "beforeRequest"
+          }
+        }
+      ]
+    }
+  ]
+}

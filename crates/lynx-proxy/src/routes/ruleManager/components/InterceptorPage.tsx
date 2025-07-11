@@ -14,14 +14,15 @@ import {
 } from '@/services/generated/request-processing/request-processing';
 import { ConditionsText } from './InterceptorPage/ConditionsText';
 import { ActionCell } from './InterceptorPage/ActionCell';
+import { CopyRuleButton } from './InterceptorPage/CopyRuleButton';
+import { ExportRulesButton } from './InterceptorPage/ExportRulesButton';
+import { ImportRulesButton } from './InterceptorPage/ImportRulesButton';
 import {
   CreateRuleDrawer,
   CreateRuleDrawerProvider,
   useCreateRuleDrawer,
 } from './InterceptorPage/CreateRuleDrawer';
-import { CopyRuleButton } from './InterceptorPage/CopyRuleButton';
 import { useI18n } from '@/contexts';
-import { useDebounce } from 'ahooks';
 
 const { Title, Text } = Typography;
 
@@ -179,6 +180,14 @@ const InnerInterceptorPage: React.FC = () => {
   // 批量操作按钮
   const batchButtons = (
     <Space>
+      <ImportRulesButton onSuccess={refetchRules} />
+      <ExportRulesButton 
+        selectedRules={selectedRowKeys.length > 0 ? 
+          listRulesData?.data.rules?.filter(rule => selectedRowKeys.includes(rule.id!)) : 
+          undefined
+        }
+        selectedRowKeys={selectedRowKeys}
+      />
       <Button
         danger
         icon={<RiDeleteBinLine size={16} />}
