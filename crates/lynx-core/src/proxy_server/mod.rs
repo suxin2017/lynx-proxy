@@ -32,7 +32,7 @@ use crate::layers::log_layer::LogLayer;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
 use crate::layers::message_package_layer::{MessageEventChannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
-use crate::layers::trace_id_layer::TraceIdLayer;
+use crate::layers::trace_id_layer::service::{TraceIdExt, set_new_trace_id};
 
 pub mod server_ca_manage;
 pub mod server_config;
@@ -239,13 +239,13 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(message_event_cannel))
                         .layer(RequestExtensionLayer::new(access_addr_list))
                         .layer(RequestExtensionLayer::new(static_dir))
-                        .layer(TraceIdLayer)
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)
                         .layer(ErrorHandlerLayer)
                         .service(svc);
-                    let transform_svc = service_fn(move |req: HyperReq| {
-                        let span = trace_span!("hyper_service");
+                    let transform_svc = service_fn(move |mut req: HyperReq| {
+                        set_new_trace_id(&mut req);
+                        let span = trace_span!("handle_entry_request", uri = %req.uri(),trace_id = %req.extensions().get_trace_id());
                         let svc = svc.clone();
                         async move {
                             let req = req.map(|b| b.map_err(|e| anyhow!(e)).boxed());

@@ -26,6 +26,7 @@ async fn proxy_http_request_inner(req: Req) -> Result<Response> {
         .await
         .map_err(|e| e.context("http request failed"))
         .map(|mut res| {
+            tracing::trace!("HTTP response received");
             res.extensions_mut().insert(trace_id);
             res
         })

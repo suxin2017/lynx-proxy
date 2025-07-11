@@ -2,6 +2,7 @@
 members = [
     "crates/lynx-core",
     "crates/lynx-cli",
+    "crates/lynx-log",
     "examples/*",
     "crates/lynx-cert",
     "crates/lynx-mock",

@@ -9,6 +9,11 @@ export const useDebugMenuItems = (): NonNullable<MenuProps['items']> => {
   const handlers = useMenuItemHandlers();
   return [
     {
+      key: 'copyTraceId',
+      label: "复制traceId",
+      onClick: handlers.onCopyTraceId,
+    },
+    {
       key: 'downloadAllRequests',
       label: t('contextMenu.downloadAllRequests'),
       onClick: handlers.onDownloadAllRequests,
@@ -35,7 +40,7 @@ export const useCpoyItems = (): NonNullable<ItemType> => {
         onClick: handlers.onCopyCurl,
       },
       {
-        key: 'copyCurl',
+        key: 'copyUrl',
         label: t('network.contextMenu.copyUrl'),
         onClick: handlers.onCopyUrl,
       },
