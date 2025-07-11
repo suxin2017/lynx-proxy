@@ -5,22 +5,25 @@ use lynx_core::proxy_server::{
     ProxyServerBuilder, server_ca_manage::ServerCaManagerBuilder,
     server_config::ProxyServerConfigBuilder,
 };
+use lynx_log::LynxLogBuilder;
 use sea_orm::ConnectOptions;
 use tokio::signal;
-use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::registry()
-        .with(fmt::layer())
-        .with(EnvFilter::from_default_env().add_directive("lynx_core=trace".parse()?))
-        .init();
-
     let fixed_temp_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/temp");
 
     if !fixed_temp_dir_path.exists() {
         fs::create_dir_all(&fixed_temp_dir_path)?;
     }
+
+    let _handler = LynxLogBuilder::default()
+        .with_console(true)
+        .with_file(true)
+        .with_otel(true)
+        .build()?
+        .init()
+        .await?;
 
     let server_config = ProxyServerConfigBuilder::default()
         .root_cert_file_path(fixed_temp_dir_path.join("root.pem"))

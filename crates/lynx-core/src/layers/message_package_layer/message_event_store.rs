@@ -3,7 +3,6 @@ use bytes::Bytes;
 use dashmap::DashMap;
 use dashmap::mapref::one::RefMut;
 use http::Extensions;
-use moka::future::Cache;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -250,7 +249,6 @@ impl MessageEventStoreValue {
 
 #[derive(Debug, Clone)]
 pub struct MessageEventCache {
-    moka: Arc<Cache<TraceId, ()>>,
     map: Arc<DashMap<TraceId, MessageEventStoreValue>>,
 }
 
@@ -263,26 +261,14 @@ impl From<MessageEventStoreValue> for CacheValue {
 type CacheValue = Arc<RwLock<MessageEventStoreValue>>;
 
 impl MessageEventCache {
-    pub fn new(max_capacity: u64) -> Self {
+    pub fn new() -> Self {
         let map = Arc::new(DashMap::new());
-        let map_clone = map.clone();
 
-        let moka = Cache::builder()
-            .max_capacity(max_capacity)
-            .eviction_listener(move |k, _, _| {
-                // 淘汰时移除 DashMap
-                map_clone.remove(&*k);
-            })
-            .build();
-        Self {
-            moka: Arc::new(moka),
-            map,
-        }
+        Self { map }
     }
 
     pub async fn insert(&self, key: TraceId, value: MessageEventStoreValue) {
         self.map.insert(key.clone(), value);
-        self.moka.insert(key, ()).await;
     }
 
     pub fn get(&self, key: &TraceId) -> Option<MessageEventStoreValue> {
@@ -291,6 +277,10 @@ impl MessageEventCache {
 
     pub fn get_mut(&self, key: &TraceId) -> Option<RefMut<TraceId, MessageEventStoreValue>> {
         self.map.get_mut(key)
+    }
+
+    pub fn need_decode_body(value: &MessageEventStoreValue) -> bool {
+        value.timings.reponse_body_end.is_some() && value.status == MessageEventStatus::Completed
     }
 
     async fn decode_body(value: &mut MessageEventStoreValue) -> Result<()> {
@@ -302,50 +292,85 @@ impl MessageEventCache {
             if let Some(content_encoding) = response.headers.get("content-encoding") {
                 let encoding = content_encoding.to_string().to_lowercase();
 
-                if !response.body.is_empty() {
-                    let mut decoded = Vec::new();
-                    let body_bytes = &response.body;
+                if response.body.is_empty() {
+                    return Ok(());
+                }
 
-                    match encoding.as_str() {
-                        "gzip" => {
-                            let mut decoder = GzipDecoder::new(body_bytes.as_bytes());
-                            decoder.read_to_end(&mut decoded).await?;
-                        }
-                        "deflate" => {
-                            let mut decoder = ZlibDecoder::new(body_bytes.as_bytes());
-                            decoder.read_to_end(&mut decoded).await?;
-                        }
-                        "br" => {
-                            let mut decoder = BrotliDecoder::new(body_bytes.as_bytes());
-                            decoder.read_to_end(&mut decoded).await?;
-                        }
-                        _ => {
-                            decoded = body_bytes.as_bytes().to_vec();
+                let body_bytes = &response.body;
+                let body_data = body_bytes.as_bytes();
+
+                if body_data.len() < 2 {
+                    return Ok(());
+                }
+
+                let mut decoded = Vec::new();
+
+                let decode_result = match encoding.as_str() {
+                    "gzip" => {
+                        // 检查 gzip 魔数 (0x1f, 0x8b)
+                        if body_data.len() >= 2 && body_data[0] == 0x1f && body_data[1] == 0x8b {
+                            let mut decoder = GzipDecoder::new(body_data);
+                            decoder.read_to_end(&mut decoded).await
+                        } else {
+                            // 不是有效的 gzip 数据，直接返回原数据
+                            decoded = body_data.to_vec();
+                            Ok(decoded.len())
                         }
                     }
+                    "deflate" => {
+                        let mut decoder = ZlibDecoder::new(body_data);
+                        decoder.read_to_end(&mut decoded).await
+                    }
+                    "br" => {
+                        let mut decoder = BrotliDecoder::new(body_data);
+                        decoder.read_to_end(&mut decoded).await
+                    }
+                    _ => {
+                        decoded = body_data.to_vec();
+                        Ok(decoded.len())
+                    }
+                };
 
-                    // Update the body with decoded content
-                    response.body = MessageEventBody::new(Bytes::from(decoded));
-                    // Remove content-encoding header since we've decoded the body
-                    // response.headers.remove(&encoding);
+                match decode_result {
+                    Ok(_) => {
+                        response.body = MessageEventBody::new(Bytes::from(decoded));
+                    }
+                    Err(e) => {
+                        tracing::warn!(
+                            "Failed to decode {} body for trace_id {}: {}. Using original body.",
+                            encoding,
+                            value.trace_id,
+                            e
+                        );
+                    }
                 }
             }
         }
+
         Ok(())
     }
 
     pub async fn get_new_requests(&self) -> Result<Vec<MessageEventStoreValue>> {
         let mut new_requests = Vec::new();
+        let mut delete_keys: Vec<TraceId> = Vec::new();
 
         for mut entry in self.map.iter_mut() {
             if entry.is_new {
                 let mut value = entry.clone();
-                Self::decode_body(&mut value).await?;
+                if Self::need_decode_body(&value) {
+                    delete_keys.push(value.trace_id.clone().into());
+                    Self::decode_body(&mut value).await?;
+                }
                 // 收集副本
                 new_requests.push(value);
                 // 标记为已处理
                 entry.is_new = false;
             }
+        }
+
+        // 删除已处理的请求
+        for key in delete_keys {
+            self.map.remove(&key);
         }
 
         Ok(new_requests)
@@ -356,6 +381,7 @@ impl MessageEventCache {
         keys: Vec<String>,
     ) -> Result<Vec<MessageEventStoreValue>> {
         let mut requests = Vec::new();
+        let mut delete_keys: Vec<TraceId> = Vec::new();
 
         for key in keys {
             if let Some(entry) = self.map.get(&key) {
@@ -367,10 +393,18 @@ impl MessageEventCache {
 
                 if filter_flag {
                     let mut value = value.clone();
-                    Self::decode_body(&mut value).await?;
+                    if Self::need_decode_body(&value) {
+                        delete_keys.push(value.trace_id.clone().into());
+                        Self::decode_body(&mut value).await?;
+                    }
                     requests.push(value);
                 }
             }
+        }
+
+        // 删除已处理的请求
+        for key in delete_keys {
+            self.map.remove(&key);
         }
         Ok(requests)
     }
@@ -378,7 +412,7 @@ impl MessageEventCache {
 
 impl Default for MessageEventCache {
     fn default() -> Self {
-        Self::new(100)
+        Self::new()
     }
 }
 

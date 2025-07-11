@@ -12,11 +12,8 @@ use crate::{
     proxy_server::{ClientAddrRequestExt, server_config::ProxyServerConfigExtensionsExt},
 };
 
-use super::{
-    message_package_layer::{
-        MessageEventLayerExt, message_event_store::MessageEventStoreExtensionsExt,
-    },
-    trace_id_layer::service::TraceIdExt,
+use super::message_package_layer::{
+    MessageEventLayerExt, message_event_store::MessageEventStoreExtensionsExt,
 };
 
 #[derive(Debug, Clone)]
@@ -87,14 +84,12 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     let server_config = ex.get_proxy_server_config();
     let message_event_cannel = ex.get_message_event_cannel();
     let message_event_store = ex.get_message_event_store();
-    let trace_id = ex.get_trace_id();
     let db = ex.get_db();
 
     let mut nex = Extensions::new();
     nex.insert(request_client);
     nex.insert(client_addr);
     nex.insert(server_config);
-    nex.insert(trace_id);
     nex.insert(message_event_cannel);
     nex.insert(message_event_store);
     nex.insert(db);

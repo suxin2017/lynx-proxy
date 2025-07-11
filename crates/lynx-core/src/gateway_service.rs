@@ -4,7 +4,6 @@ use tracing::instrument;
 // 添加这一行来获取 oneshot 方法
 
 use crate::common::Req;
-use crate::layers::trace_id_layer::service::TraceIdExt;
 use crate::self_service::self_service_router;
 use crate::{
     proxy::{
@@ -27,7 +26,7 @@ pub async fn proxy_gateway_service_fn(req: Req) -> Result<Response> {
     proxy_tunnel_proxy(req).await
 }
 
-#[instrument(skip_all,fields(url = %req.uri(),trace_id = %req.extensions().get_trace_id()))]
+#[instrument(skip_all)]
 pub async fn gateway_service_fn(req: Req) -> Result<Response> {
     if is_self_service(&req) {
         return self_service_router(req).await;

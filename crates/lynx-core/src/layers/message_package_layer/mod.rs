@@ -431,11 +431,16 @@ where
         self.service.poll_ready(cx)
     }
 
+    #[instrument(
+        skip_all,
+        name = "request_message_event_service",
+        trace_id = %request.extensions().get_trace_id(),
+        uri = %request.uri(),
+    )]
     fn call(&mut self, request: Req) -> Self::Future {
         if is_self_service(&request) {
             return Box::pin(self.service.call(request));
         }
-        let span = trace_span!("request_message_event_service");
         let message_event_channel = request.extensions().get_message_event_cannel();
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();
@@ -451,36 +456,33 @@ where
 
         let mut inner = self.service.clone();
 
-        Box::pin(
-            async move {
-                let capture_dao = CaptureSwitchDao::new(db.clone());
-                let capture_switch = capture_dao.get_capture_switch().await;
-                let need_capture = if let Ok(capture_switch) = capture_switch {
-                    matches!(
-                        capture_switch.recording_status,
-                        RecordingStatus::PauseRecording
-                    )
-                } else {
-                    false
-                };
+        Box::pin(async move {
+            let capture_dao = CaptureSwitchDao::new(db.clone());
+            let capture_switch = capture_dao.get_capture_switch().await;
+            let need_capture = if let Ok(capture_switch) = capture_switch {
+                matches!(
+                    capture_switch.recording_status,
+                    RecordingStatus::PauseRecording
+                )
+            } else {
+                false
+            };
 
-                if !need_capture {
-                    let future = inner.call(request);
-                    return future.await;
-                }
-                message_event_channel_clone
-                    .dispatch_on_request_start(&request, copy_stream)
-                    .await;
+            if !need_capture {
                 let future = inner.call(request);
-                let result = future.await;
-                message_event_channel_clone
-                    .dispatch_on_request_end(trace_id_clone)
-                    .await;
-
-                result
+                return future.await;
             }
-            .instrument(span),
-        )
+            message_event_channel_clone
+                .dispatch_on_request_start(&request, copy_stream)
+                .await;
+            let future = inner.call(request);
+            let result = future.await;
+            message_event_channel_clone
+                .dispatch_on_request_end(trace_id_clone)
+                .await;
+
+            result
+        })
     }
 }
 

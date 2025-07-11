@@ -16,9 +16,13 @@ const initialState: RequestTableState = {
 };
 
 const isCompletedReq = (res: IViewMessageEventStoreValue) => {
+
+  // 隧道代理
   if (res.status === 'Completed' && res.tunnel?.status === 'Disconnected') {
     return true;
   }
+
+  // websocket 断开链接 或者报错了
   if (
     res.status === 'Completed' &&
     res.messages &&
@@ -28,7 +32,14 @@ const isCompletedReq = (res: IViewMessageEventStoreValue) => {
   ) {
     return true;
   }
-  if (res.status === 'Completed' && !res.tunnel && !res.messages) {
+
+  // 普通请求完全完成
+  if (res.status === 'Completed' && !res.tunnel && !res.messages && res.timings.reponseBodyEnd) {
+    return true;
+  }
+
+  // 请求报错了
+  if(typeof res.status === 'object' && res.status?.Error) {
     return true;
   }
   return false;

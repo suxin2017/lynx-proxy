@@ -12,7 +12,7 @@ use lynx_db::dao::https_capture_dao::HttpsCaptureDao;
 use tokio::spawn;
 use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn, util::Oneshot};
-use tracing::{Instrument, instrument};
+use tracing::{Instrument, instrument, trace_span};
 
 use crate::{
     common::{HyperReq, Req},
@@ -24,7 +24,7 @@ use crate::{
         log_layer::LogLayer,
         message_package_layer::{MessageEventLayerExt, RequestMessageEventService},
         request_processing_layer::RequestProcessingService,
-        trace_id_layer::{TraceIdLayer, service::TraceIdExt},
+        trace_id_layer::service::{TraceIdExt, set_new_trace_id},
     },
     proxy::proxy_ws_request::proxy_ws_request,
     proxy_server::server_ca_manage::ServerCaManagerExtensionsExt,
@@ -65,8 +65,7 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
     let service_builder = ServiceBuilder::new()
         .layer(ErrorHandlerLayer)
         .layer(LogLayer)
-        .layer(ExtendExtensionsLayer::new(new_extension))
-        .layer(TraceIdLayer);
+        .layer(ExtendExtensionsLayer::new(new_extension));
 
     match upgraded.steam_type {
         // connect proxy and then upgrade to websocket
@@ -80,8 +79,10 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                 .layer_fn(|inner| RequestMessageEventService { service: inner })
                 .layer_fn(RequestProcessingService::new)
                 .service(svc);
-            let transform_svc = service_fn(move |req: HyperReq| {
+            let transform_svc = service_fn(move |mut req: HyperReq| {
+                set_new_trace_id(&mut req);
                 let svc = svc.clone();
+
                 async move {
                     let req = req.map(|b| b.map_err(|e| anyhow!(e)).boxed());
                     Oneshot::new(svc, req).await
@@ -125,15 +126,17 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                 .layer_fn(|inner| RequestMessageEventService { service: inner })
                 .service(svc);
 
-            let transform_svc = service_fn(move |req: HyperReq| {
+            let transform_svc = service_fn(move |mut req: HyperReq| {
+                set_new_trace_id(&mut req);
+                let span = trace_span!(parent: None,"handle_connect_upgraded_request", uri = %req.uri(),trace_id = %req.extensions().get_trace_id());
                 let svc = svc.clone();
                 async move {
                     let req = req.map(|b| b.map_err(|e| anyhow!(e)).boxed());
                     Oneshot::new(svc, req).await
                 }
+                .instrument(span)
             });
             let svc = TowerToHyperService::new(transform_svc);
-
             hyper_util::server::conn::auto::Builder::new(TokioExecutor::new())
                 .serve_connection_with_upgrades(TokioIo::new(tls_stream), svc)
                 .await
@@ -189,16 +192,22 @@ pub async fn should_capture_https(
 #[instrument(skip_all)]
 pub async fn proxy_connect_request(req: Req) -> Result<Response> {
     assert_eq!(req.method(), Method::CONNECT);
-
-    let span = tracing::Span::current();
-
+    let message_event_channel = req.extensions().get_message_event_cannel();
+    let trace_id = req.extensions().get_trace_id();
     spawn(
         async move {
             if let Err(e) = proxy_connect_request_future(req).await {
                 tracing::error!("Failed to handle connect request: {:?}", e);
+
+                message_event_channel
+                    .dispatch_on_error(
+                        trace_id,
+                        format!("Failed to handle connect request: {:?}", e),
+                    )
+                    .await;
             };
         }
-        .instrument(span),
+        .in_current_span(),
     );
 
     Ok(Response::new(Body::empty()))

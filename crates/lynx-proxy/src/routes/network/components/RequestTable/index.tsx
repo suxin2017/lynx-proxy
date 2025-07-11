@@ -276,7 +276,7 @@ export const RequestTable: React.FC = () => {
             const maxWidth = Math.max(contentWidth, width);
             return <List
               ref={listRef}
-              height={height}
+              height={height - 40}
               overscanRowCount={10}
               noRowsRenderer={noRowsRenderer}
               rowCount={requestTable?.length ?? 0}
