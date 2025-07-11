@@ -27,12 +27,14 @@ where
     }
 
     fn call(&mut self, mut request: Request<Body>) -> Self::Future {
-        
         request.extensions_mut().insert(Arc::new(nanoid!()));
         self.service.call(request)
     }
 }
 
+pub fn set_new_trace_id<B>(req: &mut Request<B>) {
+    req.extensions_mut().insert(Arc::new(nanoid!()));
+}
 pub trait TraceIdExt {
     fn get_trace_id(&self) -> TraceId;
 }

@@ -14,7 +14,10 @@ use http::{
 use tower::Service;
 use url::Url;
 
-use crate::{common::Req, layers::extend_extension_layer::clone_extensions};
+use crate::{
+    common::Req,
+    layers::{extend_extension_layer::clone_extensions, trace_id_layer::service::TraceIdExt},
+};
 
 #[derive(Clone)]
 pub struct BuildProxyRequestService<S> {
@@ -41,7 +44,10 @@ where
     fn call(&mut self, req: Req) -> Self::Future {
         let mut s = self.service.clone();
         Box::pin(async move {
-            let extensions = clone_extensions(req.extensions())?;
+            let trace_id = req.extensions().get_trace_id();
+            let mut extensions = clone_extensions(req.extensions())?;
+
+            extensions.insert(trace_id);
             let (parts, body) = req.into_parts();
 
             let uri = {

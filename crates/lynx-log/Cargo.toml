@@ -1,5 +1,5 @@
 [package]
-name = "log-jaeger"
+name = "lynx-log"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -9,27 +9,19 @@ documentation.workspace = true
 homepage.workspace = true
 repository.workspace = true
 
-[[bin]]
-name = "simple_demo"
-path = "src/main.rs"
-
-
 [dependencies]
 anyhow = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-tracing-opentelemetry = "0.23"
-opentelemetry = { version = "0.22", features = ["trace"] }
-opentelemetry_sdk = { version = "0.22", features = ["trace", "rt-tokio"] }
-opentelemetry-otlp = { version = "0.15", features = [
-    "http-proto",
-    "reqwest-client",
-] }
+tracing-appender = "0.2"
+tracing-opentelemetry = "0.31"
+opentelemetry = { version = "0.30.0", features = ["trace"] }
+opentelemetry_sdk = { version = "0.30", features = ["trace", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.30" }
 sea-orm = { version = "1.1.0", features = [
     "runtime-tokio-rustls",
     "sqlx-sqlite",
 ] }
-
-# Lynx 内部依赖
-lynx-core = { path = "../../crates/lynx-core" }
+derive_builder = "0.20.2"
+tower = { workspace = true }

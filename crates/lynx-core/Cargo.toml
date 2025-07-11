@@ -98,6 +98,7 @@ utoipa-axum = "0.2.0"
 utoipa = { version = "5.3.1", features = ["axum_extras"] }
 tower-http = { version = "0.6.4", features = ["cors", "fs"] }
 dashmap = "6.1.0"
+lynx-log = {path = "../lynx-log"}
 
 
 [dev-dependencies]
@@ -106,6 +107,5 @@ tempdir = "0.3.7"
 tempfile = "3.12.0"
 lynx-mock = { path = "../lynx-mock" }
 async-once-cell = "0.5.4"
-tower-test = { version = "0.4.0" }
 tokio-test = "0.4.4"
 reqwest-websocket = "0.5.0"
