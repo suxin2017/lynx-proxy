@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::{Result, anyhow};
 use bytes::Bytes;
@@ -6,6 +6,7 @@ use http::Uri;
 use http_body_util::combinators::BoxBody;
 use hyper_http_proxy::{Intercept, Proxy, ProxyConnector};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+use tokio::time::timeout;
 use tokio_rustls::TlsConnector;
 use tracing::trace;
 
@@ -35,22 +36,22 @@ pub struct HttpClientBuilder {
 
 impl HttpClient {
     pub async fn request(&self, req: Req) -> Result<HyperRes> {
-        match self {
+        let request_future = match self {
             HttpClient::Direct(client) => {
                 trace!("HTTP Client: Making direct request to {}", req.uri());
-                client
-                    .request(req)
-                    .await
-                    .map_err(|e| anyhow!(e).context("http request client error"))
+                client.request(req)
             }
             HttpClient::Proxy(client) => {
                 trace!("HTTP Client: Making proxied request to {}", req.uri());
-                client
-                    .request(req)
-                    .await
-                    .map_err(|e| anyhow!(e).context("http request client error"))
+                client.request(req)
             }
-        }
+        };
+
+        // 添加超时包装
+        timeout(Duration::from_secs(5), request_future)
+            .await
+            .map_err(|_| anyhow!("Request timeout after 5s"))?
+            .map_err(|e| anyhow!(e).context("http request client error"))
     }
 }
 

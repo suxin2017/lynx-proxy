@@ -82,6 +82,23 @@ export const useMenuItemHandlers = () => {
     onDownloadAllRequests,
     onCopySelectedRequest,
     onAddToApiDebug,
+    onCopyTraceId: () => {
+      if (selectedRecord) {
+        const traceId = selectedRecord.traceId;
+        if (traceId) {
+          copyToClipboard(traceId).then((success) => {
+            if (success) {
+              message.success(t('common.copySuccess'));
+            }
+            else {
+              message.error(t('common.copyFailed'));
+            }
+          });
+        } else {
+          message.error(t('contextMenu.noTraceIdToCopy'));
+        }
+      }
+    },
     onCopyUrl: () => {
       if (selectedRecord) {
         const url = selectedRecord.request?.url;

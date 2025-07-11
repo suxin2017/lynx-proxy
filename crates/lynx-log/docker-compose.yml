@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   jaeger:
-    image: jaegertracing/all-in-one:1.51
+    image: jaegertracing/all-in-one:latest
     container_name: lynx-jaeger
     environment:
       - COLLECTOR_OTLP_ENABLED=true
@@ -22,6 +22,7 @@ services:
       - "--memory.max-traces=10000"
       - "--query.base-path=/jaeger/ui"
       - "--log-level=info"
+      - "--query.max-clock-skew-adjustment=1s" 
     restart: unless-stopped
     networks:
       - jaeger-network
