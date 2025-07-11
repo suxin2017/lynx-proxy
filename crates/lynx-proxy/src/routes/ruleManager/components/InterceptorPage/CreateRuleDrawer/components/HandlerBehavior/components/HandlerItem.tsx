@@ -81,7 +81,8 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
         }),
         proxyForward: t('ruleManager.handlerDescriptions.forwardTo', {
           host:
-            handlerType.proxyUrl ||
+            (handlerType.targetScheme ? handlerType.targetScheme + '://' : '') +
+            handlerType.targetAuthority ||
             t(
               'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.notSet',
             ),
