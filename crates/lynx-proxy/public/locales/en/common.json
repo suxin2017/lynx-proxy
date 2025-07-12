@@ -198,6 +198,7 @@
     },
     "table": {
       "status": "Status",
+      "app": "App",
       "schema": "Schema",
       "version": "Version",
       "method": "Method",

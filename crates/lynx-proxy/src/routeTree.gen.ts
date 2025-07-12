@@ -12,7 +12,6 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as SettingsImport } from './routes/settings'
-import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 import { Route as SettingsIndexImport } from './routes/settings/index'
 import { Route as RuleManagerIndexImport } from './routes/ruleManager/index'
@@ -28,12 +27,6 @@ import { Route as SettingsCertificatesImport } from './routes/settings/certifica
 const SettingsRoute = SettingsImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AboutRoute = AboutImport.update({
-  id: '/about',
-  path: '/about',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -100,13 +93,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutImport
       parentRoute: typeof rootRoute
     }
     '/settings': {
@@ -199,7 +185,6 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/client-proxy': typeof SettingsClientProxyRoute
@@ -213,7 +198,6 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/client-proxy': typeof SettingsClientProxyRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -227,7 +211,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/certificates': typeof SettingsCertificatesRoute
   '/settings/client-proxy': typeof SettingsClientProxyRoute
@@ -243,7 +226,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
     | '/settings'
     | '/settings/certificates'
     | '/settings/client-proxy'
@@ -256,7 +238,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
     | '/settings/certificates'
     | '/settings/client-proxy'
     | '/settings/general'
@@ -268,7 +249,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/about'
     | '/settings'
     | '/settings/certificates'
     | '/settings/client-proxy'
@@ -283,7 +263,6 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   ApiDebugIndexRoute: typeof ApiDebugIndexRoute
   NetworkIndexRoute: typeof NetworkIndexRoute
@@ -292,7 +271,6 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
   SettingsRoute: SettingsRouteWithChildren,
   ApiDebugIndexRoute: ApiDebugIndexRoute,
   NetworkIndexRoute: NetworkIndexRoute,
@@ -310,7 +288,6 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/about",
         "/settings",
         "/apiDebug/",
         "/network/",
@@ -319,9 +296,6 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
-    },
-    "/about": {
-      "filePath": "about.tsx"
     },
     "/settings": {
       "filePath": "settings.tsx",

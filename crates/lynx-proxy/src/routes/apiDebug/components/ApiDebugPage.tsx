@@ -217,7 +217,6 @@ export function ApiDebugPage() {
             <div className="flex items-center gap-2">
               <Button
                 type="text"
-                size="small"
                 icon={
                   historyVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
                 }
@@ -226,6 +225,14 @@ export function ApiDebugPage() {
               />
               <span>{t('apiDebug.title')}</span>
             </div>
+          }
+          extra={
+            <Button
+              onClick={() => setCurlModalVisible(true)}
+              className="ml-auto"
+            >
+              {t('apiDebug.importCurl')}
+            </Button>
           }
           className="flex flex-1 flex-col"
         >
@@ -237,7 +244,6 @@ export function ApiDebugPage() {
               onMethodChange={setMethod}
               onUrlChange={handleUrlChange}
               onSend={handleSendRequest}
-              onImportCurl={() => setCurlModalVisible(true)}
               isLoading={executeRequestMutation.isPending}
             />
           </div>

@@ -12,7 +12,7 @@ export const LanguageSelector: React.FC = () => {
   };
 
   return (
-    <Select value={language} onChange={handleLanguageChange} className="w-full">
+    <Select value={language} onChange={handleLanguageChange} className="">
       <Option value="en">EN</Option>
       <Option value="zh-CN">中文</Option>
     </Select>
