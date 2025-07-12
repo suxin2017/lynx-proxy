@@ -64,7 +64,7 @@ impl LynxLog {
             _appender_guard: None,
         };
         Registry::default()
-            .with(EnvFilter::from_default_env().add_directive("lynx_server=trace".parse()?))
+            .with(EnvFilter::from_default_env().add_directive("lynx_core=trace".parse()?))
             .with(self.console.then(|| {
                 tracing_subscriber::fmt::layer()
                     .with_target(true)

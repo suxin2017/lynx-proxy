@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     let _handler = LynxLogBuilder::default()
         .with_console(true)
         .with_file(true)
-        .with_otel(true)
+        // .with_otel(true)
         .build()?
         .init()
         .await?;

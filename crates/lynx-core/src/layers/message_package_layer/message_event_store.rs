@@ -245,6 +245,10 @@ impl MessageEventStoreValue {
     pub fn is_cancelled(&self) -> bool {
         matches!(self.status, MessageEventStatus::Cancelled)
     }
+
+    pub fn is_need_delteed(&self) -> bool {
+        self.is_completed() || self.is_error() || self.is_cancelled()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -283,83 +287,15 @@ impl MessageEventCache {
         value.timings.reponse_body_end.is_some() && value.status == MessageEventStatus::Completed
     }
 
-    async fn decode_body(value: &mut MessageEventStoreValue) -> Result<()> {
-        use super::message_event_data::MessageEventBody;
-        use async_compression::tokio::bufread::{BrotliDecoder, GzipDecoder, ZlibDecoder};
-        use tokio::io::AsyncReadExt;
-
-        if let Some(response) = &mut value.response {
-            if let Some(content_encoding) = response.headers.get("content-encoding") {
-                let encoding = content_encoding.to_string().to_lowercase();
-
-                if response.body.is_empty() {
-                    return Ok(());
-                }
-
-                let body_bytes = &response.body;
-                let body_data = body_bytes.as_bytes();
-
-                if body_data.len() < 2 {
-                    return Ok(());
-                }
-
-                let mut decoded = Vec::new();
-
-                let decode_result = match encoding.as_str() {
-                    "gzip" => {
-                        // 检查 gzip 魔数 (0x1f, 0x8b)
-                        if body_data.len() >= 2 && body_data[0] == 0x1f && body_data[1] == 0x8b {
-                            let mut decoder = GzipDecoder::new(body_data);
-                            decoder.read_to_end(&mut decoded).await
-                        } else {
-                            // 不是有效的 gzip 数据，直接返回原数据
-                            decoded = body_data.to_vec();
-                            Ok(decoded.len())
-                        }
-                    }
-                    "deflate" => {
-                        let mut decoder = ZlibDecoder::new(body_data);
-                        decoder.read_to_end(&mut decoded).await
-                    }
-                    "br" => {
-                        let mut decoder = BrotliDecoder::new(body_data);
-                        decoder.read_to_end(&mut decoded).await
-                    }
-                    _ => {
-                        decoded = body_data.to_vec();
-                        Ok(decoded.len())
-                    }
-                };
-
-                match decode_result {
-                    Ok(_) => {
-                        response.body = MessageEventBody::new(Bytes::from(decoded));
-                    }
-                    Err(e) => {
-                        tracing::warn!(
-                            "Failed to decode {} body for trace_id {}: {}. Using original body.",
-                            encoding,
-                            value.trace_id,
-                            e
-                        );
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
     pub async fn get_new_requests(&self) -> Result<Vec<MessageEventStoreValue>> {
         let mut new_requests = Vec::new();
         let mut delete_keys: Vec<TraceId> = Vec::new();
 
         for mut entry in self.map.iter_mut() {
             if entry.is_new {
-                let mut value = entry.clone();
-                if Self::need_decode_body(&value) {
+                let value = entry.clone();
+                if value.is_need_delteed() {
                     delete_keys.push(value.trace_id.clone().into());
-                    Self::decode_body(&mut value).await?;
                 }
                 // 收集副本
                 new_requests.push(value);
@@ -392,12 +328,10 @@ impl MessageEventCache {
                     || value.is_cancelled();
 
                 if filter_flag {
-                    let mut value = value.clone();
-                    if Self::need_decode_body(&value) {
-                        delete_keys.push(value.trace_id.clone().into());
-                        Self::decode_body(&mut value).await?;
-                    }
-                    requests.push(value);
+                    requests.push(value.clone());
+                }
+                if value.is_need_delteed() {
+                    delete_keys.push(key.into());
                 }
             }
         }

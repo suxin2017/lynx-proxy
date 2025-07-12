@@ -24,6 +24,7 @@ import {
 } from './requestTreeStore';
 import { apiDebugReducer } from '../routes/apiDebug/components/store';
 import { useSelectRequest } from '@/routes/network/components/store/selectRequestStore';
+import { useSseMonitor } from './useSse';
 
 export const store = configureStore({
   reducer: {
@@ -87,6 +88,9 @@ export const useUpdateRequestLog = () => {
   const dispatch = useDispatch();
   const requestLogCount = useRequestLogCount();
   const { maxLogSize = 1000 } = {};
+
+  useSseMonitor();
+
 
   const pendingRequestIds = useSelector((state: RootState) => {
     return state.requestTable.pendingRequestIds;
