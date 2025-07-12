@@ -72,9 +72,8 @@ export const SideBar: React.FC = (_props) => {
           <Button
             key={item.key}
             type="text"
-            className={`flex h-14 w-full items-center justify-items-center ${
-              currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
-            }`}
+            className={`flex h-14 w-full items-center justify-items-center ${currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
+              }`}
             onClick={() => {
               navigate({
                 to: item.key,
@@ -102,9 +101,8 @@ export const SideBar: React.FC = (_props) => {
           <Button
             key={item.key}
             type="text"
-            className={`flex h-14 w-full items-center justify-items-center ${
-              currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
-            }`}
+            className={`flex h-14 w-full items-center justify-items-center ${currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
+              }`}
             onClick={() => {
               navigate({
                 to: item.key,

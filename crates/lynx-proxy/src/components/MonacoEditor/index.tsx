@@ -837,7 +837,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
           loading={
             isEditorLoading ? (
               <div
-                className="flex h-full items-center justify-center"
+                className="flex  items-center justify-center"
                 style={{ backgroundColor: token.colorBgContainer }}
               >
                 <Spin

@@ -3,7 +3,7 @@ import React from 'react';
 
 export const PageLoading: React.FC = () => {
   return (
-    <div className="flex h-max w-full items-center justify-center">
+    <div className="flex h-max  items-center justify-center">
       <Spin />
     </div>
   );
