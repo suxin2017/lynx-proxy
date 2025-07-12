@@ -2,7 +2,7 @@ import { MessageEventTimings } from '@/services/generated/utoipaAxum.schemas';
 import { IViewMessageEventStoreValue } from '@/store';
 import { useFilteredTableData } from '@/store/requestTableStore';
 import { useKeyPress } from 'ahooks';
-import { Empty, theme } from 'antd';
+import { Empty, theme, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { get } from 'lodash';
 import React, { useCallback, useMemo } from 'react';
@@ -13,6 +13,7 @@ import prettyMs from 'pretty-ms';
 import duration from 'dayjs/plugin/duration';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { RequestContextMenu, useRequestContextMenuContext } from '@/components/RequestContextMenu';
+import { AppIcon } from './utils/remixAppDetector';
 
 dayjs.extend(duration);
 dayjs.extend(relativeTime);
@@ -56,13 +57,24 @@ export const RequestTable: React.FC = () => {
   const columns = useMemo(() => [
     {
       title: '#',
-      width: 50,
+      width: 40,
       dataIndex: 'traceId',
       key: 'traceId',
       align: 'center',
       ellipsis: true,
       render: (_traceId: string, _raw: IViewMessageEventStoreValue, index: number) => {
-        return <span>{index}</span>;
+        return <Typography.Text ellipsis>{index}</Typography.Text>;
+      },
+    },
+    {
+      title: t('network.table.app'),
+      width: 50,
+      key: 'app',
+      align: 'center',
+      ellipsis: true,
+      render: (_value: unknown, raw: IViewMessageEventStoreValue) => {
+        const headers = raw?.request?.headers || {};
+        return <AppIcon headers={headers} size={16} />;
       },
     },
     {

@@ -44,7 +44,7 @@ export const Sequence: React.FC<ISequenceProps> = () => {
   const { ref, size, splitSize, setSplitSize } = useSplitSize();
 
   return (
-    <div className="max-h-full flex-1" ref={ref}>
+    <div className="flex-1" ref={ref} style={{ maxHeight: 'calc(100% - 80px)' }}>
       {!size ? (
         <div className="flex h-full w-full items-center justify-center">
           <Spin />

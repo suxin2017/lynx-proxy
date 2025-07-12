@@ -208,6 +208,7 @@
     },
     "table": {
       "status": "状态",
+      "app": "应用",
       "schema": "协议",
       "version": "版本",
       "method": "方法",
