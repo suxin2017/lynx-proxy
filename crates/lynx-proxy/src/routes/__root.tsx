@@ -1,16 +1,18 @@
 import { SideBar } from '@/components/SideBar';
-import { store, useUpdateRequestLog } from '@/store';
+import { store, useSortPoll } from '@/store/useSortPoll';
 import { GeneralSettingProvider } from '@/store/useGeneralState';
 import { Outlet, createRootRoute } from '@tanstack/react-router';
 import { Provider } from 'react-redux';
 import { UseSelectRequestProvider } from './network/components/store/selectRequestStore';
+import { useSseMonitor } from '@/store/useSse';
 
 export const Route = createRootRoute({
   component: RootComponent,
 });
 
 function InnerRouteComponent() {
-  useUpdateRequestLog();
+  useSortPoll();
+  useSseMonitor()
   return (
     <div className="flex h-full w-full flex-1">
       <div className="flex">

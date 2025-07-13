@@ -26,6 +26,13 @@ tasks:
     cmds:
       - cargo fmt --all -- --check
 
+  setup-rust:
+    desc: Setup dev environment
+    cmds:
+      - sudo apt install build-essential
+      - cargo install cargo-release
+      - cargo install git-cliff
+
   setup-ui:
     desc: Setup UI dependencies
     dir: crates/lynx-proxy

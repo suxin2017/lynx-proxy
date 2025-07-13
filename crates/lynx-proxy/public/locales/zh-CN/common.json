@@ -23,6 +23,19 @@
           "range": "最大日志数量必须在 60 到 6000 之间"
         }
       },
+      "connectType": {
+        "changeConfirm":{
+          "title": "更改连接类型",
+          "content": "更改连接类型将会刷新当前页面，是否继续？"
+        },
+        "title": "连接类型",
+        "description": "选择获取日子的连接方式",
+        "shortPoll": "短轮询",
+        "sse": "服务器发送事件 (SSE) Beta",
+        "validation": {
+          "required": "请选择连接类型"
+        }
+      },
       "actions": {
         "save": "保存设置",
         "reset": "重置"

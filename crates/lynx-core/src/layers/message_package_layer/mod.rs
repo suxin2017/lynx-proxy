@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::iter::Extend;
 use std::{
     pin::Pin,
@@ -19,11 +20,16 @@ use message_event_data::{
     TunnelStatus, WebSocketStatus, copy_body_stream,
 };
 use message_event_store::{MessageEvent, MessageEventStoreValue, MessageEventTimings};
-use tokio::{spawn, sync::mpsc::channel};
+use tokio::{spawn, sync::broadcast};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tokio_tungstenite::tungstenite;
 use tower::Service;
 use tracing::{Instrument, instrument, trace, trace_span, warn};
+
+// 添加解压相关导入
+use async_compression::tokio::bufread::{BrotliDecoder, GzipDecoder, ZlibDecoder};
+use tokio::io::BufReader;
+use tokio_util::io::ReaderStream;
 
 use crate::proxy::proxy_ws_request::SendType;
 use crate::{
@@ -37,201 +43,311 @@ use super::trace_id_layer::service::{TraceId, TraceIdExt};
 pub mod message_event_data;
 pub mod message_event_store;
 
-pub struct MessageEventChannel {
-    sender: tokio::sync::mpsc::Sender<MessageEvent>,
+// 根据响应头创建解压流
+async fn process_compressed_body(
+    headers: &http::HeaderMap,
+    body_stream: ReceiverStream<Bytes>,
+    sender: tokio::sync::broadcast::Sender<MessageEvent>,
+    trace_id: TraceId,
+) {
+    use tokio_util::io::StreamReader;
+
+    let error_stream = body_stream.map(|bytes| Ok::<Bytes, std::io::Error>(bytes));
+
+    if let Some(encoding) = headers.get("content-encoding") {
+        match encoding.to_str().unwrap_or("").to_lowercase().as_str() {
+            "gzip" => {
+                let reader = StreamReader::new(error_stream);
+                let buf_reader = BufReader::new(reader);
+                let decoder = GzipDecoder::new(buf_reader);
+                let mut stream = ReaderStream::new(decoder);
+
+                while let Some(result) = stream.next().await {
+                    let trace_id = trace_id.clone();
+                    match result {
+                        Ok(data) => {
+                            trace!("Dispatching OnResponseBody event (gzip)");
+                            let _ = sender.send(MessageEvent::OnResponseBody(trace_id, Some(data)));
+                        }
+                        Err(e) => {
+                            trace!("Gzip decompression error: {:?}", e);
+                            break;
+                        }
+                    }
+                }
+            }
+            "deflate" => {
+                let reader = StreamReader::new(error_stream);
+                let buf_reader = BufReader::new(reader);
+                // 使用 ZlibDecoder 而不是 DeflateDecoder，因为 HTTP deflate 通常是 zlib 格式
+                let decoder = ZlibDecoder::new(buf_reader);
+                let mut stream = ReaderStream::new(decoder);
+
+                while let Some(result) = stream.next().await {
+                    let trace_id = trace_id.clone();
+                    match result {
+                        Ok(data) => {
+                            trace!("Dispatching OnResponseBody event (deflate/zlib)");
+                            let _ = sender.send(MessageEvent::OnResponseBody(trace_id, Some(data)));
+                        }
+                        Err(e) => {
+                            trace!("Zlib decompression error: {:?}", e);
+                            break;
+                        }
+                    }
+                }
+            }
+            "br" => {
+                let reader = StreamReader::new(error_stream);
+                let buf_reader = BufReader::new(reader);
+                let decoder = BrotliDecoder::new(buf_reader);
+                let mut stream = ReaderStream::new(decoder);
+
+                while let Some(result) = stream.next().await {
+                    let trace_id = trace_id.clone();
+                    match result {
+                        Ok(data) => {
+                            trace!("Dispatching OnResponseBody event (brotli)");
+                            let _ = sender.send(MessageEvent::OnResponseBody(trace_id, Some(data)));
+                        }
+                        Err(e) => {
+                            trace!("Brotli decompression error: {:?}", e);
+                            break;
+                        }
+                    }
+                }
+            }
+            _ => {
+                let mut stream = error_stream;
+                while let Some(result) = stream.next().await {
+                    let trace_id = trace_id.clone();
+                    match result {
+                        Ok(data) => {
+                            trace!("Dispatching OnResponseBody event (raw)");
+                            let _ = sender.send(MessageEvent::OnResponseBody(trace_id, Some(data)));
+                        }
+                        Err(_) => break,
+                    }
+                }
+            }
+        }
+    } else {
+        let mut stream = error_stream;
+        while let Some(result) = stream.next().await {
+            let trace_id = trace_id.clone();
+            match result {
+                Ok(data) => {
+                    trace!("Dispatching OnResponseBody event (no compression)");
+                    let _ = sender.send(MessageEvent::OnResponseBody(trace_id, Some(data)));
+                }
+                Err(_) => break,
+            }
+        }
+    }
+
+    let _ = sender.send(MessageEvent::OnResponseBody(trace_id, None));
 }
 
-pub async fn handle_message_event(
-    mut rx: tokio::sync::mpsc::Receiver<MessageEvent>,
+pub struct MessageEventChannel {
+    broadcast_sender: tokio::sync::broadcast::Sender<MessageEvent>,
+}
+
+impl Debug for MessageEventChannel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MessageEventChannel").finish()
+    }
+}
+
+/// 处理单个消息事件
+pub async fn handle_message_event_single(
+    event: MessageEvent,
     cache: Arc<message_event_store::MessageEventCache>,
 ) -> Result<()> {
-    while let Some(event) = rx.recv().await {
-        match event {
-            MessageEvent::OnRequestStart(id, req) => {
-                let mut timings = MessageEventTimings::default();
-                timings.set_request_start();
+    match event {
+        MessageEvent::OnRequestStart(id, req) => {
+            let mut timings = MessageEventTimings::default();
+            timings.set_request_start();
 
-                let mut value = MessageEventStoreValue::new(id.clone());
+            let mut value = MessageEventStoreValue::new(id.clone());
 
-                value.request = Some(req);
-                value.timings = timings;
-                value.status = message_event_store::MessageEventStatus::RequestStarted;
+            value.request = Some(req);
+            value.timings = timings;
+            value.status = message_event_store::MessageEventStatus::RequestStarted;
 
-                cache.insert(id, value).await;
+            cache.insert(id, value).await;
+        }
+        MessageEvent::OnRequestBody(id, data) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
-            MessageEvent::OnRequestBody(id, data) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
+            let mut value = value.unwrap();
 
-                if let Some(data) = data {
-                    if let Some(req) = value.request_mut() {
-                        req.body.extend(data);
-                    }
+            if let Some(data) = data {
+                if let Some(req) = value.request_mut() {
+                    req.body.extend(data);
+                }
+                value.timings_mut().set_request_body_start();
+            } else {
+                if value
+                    .request
+                    .as_ref()
+                    .filter(|req| req.body.is_empty())
+                    .is_some()
+                {
                     value.timings_mut().set_request_body_start();
-                } else {
-                    if value
-                        .request
-                        .as_ref()
-                        .filter(|req| req.body.is_empty())
-                        .is_some()
-                    {
-                        value.timings_mut().set_request_body_start();
-                    }
-                    value.timings_mut().set_request_body_end()
                 }
+                value.timings_mut().set_request_body_end()
             }
-            MessageEvent::OnRequestEnd(id) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.timings_mut().set_request_end();
-                value.status = message_event_store::MessageEventStatus::Completed;
+        }
+        MessageEvent::OnRequestEnd(id) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
-            MessageEvent::OnError(id, error_reason) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.timings_mut().set_request_end();
-                value.status = message_event_store::MessageEventStatus::Error(error_reason);
+            let mut value = value.unwrap();
+            value.timings_mut().set_request_end();
+            value.status = message_event_store::MessageEventStatus::Completed;
+        }
+        MessageEvent::OnError(id, error_reason) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
-            MessageEvent::OnResponseBody(id, data) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
+            let mut value = value.unwrap();
+            value.timings_mut().set_request_end();
+            value.status = message_event_store::MessageEventStatus::Error(error_reason);
+        }
+        MessageEvent::OnResponseBody(id, data) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
+            }
+            let mut value = value.unwrap();
+            if let Some(data) = data {
+                if let Some(req) = value.response_mut() {
+                    req.body.extend(data);
                 }
-                let mut value = value.unwrap();
-                if let Some(data) = data {
-                    if let Some(req) = value.response_mut() {
-                        req.body.extend(data);
-                    }
+                value.timings_mut().set_response_body_start();
+            } else {
+                if value
+                    .request
+                    .as_ref()
+                    .filter(|req| req.body.is_empty())
+                    .is_some()
+                {
                     value.timings_mut().set_response_body_start();
-                } else {
-                    if value
-                        .request
-                        .as_ref()
-                        .filter(|req| req.body.is_empty())
-                        .is_some()
-                    {
-                        value.timings_mut().set_response_body_start();
-                    }
-                    value.timings_mut().set_response_body_end()
                 }
+                value.timings_mut().set_response_body_end()
             }
-            MessageEvent::OnProxyStart(id) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.timings_mut().set_proxy_start();
+        }
+        MessageEvent::OnProxyStart(id) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
-            MessageEvent::OnProxyEnd(id) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.timings_mut().set_proxy_end();
+            let mut value = value.unwrap();
+            value.timings_mut().set_proxy_start();
+        }
+        MessageEvent::OnProxyEnd(id) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
-            MessageEvent::OnResponseStart(id, res) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.response_mut().replace(res);
+            let mut value = value.unwrap();
+            value.timings_mut().set_proxy_end();
+        }
+        MessageEvent::OnResponseStart(id, res) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
-            MessageEvent::OnWebSocketStart(id) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.timings_mut().set_websocket_start();
-                value.messages = Some(MessageEventWebSocket {
-                    ..Default::default()
-                });
+            let mut value = value.unwrap();
+            value.response_mut().replace(res);
+        }
+        MessageEvent::OnWebSocketStart(id) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
-            MessageEvent::OnWebSocketError(id, error_reason) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.timings_mut().set_websocket_end();
-                let msg = value.messages_mut();
+            let mut value = value.unwrap();
+            value.timings_mut().set_websocket_start();
+            value.messages = Some(MessageEventWebSocket {
+                ..Default::default()
+            });
+        }
+        MessageEvent::OnWebSocketError(id, error_reason) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
+            }
+            let mut value = value.unwrap();
+            value.timings_mut().set_websocket_end();
+            let msg = value.messages_mut();
 
-                match msg {
-                    Some(msg) => {
-                        msg.status = WebSocketStatus::Error(error_reason);
-                    }
-                    None => {
-                        let msg = MessageEventWebSocket {
-                            status: WebSocketStatus::Error(error_reason),
-                            ..Default::default()
-                        };
-                        value.messages = Some(msg);
-                    }
+            match msg {
+                Some(msg) => {
+                    msg.status = WebSocketStatus::Error(error_reason);
+                }
+                None => {
+                    let msg = MessageEventWebSocket {
+                        status: WebSocketStatus::Error(error_reason),
+                        ..Default::default()
+                    };
+                    value.messages = Some(msg);
                 }
             }
-            MessageEvent::OnWebSocketMessage(id, log) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                let msg = value.messages_mut();
+        }
+        MessageEvent::OnWebSocketMessage(id, log) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
+            }
+            let mut value = value.unwrap();
+            let msg = value.messages_mut();
 
-                match msg {
-                    Some(msg) => {
-                        msg.status = WebSocketStatus::from(&log.message);
-                        msg.message.push(log);
-                    }
-                    None => {
-                        let mut msg = MessageEventWebSocket {
-                            status: WebSocketStatus::from(&log.message),
-                            ..Default::default()
-                        };
-                        msg.message.push(log);
-                        value.messages = Some(msg);
-                    }
+            match msg {
+                Some(msg) => {
+                    msg.status = WebSocketStatus::from(&log.message);
+                    msg.message.push(log);
+                }
+                None => {
+                    let mut msg = MessageEventWebSocket {
+                        status: WebSocketStatus::from(&log.message),
+                        ..Default::default()
+                    };
+                    msg.message.push(log);
+                    value.messages = Some(msg);
                 }
             }
-            MessageEvent::OnTunnelEnd(id) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
+        }
+        MessageEvent::OnTunnelEnd(id) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
+            }
+            let mut value = value.unwrap();
 
-                value.timings_mut().set_tunnel_end();
-                let msg = &mut value.tunnel;
+            value.timings_mut().set_tunnel_end();
+            let msg = &mut value.tunnel;
 
-                match msg {
-                    Some(msg) => msg.status = TunnelStatus::Disconnected,
-                    None => {
-                        warn!("Tunnel not found for id: {}", id);
-                    }
+            match msg {
+                Some(msg) => msg.status = TunnelStatus::Disconnected,
+                None => {
+                    warn!("Tunnel not found for id: {}", id);
                 }
             }
-            MessageEvent::OnTunnelStart(id) => {
-                let value = cache.get_mut(&id);
-                if value.is_none() {
-                    continue;
-                }
-                let mut value = value.unwrap();
-                value.timings_mut().set_tunnel_start();
-                value.tunnel = Some(MessageEventTunnel {
-                    status: TunnelStatus::Connected,
-                });
+        }
+        MessageEvent::OnTunnelStart(id) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
             }
+            let mut value = value.unwrap();
+            value.timings_mut().set_tunnel_start();
+            value.tunnel = Some(MessageEventTunnel {
+                status: TunnelStatus::Connected,
+            });
         }
     }
     Ok(())
@@ -239,14 +355,39 @@ pub async fn handle_message_event(
 
 impl MessageEventChannel {
     pub fn new(cache: Arc<message_event_store::MessageEventCache>) -> Self {
-        let (tx, rx) = channel::<MessageEvent>(100);
+        let (broadcast_tx, _broadcast_rx) = broadcast::channel::<MessageEvent>(100);
 
+        // 启动消息处理任务
+        let cache_clone = cache.clone();
+        let mut rx = broadcast_tx.subscribe();
         spawn(async move {
-            handle_message_event(rx, cache).await.unwrap_or_else(|e| {
-                tracing::error!("Error handling message event: {:?}", e);
-            });
+            while let Ok(event) = rx.recv().await {
+                if let Err(e) = handle_message_event_single(event, cache_clone.clone()).await {
+                    tracing::error!("Error handling message event: {:?}", e);
+                }
+            }
         });
-        Self { sender: tx }
+
+        Self {
+            broadcast_sender: broadcast_tx,
+        }
+    }
+
+    /// 创建一个新的订阅者
+    pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<MessageEvent> {
+        self.broadcast_sender.subscribe()
+    }
+
+    /// 发送消息到所有订阅者
+    fn sync_send_event(&self, event: MessageEvent) {
+        // 发送到 broadcast channel
+        let _ = self.broadcast_sender.send(event);
+    }
+
+    /// 发送消息到所有订阅者
+    async fn send_event(&self, event: MessageEvent) {
+        // 发送到 broadcast channel
+        let _ = self.broadcast_sender.send(event);
     }
 
     #[instrument(skip_all)]
@@ -255,24 +396,19 @@ impl MessageEventChannel {
         request: &Request<T>,
         mut body: ReceiverStream<Bytes>,
     ) {
-        let sender = self.sender.clone();
+        let sender = self.broadcast_sender.clone();
         let trace_id = request.extensions().get_trace_id().clone();
         spawn(async move {
             let trace_id = trace_id.clone(); // Clone before the loop
             while let Some(data) = body.next().await {
                 let trace_id = trace_id.clone(); // Clone for each iteration
-                let _ = sender
-                    .send(MessageEvent::OnRequestBody(trace_id, Some(data)))
-                    .await;
+                let _ = sender.send(MessageEvent::OnRequestBody(trace_id, Some(data)));
             }
-            let _ = sender
-                .send(MessageEvent::OnRequestBody(trace_id, None))
-                .await;
+            let _ = sender.send(MessageEvent::OnRequestBody(trace_id, None));
         });
 
         let _ = self
-            .sender
-            .send(MessageEvent::OnRequestStart(
+            .send_event(MessageEvent::OnRequestStart(
                 request.extensions().get_trace_id().clone(),
                 MessageEventRequest::from(request),
             ))
@@ -282,74 +418,57 @@ impl MessageEventChannel {
     #[instrument(skip_all)]
     pub async fn dispatch_on_request_end(&self, request_id: TraceId) {
         let _ = self
-            .sender
-            .send(MessageEvent::OnRequestEnd(request_id))
+            .send_event(MessageEvent::OnRequestEnd(request_id))
             .await;
     }
 
     #[instrument(skip_all)]
     pub async fn dispatch_on_before_proxy(&self, request_id: TraceId) {
         let _ = self
-            .sender
-            .send(MessageEvent::OnProxyStart(request_id))
+            .send_event(MessageEvent::OnProxyStart(request_id))
             .await;
     }
 
     #[instrument(skip_all)]
     pub async fn dispatch_on_after_proxy(&self, request_id: TraceId) {
-        let _ = self.sender.send(MessageEvent::OnProxyEnd(request_id)).await;
+        let _ = self.send_event(MessageEvent::OnProxyEnd(request_id)).await;
     }
 
     #[instrument(skip_all)]
     pub async fn dispatch_on_tunnel_start(&self, request_id: TraceId) {
         let _ = self
-            .sender
-            .send(MessageEvent::OnTunnelStart(request_id))
+            .send_event(MessageEvent::OnTunnelStart(request_id))
             .await;
     }
 
     #[instrument(skip_all)]
     pub async fn dispatch_on_tunnel_end(&self, request_id: TraceId) {
-        let _ = self
-            .sender
-            .send(MessageEvent::OnTunnelEnd(request_id))
-            .await;
+        let _ = self.send_event(MessageEvent::OnTunnelEnd(request_id)).await;
     }
 
     #[instrument(skip_all)]
     pub async fn dispatch_on_error(&self, request_id: TraceId, error_reason: String) {
         let _ = self
-            .sender
-            .send(MessageEvent::OnError(request_id, error_reason))
+            .send_event(MessageEvent::OnError(request_id, error_reason))
             .await;
     }
 
     #[instrument(skip_all)]
-    pub async fn dispatch_on_response_start(&self, res: &Res, mut body: ReceiverStream<Bytes>) {
-        let sender = self.sender.clone();
+    pub async fn dispatch_on_response_start(&self, res: &Res, body: ReceiverStream<Bytes>) {
+        let sender = self.broadcast_sender.clone();
         let trace_id = res.extensions().get_trace_id().clone();
         let span = tracing::Span::current();
+        let headers = res.headers().clone();
+
         spawn(
             async move {
-                let trace_id = trace_id.clone(); // Clone before the loop
-                while let Some(data) = body.next().await {
-                    let trace_id = trace_id.clone(); // Clone for each iteration
-                    trace!("Dispatching OnResponseBody event");
-                    let _ = sender
-                        .send(MessageEvent::OnResponseBody(trace_id, Some(data)))
-                        .await;
-                }
-                trace!("Dispatching OnResponseBody end event");
-                let _ = sender
-                    .send(MessageEvent::OnResponseBody(trace_id, None))
-                    .await;
+                process_compressed_body(&headers, body, sender, trace_id).await;
             }
             .instrument(span),
         );
 
         let _ = self
-            .sender
-            .send(MessageEvent::OnResponseStart(
+            .send_event(MessageEvent::OnResponseStart(
                 res.extensions().get_trace_id().clone(),
                 MessageEventResponse::from(res),
             ))
@@ -359,16 +478,14 @@ impl MessageEventChannel {
     #[instrument(skip_all)]
     pub async fn dispatch_on_websocket_start(&self, request_id: TraceId) {
         let _ = self
-            .sender
-            .send(MessageEvent::OnWebSocketStart(request_id))
+            .send_event(MessageEvent::OnWebSocketStart(request_id))
             .await;
     }
 
     #[instrument(skip_all)]
     pub async fn dispatch_on_websocket_error(&self, request_id: TraceId, error_reason: String) {
         let _ = self
-            .sender
-            .send(MessageEvent::OnWebSocketError(request_id, error_reason))
+            .send_event(MessageEvent::OnWebSocketError(request_id, error_reason))
             .await;
     }
 
@@ -393,8 +510,7 @@ impl MessageEventChannel {
             message: WebSocketMessage::from(message),
         };
         let _ = self
-            .sender
-            .send(MessageEvent::OnWebSocketMessage(request_id, log))
+            .send_event(MessageEvent::OnWebSocketMessage(request_id, log))
             .await;
     }
 }
@@ -491,6 +607,26 @@ pub struct ProxyMessageEventService<S> {
     pub service: S,
 }
 
+/// 当请求被取消的时候，需要出发一个取消的错误事件
+pub struct Guard {
+    message_event_channel: Arc<MessageEventChannel>,
+    completed: bool,
+    trace_id: TraceId,
+}
+
+impl Drop for Guard {
+    fn drop(&mut self) {
+        if self.completed {
+            return;
+        }
+        self.message_event_channel
+            .sync_send_event(MessageEvent::OnError(
+                self.trace_id.clone(),
+                "Proxy request canceled".to_string(),
+            ));
+    }
+}
+
 impl<S> Service<Req> for ProxyMessageEventService<S>
 where
     S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
@@ -519,6 +655,11 @@ where
 
         Box::pin(
             async move {
+                let mut guard = Guard {
+                    message_event_channel: message_event_channel.clone(),
+                    completed: false,
+                    trace_id: trace_id.clone(),
+                };
                 let capture_dao = CaptureSwitchDao::new(db.clone());
                 let capture_switch = capture_dao.get_capture_switch().await;
                 let need_capture = if let Ok(capture_switch) = capture_switch {
@@ -538,14 +679,12 @@ where
                 message_event_channel_clone
                     .dispatch_on_before_proxy(trace_id.clone())
                     .await;
-
                 let future = inner.call(request);
                 let result = future.await;
-
                 message_event_channel_clone
                     .dispatch_on_after_proxy(trace_id.clone())
                     .await;
-
+                guard.completed = true;
                 match result {
                     Ok(res) => {
                         let (part, old_body) = res.into_parts();

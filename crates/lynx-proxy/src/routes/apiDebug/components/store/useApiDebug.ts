@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../../../store';
+import { RootState } from '../../../../store/useSortPoll';
 import {
   setMethod,
   setUrl,
@@ -17,7 +17,7 @@ import {
   loadFromApiDebugResponse,
 } from './apiDebugSlice';
 import { HeaderItem, QueryParamItem, FormattedResponse } from '../types';
-import { IViewMessageEventStoreValue } from '../../../../store';
+import { IViewMessageEventStoreValue } from '../../../../store/useSortPoll';
 import { ApiDebugResponse } from '../../../../services/generated/utoipaAxum.schemas';
 
 export const useApiDebug = () => {
