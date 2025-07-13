@@ -2,12 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.3.5] - 2025-07-13
 
 ### 🚀 Features
 
 - Batch handler rule ([#34](https://github.com/suxin2017/lynx-server/issues/34))
 - Add import and export rules
+- Supports using SSE to retrieve request logs. ([#41](https://github.com/suxin2017/lynx-server/issues/41))
 
 ### 🐛 Bug Fixes
 
