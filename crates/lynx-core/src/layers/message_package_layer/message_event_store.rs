@@ -271,8 +271,24 @@ impl MessageEventCache {
         Self { map }
     }
 
+    fn remove_oldest_completed(&self) {
+        // Remove the oldest completed request if the cache size exceeds 30
+        if self.map.len() > 30 {
+            if let Some(oldest_key) = self
+                .map
+                .iter()
+                .next()
+                .filter(|r| r.is_completed())
+                .map(|r| r.key().clone())
+            {
+                self.map.remove(&oldest_key);
+            }
+        }
+    }
+
     pub async fn insert(&self, key: TraceId, value: MessageEventStoreValue) {
         self.map.insert(key.clone(), value);
+        self.remove_oldest_completed();
     }
 
     pub fn get(&self, key: &TraceId) -> Option<MessageEventStoreValue> {
@@ -297,14 +313,11 @@ impl MessageEventCache {
                 if value.is_need_delteed() {
                     delete_keys.push(value.trace_id.clone().into());
                 }
-                // 收集副本
                 new_requests.push(value);
-                // 标记为已处理
                 entry.is_new = false;
             }
         }
 
-        // 删除已处理的请求
         for key in delete_keys {
             self.map.remove(&key);
         }
@@ -336,7 +349,6 @@ impl MessageEventCache {
             }
         }
 
-        // 删除已处理的请求
         for key in delete_keys {
             self.map.remove(&key);
         }
