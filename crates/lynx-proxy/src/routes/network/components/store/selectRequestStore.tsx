@@ -1,4 +1,4 @@
-import { IViewMessageEventStoreValue } from '@/store';
+import { IViewMessageEventStoreValue } from '@/store/useSortPoll';
 import constate from 'constate';
 import { useState } from 'react';
 

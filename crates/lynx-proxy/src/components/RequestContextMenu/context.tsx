@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import constate from 'constate';
-import { IViewMessageEventStoreValue } from '@/store';
+import { IViewMessageEventStoreValue } from '@/store/useSortPoll';
 import { RequestContextMenuState } from './types';
 
 export const [RequestContextMenuProvider, useRequestContextMenuContext] = constate(

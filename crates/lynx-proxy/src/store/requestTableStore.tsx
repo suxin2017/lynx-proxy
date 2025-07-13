@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { useSelector } from 'react-redux';
-import { IViewMessageEventStoreValue, RootState } from '.';
+import { IViewMessageEventStoreValue, RootState } from './useSortPoll';
 
 export interface RequestTableState {
   requests: IViewMessageEventStoreValue[];
@@ -39,7 +39,7 @@ const isCompletedReq = (res: IViewMessageEventStoreValue) => {
   }
 
   // 请求报错了
-  if(typeof res.status === 'object' && res.status?.Error) {
+  if (typeof res.status === 'object' && res.status?.Error) {
     return true;
   }
   return false;
@@ -51,6 +51,21 @@ const requestTableSlice = createSlice({
 
   reducers: {
     clearRequestTable: () => initialState,
+    insertOrUpdateRequests: (
+      state,
+      action: PayloadAction<IViewMessageEventStoreValue[]>,
+    ) => {
+      action.payload.forEach((item) => {
+        const existingIndex = state.requests.findIndex(
+          (req) => req.traceId === item.traceId,
+        );
+        if (existingIndex !== -1) {
+          state.requests[existingIndex] = item;
+        } else {
+          state.requests.push(item);
+        }
+      });
+    },
     appendRequest: (
       state,
       action: PayloadAction<IViewMessageEventStoreValue[]>,
@@ -124,6 +139,7 @@ export const useFilteredTableData = () => {
 };
 
 export const {
+  insertOrUpdateRequests,
   appendRequest,
   removeOldRequest,
   replaceRequest,

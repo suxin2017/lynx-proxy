@@ -1,3 +1,4 @@
+import { useSelectRequest } from '@/routes/network/components/store/selectRequestStore';
 import {
   useGetCachedRequests,
   useGetCaptureStatus,
@@ -10,6 +11,8 @@ import {
 import { configureStore } from '@reduxjs/toolkit';
 import { useInterval } from 'ahooks';
 import { useDispatch, useSelector } from 'react-redux';
+import { apiDebugReducer } from '../routes/apiDebug/components/store';
+import { ExpendMessageEventRequest, ExtendedMessageEventStoreValue, ExtendMessageEventResponse } from './messageEventCache';
 import {
   appendRequest,
   removeOldRequest,
@@ -22,8 +25,8 @@ import {
   replaceTreeNode,
   requestTreeReducer,
 } from './requestTreeStore';
-import { apiDebugReducer } from '../routes/apiDebug/components/store';
-import { useSelectRequest } from '@/routes/network/components/store/selectRequestStore';
+import { ConnectType, useGeneralSetting } from './useGeneralState';
+import { useEffect } from 'react';
 
 export const store = configureStore({
   reducer: {
@@ -54,39 +57,51 @@ export function bodyToArrayBuffer(body: MessageEventBody) {
   return base64ToArrayBuffer(body);
 }
 
-const formatItem = (item: MessageEventStoreValue) => {
+
+function getArrayBufferFromResponse(
+  response?: ExpendMessageEventRequest | ExtendMessageEventResponse | null,
+): ArrayBuffer | undefined {
+  if (response && 'bodyArrayBuffer' in response) {
+    return response.bodyArrayBuffer;
+  }
+  return response?.body ? bodyToArrayBuffer(response.body) : undefined;
+}
+
+export const formatItem = (item: MessageEventStoreValue | ExtendedMessageEventStoreValue) => {
   const { request, response } = item;
-  const reqBodyArrayBuffer = request?.body
-    ? bodyToArrayBuffer(request.body)
-    : undefined;
-  const resBodyArrayBuffer = response?.body
-    ? bodyToArrayBuffer(response.body)
-    : undefined;
+
   return {
     ...item,
     request: {
       ...request,
-      bodyArrayBuffer: reqBodyArrayBuffer,
-    },
+      bodyArrayBuffer: getArrayBufferFromResponse(request),
+    } as ExpendMessageEventRequest,
     message: {
       ...item.messages,
       message: item.messages?.message?.reverse(),
     },
     response: {
       ...response,
-      bodyArrayBuffer: resBodyArrayBuffer,
-    },
+      bodyArrayBuffer: getArrayBufferFromResponse(response),
+    } as ExtendMessageEventResponse,
   };
 };
 
+
+export function filterConnectRequest(item: MessageEventStoreValue) {
+  if (item.request?.method === 'CONNECT' && !item.tunnel && typeof item.status !== 'object') {
+    return false;
+  }
+  return true;
+}
 export type IViewMessageEventStoreValue = ReturnType<typeof formatItem>;
 
-export const useUpdateRequestLog = () => {
+export const useSortPoll = () => {
   const cacheRequests = useGetCachedRequests({});
   const { data: netWorkCaptureStatusData } = useGetCaptureStatus();
   const dispatch = useDispatch();
   const requestLogCount = useRequestLogCount();
-  const { maxLogSize = 1000 } = {};
+  const { maxLogSize = 1000, connectType } = useGeneralSetting();
 
   const pendingRequestIds = useSelector((state: RootState) => {
     return state.requestTable.pendingRequestIds;
@@ -97,12 +112,7 @@ export const useUpdateRequestLog = () => {
     cacheRequestsData: ResponseDataWrapperRecordRequests,
   ) => {
     const newRequests = cacheRequestsData?.data?.newRequests
-      ?.filter((item) => {
-        if (item.request?.method === 'CONNECT' && !item.tunnel) {
-          return false;
-        }
-        return true;
-      })
+      ?.filter(filterConnectRequest)
       .map(formatItem);
     const patchRequests =
       cacheRequestsData?.data.patchRequests?.map(formatItem);
@@ -141,7 +151,7 @@ export const useUpdateRequestLog = () => {
     }
   };
 
-  useInterval(
+  const clearnInterval = useInterval(
     () => {
       if (
         netWorkCaptureStatusData?.data?.recordingStatus === 'pauseRecording'
@@ -158,4 +168,10 @@ export const useUpdateRequestLog = () => {
     2000,
     { immediate: true },
   );
+
+  useEffect(() => {
+    if (connectType === ConnectType.SSE) {
+      clearnInterval()
+    }
+  }, [clearnInterval, connectType])
 };
