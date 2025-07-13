@@ -1,4 +1,4 @@
-import { IViewMessageEventStoreValue } from '@/store';
+import { IViewMessageEventStoreValue } from '@/store/useSortPoll';
 
 export interface RequestContextMenuState {
   selectedRecord: IViewMessageEventStoreValue | null;

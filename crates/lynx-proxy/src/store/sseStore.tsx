@@ -23,7 +23,7 @@ export class SseManager {
     private onStatusChangeCallback?: (status: SseConnectionStatus) => void;
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
-    private reconnectDelay = 1000; // 1秒
+    private reconnectDelay = 1000;
 
     private constructor() { }
 
@@ -34,22 +34,18 @@ export class SseManager {
         return SseManager.instance;
     }
 
-    // 设置事件回调
     setOnEventCallback(callback: (event: SseEventData) => void) {
         this.onEventCallback = callback;
     }
 
-    // 设置状态变化回调
     setOnStatusChangeCallback(callback: (status: SseConnectionStatus) => void) {
         this.onStatusChangeCallback = callback;
     }
 
-    // 获取当前连接状态
     getConnectionStatus(): SseConnectionStatus {
         return this.connectionStatus;
     }
 
-    // 更新连接状态
     private updateConnectionStatus(status: SseConnectionStatus) {
         this.connectionStatus = status;
         if (this.onStatusChangeCallback) {
@@ -57,7 +53,10 @@ export class SseManager {
         }
     }
 
-    // 连接 SSE
+    isConnected(): boolean {
+        return this.connectionStatus === SseConnectionStatus.CONNECTED;
+    }
+
     connect(url: string = '/api/net_request/sse/message-events') {
         if (this.eventSource) {
             this.disconnect();
@@ -68,19 +67,15 @@ export class SseManager {
 
             this.eventSource = new EventSource(url);
 
-            // 连接成功
             this.eventSource.onopen = (event) => {
                 console.log('SSE 连接成功:', event);
                 this.updateConnectionStatus(SseConnectionStatus.CONNECTED);
                 this.reconnectAttempts = 0;
             };
 
-            // 接收消息
             this.eventSource.onmessage = (event) => {
                 try {
                     const data: SseEventData = JSON.parse(event.data);
-                    console.log('收到 SSE 事件:', data);
-
                     if (this.onEventCallback) {
                         this.onEventCallback(data);
                     }
@@ -89,16 +84,13 @@ export class SseManager {
                 }
             };
 
-            // 连接错误
             this.eventSource.onerror = (event) => {
                 console.error('SSE 连接错误:', event);
                 this.updateConnectionStatus(SseConnectionStatus.ERROR);
 
-                // 尝试重连
                 this.handleReconnect(url);
             };
 
-            // 监听特定事件类型
             this.setupEventListeners();
 
         } catch (error) {
@@ -107,7 +99,6 @@ export class SseManager {
         }
     }
 
-    // 断开连接
     disconnect() {
         if (this.eventSource) {
             this.eventSource.close();
@@ -117,7 +108,6 @@ export class SseManager {
         this.reconnectAttempts = 0;
     }
 
-    // 处理重连
     private handleReconnect(url: string) {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
@@ -131,11 +121,9 @@ export class SseManager {
         }
     }
 
-    // 设置事件监听器
     private setupEventListeners() {
         if (!this.eventSource) return;
 
-        // 监听特定事件类型
         const eventTypes = [
             'requestStart',
             'requestBody',
@@ -149,7 +137,7 @@ export class SseManager {
             'websocketError',
             'tunnelStart',
             'tunnelEnd',
-            'error',
+            'requestError',
         ];
 
         eventTypes.forEach(eventType => {

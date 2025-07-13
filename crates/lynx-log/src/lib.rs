@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -15,6 +16,12 @@ use tracing_subscriber::{EnvFilter, Registry};
 #[derive(Debug, Clone, Default)]
 pub struct OpenTelemetryConfig {
     pub endpoint: Option<String>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct FileAppenderConfig {
+    pub file_path: PathBuf,
+    pub dir_path: PathBuf,
 }
 
 pub fn open_telemetry_tracer(config: OpenTelemetryConfig) -> Result<Tracer, ExporterBuildError> {
@@ -56,6 +63,7 @@ pub struct LynxLog {
     file: bool,
     otel: bool,
     otel_config: Option<OpenTelemetryConfig>,
+    file_config: Option<FileAppenderConfig>,
 }
 
 impl LynxLog {
@@ -72,7 +80,15 @@ impl LynxLog {
                     .with_ansi(false)
             }))
             .with(self.file.then(|| {
-                let file_appender = tracing_appender::rolling::daily("logs", "lynx-server.log");
+                let file_appender = tracing_appender::rolling::daily(
+                    self.file_config
+                        .as_ref()
+                        .map_or_else(|| PathBuf::from("logs"), |config| config.dir_path.clone()),
+                    self.file_config.as_ref().map_or_else(
+                        || PathBuf::from("lynx-server.log"),
+                        |config| config.file_path.clone(),
+                    ),
+                );
                 let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
                 guard._appender_guard = Some(_guard);
                 tracing_subscriber::fmt::layer()

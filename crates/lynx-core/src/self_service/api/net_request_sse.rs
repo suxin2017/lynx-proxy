@@ -102,7 +102,7 @@ impl TryFrom<MessageEvent> for SseData {
                 data: None,
             }),
             MessageEvent::OnError(trace_id, error) => Ok(SseData {
-                event_type: "error".to_string(),
+                event_type: "requestError".to_string(),
                 trace_id: trace_id.to_string(),
                 timestamp,
                 data: Some(error),
@@ -123,7 +123,10 @@ fn create_message_event_stream(
                     Ok(sse_data) => {
                         let json_data =
                             serde_json::to_string(&sse_data).unwrap_or_else(|_| "{}".to_string());
-                        info!("Sending SSE event: {:?}", sse_data.event_type);
+                        info!(
+                            "Sending SSE event: {:?}, trace_id: {}",
+                            sse_data.event_type, sse_data.trace_id,
+                        );
                         Ok(Event::default().event(&sse_data.event_type).data(json_data))
                     }
                     Err(_) => {

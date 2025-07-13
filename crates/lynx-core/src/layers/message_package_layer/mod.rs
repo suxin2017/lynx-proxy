@@ -379,6 +379,12 @@ impl MessageEventChannel {
     }
 
     /// 发送消息到所有订阅者
+    fn sync_send_event(&self, event: MessageEvent) {
+        // 发送到 broadcast channel
+        let _ = self.broadcast_sender.send(event);
+    }
+
+    /// 发送消息到所有订阅者
     async fn send_event(&self, event: MessageEvent) {
         // 发送到 broadcast channel
         let _ = self.broadcast_sender.send(event);
@@ -601,6 +607,26 @@ pub struct ProxyMessageEventService<S> {
     pub service: S,
 }
 
+/// 当请求被取消的时候，需要出发一个取消的错误事件
+pub struct Guard {
+    message_event_channel: Arc<MessageEventChannel>,
+    completed: bool,
+    trace_id: TraceId,
+}
+
+impl Drop for Guard {
+    fn drop(&mut self) {
+        if self.completed {
+            return;
+        }
+        self.message_event_channel
+            .sync_send_event(MessageEvent::OnError(
+                self.trace_id.clone(),
+                "Proxy request canceled".to_string(),
+            ));
+    }
+}
+
 impl<S> Service<Req> for ProxyMessageEventService<S>
 where
     S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
@@ -629,6 +655,11 @@ where
 
         Box::pin(
             async move {
+                let mut guard = Guard {
+                    message_event_channel: message_event_channel.clone(),
+                    completed: false,
+                    trace_id: trace_id.clone(),
+                };
                 let capture_dao = CaptureSwitchDao::new(db.clone());
                 let capture_switch = capture_dao.get_capture_switch().await;
                 let need_capture = if let Ok(capture_switch) = capture_switch {
@@ -648,14 +679,12 @@ where
                 message_event_channel_clone
                     .dispatch_on_before_proxy(trace_id.clone())
                     .await;
-
                 let future = inner.call(request);
                 let result = future.await;
-
                 message_event_channel_clone
                     .dispatch_on_after_proxy(trace_id.clone())
                     .await;
-
+                guard.completed = true;
                 match result {
                     Ok(res) => {
                         let (part, old_body) = res.into_parts();

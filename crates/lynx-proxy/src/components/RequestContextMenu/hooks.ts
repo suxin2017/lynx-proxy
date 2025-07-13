@@ -1,7 +1,7 @@
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
-import { RootState } from '@/store';
+import { RootState } from '@/store/useSortPoll';
 import { generateCurlCommand } from '@/utils/curlGenerator';
 import { useDebugMode } from '@/hooks';
 import { useRequestContextMenuContext } from './context';

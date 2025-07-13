@@ -5,7 +5,7 @@ use lynx_core::proxy_server::{
     ProxyServerBuilder, server_ca_manage::ServerCaManagerBuilder,
     server_config::ProxyServerConfigBuilder,
 };
-use lynx_log::LynxLogBuilder;
+use lynx_log::{FileAppenderConfig, LynxLogBuilder};
 use sea_orm::ConnectOptions;
 use tokio::signal;
 
@@ -20,6 +20,10 @@ async fn main() -> Result<()> {
     let _handler = LynxLogBuilder::default()
         .with_console(true)
         .with_file(true)
+        .with_file_config(Some(FileAppenderConfig {
+            file_path: fixed_temp_dir_path.join("lynx-server.log"),
+            dir_path: fixed_temp_dir_path.clone(),
+        }))
         // .with_otel(true)
         .build()?
         .init()
