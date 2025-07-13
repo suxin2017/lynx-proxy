@@ -1,6 +1,6 @@
 import { SseEventData } from './sseStore';
 import { base64ToArrayBuffer } from './useSortPoll';
-import { debounce } from 'lodash';
+import { throttle } from 'lodash';
 
 function uint8ToBase64(bytes: Uint8Array): string {
     let binary = '';
@@ -47,8 +47,7 @@ export class MessageEventCache {
 
     constructor(maxSize: number = 1000, debounceDelay: number = 1000) {
         this.maxSize = maxSize;
-        // 使用 throttle 替换 debounce
-        this.throttledNotifyListeners = require('lodash').throttle(() => {
+        this.throttledNotifyListeners =throttle(() => {
             this.notifyListeners();
         }, debounceDelay);
     }
