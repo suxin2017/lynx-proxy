@@ -5,4 +5,5 @@ pub mod certificate;
 pub mod client_proxy;
 pub mod https_capture;
 pub mod net_request;
+pub mod net_request_sse;
 pub mod request_processing;

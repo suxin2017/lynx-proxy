@@ -10,6 +10,8 @@ use crate::self_service::utils::{
 };
 use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
 
+use super::net_request_sse;
+
 #[utoipa::path(
     get,
     path = "/capture/status",
@@ -112,5 +114,6 @@ pub fn router(state: RouteState) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(toggle_capture, get_capture_status))
         .routes(routes!(get_cached_requests))
+        .merge(net_request_sse::create_net_request_sse_routes())
         .with_state(state)
 }

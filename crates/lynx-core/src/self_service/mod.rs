@@ -5,6 +5,8 @@ use crate::client::ReqwestClient;
 use crate::client::request_client::RequestClientExt;
 use crate::common::Req;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
+use crate::layers::message_package_layer::MessageEventChannel;
+use crate::layers::message_package_layer::MessageEventLayerExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreExtensionsExt;
 use crate::proxy_server::StaticDir;
@@ -71,6 +73,7 @@ pub struct RouteState {
     pub access_addr_list: Arc<Vec<SocketAddr>>,
     pub static_dir: Option<Arc<StaticDir>>,
     pub client: Arc<ReqwestClient>,
+    pub message_event_channel: Arc<MessageEventChannel>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
@@ -87,6 +90,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
             .clone(),
         static_dir: static_dir.cloned().flatten(),
         client: req.extensions().get_reqwest_client(),
+        message_event_channel: req.extensions().get_message_event_cannel(),
     };
     let cors = CorsLayer::new()
         .allow_methods([Method::GET])

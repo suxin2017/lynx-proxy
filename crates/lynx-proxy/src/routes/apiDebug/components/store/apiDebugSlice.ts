@@ -4,7 +4,7 @@ import {
   HttpMethod,
   ApiDebugResponse,
 } from '../../../../services/generated/utoipaAxum.schemas';
-import { IViewMessageEventStoreValue } from '../../../../store';
+import { IViewMessageEventStoreValue } from '../../../../store/useSortPoll';
 
 // 定义状态类型
 export interface ApiDebugState {

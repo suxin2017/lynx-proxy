@@ -1,22 +1,34 @@
 import { useLocalStorageState } from 'ahooks';
 import constate from 'constate';
 
+
+export enum ConnectType {
+  ShortPoll,
+  SSE,
+}
+
 export const [GeneralSettingProvider, useGeneralSetting] = constate(() => {
-  const [maxLogSize, setMaxLogSize] = useLocalStorageState<number>(
-    'maxLogSize',
+  const [generalSetting, setGeneralSetting] = useLocalStorageState<{
+    maxLogSize: number;
+    connectType: ConnectType
+  }>(
+    'generalSetting',
     {
-      defaultValue: 1000,
+      defaultValue: {
+        maxLogSize: 1000,
+        connectType: ConnectType.ShortPoll,
+      },
       serializer(value) {
-        return value.toString();
+        return JSON.stringify(value);
       },
       deserializer(value) {
-        return parseInt(value, 10);
+        return JSON.parse(value);
       },
     },
   );
 
   return {
-    maxLogSize,
-    setMaxLogSize,
+    ...generalSetting,
+    generalSetting, setGeneralSetting
   };
 });

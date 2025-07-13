@@ -102,9 +102,9 @@ const userAgentRules = [
     { pattern: /chrome/i, icon: RiChromeLine, name: 'Chrome' }, // Chrome 放在最后
 
     // API 客户端
-    { pattern: /postman/i, icon: RiQuestionLine, name: 'Postman' },
-    { pattern: /insomnia/i, icon: RiQuestionLine, name: 'Insomnia' },
-    { pattern: /curl/i, icon: RiQuestionLine, name: 'cURL' },
+    { pattern: /postman/i, icon: "Postman", name: 'Postman' },
+    { pattern: /insomnia/i, icon: "Insomnia", name: 'Insomnia' },
+    { pattern: /curl/i, icon: "cURL", name: 'cURL' },
 
     // 移动设备
     { pattern: /android/i, icon: RiAndroidLine, name: 'Android' },
@@ -245,7 +245,7 @@ const defaultIcon = RiQuestionLine;
 
 interface AppInfo {
     name: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<any> | string;
     confidence: number;
 }
 
@@ -323,11 +323,11 @@ export const AppIcon: React.FC<AppIconProps> = ({
 
     return (
         <div className="flex items-center gap-2 justify-center">
-            <IconComponent
+            {typeof appInfo.icon === 'string' ? appInfo.icon : <IconComponent
                 size={size}
                 className={`inline-block ${className}`}
                 style={iconColor ? { color: iconColor } : undefined}
-            />
+            />}
             {showName && (
                 <span className="text-sm text-gray-600 dark:text-gray-300">
                     {appInfo.name}

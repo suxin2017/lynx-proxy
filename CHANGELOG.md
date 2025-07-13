@@ -7,10 +7,14 @@ All notable changes to this project will be documented in this file.
 ### 🚀 Features
 
 - Batch handler rule ([#34](https://github.com/suxin2017/lynx-server/issues/34))
+- Add import and export rules
 
 ### 🐛 Bug Fixes
 
 - Compression bug ([#36](https://github.com/suxin2017/lynx-server/issues/36))
+- Network request traceid error ([#39](https://github.com/suxin2017/lynx-server/issues/39))
+- Proxy forward ui ([#40](https://github.com/suxin2017/lynx-server/issues/40))
+- Scroll does not reach the bottom
 
 ## [0.3.3] - 2025-07-01
 

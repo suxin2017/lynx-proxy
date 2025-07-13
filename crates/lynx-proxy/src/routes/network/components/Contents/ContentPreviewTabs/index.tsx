@@ -10,7 +10,7 @@ import TextView from '../TextViewer';
 import FormViewer from '../FormView';
 import Websocket from '../../Websocket';
 import { WebSocketLog } from '@/services/generated/utoipaAxum.schemas';
-import { base64ToArrayBuffer } from '@/store';
+import { base64ToArrayBuffer } from '@/store/useSortPoll';
 
 interface IContentsProps {
   title: string;

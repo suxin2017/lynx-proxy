@@ -1,18 +1,18 @@
+import { RequestContextMenu, useRequestContextMenuContext } from '@/components/RequestContextMenu';
 import { MessageEventTimings } from '@/services/generated/utoipaAxum.schemas';
-import { IViewMessageEventStoreValue } from '@/store';
 import { useFilteredTableData } from '@/store/requestTableStore';
+import { IViewMessageEventStoreValue } from '@/store/useSortPoll';
 import { useKeyPress } from 'ahooks';
-import { Empty, theme, Typography } from 'antd';
+import { Empty, Popover, theme, Typography } from 'antd';
 import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { get } from 'lodash';
+import prettyMs from 'pretty-ms';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AutoSizer, List, ListRowRenderer } from 'react-virtualized';
 import { useSelectRequest } from '../store/selectRequestStore';
-import prettyMs from 'pretty-ms';
-import duration from 'dayjs/plugin/duration';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { RequestContextMenu, useRequestContextMenuContext } from '@/components/RequestContextMenu';
 import { AppIcon } from './utils/remixAppDetector';
 
 dayjs.extend(duration);
@@ -89,6 +89,13 @@ export const RequestTable: React.FC = () => {
         }
         if (raw?.tunnel) {
           return <span>{raw.tunnel?.status}</span>;
+        }
+        if (typeof raw?.status === "object" && raw.status.Error) {
+          return <Popover content={<pre className="overflow-auto max-h-40">
+            {raw.status.Error}
+          </pre>}>
+            <span className="text-red-500">Failed</span>
+          </Popover >
         }
         if (!status) {
           return '-';

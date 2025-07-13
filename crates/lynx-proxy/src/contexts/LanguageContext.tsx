@@ -19,8 +19,8 @@ interface LanguageContextType {
 
 // Create the context with default values
 const LanguageContext = createContext<LanguageContextType>({
-  language: 'en',
-  setLanguage: () => {},
+  language: 'zh-CN',
+  setLanguage: () => { },
 });
 
 // Custom hook to use the language context

@@ -47,7 +47,7 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
       try {
         const content = e.target?.result as string;
         const data: ImportData = JSON.parse(content);
-        
+
         // 验证导入数据格式
         if (!data.version || !data.rules || !Array.isArray(data.rules)) {
           throw new Error('Invalid import file format');
@@ -88,7 +88,7 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
           rules: rulesWithSelection,
         });
         setSelectedRules(rulesWithSelection);
-        
+
         if (validRules.length !== data.rules.length) {
           message.warning(
             t('ruleManager.import.partialValidation', {
@@ -104,7 +104,7 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
         message.error(t('ruleManager.import.parseError'));
       }
     };
-    reader.readAsText(file as any);
+    reader.readAsText(file as unknown as Blob);
     return false; // 阻止默认上传行为
   };
 
@@ -132,11 +132,13 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
               capture: rule.capture ? {
                 // 移除capture中的id字段，只保留condition
                 condition: rule.capture.condition ? (() => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const originalCondition = rule.capture.condition as any;
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   const cleanedCondition: any = {
                     type: originalCondition.type || 'simple',
                   };
-                  
+
                   // 处理urlPattern
                   if (originalCondition.urlPattern) {
                     cleanedCondition.urlPattern = originalCondition.urlPattern;
@@ -146,7 +148,7 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
                       captureType: 'glob',
                     };
                   }
-                  
+
                   // 只添加非null的可选字段
                   if (originalCondition.method) {
                     cleanedCondition.method = originalCondition.method;
@@ -157,7 +159,7 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
                   if (originalCondition.headers) {
                     cleanedCondition.headers = originalCondition.headers;
                   }
-                  
+
                   return cleanedCondition;
                 })() : {
                   type: 'simple',
@@ -242,11 +244,11 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
   };
 
   const handleRuleSelection = (rule: ImportRule, checked: boolean) => {
-    const updatedRules = selectedRules.map(r => 
+    const updatedRules = selectedRules.map(r =>
       r.name === rule.name ? { ...r, selected: checked } : r
     );
     setSelectedRules(updatedRules);
-    
+
     if (importData) {
       setImportData({
         ...importData,
@@ -258,7 +260,7 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
   const handleSelectAll = (checked: boolean) => {
     const updatedRules = selectedRules.map(r => ({ ...r, selected: checked }));
     setSelectedRules(updatedRules);
-    
+
     if (importData) {
       setImportData({
         ...importData,
@@ -279,7 +281,7 @@ export const ImportRulesButton: React.FC<ImportRulesButtonProps> = ({
         </Checkbox>
       ),
       width: 80,
-      render: (_: any, record: ImportRule) => (
+      render: (_: unknown, record: ImportRule) => (
         <Checkbox
           checked={record.selected}
           onChange={(e) => handleRuleSelection(record, e.target.checked)}
