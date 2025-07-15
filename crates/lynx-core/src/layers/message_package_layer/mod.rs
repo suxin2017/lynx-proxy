@@ -355,15 +355,27 @@ pub async fn handle_message_event_single(
 
 impl MessageEventChannel {
     pub fn new(cache: Arc<message_event_store::MessageEventCache>) -> Self {
-        let (broadcast_tx, _broadcast_rx) = broadcast::channel::<MessageEvent>(100);
+        let (broadcast_tx, _broadcast_rx) = broadcast::channel::<MessageEvent>(1024);
 
-        // 启动消息处理任务
         let cache_clone = cache.clone();
         let mut rx = broadcast_tx.subscribe();
         spawn(async move {
-            while let Ok(event) = rx.recv().await {
-                if let Err(e) = handle_message_event_single(event, cache_clone.clone()).await {
-                    tracing::error!("Error handling message event: {:?}", e);
+            loop {
+                match rx.recv().await {
+                    Ok(event) => {
+                        if let Err(e) =
+                            handle_message_event_single(event, cache_clone.clone()).await
+                        {
+                            tracing::error!("Error handling message event: {:?}", e);
+                        }
+                    }
+                    Err(broadcast::error::RecvError::Closed) => {
+                        tracing::warn!("Broadcast channel closed, stopping message event handler.");
+                        break;
+                    }
+                    Err(broadcast::error::RecvError::Lagged(_)) => {
+                        tracing::warn!("Broadcast channel lagged, some messages may be missed.");
+                    }
                 }
             }
         });
