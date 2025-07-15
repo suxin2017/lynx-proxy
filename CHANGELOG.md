@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.3.5] - 2025-07-13
+## [0.3.6] - 2025-07-15
 
 ### 🚀 Features
 
@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - Network request traceid error ([#39](https://github.com/suxin2017/lynx-server/issues/39))
 - Proxy forward ui ([#40](https://github.com/suxin2017/lynx-server/issues/40))
 - Scroll does not reach the bottom
+- Dead lock
 
 ## [0.3.3] - 2025-07-01
 
