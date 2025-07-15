@@ -272,16 +272,16 @@ impl MessageEventCache {
     }
 
     fn remove_oldest_completed(&self) {
-        // Remove the oldest completed request if the cache size exceeds 30
         if self.map.len() > 30 {
-            if let Some(oldest_key) = self
-                .map
-                .iter()
-                .next()
-                .filter(|r| r.is_completed())
-                .map(|r| r.key().clone())
-            {
-                self.map.remove(&oldest_key);
+            let oldest_key = {
+                self.map
+                    .iter()
+                    .find(|r| r.is_completed())
+                    .map(|r| r.key().clone())
+            };
+
+            if let Some(key) = oldest_key {
+                self.map.remove(&key);
             }
         }
     }
