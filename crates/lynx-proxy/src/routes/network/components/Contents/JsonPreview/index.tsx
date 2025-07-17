@@ -15,7 +15,8 @@ export const JsonPreview: React.FC<IJsonPreviewProps> = ({ arrayBuffer }) => {
       return JSON.parse(new TextDecoder().decode(arrayBuffer));
     } catch (e) {
       return {
-        error: e,
+        error: `Lynx Server JSON Parse Error`,
+        reason: e
       };
     }
   }, [arrayBuffer]);

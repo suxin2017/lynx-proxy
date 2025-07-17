@@ -34,6 +34,14 @@ impl MockClientInner {
         )
     }
 
+    pub async fn proxy_get(&self, url: &str) -> Result<Response> {
+        self.proxy_client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| anyhow!(e))
+    }
+
     pub async fn proxy_ws(
         &self,
         url: &str,

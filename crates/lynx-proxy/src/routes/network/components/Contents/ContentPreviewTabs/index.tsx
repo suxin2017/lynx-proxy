@@ -83,7 +83,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
     return blob.arrayBuffer();
   }, [websocketBody]);
   const contentTypeCheck = useMemo(() => {
-    const contentTypeJson = !!contentType?.includes('application/json');
+    const contentTypeJson = !!contentType?.includes('application/json') ;
     const contentTypeImage = !!contentType?.includes('image');
     const contentTypeVideo = !!contentType?.includes('video');
     const contentTypeFont = !!contentType?.includes('font');

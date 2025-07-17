@@ -51,7 +51,8 @@ export const RequestTable: React.FC = () => {
   const { t } = useTranslation();
   const requestTable = useFilteredTableData();
   const listRef = React.useRef<List>(null);
-  const { selectRequest, setSelectRequest } = useSelectRequest();
+  const { selectRequest, setSelectRequest, selectedRequest } = useSelectRequest();
+
   const { token } = useToken();
 
   const columns = useMemo(() => [
@@ -91,6 +92,9 @@ export const RequestTable: React.FC = () => {
           return <span>{raw.tunnel?.status}</span>;
         }
         if (typeof raw?.status === "object" && raw.status.Error) {
+          if (raw.status.Error === 'Proxy request canceled') {
+            return <span className="text-gray-500">Canceled</span>;
+          }
           return <Popover content={<pre className="overflow-auto max-h-40">
             {raw.status.Error}
           </pre>}>
@@ -249,7 +253,10 @@ export const RequestTable: React.FC = () => {
 
   const rowRenderer: ListRowRenderer = useCallback(({ index, key, style }) => {
     const data = requestTable[index];
-    const activeClass = selectRequest?.traceId === data?.traceId ? 'bg-blue-100 dark:bg-blue-500' : '';
+    const hasSelectedRequest = selectedRequest[data?.traceId];
+
+    const activeClass = selectRequest?.traceId === data?.traceId ? 'bg-blue-100 dark:bg-blue-400' : '';
+    const hasClicked = hasSelectedRequest && !activeClass ? 'text-stone-500 dark:text-stone-600' : '';
     return (
       <div key={key} style={{
         ...style,
@@ -258,7 +265,7 @@ export const RequestTable: React.FC = () => {
         onContextMenu={(e) => {
           handleContextMenu(data, e);
         }}
-        className={`flex items-center cursor-pointer hover:bg-gray-100 border-b dark:hover:bg-gray-700 transition-colors ${activeClass}`} onClick={() => {
+        className={`flex items-center cursor-pointer hover:bg-gray-100 border-b dark:hover:bg-gray-700 transition-colors ${activeClass} ${hasClicked}`} onClick={() => {
           if (data) {
             setSelectRequest(data);
           }
@@ -275,7 +282,7 @@ export const RequestTable: React.FC = () => {
         })}
       </div>
     );
-  }, [columns, handleContextMenu, requestTable, selectRequest?.traceId, setSelectRequest, token.colorBorder])
+  }, [columns, handleContextMenu, requestTable, selectRequest?.traceId, selectedRequest, setSelectRequest, token.colorBorder])
 
   const width = columns.reduce((total, column) => total + (column.width || 60), 0);
   return <div className="w-full h-full overflow-x-auto overflow-y-hidden">
@@ -287,9 +294,7 @@ export const RequestTable: React.FC = () => {
       ))}
     </div>
     <RequestContextMenu>
-
       <div className="w-full h-full">
-
         <AutoSizer>
           {({ width: contentWidth, height }) => {
             const maxWidth = Math.max(contentWidth, width);

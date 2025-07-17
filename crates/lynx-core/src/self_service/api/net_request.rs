@@ -66,9 +66,9 @@ async fn toggle_capture(
 
 #[derive(ToSchema, serde::Deserialize, serde::Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-struct RecordRequests {
-    new_requests: Vec<MessageEventStoreValue>,
-    patch_requests: Option<Vec<MessageEventStoreValue>>,
+pub struct RecordRequests {
+    pub new_requests: Vec<MessageEventStoreValue>,
+    pub patch_requests: Option<Vec<MessageEventStoreValue>>,
 }
 
 #[derive(ToSchema, serde::Deserialize, Debug, serde::Serialize, IntoParams)]
