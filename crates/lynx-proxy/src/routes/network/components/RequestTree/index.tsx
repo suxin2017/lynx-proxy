@@ -24,7 +24,7 @@ export const RequestTree: React.FC = () => {
 
   if (!treeData?.length) {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex  flex-1  items-center justify-center">
         <Empty description={null} />
       </div>
     );
@@ -32,7 +32,7 @@ export const RequestTree: React.FC = () => {
 
   return (
     <RequestContextMenu>
-      <div ref={ref} className="h-full w-full">
+      <div ref={ref} className="flex-1 ">
         <Tree
           height={size?.height}
           width={size?.width}
@@ -94,7 +94,7 @@ const TreeNode = ({
         ...style,
         backgroundColor: node.isSelected ? token.token.colorPrimaryBg : '',
       }}
-      className={'flex h-full w-full items-center text-sm whitespace-nowrap'}
+      className={'flex   items-center text-sm whitespace-nowrap'}
       ref={dragHandle}
       onClick={() => {
         node.select();
@@ -134,7 +134,7 @@ const TreeNode = ({
           <RiFolder6Line color={token.token['orange-5']} size={16} />
         </span>
       )} */}
-      <Typography.Text ellipsis className="w-full">
+      <Typography.Text ellipsis className="">
         {node.data.name}
       </Typography.Text>
 

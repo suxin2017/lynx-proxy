@@ -16,14 +16,14 @@ const TextView: React.FC<TextViewProps> = ({ arrayBuffer, text }) => {
 
   if (!data)
     return (
-      <div className="flex h-full items-center justify-center text-gray-500">
+      <div className="flex flex-1 items-center justify-center text-gray-500">
         <Empty />
       </div>
     );
 
   return (
-    <div className="flex h-full flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-      <pre className="break-all whitespace-normal">{data}</pre>
+    <div className="flex flex-1  flex-col  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+      <pre className="m-0 break-all whitespace-normal">{data}</pre>
     </div>
   );
 };

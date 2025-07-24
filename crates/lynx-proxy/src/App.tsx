@@ -78,7 +78,7 @@ const AppContent = () => {
         algorithm: antdAlgorithm,
       }}
     >
-      <AntdApp className="h-full w-full">
+      <AntdApp className="flex-1 flex ">
         <RouterProvider router={router} />
       </AntdApp>
     </ConfigProvider>

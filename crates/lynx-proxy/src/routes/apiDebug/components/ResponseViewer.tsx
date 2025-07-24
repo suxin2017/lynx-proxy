@@ -82,7 +82,7 @@ export function ResponseViewer({
 
   if (!response) {
     return (
-      <div className="flex h-full flex-col items-center justify-center p-12 text-center">
+      <div className="flex  flex-col items-center justify-center p-12 text-center">
         <Title level={4} type="secondary">
           {t('apiDebug.responseViewer.noResponse')}
         </Title>

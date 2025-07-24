@@ -89,7 +89,7 @@ const FormViewer: React.FC<{
   if (!data) return null;
 
   return (
-    <div className="flex h-full flex-col rounded-sm border-gray-300 p-1 font-mono text-xs">
+    <div className="flex  flex-col rounded-sm border-gray-300 p-1 font-mono text-xs">
       <Descriptions
         bordered
         size="small"

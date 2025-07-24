@@ -243,7 +243,7 @@ export const RequestTable: React.FC = () => {
   });
 
   const noRowsRenderer = () => (
-    <div className="flex items-center justify-center h-full">
+    <div className="h-full flex items-center justify-center ">
       <Empty description={null} />
     </div>
   );
@@ -285,8 +285,8 @@ export const RequestTable: React.FC = () => {
   }, [columns, handleContextMenu, requestTable, selectRequest?.traceId, selectedRequest, setSelectRequest, token.colorBorder])
 
   const width = columns.reduce((total, column) => total + (column.width || 60), 0);
-  return <div className="w-full h-full overflow-x-auto overflow-y-hidden">
-    <div className="w-full flex border-b border-gray-200 dark:border-gray-500 h-10 items-center">
+  return <div className="flex flex-1  flex-col">
+    <div className=" flex border-b border-gray-200 dark:border-gray-500 h-10 items-center">
       {columns.map((column) => (
         <div key={column.key} style={{ display: 'inline-block', minWidth: column.minWidth, width: column.width, textAlign: column.align as React.CSSProperties['textAlign'] ?? "left", flex: column.width ? 'none' : 1 }} className="text-center">
           <strong>{column.title}</strong>
@@ -294,10 +294,11 @@ export const RequestTable: React.FC = () => {
       ))}
     </div>
     <RequestContextMenu>
-      <div className="w-full h-full">
+      <div className="flex flex-1">
         <AutoSizer>
           {({ width: contentWidth, height }) => {
             const maxWidth = Math.max(contentWidth, width);
+
             return <List
               ref={listRef}
               height={height - 40}
@@ -315,7 +316,5 @@ export const RequestTable: React.FC = () => {
         </AutoSizer>
       </div>
     </RequestContextMenu>
-
-
   </div >
 }

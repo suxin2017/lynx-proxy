@@ -89,7 +89,7 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
                     name={[field.name, 'domain']}
                     className="mb-0 min-w-0"
                   >
-                    <Input className="w-full" placeholder="*.example.com" />
+                    <Input className="" placeholder="*.example.com" />
                   </Form.Item>
                   <Form.Item
                     required
@@ -106,7 +106,7 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
                     ]}
                     name={[field.name, 'port']}
                   >
-                    <InputNumber className="w-full" placeholder="443" />
+                    <InputNumber className="" placeholder="443" />
                   </Form.Item>
                   <Form.Item className="flex items-center space-x-2">
                     <Button
@@ -174,6 +174,7 @@ export const NetworkSetting: React.FC = () => {
 
   return (
     <CommonCard
+      className='flex-col'
       title={t('networkSetting.title')}
       subTitle={t('networkSetting.subTitle')}
       extra={
@@ -188,9 +189,10 @@ export const NetworkSetting: React.FC = () => {
         </Space>
       }
     >
+
       {context}
       <Form
-        className="flex flex-col overflow-hidden"
+        className="flex flex-1"
         layout="vertical"
         form={form}
         initialValues={initialValues}
