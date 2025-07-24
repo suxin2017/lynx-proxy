@@ -237,7 +237,7 @@ const InnerInterceptorPage: React.FC = () => {
       <CommonCard>
         <div className='flex flex-col flex-1'>
 
-          <div className="mb-4 flex-1 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
             <Title level={4} style={{ margin: 0 }}>
               {t('ruleManager.title')}
             </Title>
@@ -254,7 +254,7 @@ const InnerInterceptorPage: React.FC = () => {
           </div>
 
           <Input.Search
-            className="mb-1 flex-1"
+            className="mb-1"
             allowClear
             placeholder={t('ruleManager.searchPlaceholder')}
             onSearch={(value) => {
