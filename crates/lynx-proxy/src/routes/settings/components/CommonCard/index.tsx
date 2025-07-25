@@ -7,7 +7,7 @@ export const CommonCard: React.FC<
 > = ({ title, subTitle, children, extra, className }) => {
   return (
     <div
-      className={`h-full w-full overflow-auto rounded-xl border border-gray-300 px-4 py-4 dark:border-gray-500 ${className}`}
+      className={`flex flex-1  overflow-auto rounded-xl border border-gray-300 px-4 py-4 dark:border-gray-500 ${className ? className : ''}`}
     >
       <div className="flex items-center justify-between">
         <div>
@@ -23,7 +23,9 @@ export const CommonCard: React.FC<
         </div>
         {extra}
       </div>
-      {children}
+      <div className='flex flex-1 '>
+        {children}
+      </div>
     </div>
   );
 };

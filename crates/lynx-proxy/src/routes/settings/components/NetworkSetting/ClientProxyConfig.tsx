@@ -54,7 +54,7 @@ const ProxyConfigSection: React.FC<ProxyConfigSectionProps> = ({
 
   return (
     <div className="mb-6">
-      <Space direction="vertical" className="w-full">
+      <Space direction="vertical" className="">
         <div>
           <Typography.Title level={5} className="mb-1">
             {title}

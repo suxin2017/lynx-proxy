@@ -36,48 +36,46 @@ export function RequestBuilder({
   isLoading = false,
 }: RequestBuilderProps) {
   return (
-    <div>
-      <Space.Compact className="w-full">
-        <Select
-          value={method}
-          onChange={onMethodChange}
-          className="w-30"
-          placeholder="Method"
-        >
-          {HTTP_METHODS.map((httpMethod) => (
-            <Select.Option key={httpMethod.value} value={httpMethod.value}>
-              {httpMethod.label}
-            </Select.Option>
-          ))}
-        </Select>
+    <Space.Compact className="flex-1 flex">
+      <Select
+        value={method}
+        onChange={onMethodChange}
+        className="w-30"
+        placeholder="Method"
+      >
+        {HTTP_METHODS.map((httpMethod) => (
+          <Select.Option key={httpMethod.value} value={httpMethod.value}>
+            {httpMethod.label}
+          </Select.Option>
+        ))}
+      </Select>
 
-        <Input
-          value={url}
-          onChange={(e) => onUrlChange(e.target.value)}
-          placeholder="Enter request URL..."
-          className="flex-1"
-        />
+      <Input
+        value={url}
+        onChange={(e) => onUrlChange(e.target.value)}
+        placeholder="Enter request URL..."
+        className="flex-1"
+      />
 
-        {onImportCurl && (
-          <Button
-            icon={<ImportOutlined />}
-            onClick={onImportCurl}
-            title="Import from cURL"
-          >
-            Import
-          </Button>
-        )}
-
+      {onImportCurl && (
         <Button
-          type="primary"
-          onClick={onSend}
-          disabled={!url || isLoading}
-          icon={isLoading ? <LoadingOutlined /> : <PlayCircleOutlined />}
-          className="min-w-25"
+          icon={<ImportOutlined />}
+          onClick={onImportCurl}
+          title="Import from cURL"
         >
-          {isLoading ? 'Sending' : 'Send'}
+          Import
         </Button>
-      </Space.Compact>
-    </div>
+      )}
+
+      <Button
+        type="primary"
+        onClick={onSend}
+        disabled={!url || isLoading}
+        icon={isLoading ? <LoadingOutlined /> : <PlayCircleOutlined />}
+        className="min-w-25"
+      >
+        {isLoading ? 'Sending' : 'Send'}
+      </Button>
+    </Space.Compact>
   );
 }

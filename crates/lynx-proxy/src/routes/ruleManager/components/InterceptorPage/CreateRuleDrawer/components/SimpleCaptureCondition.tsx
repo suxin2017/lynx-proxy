@@ -25,7 +25,7 @@ const UrlPatternInput = React.memo(
   }) => {
     const { t } = useI18n();
     return (
-      <div className="w-full">
+      <div className="">
         <div className="mb-2 flex items-center justify-between">
           <Text strong className="block">
             {t('ruleManager.createRuleDrawer.captureRule.urlPattern')}
@@ -36,7 +36,7 @@ const UrlPatternInput = React.memo(
             </Button>
           )}
         </div>
-        <Space direction="vertical" className="w-full">
+        <Space direction="vertical" className="">
           <div className="flex gap-2">
             <Select
               placeholder={t(
@@ -94,7 +94,7 @@ const MethodInput = React.memo(
   }) => {
     const { t } = useI18n();
     return (
-      <div className="w-full">
+      <div className="">
         <div className="mb-2 flex items-center justify-between">
           <Text strong>
             {t('ruleManager.createRuleDrawer.captureRule.httpMethod')}
@@ -108,7 +108,7 @@ const MethodInput = React.memo(
             'ruleManager.createRuleDrawer.captureRule.selectHttpMethod',
           )}
           allowClear
-          className="mb-1 w-full"
+          className="mb-1 "
           value={value || undefined}
           onChange={onChange}
         >
@@ -142,7 +142,7 @@ const HostInput = React.memo(
   }) => {
     const { t } = useI18n();
     return (
-      <div className="w-full">
+      <div className="">
         <div className="mb-2 flex items-center justify-between">
           <Text strong>
             {t('ruleManager.createRuleDrawer.captureRule.hostname')}
@@ -185,7 +185,7 @@ const HeadersInput = React.memo(
   }) => {
     const { t } = useI18n();
     return (
-      <div className="w-full">
+      <div className="">
         <div className="mb-2 flex items-center justify-between">
           <Text strong>
             {t('ruleManager.createRuleDrawer.captureRule.headers')}
@@ -195,7 +195,7 @@ const HeadersInput = React.memo(
           </Button>
         </div>
         {headers.length > 0 ? (
-          <Space direction="vertical" className="w-full">
+          <Space direction="vertical" className="">
             {headers.map((header, index) => (
               <div key={index} className="flex items-center gap-2">
                 <Input
@@ -264,7 +264,7 @@ const AddFieldButtons = React.memo(
   }) => {
     const { t } = useI18n();
     return (
-      <div className="w-full">
+      <div className="">
         <Text type="secondary" className="mb-2 block">
           {t('ruleManager.createRuleDrawer.captureRule.addOptionalConditions')}
         </Text>
@@ -400,7 +400,7 @@ export const SimpleCaptureCondition: React.FC<SimpleCaptureConditionProps> =
     );
 
     return (
-      <Space direction="vertical" className="w-full" size="middle">
+      <Space direction="vertical" className="" size="middle">
         {showUrlPattern && (
           <UrlPatternInput
             urlPattern={value.urlPattern ? { ...value.urlPattern } : undefined}

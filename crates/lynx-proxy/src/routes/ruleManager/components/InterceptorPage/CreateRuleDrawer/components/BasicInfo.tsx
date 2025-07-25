@@ -23,7 +23,7 @@ export const BasicInfo: React.FC<BasicInfoProps> = () => {
   };
 
   return (
-    <Space direction="vertical" className="w-full">
+    <Space direction="vertical" className="">
       <Title level={5} className="mt-0 mb-2">
         {t('ruleManager.createRuleDrawer.basicInfo.title')}
       </Title>

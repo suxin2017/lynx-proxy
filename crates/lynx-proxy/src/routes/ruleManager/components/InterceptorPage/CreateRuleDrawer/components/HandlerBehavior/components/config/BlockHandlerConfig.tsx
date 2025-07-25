@@ -49,7 +49,7 @@ export const BlockHandlerConfig: React.FC<BlockHandlerConfigProps> = ({
             placeholder="403"
             min={100}
             max={599}
-            className="w-full"
+            className=""
           />
         </Form.Item>
 

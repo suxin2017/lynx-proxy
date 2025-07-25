@@ -41,7 +41,7 @@ export function QueryParamsEditor({
   };
 
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex  flex-col p-4">
       <div className="mb-4 flex items-center justify-between">
         <Title level={5} className="m-0">
           {t('apiDebug.queryParamsEditor.title')}
