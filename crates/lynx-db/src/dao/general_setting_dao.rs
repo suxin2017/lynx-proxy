@@ -17,7 +17,7 @@ pub enum ConnectType {
 
 impl Default for ConnectType {
     fn default() -> Self {
-        ConnectType::ShortPoll
+        ConnectType::SSE
     }
 }
 
