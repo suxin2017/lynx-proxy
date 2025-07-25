@@ -271,6 +271,10 @@ impl MessageEventCache {
         Self { map }
     }
 
+    pub fn clear(&self) {
+        self.map.clear();
+    }
+    
     fn remove_oldest_completed(&self) {
         if self.map.len() > 30 {
             let oldest_key = {
