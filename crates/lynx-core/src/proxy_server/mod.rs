@@ -14,6 +14,7 @@ use hyper_util::service::TowerToHyperService;
 use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
 use lynx_db::dao::client_proxy_dao::ClientProxyDao;
+use lynx_db::dao::general_setting_dao::{ConnectType, GeneralSettingDao};
 use lynx_db::migration::Migrator;
 use rcgen::Certificate;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
@@ -167,7 +168,8 @@ impl ProxyServer {
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
         let message_event_store = Arc::new(MessageEventCache::default());
-        let message_event_cannel = Arc::new(MessageEventChannel::new(message_event_store.clone()));
+        let message_event_cannel = MessageEventChannel::new();
+        let message_event_cannel = Arc::new(message_event_cannel);
         let static_dir = self.static_dir.clone();
         let addr_str = listener.local_addr()?.to_string();
         let authority = Authority::from_str(&addr_str)?;
@@ -177,6 +179,12 @@ impl ProxyServer {
         let db_connect = self.db_connect.clone();
 
         Migrator::up(db_connect.as_ref(), None).await?;
+        let general_setting_dao = GeneralSettingDao::new(db_connect.clone());
+        if let Ok(setting) = general_setting_dao.get_general_setting().await {
+            if matches!(setting.connect_type, ConnectType::ShortPoll) {
+                message_event_cannel.setup_short_pool(message_event_store.clone());
+            }
+        }
 
         tokio::spawn(async move {
             loop {

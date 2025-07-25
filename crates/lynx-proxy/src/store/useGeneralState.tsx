@@ -1,34 +1,25 @@
-import { useLocalStorageState } from 'ahooks';
 import constate from 'constate';
-
+import { useGetGeneralSetting } from '@/services/generated/general-setting/general-setting';
 
 export enum ConnectType {
-  ShortPoll,
-  SSE,
+  ShortPoll = '0',
+  SSE = '1',
 }
 
 export const [GeneralSettingProvider, useGeneralSetting] = constate(() => {
-  const [generalSetting, setGeneralSetting] = useLocalStorageState<{
-    maxLogSize: number;
-    connectType: ConnectType
-  }>(
-    'generalSetting',
-    {
-      defaultValue: {
-        maxLogSize: 1000,
-        connectType: ConnectType.ShortPoll,
-      },
-      serializer(value) {
-        return JSON.stringify(value);
-      },
-      deserializer(value) {
-        return JSON.parse(value);
-      },
-    },
-  );
+  const { data: generalSettingResponse, isLoading } = useGetGeneralSetting();
+  
+  const generalSetting = generalSettingResponse?.data || {
+    maxLogSize: 1000,
+    connectType: ConnectType.ShortPoll,
+    language: 'en'
+  };
+
+
 
   return {
     ...generalSetting,
-    generalSetting, setGeneralSetting
+    generalSetting,
+    isLoading,
   };
 });
