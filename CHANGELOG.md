@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.7] - 2025-07-25
+
+### 🚀 Features
+
+- General setting ([#44](https://github.com/suxin2017/lynx-server/issues/44))
+
+### 💼 Other
+
+- Ui layout ([#43](https://github.com/suxin2017/lynx-server/issues/43))
+
+### 🚜 Refactor
+
+- Setting config ([#45](https://github.com/suxin2017/lynx-server/issues/45))
+
 ## [0.3.6] - 2025-07-15
 
 ### 🚀 Features
