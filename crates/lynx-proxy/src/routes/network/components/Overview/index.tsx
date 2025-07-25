@@ -60,7 +60,7 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
 
   if (!descriptionItems) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Empty description={false} />
       </div>
     );
@@ -70,7 +70,7 @@ export const Overview: React.FC<IOverviewProps> = (_props) => {
     <Descriptions
       styles={{ label: { width: 180, textAlign: 'right' } }}
       bordered
-      className="h-full overflow-auto [&_p]:m-0"
+      className=" overflow-auto [&_p]:m-0"
       size="small"
       column={1}
       items={descriptionItems}

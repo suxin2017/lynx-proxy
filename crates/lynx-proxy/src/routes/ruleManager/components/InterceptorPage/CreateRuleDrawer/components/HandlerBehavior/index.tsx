@@ -12,7 +12,7 @@ export const HandlerBehavior: React.FC<HandlerBehaviorProps> = () => {
   const { t } = useI18n();
 
   return (
-    <Space direction="vertical" className="w-full">
+    <Space direction="vertical" className="">
       <Title level={5} className="mb-2">
         {t('ruleManager.createRuleDrawer.handlerBehavior.title')}
       </Title>

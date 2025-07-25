@@ -4,18 +4,21 @@ import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { ExtendedMessageEventStoreValue, MessageEventCache } from './messageEventCache';
 import { insertOrUpdateRequests, removeOldRequest, useRequestLogCount } from './requestTableStore';
-import { insertOrUpdateTreeNode } from './requestTreeStore';
+import { requestTreeSliceAction } from './requestTreeStore';
 import { SseConnectionStatus, SseEventData, sseManager } from './sseStore';
 import { ConnectType, useGeneralSetting } from './useGeneralState';
 import { filterConnectRequest, formatItem } from './useSortPoll';
+import { useSelectRequest } from '@/routes/network/components/store/selectRequestStore';
 
-
+const { insertOrUpdateTreeNode } = requestTreeSliceAction;
 
 export const useSse = () => {
     const { data: netWorkCaptureStatusData } = useGetCaptureStatus();
     const dispatch = useDispatch();
     const requestLogCount = useRequestLogCount();
     const { maxLogSize = 1000, connectType } = useGeneralSetting();
+    const { selectRequest, setSelectRequest } = useSelectRequest();
+
 
     useEffect(() => {
         if (requestLogCount >= maxLogSize) {
@@ -62,7 +65,13 @@ export const useSse = () => {
             const insertOrUpdateCallback = (events: ExtendedMessageEventStoreValue[]) => {
                 const formattedEvents = events.filter(item => item.status !== "Initial").filter(filterConnectRequest).map(formatItem).map(item => cloneDeep(item));
                 console.log('🔄 直接通过缓存回调更新 Redux store:', formattedEvents);
-                dispatch(insertOrUpdateRequests(formattedEvents));
+                const currentSelectUpdateRequest = selectRequest?.traceId ? formattedEvents.find(item => item.traceId === selectRequest?.traceId) : null;
+
+                if (currentSelectUpdateRequest) {
+                    setSelectRequest(currentSelectUpdateRequest);
+                }
+                if (events)
+                    dispatch(insertOrUpdateRequests(formattedEvents));
                 dispatch(insertOrUpdateTreeNode(formattedEvents))
             };
             eventCache.current.setInsertOrUpdateCallback(insertOrUpdateCallback);

@@ -181,9 +181,9 @@ const InnerInterceptorPage: React.FC = () => {
   const batchButtons = (
     <Space>
       <ImportRulesButton onSuccess={refetchRules} />
-      <ExportRulesButton 
-        selectedRules={selectedRowKeys.length > 0 ? 
-          listRulesData?.data.rules?.filter(rule => selectedRowKeys.includes(rule.id!)) : 
+      <ExportRulesButton
+        selectedRules={selectedRowKeys.length > 0 ?
+          listRulesData?.data.rules?.filter(rule => selectedRowKeys.includes(rule.id!)) :
           undefined
         }
         selectedRowKeys={selectedRowKeys}
@@ -235,50 +235,53 @@ const InnerInterceptorPage: React.FC = () => {
   return (
     <>
       <CommonCard>
-        <div className="mb-4 flex items-center justify-between">
-          <Title level={4} style={{ margin: 0 }}>
-            {t('ruleManager.title')}
-          </Title>
-          <Space>
-            {batchButtons}
-            <Button
-              type="primary"
-              icon={<RiAddLine size={16} />}
-              onClick={openDrawer}
-            >
-              {t('ruleManager.createRule')}
-            </Button>
-          </Space>
+        <div className='flex flex-col flex-1'>
+
+          <div className="mb-4 flex items-center justify-between">
+            <Title level={4} style={{ margin: 0 }}>
+              {t('ruleManager.title')}
+            </Title>
+            <Space>
+              {batchButtons}
+              <Button
+                type="primary"
+                icon={<RiAddLine size={16} />}
+                onClick={openDrawer}
+              >
+                {t('ruleManager.createRule')}
+              </Button>
+            </Space>
+          </div>
+
+          <Input.Search
+            className="mb-1"
+            allowClear
+            placeholder={t('ruleManager.searchPlaceholder')}
+            onSearch={(value) => {
+              setPageParameters((prev) => ({
+                ...prev,
+                name: value,
+              }));
+            }}
+          />
+
+          <Table
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            columns={columns}
+            dataSource={listRulesData?.data.rules}
+            rowKey="id"
+            pagination={{
+              showSizeChanger: true,
+              showQuickJumper: true,
+              onChange(page, pageSize) {
+                setPageParameters((prev) => ({ ...prev, page, pageSize }));
+              },
+            }}
+          />
         </div>
-
-        <Input.Search
-          className="mb-1 flex-1"
-          allowClear
-          placeholder={t('ruleManager.searchPlaceholder')}
-          onSearch={(value) => {
-            setPageParameters((prev) => ({
-              ...prev,
-              name: value,
-            }));
-          }}
-        />
-
-        <Table
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-          }}
-          columns={columns}
-          dataSource={listRulesData?.data.rules}
-          rowKey="id"
-          pagination={{
-            showSizeChanger: true,
-            showQuickJumper: true,
-            onChange(page, pageSize) {
-              setPageParameters((prev) => ({ ...prev, page, pageSize }));
-            },
-          }}
-        />
       </CommonCard>
 
       <CreateRuleDrawer />

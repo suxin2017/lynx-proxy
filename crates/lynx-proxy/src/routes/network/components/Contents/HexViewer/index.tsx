@@ -160,8 +160,8 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
 
     type DecodedChar = {
       char: string;
-      start: number; 
-      end: number; 
+      start: number;
+      end: number;
     };
     const decodedChars: DecodedChar[] = [];
     let i = 0;
@@ -260,7 +260,7 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
 
   return (
     <div
-      className="flex h-full flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+      className="flex-1 flex flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
       onMouseUp={endSelection} // Finish selection
     >
       {renderHeader()}

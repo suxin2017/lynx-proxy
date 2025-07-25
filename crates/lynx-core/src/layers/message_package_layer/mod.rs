@@ -600,6 +600,11 @@ where
                 let future = inner.call(request);
                 return future.await;
             }
+            let mut guard = RequestAbortGuard {
+                message_event_channel: message_event_channel.clone(),
+                completed: false,
+                trace_id: trace_id.clone(),
+            };
             message_event_channel_clone
                 .dispatch_on_request_start(&request, copy_stream)
                 .await;
@@ -608,7 +613,7 @@ where
             message_event_channel_clone
                 .dispatch_on_request_end(trace_id_clone)
                 .await;
-
+            guard.completed = true;
             result
         })
     }
@@ -620,13 +625,13 @@ pub struct ProxyMessageEventService<S> {
 }
 
 /// 当请求被取消的时候，需要出发一个取消的错误事件
-pub struct Guard {
+pub struct RequestAbortGuard {
     message_event_channel: Arc<MessageEventChannel>,
     completed: bool,
     trace_id: TraceId,
 }
 
-impl Drop for Guard {
+impl Drop for RequestAbortGuard {
     fn drop(&mut self) {
         if self.completed {
             return;
@@ -667,7 +672,7 @@ where
 
         Box::pin(
             async move {
-                let mut guard = Guard {
+                let mut guard = RequestAbortGuard {
                     message_event_channel: message_event_channel.clone(),
                     completed: false,
                     trace_id: trace_id.clone(),

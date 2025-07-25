@@ -14,14 +14,14 @@ function InnerRouteComponent() {
   useSortPoll();
   useSseMonitor()
   return (
-    <div className="flex h-full w-full flex-1">
-      <div className="flex">
-        <SideBar />
+      <div className="flex   flex-1">
+        <div className="flex">
+          <SideBar />
+        </div>
+        <div className="flex basis-[calc(100%-56px)] flex-1 p-2">
+          <Outlet />
+        </div>
       </div>
-      <div className="flex w-[calc(100%-56px)] flex-1 p-2">
-        <Outlet />
-      </div>
-    </div>
   );
 }
 

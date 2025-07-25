@@ -14,7 +14,7 @@ export const CaptureRule: React.FC = () => {
   const { t } = useI18n();
 
   return (
-    <Space direction="vertical" className="w-full">
+    <Space direction="vertical" className="">
       <Title level={5} className="m-0">
         {t('ruleManager.createRuleDrawer.captureRule.title')}
       </Title>
@@ -24,7 +24,7 @@ export const CaptureRule: React.FC = () => {
 
       <Form.Item name={['capture', 'type']} noStyle valuePropName="activeKey">
         <Tabs
-          className="w-full"
+          className=""
           items={[
             {
               key: 'simple',
