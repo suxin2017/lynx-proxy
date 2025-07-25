@@ -10,7 +10,7 @@ function uint8ToBase64(bytes: Uint8Array): string {
     }
     return btoa(binary);
 }
-import { 
+import {
     MessageEventStoreValue,
     MessageEventStatus,
     WebSocketStatus,
@@ -21,12 +21,12 @@ import {
     MessageEventResponse
 } from '../services/generated/utoipaAxum.schemas';
 
-export interface ExpendMessageEventRequest extends MessageEventRequest{
-    bodyArrayBuffer?: ArrayBuffer; 
+export interface ExpendMessageEventRequest extends MessageEventRequest {
+    bodyArrayBuffer?: ArrayBuffer;
 }
 
-export interface ExtendMessageEventResponse extends MessageEventResponse{
-    bodyArrayBuffer?: ArrayBuffer; 
+export interface ExtendMessageEventResponse extends MessageEventResponse {
+    bodyArrayBuffer?: ArrayBuffer;
 }
 
 export interface ExtendedMessageEventStoreValue extends MessageEventStoreValue {
@@ -41,13 +41,13 @@ export class MessageEventCache {
     private maxSize: number;
     private listeners: Set<(events: ExtendedMessageEventStoreValue[]) => void> = new Set();
     private insertOrUpdateCallback?: (events: ExtendedMessageEventStoreValue[]) => void;
-    
+
     private needNotifyValues: Set<ExtendedMessageEventStoreValue> = new Set();
     private throttledNotifyListeners: () => void;
 
     constructor(maxSize: number = 1000, debounceDelay: number = 1000) {
         this.maxSize = maxSize;
-        this.throttledNotifyListeners =throttle(() => {
+        this.throttledNotifyListeners = throttle(() => {
             this.notifyListeners();
         }, debounceDelay);
     }
@@ -68,16 +68,16 @@ export class MessageEventCache {
         this.insertOrUpdateCallback = undefined;
     }
 
-    
+
     private notifyListeners() {
         const events = Array.from(this.needNotifyValues);
         this.listeners.forEach(listener => listener(events));
-        
+
         // 调用 insertOrUpdateRequests 回调
         if (this.insertOrUpdateCallback && events.length > 0) {
             this.insertOrUpdateCallback(events);
         }
-        
+
         this.needNotifyValues.clear();
     }
 
@@ -92,7 +92,7 @@ export class MessageEventCache {
     upsert(traceId: string, value: ExtendedMessageEventStoreValue): void {
         value.updatedAt = Date.now();
         this.cache.set(traceId, value);
-        
+
         if (this.cache.size > this.maxSize) {
             const oldestKey = this.cache.keys().next().value;
             if (oldestKey) {
@@ -127,7 +127,7 @@ export class MessageEventCache {
     handleSseEvent(event: SseEventData): void {
         const traceId = event.traceId;
         const value = this.getOrCreate(traceId);
-        
+
         try {
             switch (event.eventType) {
                 case 'requestStart':
@@ -172,7 +172,7 @@ export class MessageEventCache {
                 default:
                     console.warn('Unknown SSE event type:', event.eventType);
             }
-            
+
             this.upsert(traceId, value);
         } catch (error) {
             console.error('Error handling SSE event:', error, event);
@@ -195,16 +195,16 @@ export class MessageEventCache {
                 console.error('Error parsing request data:', error);
             }
         }
-        
+
         value.status = 'RequestStarted' as MessageEventStatus;
-        value.timings.requestStart = event.timestamp * 1000;
+        value.timings.requestStart = event.timestamp;
     }
 
     private handleRequestBody(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
         if (!value.timings.requestBodyStart) {
-            value.timings.requestBodyStart = event.timestamp * 1000;
+            value.timings.requestBodyStart = event.timestamp;
         }
-        
+
         if (event.data && value.request) {
             try {
                 const newArrayBuffer = base64ToArrayBuffer(event.data);
@@ -222,8 +222,8 @@ export class MessageEventCache {
                 console.error('Error processing request body:', error);
             }
         } else {
-            value.timings.requestBodyEnd = event.timestamp * 1000;
-            
+            value.timings.requestBodyEnd = event.timestamp;
+
             if (value.request && value.request.bodyArrayBuffer) {
                 try {
                     const bytes = new Uint8Array(value.request.bodyArrayBuffer);
@@ -236,7 +236,7 @@ export class MessageEventCache {
     }
 
     private handleRequestEnd(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.requestEnd = event.timestamp * 1000;
+        value.timings.requestEnd = event.timestamp;
         value.status = 'Completed' as MessageEventStatus;
     }
 
@@ -255,15 +255,15 @@ export class MessageEventCache {
                 console.error('Error parsing response data:', error);
             }
         }
-        
-        value.timings.reponseBodyStart = event.timestamp * 1000;
+
+        value.timings.reponseBodyStart = event.timestamp;
     }
 
     private handleResponseBody(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
         if (!value.timings.reponseBodyStart) {
-            value.timings.reponseBodyStart = event.timestamp * 1000;
+            value.timings.reponseBodyStart = event.timestamp;
         }
-        
+
         if (event.data && value.response) {
             try {
                 const newArrayBuffer = base64ToArrayBuffer(event.data);
@@ -281,8 +281,8 @@ export class MessageEventCache {
                 console.error('Error processing response body:', error);
             }
         } else {
-            value.timings.reponseBodyEnd = event.timestamp * 1000;
-            
+            value.timings.reponseBodyEnd = event.timestamp;
+
             if (value.response && value.response.bodyArrayBuffer) {
                 try {
                     const bytes = new Uint8Array(value.response.bodyArrayBuffer);
@@ -295,15 +295,15 @@ export class MessageEventCache {
     }
 
     private handleProxyStart(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.proxyStart = event.timestamp * 1000;
+        value.timings.proxyStart = event.timestamp;
     }
 
     private handleProxyEnd(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.proxyEnd = event.timestamp * 1000;
+        value.timings.proxyEnd = event.timestamp;
     }
 
     private handleWebSocketStart(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.websocketStart = event.timestamp * 1000;
+        value.timings.websocketStart = event.timestamp;
         value.messages = {
             status: 'Start' as WebSocketStatus,
             message: [],
@@ -314,15 +314,15 @@ export class MessageEventCache {
         if (event.data && value.messages) {
             try {
                 const messageData = JSON.parse(event.data);
-                
+
                 const log: WebSocketLog = {
-                    direction: messageData.direction === 'ClientToServer' 
+                    direction: messageData.direction === 'ClientToServer'
                         ? 'ClientToServer' as WebSocketDirection
                         : 'ServerToClient' as WebSocketDirection,
-                    timestamp: messageData.timestamp || event.timestamp * 1000,
+                    timestamp: messageData.timestamp || event.timestamp,
                     message: messageData.message, // 直接使用，不需要类型转换
                 };
-                
+
                 value.messages.message.push(log);
                 value.messages.status = 'Connected' as WebSocketStatus;
             } catch (error) {
@@ -332,8 +332,8 @@ export class MessageEventCache {
     }
 
     private handleWebSocketError(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.websocketEnd = event.timestamp * 1000;
-        
+        value.timings.websocketEnd = event.timestamp;
+
         if (!value.messages) {
             value.messages = {
                 status: { Error: 'WebSocket connection error' } as WebSocketStatus,
@@ -345,25 +345,25 @@ export class MessageEventCache {
     }
 
     private handleTunnelStart(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.tunnelStart = event.timestamp * 1000;
+        value.timings.tunnelStart = event.timestamp;
         value.tunnel = {
             status: 'Connected' as TunnelStatus,
         };
     }
 
     private handleTunnelEnd(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.tunnelEnd = event.timestamp * 1000;
-        
+        value.timings.tunnelEnd = event.timestamp;
+
         if (value.tunnel) {
             value.tunnel.status = 'Disconnected' as TunnelStatus;
         }
     }
 
     private handleError(value: ExtendedMessageEventStoreValue, event: SseEventData): void {
-        value.timings.requestEnd = event.timestamp * 1000;
+        value.timings.requestEnd = event.timestamp;
 
-                
-        value.status = {Error:event.data || 'Unknown error'} as MessageEventStatus;
+
+        value.status = { Error: event.data || 'Unknown error' } as MessageEventStatus;
     }
 
     clear(): void {

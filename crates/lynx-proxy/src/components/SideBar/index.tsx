@@ -67,12 +67,12 @@ export const SideBar: React.FC = (_props) => {
 
   return (
     <div className="flex w-14 flex-col justify-between shadow-xs shadow-slate-400">
-      <div>
+      <div className="flex flex-col flex-1">
         {topMenuConfig.map((item) => (
           <Button
             key={item.key}
             type="text"
-            className={`flex h-14 w-full items-center justify-items-center ${currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
+            className={`flex w-14 h-14 items-center justify-items-center ${currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
               }`}
             onClick={() => {
               navigate({
@@ -87,7 +87,7 @@ export const SideBar: React.FC = (_props) => {
       <div className="flex flex-col">
         <Button
           type="text"
-          className="flex h-14 w-full items-center justify-items-center"
+          className="flex h-14 w-14 items-center justify-items-center"
           onClick={toggleTheme}
           icon={
             theme === 'dark' ? (
@@ -101,7 +101,7 @@ export const SideBar: React.FC = (_props) => {
           <Button
             key={item.key}
             type="text"
-            className={`flex h-14 w-full items-center justify-items-center ${currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
+            className={`flex h-14 w-14  items-center justify-items-center ${currentPath === item.key ? 'bg-zinc-200 dark:bg-zinc-800' : ''
               }`}
             onClick={() => {
               navigate({

@@ -77,7 +77,7 @@ const CodeViewer: React.FC<CodeViewerProps> = ({ arrayBuffer, type }) => {
   if (!data) return null;
 
   return (
-    <div className="flex h-full flex-col rounded-sm border-gray-300 p-1 font-mono text-xs">
+    <div className="flex  flex-col rounded-sm border-gray-300 p-1 font-mono text-xs">
       <pre>
         <code
           ref={codeRef}

@@ -7,16 +7,17 @@ import { useSelectRequest } from '../store/selectRequestStore';
 export const Contents: React.FC = (_props) => {
   const [sizes, setSizes] = React.useState<(number | string)[]>(['50%', '50%']);
   const { selectRequest } = useSelectRequest();
+  
   if (!selectRequest) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex flex-1  items-center justify-center">
         <Empty description={false} />
       </div>
     );
   }
+
   return (
     <Splitter
-      className="h-full"
       layout="vertical"
       onResize={(sizes) => {
         if (sizes[0] != null && sizes[1] != null) {
@@ -29,7 +30,7 @@ export const Contents: React.FC = (_props) => {
         size={sizes[0]}
         min={40}
         max={'70%'}
-        collapsible
+        className='flex'
       >
         <Request />
       </Splitter.Panel>
@@ -38,7 +39,7 @@ export const Contents: React.FC = (_props) => {
         size={sizes[1]}
         min={40}
         max={'70%'}
-        collapsible
+        className='flex'
       >
         <Response />
       </Splitter.Panel>

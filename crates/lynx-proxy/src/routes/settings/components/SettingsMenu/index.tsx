@@ -40,7 +40,7 @@ export const SettingsMenu: React.FC = () => {
       size="large"
       block
       value={currentMenu ? t(currentMenu) : undefined}
-      className="w-full"
+      className=""
       options={menuConfig.map((item) => t(item.translationKey))}
       onChange={(value) => {
         const selectedMenu = menuConfig.find(

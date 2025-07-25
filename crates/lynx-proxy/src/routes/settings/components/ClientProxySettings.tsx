@@ -14,7 +14,7 @@ export const ClientProxySettings: React.FC = () => {
   // 客户端代理配置
   const { data: clientProxyData, isLoading } = useGetClientProxyConfig();
   const { mutateAsync: updateClientProxyConfig, isPending: isSaving } = useUpdateClientProxyConfig();
-  
+
   const initialValues = clientProxyData?.data;
 
   const handleSave = async () => {
@@ -34,6 +34,7 @@ export const ClientProxySettings: React.FC = () => {
 
   return (
     <CommonCard
+      className='flex-col'
       title={t('networkSetting.clientProxy.title')}
       subTitle={t('networkSetting.clientProxy.description')}
       extra={
@@ -50,7 +51,7 @@ export const ClientProxySettings: React.FC = () => {
     >
       {contextHolder}
       <Form
-        className="flex flex-col overflow-hidden"
+        className="flex-1"
         layout="vertical"
         form={form}
         initialValues={initialValues}

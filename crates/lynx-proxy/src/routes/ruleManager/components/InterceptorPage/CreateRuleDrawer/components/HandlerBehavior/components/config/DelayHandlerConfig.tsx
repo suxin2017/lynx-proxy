@@ -64,7 +64,7 @@ export const DelayHandlerConfig: React.FC<DelayHandlerConfigProps> = ({
             placeholder="1000"
             min={0}
             max={300000}
-            className="w-full"
+            className=""
             addonAfter="ms"
           />
         </Form.Item>
@@ -82,7 +82,7 @@ export const DelayHandlerConfig: React.FC<DelayHandlerConfigProps> = ({
             placeholder="0"
             min={0}
             max={30000}
-            className="w-full"
+            className=""
             addonAfter="ms"
           />
         </Form.Item>

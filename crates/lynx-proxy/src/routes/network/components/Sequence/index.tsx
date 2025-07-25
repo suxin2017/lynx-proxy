@@ -44,23 +44,23 @@ export const Sequence: React.FC<ISequenceProps> = () => {
   const { ref, size, splitSize, setSplitSize } = useSplitSize();
 
   return (
-    <div className="flex-1" ref={ref} style={{ maxHeight: 'calc(100% - 80px)' }}>
+    <div className="flex-1 flex" ref={ref} >
       {!size ? (
-        <div className="flex h-full w-full items-center justify-center">
+        <div className="flex   items-center justify-center">
           <Spin />
         </div>
       ) : (
         <Splitter
-          className="h-full"
+          className=""
           layout="horizontal"
           onResize={([size1, size2]) => {
             setSplitSize([size1, size2]);
           }}
         >
-          <Splitter.Panel style={{ overflow: "hidden", flexGrow: 1 }} size={splitSize[0]} min="10%" max="90%">
+          <Splitter.Panel className='flex' size={splitSize[0]} min="10%" max="90%">
             <RequestTable />
           </Splitter.Panel>
-          <Splitter.Panel size={splitSize[1]} min="10%" max="90%">
+          <Splitter.Panel className='flex' size={splitSize[1]} min="10%" max="90%">
             <Detail />
           </Splitter.Panel>
         </Splitter>

@@ -40,7 +40,7 @@ export function BodyEditor({ body, onBodyChange, headers }: BodyEditorProps) {
   };
 
   return (
-    <div className="flex h-full flex-col py-4">
+    <div className="flex  flex-col py-4">
       <div className="flex-1 rounded">
         <MonacoEditor
           value={body}

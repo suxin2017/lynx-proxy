@@ -19,7 +19,7 @@ export const CertInstallDesc = () => {
   };
 
   return (
-    <Space direction="vertical" size="large" className="w-full">
+    <Space direction="vertical" size="large" className="">
       <Segmented
         block
         value={platform}

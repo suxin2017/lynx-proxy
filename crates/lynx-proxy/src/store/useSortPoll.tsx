@@ -21,12 +21,14 @@ import {
   useRequestLogCount,
 } from './requestTableStore';
 import {
-  appendTreeNode,
-  replaceTreeNode,
-  requestTreeReducer,
+
+  requestTreeReducer, requestTreeSliceAction
 } from './requestTreeStore';
 import { ConnectType, useGeneralSetting } from './useGeneralState';
 import { useEffect } from 'react';
+
+const { appendTreeNode,
+  replaceTreeNode, } = requestTreeSliceAction
 
 export const store = configureStore({
   reducer: {

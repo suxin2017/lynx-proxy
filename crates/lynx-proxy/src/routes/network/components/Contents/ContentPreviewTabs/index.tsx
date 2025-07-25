@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo } from 'react';
-import { Spin, Tabs } from 'antd';
+import { Headers } from '@/routes/network/components/Contents/Headers';
 import HexViewer from '@/routes/network/components/Contents/HexViewer';
 import { JsonPreview } from '@/routes/network/components/Contents/JsonPreview';
-import { Headers } from '@/routes/network/components/Contents/Headers';
-import { filter } from 'lodash';
-import { ifTrue } from '@/utils/ifTrue';
-import { MediaViewer } from '../MediaViewer';
-import TextView from '../TextViewer';
-import FormViewer from '../FormView';
-import Websocket from '../../Websocket';
 import { WebSocketLog } from '@/services/generated/utoipaAxum.schemas';
 import { base64ToArrayBuffer } from '@/store/useSortPoll';
+import { ifTrue } from '@/utils/ifTrue';
+import { Segmented } from 'antd';
+import { filter } from 'lodash';
+import React, { useEffect, useMemo } from 'react';
+import Websocket from '../../Websocket';
+import FormViewer from '../FormView';
+import { MediaViewer } from '../MediaViewer';
+import TextView from '../TextViewer';
 
 interface IContentsProps {
   title: string;
@@ -55,15 +55,15 @@ function useAsyncMemo<T>(
 }
 
 export const ContentPreviewTabs: React.FC<IContentsProps> = ({
-  title,
+  // title,
   websocketBody,
   body,
   contentType,
   headers,
-  isLoading,
+  // _isLoading,
   rawBody,
 }) => {
-  const [activeKey, setActiveKey] = React.useState<string>('0');
+  const [activeKey, setActiveKey] = React.useState<string>(ContentPreviewType.Headers);
   const contentIsEmpty = useMemo(() => body?.byteLength != null, [body]);
   const websocketBodyArrayBuffer = useAsyncMemo(async () => {
     if (!websocketBody) {
@@ -229,22 +229,11 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
   ]);
 
   return (
-    <Tabs
-      activeKey={activeKey}
-      onChange={(key) => setActiveKey(key)}
-      tabBarExtraContent={{
-        left: <span className="p-2">{title}</span>,
-        right: (
-          <span className="p-2">
-            <Spin size="small" spinning={isLoading} />
-          </span>
-        ),
-      }}
-      className="h-full [&_.ant-tabs-content]:h-full [&_.ant-tabs-content]:overflow-auto [&_.ant-tabs-tabpane]:h-full"
-      defaultActiveKey="0"
-      size="small"
-      type="card"
-      items={items}
-    />
+    <div className="flex-1 flex flex-col" >
+      <Segmented value={activeKey} options={items.map(item => ({ label: item.label, value: item.key }))} onChange={(key) => setActiveKey(key)} />
+      <div className="flex-1 overflow-auto flex" >
+        {items.find(item => item.key === activeKey)?.children}
+      </div>
+    </div>
   );
 };

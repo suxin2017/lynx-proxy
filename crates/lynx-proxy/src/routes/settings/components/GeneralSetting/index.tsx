@@ -21,6 +21,7 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
   };
   return (
     <CommonCard
+      className='flex-col'
       title={t('settings.general.title')}
       subTitle={t('settings.general.subTitle')}
       extra={
@@ -48,7 +49,7 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
     >
       {contextHolder}
       <Form
-        className="w-full"
+        className="flex-1"
         layout="vertical"
         form={form}
         initialValues={{ ...generalSetting, language }}
@@ -103,7 +104,7 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
             },
           ]}
         >
-          <InputNumber className="w-full" />
+          <InputNumber className="" />
         </Form.Item>
         <Typography.Title level={5} className="mb-2">
           {t('settings.general.connectType.title')}

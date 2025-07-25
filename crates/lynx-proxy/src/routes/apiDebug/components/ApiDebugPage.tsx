@@ -205,7 +205,7 @@ export function ApiDebugPage() {
         <div className="w-80 flex-shrink-0 ">
           <RequestHistory
             onLoadRequest={handleLoadFromHistory}
-            className="h-full"
+            className=""
           />
         </div>
       )}
@@ -236,51 +236,55 @@ export function ApiDebugPage() {
           }
           className="flex flex-1 flex-col"
         >
-          {/* Request Builder */}
-          <div className="mt-2 shadow-sm">
-            <RequestBuilder
-              method={method}
-              url={url}
-              onMethodChange={setMethod}
-              onUrlChange={handleUrlChange}
-              onSend={handleSendRequest}
-              isLoading={executeRequestMutation.isPending}
-            />
-          </div>
+          <div className='flex flex-col flex-1'>
 
-          {/* Main Content */}
-          <div className="mt-px flex flex-1 overflow-hidden">
-            {/* Left Panel - Request Configuration */}
-            <div className="w-1/2 overflow-auto border-r border-gray-300 dark:border-gray-500">
-              <div className="py-4">
-                <Segmented
-                  value={activeTab}
-                  onChange={setActiveTab}
-                  options={tabItems.map((item) => ({
-                    label: item.label,
-                    value: item.key,
-                  }))}
+            {/* Request Builder */}
+            <div className="mt-2 shadow-sm">
+              <RequestBuilder
+                method={method}
+                url={url}
+                onMethodChange={setMethod}
+                onUrlChange={handleUrlChange}
+                onSend={handleSendRequest}
+                isLoading={executeRequestMutation.isPending}
+              />
+            </div>
+
+            {/* Main Content */}
+            <div className="mt-px flex flex-1 overflow-hidden">
+              {/* Left Panel - Request Configuration */}
+              <div className="w-1/2 overflow-auto border-r border-gray-300 dark:border-gray-500">
+                <div className="py-4">
+                  <Segmented
+                    value={activeTab}
+                    onChange={setActiveTab}
+                    options={tabItems.map((item) => ({
+                      label: item.label,
+                      value: item.key,
+                    }))}
+                  />
+                  <div className="">{renderTabContent()}</div>
+                </div>
+              </div>
+
+              {/* Right Panel - Response */}
+              <div className="w-1/2 overflow-auto">
+                <ResponseViewer
+                  response={response}
+                  isLoading={executeRequestMutation.isPending}
+                  error={executeRequestMutation.error?.message}
                 />
-                <div className="h-full">{renderTabContent()}</div>
               </div>
             </div>
 
-            {/* Right Panel - Response */}
-            <div className="w-1/2 overflow-auto">
-              <ResponseViewer
-                response={response}
-                isLoading={executeRequestMutation.isPending}
-                error={executeRequestMutation.error?.message}
-              />
-            </div>
+            {/* cURL Import Modal */}
+            <CurlImportModal
+              visible={curlModalVisible}
+              onClose={() => setCurlModalVisible(false)}
+              onImport={handleImportCurl}
+            />
           </div>
 
-          {/* cURL Import Modal */}
-          <CurlImportModal
-            visible={curlModalVisible}
-            onClose={() => setCurlModalVisible(false)}
-            onImport={handleImportCurl}
-          />
         </CommonCard>
       </div>
     </div>
