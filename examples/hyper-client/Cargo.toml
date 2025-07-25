@@ -1,0 +1,23 @@
+[package]
+name = "hyper-client-example"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+hyper = { version = "1.6", features = ["client", "http1"] }
+hyper-util = { version = "0.1", features = ["full"] }
+http-body-util = "0.1"
+tokio = { version = "1.0", features = ["full"] }
+tokio-rustls = "0.26"
+rustls = "0.23"
+webpki-roots = "0.26"
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = {workspace=true}
+http = "1.0"
