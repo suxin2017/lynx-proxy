@@ -89,6 +89,8 @@ impl ProxyServerBuilder {
         let api_custom_certs = self.api_custom_certs.clone().flatten();
         let db_config = self.db_config.clone().expect("db_config is required");
         let db_con = Database::connect(db_config.clone()).await?;
+        
+        Migrator::up(&db_con, None).await?;
 
         Ok(ProxyServer {
             port: self.port.flatten(),
@@ -170,6 +172,7 @@ impl ProxyServer {
         let message_event_store = Arc::new(MessageEventCache::default());
         let message_event_cannel = MessageEventChannel::new();
         let message_event_cannel = Arc::new(message_event_cannel);
+        message_event_cannel.setup_short_pool(message_event_store.clone());
         let static_dir = self.static_dir.clone();
         let addr_str = listener.local_addr()?.to_string();
         let authority = Authority::from_str(&addr_str)?;
@@ -178,11 +181,11 @@ impl ProxyServer {
 
         let db_connect = self.db_connect.clone();
 
-        Migrator::up(db_connect.as_ref(), None).await?;
+       
         let general_setting_dao = GeneralSettingDao::new(db_connect.clone());
         if let Ok(setting) = general_setting_dao.get_general_setting().await {
+            println!("connect_type: {:?}", setting.connect_type);
             if matches!(setting.connect_type, ConnectType::ShortPoll) {
-                message_event_cannel.setup_short_pool(message_event_store.clone());
             }
         }
 

@@ -4,18 +4,18 @@ use lynx_core::self_service::{
     api::net_request::RecordRequests,
     utils::{ResponseCode, ResponseDataWrapper},
 };
-use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
+use lynx_db::dao::{general_setting_dao::{ConnectType, GeneralSetting, GeneralSettingDao}, net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus}};
 use lynx_mock::client::MockClient;
-use setup::{setup_mock_server::setup_mock_server, setup_proxy_server::setup_proxy_server};
+use setup::{setup_mock_server::setup_mock_server};
 use std::sync::Arc;
 
-use crate::setup::base_url;
+use crate::setup::{base_url, setup_proxy_server::setup_short_poll_proxy_server};
 mod setup;
 
 #[tokio::test]
 async fn proxy_log_test() -> Result<()> {
     let mock_server = setup_mock_server().await?;
-    let proxy_server = setup_proxy_server(Some(Arc::new(vec![mock_server.cert.clone()]))).await?;
+    let mut proxy_server = setup_short_poll_proxy_server(Some(Arc::new(vec![mock_server.cert.clone()]))).await?;
     let proxy_server_root_ca = proxy_server.server_ca_manager.ca_cert.clone();
 
     CaptureSwitchDao::new(proxy_server.db_connect.clone())
@@ -23,6 +23,15 @@ async fn proxy_log_test() -> Result<()> {
             recording_status: RecordingStatus::PauseRecording,
         })
         .await?;
+
+    GeneralSettingDao::new(proxy_server.db_connect.clone())
+        .update_general_setting(GeneralSetting {
+            language: "zh-CN".to_string(),
+            max_log_size: 1000,
+            connect_type: ConnectType::ShortPoll,
+        })
+        .await?;
+    proxy_server.run().await?;
 
     let proxy_addr = format!("http://{}", proxy_server.access_addr_list.first().unwrap());
 

@@ -17,7 +17,6 @@ use super::message_event_data::{
     MessageEventRequest, MessageEventResponse, WebSocketDirection, WebSocketLog, WebSocketMessage,
 };
 use super::message_event_store::MessageEvent;
-use super::super::extend_extension_layer::DbExtensionsExt;
 use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
 
 pub struct MessageEventChannel {
@@ -39,7 +38,10 @@ impl MessageEventChannel {
         }
     }
 
-    pub fn setup_short_pool(self: &Self,cache: Arc<super::message_event_store::MessageEventCache>){
+    pub fn setup_short_pool(
+        self: &Self,
+        cache: Arc<super::message_event_store::MessageEventCache>
+    ) {
         let cache_clone = cache.clone();
         let mut rx = self.subscribe();
         spawn(async move {
