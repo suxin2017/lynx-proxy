@@ -31,7 +31,7 @@
         "title": "连接类型",
         "description": "选择获取日子的连接方式",
         "shortPoll": "短轮询",
-        "sse": "服务器发送事件 (SSE) Beta",
+        "sse": "服务器发送事件 (SSE)",
         "validation": {
           "required": "请选择连接类型"
         }

@@ -180,6 +180,14 @@ export interface ComplexCaptureRule {
   operator: LogicalOperator;
 }
 
+export type ConnectType = (typeof ConnectType)[keyof typeof ConnectType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ConnectType = {
+  NUMBER_0: '0',
+  NUMBER_1: '1',
+} as const;
+
 export type CreateApiDebugRequestBody = string | null;
 
 export type CreateApiDebugRequestContentType = string | null;
@@ -359,6 +367,12 @@ export interface ExecuteApiDebugResponse {
   responseTime?: ExecuteApiDebugResponseResponseTime;
   /** Request execution status */
   status: RequestStatus;
+}
+
+export interface GeneralSetting {
+  connectType: ConnectType;
+  language: string;
+  maxLogSize: number;
 }
 
 export type GetRequestsDataTraceIds = string[] | null;
@@ -1044,6 +1058,20 @@ export interface ResponseDataWrapperExecuteApiDebugResponse {
   /** Response for executing an API debug entry */
   data: ResponseDataWrapperExecuteApiDebugResponseData;
   message?: ResponseDataWrapperExecuteApiDebugResponseMessage;
+}
+
+export type ResponseDataWrapperGeneralSettingData = {
+  connectType: ConnectType;
+  language: string;
+  maxLogSize: number;
+};
+
+export type ResponseDataWrapperGeneralSettingMessage = string | null;
+
+export interface ResponseDataWrapperGeneralSetting {
+  code: ResponseCode;
+  data: ResponseDataWrapperGeneralSettingData;
+  message?: ResponseDataWrapperGeneralSettingMessage;
 }
 
 export type ResponseDataWrapperRecordRequestsDataPatchRequests =

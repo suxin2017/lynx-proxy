@@ -3,6 +3,7 @@ pub mod api_debug_executor;
 pub mod base_info;
 pub mod certificate;
 pub mod client_proxy;
+pub mod general_setting;
 pub mod https_capture;
 pub mod net_request;
 pub mod net_request_sse;

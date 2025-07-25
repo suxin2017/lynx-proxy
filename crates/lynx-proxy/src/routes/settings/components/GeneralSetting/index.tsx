@@ -1,24 +1,37 @@
 import { LanguageSelector } from '@/components/LanguageSelector';
-import { ConnectType, useGeneralSetting } from '@/store/useGeneralState';
-import { Button, Form, InputNumber, message, Select, Space, Typography, App } from 'antd';
+import { ConnectType } from '@/store/useGeneralState';
+import { Button, Form, InputNumber, message, Select, Space, Typography, App, Spin } from 'antd';
 import React from 'react';
 import { useI18n } from '@/contexts';
 import { CommonCard } from '../CommonCard';
+import { useGetGeneralSetting, useUpdateGeneralSetting } from '@/services/generated/general-setting/general-setting';
 
 interface IGeneralSettingProps { }
 
 export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
   const [form] = Form.useForm();
-  const { generalSetting, setGeneralSetting } = useGeneralSetting();
+  const { data: generalSettingResponse, isLoading, refetch } = useGetGeneralSetting();
+  const updateGeneralSettingMutation = useUpdateGeneralSetting();
   const [messageApi, contextHolder] = message.useMessage();
   const { t } = useI18n();
-  const { language, setLanguage } = useI18n();
+  // const { language, setLanguage } = useI18n();
   const { modal } = App.useApp();
 
+  const generalSetting = generalSettingResponse?.data;
 
-  const handleLanguageChange = (value: string) => {
-    setLanguage(value as 'en' | 'zh-CN');
-  };
+
+  // const handleLanguageChange = (value: string) => {
+  //   setLanguage(value as 'en' | 'zh-CN');
+  // };
+
+  if (isLoading) {
+    return (
+     <div className='flex items-center justify-center'>
+        <Spin />
+     </div>
+    );
+  }
+
   return (
     <CommonCard
       className='flex-col'
@@ -52,25 +65,27 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
         className="flex-1"
         layout="vertical"
         form={form}
-        initialValues={{ ...generalSetting, language }}
-        onFinish={async ({ language, ...value }) => {
-          if (value.connectType !== generalSetting?.connectType) {
-            modal.confirm({
-              title: t('settings.general.connectType.changeConfirm.title'),
-              content: t('settings.general.connectType.changeConfirm.content'),
-              onOk: () => {
-                setGeneralSetting(value);
-                handleLanguageChange(language);
-                messageApi.success(t('settings.general.actions.save'));
-                location.reload();
-              },
-            });
-          } else {
-            setGeneralSetting(value)
-            handleLanguageChange(language);
-            messageApi.success(t('settings.general.actions.save'));
+        initialValues={{ ...generalSetting }}
+        onFinish={async (value) => {
+          try {
+            await updateGeneralSettingMutation.mutateAsync({ data: { ...value } });
+            
+            if (value.connectType !== generalSetting?.connectType) {
+              modal.confirm({
+                title: t('settings.general.connectType.changeConfirm.title'),
+                content: t('settings.general.connectType.changeConfirm.content'),
+                onOk: () => {
+                  messageApi.success(t('settings.general.actions.save'));
+                  location.reload();
+                },
+              });
+            } else {
+              messageApi.success(t('settings.general.actions.save'));
+              refetch();
+            }
+          } catch (error) {
+            messageApi.error(t('settings.general.actions.saveFailed') || 'Save failed');
           }
-
         }}
       >
         <Typography.Title level={5} className="mb-2">

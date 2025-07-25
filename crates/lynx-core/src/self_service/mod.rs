@@ -113,6 +113,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
             "/request_processing",
             api::request_processing::router(state.clone()),
         )
+        .nest("/general_setting", api::general_setting::router(state.clone()))
         .split_for_parts();
 
     openapi.servers = Some(vec![Server::new(SELF_SERVICE_PATH_PREFIX)]);
