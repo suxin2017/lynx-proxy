@@ -1,10 +1,9 @@
-use std::sync::Arc;
 use anyhow::Result;
+use std::sync::Arc;
 use tracing::warn;
 
 use super::message_event_data::{
-    MessageEventRequest, MessageEventResponse, MessageEventTunnel, MessageEventWebSocket,
-    TunnelStatus, WebSocketStatus,
+    MessageEventTunnel, MessageEventWebSocket, TunnelStatus, WebSocketStatus,
 };
 use super::message_event_store::{MessageEvent, MessageEventStoreValue, MessageEventTimings};
 
