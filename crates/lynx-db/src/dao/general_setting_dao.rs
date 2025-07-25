@@ -141,7 +141,7 @@ mod tests {
 
         let setting = dao.get_general_setting().await.unwrap();
         assert_eq!(setting.max_log_size, 1000);
-        assert!(matches!(setting.connect_type, ConnectType::ShortPoll));
+        assert!(matches!(setting.connect_type, ConnectType::SSE));
     }
 
     #[tokio::test]

@@ -12,7 +12,6 @@ use axum::response::{IntoResponse, Response};
 use http::Extensions;
 use http_body_util::BodyExt;
 use lynx_db::dao::net_request_dao::{CaptureSwitchDao, RecordingStatus};
-use tokio::spawn;
 use tower::Service;
 use tracing::{Instrument, instrument, trace_span};
 
