@@ -39,6 +39,9 @@ export interface MonacoEditorProps {
   showToolbarActions?: boolean;
   wordWrap?: boolean;
   fontSize?: number;
+  showFormatButton?: boolean;
+  showCopyButton?: boolean;
+  showClearButton?: boolean;
 }
 
 export const MonacoEditor: React.FC<MonacoEditorProps> = ({
@@ -56,6 +59,9 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   showToolbarActions = true,
   wordWrap = true,
   fontSize = 14,
+  showFormatButton = true,
+  showCopyButton = true,
+  showClearButton = true,
 }) => {
   // Ensure value is always a string to prevent type errors
   const safeValue = value && typeof value === 'string' ? value : '';
@@ -637,81 +643,84 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
           <Space size="small">
             {showToolbarActions && (
               <>
-                <Tooltip title="Format Code (Ctrl+S)" placement="bottom">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<FormatPainterOutlined />}
-                    onClick={formatCode}
-                    disabled={readOnly || !safeValue}
-                    style={{
-                      color: token.colorText,
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        token.colorPrimaryBg;
-                      e.currentTarget.style.color = token.colorPrimary;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = token.colorText;
-                    }}
-                  >
-                    Format
-                  </Button>
-                </Tooltip>
+                {showFormatButton && (
+                  <Tooltip title="Format Code (Ctrl+S)" placement="bottom">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<FormatPainterOutlined />}
+                      onClick={formatCode}
+                      disabled={readOnly || !safeValue}
+                      style={{
+                        color: token.colorText,
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          token.colorPrimaryBg;
+                        e.currentTarget.style.color = token.colorPrimary;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = token.colorText;
+                      }}
+                    >
+                    </Button>
+                  </Tooltip>
+                )}
 
-                <Tooltip title="Copy to Clipboard" placement="bottom">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={copyToClipboard}
-                    disabled={!safeValue}
-                    style={{
-                      color: token.colorText,
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        token.colorSuccessBg;
-                      e.currentTarget.style.color = token.colorSuccess;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = token.colorText;
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </Tooltip>
+                {showCopyButton && (
+                  <Tooltip title="Copy to Clipboard" placement="bottom">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<CopyOutlined />}
+                      onClick={copyToClipboard}
+                      disabled={!safeValue}
+                      style={{
+                        color: token.colorText,
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          token.colorSuccessBg;
+                        e.currentTarget.style.color = token.colorSuccess;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = token.colorText;
+                      }}
+                    >
+                    </Button>
+                  </Tooltip>
+                )}
 
-                <Tooltip title="Clear Content" placement="bottom">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<ClearOutlined />}
-                    onClick={clearContent}
-                    disabled={readOnly || !safeValue}
-                    danger
-                    style={{
-                      color: token.colorText,
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor =
-                        token.colorErrorBg;
-                      e.currentTarget.style.color = token.colorError;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = token.colorText;
-                    }}
-                  >
-                    Clear
-                  </Button>
-                </Tooltip>
+                {showClearButton && (
+                  <Tooltip title="Clear Content" placement="bottom">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<ClearOutlined />}
+                      onClick={clearContent}
+                      disabled={readOnly || !safeValue}
+                      danger
+                      style={{
+                        color: token.colorText,
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          token.colorErrorBg;
+                        e.currentTarget.style.color = token.colorError;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = token.colorText;
+                      }}
+                    >
+                    </Button>
+                  </Tooltip>
+                )}
               </>
             )}
           </Space>

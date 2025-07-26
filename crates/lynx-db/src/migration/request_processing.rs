@@ -61,18 +61,12 @@ enum HandlerTable {
 mod tests {
     use super::*;
     use crate::migration::Migrator;
-    use sea_orm::{Database, DatabaseConnection};
+    use sea_orm::{Database};
     use sea_orm_migration::MigratorTrait;
-
-    async fn setup_test_db() -> DatabaseConnection {
-        let db = Database::connect("sqlite::memory:").await.unwrap();
-        Migrator::up(&db, None).await.unwrap();
-        db
-    }
 
     #[tokio::test]
     async fn test_migration_up() {
-        let _db = setup_test_db().await;
-        // Migration successful if no panic occurs
+        let db = Database::connect("sqlite::memory:").await.unwrap();
+        Migrator::up(&db, None).await.unwrap();
     }
 }

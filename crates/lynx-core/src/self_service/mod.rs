@@ -110,6 +110,10 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
             api::api_debug_executor::router(state.clone()),
         )
         .nest(
+            "/api_debug_tree",
+            api::api_debug_tree::router(state.clone()),
+        )
+        .nest(
             "/request_processing",
             api::request_processing::router(state.clone()),
         )
