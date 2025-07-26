@@ -6,7 +6,7 @@ import { QueryParamsEditor } from './QueryParamsEditor';
 import { BodyEditor } from './BodyEditor';
 import { ResponseViewer } from './ResponseViewer';
 import { CurlImportModal } from './CurlImportModal';
-import { RequestHistory } from './RequestHistory';
+import { Sidebar } from './Sidebar';
 import { CreateResponseOverrideButton } from './CreateResponseOverrideButton';
 import { useExecuteApiRequest } from '../../../services/generated/api-debug-executor/api-debug-executor';
 import { getListDebugEntriesQueryKey } from '../../../services/generated/api-debug/api-debug';
@@ -201,10 +201,10 @@ export function ApiDebugPage() {
 
   return (
     <div className="flex flex-1">
-      {/* History Sidebar */}
+      {/* Sidebar */}
       {historyVisible && (
-        <div className="w-80  flex flex-col">
-          <RequestHistory
+        <div className="w-80 flex flex-col">
+          <Sidebar
             onLoadRequest={handleLoadFromHistory}
             className="flex flex-1 max-h-[98vh] flex-col"
           />

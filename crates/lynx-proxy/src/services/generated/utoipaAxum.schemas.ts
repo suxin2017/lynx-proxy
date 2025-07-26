@@ -209,6 +209,27 @@ export interface CreateApiDebugRequest {
   url: string;
 }
 
+export type CreateFolderRequestParentId = number | null;
+
+/**
+ * 创建文件夹节点请求
+ */
+export interface CreateFolderRequest {
+  name: string;
+  parentId?: CreateFolderRequestParentId;
+}
+
+export type CreateRequestNodeRequestParentId = number | null;
+
+/**
+ * 创建请求节点请求
+ */
+export interface CreateRequestNodeRequest {
+  apiDebugId: number;
+  name: string;
+  parentId?: CreateRequestNodeRequestParentId;
+}
+
 export type CreateRuleRequestDescription = string | null;
 
 export interface CreateRuleRequest {
@@ -778,6 +799,29 @@ export interface ModifyResponseConfig {
   modifyStatusCode?: ModifyResponseConfigModifyStatusCode;
 }
 
+export type MoveNodeRequestNewSortOrder = number | null;
+
+export type MoveNodeRequestTargetParentId = number | null;
+
+/**
+ * 移动节点请求
+ */
+export interface MoveNodeRequest {
+  newSortOrder?: MoveNodeRequestNewSortOrder;
+  targetParentId?: MoveNodeRequestTargetParentId;
+}
+
+/**
+ * 树节点类型枚举
+ */
+export type NodeType = (typeof NodeType)[keyof typeof NodeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const NodeType = {
+  folder: 'folder',
+  request: 'request',
+} as const;
+
 export type ProxyConfigUrl = string | null;
 
 export interface ProxyConfig {
@@ -812,6 +856,21 @@ export const RecordingStatus = {
   startRecording: 'startRecording',
   pauseRecording: 'pauseRecording',
 } as const;
+
+/**
+ * 重命名节点请求
+ */
+export interface RenameNodeRequest {
+  name: string;
+}
+
+/**
+ * 重排序请求
+ */
+export interface ReorderNodesRequest {
+  /** 节点排序列表，每个元素包含节点ID和新的排序值 */
+  nodeOrders: [number, number][];
+}
 
 export type RequestRuleDescription = string | null;
 
@@ -1155,12 +1214,95 @@ export interface ResponseDataWrapperTemplateHandlersResponse {
   message?: ResponseDataWrapperTemplateHandlersResponseMessage;
 }
 
+export type ResponseDataWrapperTreeNodeResponseDataApiDebugId = number | null;
+
+export type ResponseDataWrapperTreeNodeResponseDataChildren =
+  | TreeNodeResponse[]
+  | null;
+
+export type ResponseDataWrapperTreeNodeResponseDataParentId = number | null;
+
+/**
+ * 树节点响应
+ */
+export type ResponseDataWrapperTreeNodeResponseData = {
+  apiDebugId?: ResponseDataWrapperTreeNodeResponseDataApiDebugId;
+  children?: ResponseDataWrapperTreeNodeResponseDataChildren;
+  createdAt: number;
+  id: number;
+  name: string;
+  nodeType: NodeType;
+  parentId?: ResponseDataWrapperTreeNodeResponseDataParentId;
+  sortOrder: number;
+  updatedAt: number;
+};
+
+export type ResponseDataWrapperTreeNodeResponseMessage = string | null;
+
+export interface ResponseDataWrapperTreeNodeResponse {
+  code: ResponseCode;
+  /** 树节点响应 */
+  data: ResponseDataWrapperTreeNodeResponseData;
+  message?: ResponseDataWrapperTreeNodeResponseMessage;
+}
+
+/**
+ * 树形结构响应
+ */
+export type ResponseDataWrapperTreeResponseData = {
+  nodes: TreeNodeResponse[];
+};
+
+export type ResponseDataWrapperTreeResponseMessage = string | null;
+
+export interface ResponseDataWrapperTreeResponse {
+  code: ResponseCode;
+  /** 树形结构响应 */
+  data: ResponseDataWrapperTreeResponseData;
+  message?: ResponseDataWrapperTreeResponseMessage;
+}
+
 export type ResponseDataWrapperTupleUnitMessage = string | null;
 
 export interface ResponseDataWrapperTupleUnit {
   code: ResponseCode;
   data: unknown;
   message?: ResponseDataWrapperTupleUnitMessage;
+}
+
+export type ResponseDataWrapperVecTreeNodeResponseDataItemApiDebugId =
+  | number
+  | null;
+
+export type ResponseDataWrapperVecTreeNodeResponseDataItemChildren =
+  | TreeNodeResponse[]
+  | null;
+
+export type ResponseDataWrapperVecTreeNodeResponseDataItemParentId =
+  | number
+  | null;
+
+/**
+ * 树节点响应
+ */
+export type ResponseDataWrapperVecTreeNodeResponseDataItem = {
+  apiDebugId?: ResponseDataWrapperVecTreeNodeResponseDataItemApiDebugId;
+  children?: ResponseDataWrapperVecTreeNodeResponseDataItemChildren;
+  createdAt: number;
+  id: number;
+  name: string;
+  nodeType: NodeType;
+  parentId?: ResponseDataWrapperVecTreeNodeResponseDataItemParentId;
+  sortOrder: number;
+  updatedAt: number;
+};
+
+export type ResponseDataWrapperVecTreeNodeResponseMessage = string | null;
+
+export interface ResponseDataWrapperVecTreeNodeResponse {
+  code: ResponseCode;
+  data: ResponseDataWrapperVecTreeNodeResponseDataItem[];
+  message?: ResponseDataWrapperVecTreeNodeResponseMessage;
 }
 
 export type ResponseDataWrapperU64Message = string | null;
@@ -1210,6 +1352,34 @@ export interface TemplateHandlersResponse {
 
 export interface ToggleRuleRequest {
   enabled: boolean;
+}
+
+export type TreeNodeResponseApiDebugId = number | null;
+
+export type TreeNodeResponseChildren = TreeNodeResponse[] | null;
+
+export type TreeNodeResponseParentId = number | null;
+
+/**
+ * 树节点响应
+ */
+export interface TreeNodeResponse {
+  apiDebugId?: TreeNodeResponseApiDebugId;
+  children?: TreeNodeResponseChildren;
+  createdAt: number;
+  id: number;
+  name: string;
+  nodeType: NodeType;
+  parentId?: TreeNodeResponseParentId;
+  sortOrder: number;
+  updatedAt: number;
+}
+
+/**
+ * 树形结构响应
+ */
+export interface TreeResponse {
+  nodes: TreeNodeResponse[];
 }
 
 export type TunnelStatus = (typeof TunnelStatus)[keyof typeof TunnelStatus];
@@ -1369,6 +1539,55 @@ export type ListDebugEntriesParams = {
    * Search in name and URL
    */
   search?: string | null;
+};
+
+export type GetChildrenParams = {
+  /**
+   * 父节点ID，为空时获取根节点
+   */
+  parentId?: number | null;
+};
+
+export type MoveNodeParams = {
+  /**
+   * 要移动的节点ID
+   */
+  id: number;
+};
+
+export type GetNodeParams = {
+  /**
+   * 节点ID
+   */
+  id: number;
+};
+
+export type GetNodePathParams = {
+  /**
+   * 节点ID
+   */
+  id: number;
+};
+
+export type RenameNodeParams = {
+  /**
+   * 要重命名的节点ID
+   */
+  id: number;
+};
+
+export type ReorderNodesParams = {
+  /**
+   * 父节点ID，为空时重排序根节点
+   */
+  parentId?: number | null;
+};
+
+export type SearchNodesParams = {
+  /**
+   * 搜索关键词
+   */
+  keyword: string;
 };
 
 export type ListRulesParams = {
