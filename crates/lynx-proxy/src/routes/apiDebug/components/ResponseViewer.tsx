@@ -1,9 +1,10 @@
-import { Card, Typography, Tag, Descriptions, Spin, Segmented } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import { MonacoEditor } from '../../../components/MonacoEditor';
-import { FormattedResponse } from './types';
+import { CloseCircleOutlined } from '@ant-design/icons';
+import { Card, Descriptions, Segmented, Spin, Tag, Typography } from 'antd';
+import prettyBytes from 'pretty-bytes';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MonacoEditor } from '../../../components/MonacoEditor';
+import { FormattedResponse } from './types';
 
 const { Title, Text } = Typography;
 
@@ -37,6 +38,8 @@ const LANGUAGES = {
   JSON: 'json',
   TEXT: 'text',
 } as const;
+
+
 
 interface ResponseViewerProps {
   response: FormattedResponse | null;
@@ -119,40 +122,12 @@ export function ResponseViewer({
       <Card>
         <div className="mb-6">
           <div className="mb-4 flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              {response.status >= 200 && response.status < 300 ? (
-                <CheckCircleOutlined
-                  className="text-xl"
-                  style={{ color: THEME_COLORS.SUCCESS }}
-                />
-              ) : (
-                <CloseCircleOutlined
-                  className="text-xl"
-                  style={{ color: THEME_COLORS.ERROR }}
-                />
-              )}
-              <Title level={4} className="m-0">
-                {t('apiDebug.responseViewer.response')}
-              </Title>
-            </div>
             <Tag color={getStatusColor(response.status)}>
               {response.status} {response.statusText}
             </Tag>
             <Text>{t('apiDebug.responseViewer.time')}: {response.responseTime}ms</Text>
-            <Text>{t('apiDebug.responseViewer.size')}: {response.size} {t('apiDebug.responseViewer.bytes')}</Text>
+            <Text>{t('apiDebug.responseViewer.size')}: {prettyBytes(response.size)}</Text>
           </div>
-
-          <Descriptions size="small" column={1}>
-            <Descriptions.Item label={t('apiDebug.responseViewer.status')}>
-              {response.status} {response.statusText}
-            </Descriptions.Item>
-            <Descriptions.Item label={t('apiDebug.responseViewer.responseTime')}>
-              {response.responseTime}ms
-            </Descriptions.Item>
-            <Descriptions.Item label={t('apiDebug.responseViewer.contentSize')}>
-              {response.size} {t('apiDebug.responseViewer.bytes')}
-            </Descriptions.Item>
-          </Descriptions>
         </div>
 
         <div>
@@ -196,11 +171,14 @@ export function ResponseViewer({
                   height={400}
                   readOnly={true}
                   showToolbar={true}
-                  showToolbarActions={false}
+                  showToolbarActions={true}
                   showLineNumbers={true}
                   wordWrap={true}
                   fontSize={14}
                   showMinimap={false}
+                  showClearButton={false}
+                  showFormatButton={false}
+                  showCopyButton={true}
                 />
               ) : (
                 <div className="p-4">

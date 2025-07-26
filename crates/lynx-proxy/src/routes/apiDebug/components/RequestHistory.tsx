@@ -1,8 +1,6 @@
 import {
   ClearOutlined,
-  DeleteOutlined,
-  HistoryOutlined,
-  ReloadOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import {
   Button,
@@ -32,7 +30,6 @@ import {
 const { Text } = Typography;
 
 interface RequestHistoryProps {
-  onSelectRequest?: (request: ApiDebugResponse) => void;
   onLoadRequest: (request: ApiDebugResponse) => void;
   className?: string;
 }
@@ -61,7 +58,6 @@ const getStatusColor = (status: RequestStatus): string => {
 };
 
 export function RequestHistory({
-  onSelectRequest,
   onLoadRequest,
   className,
 }: RequestHistoryProps) {
@@ -123,12 +119,6 @@ export function RequestHistory({
   const handleDeleteRequest = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     deleteRequestMutation.mutate({ id });
-  };
-
-  const handleRefresh = () => {
-    setPage(1);
-    setAllRequests([]);
-    refetch();
   };
 
   const handleClearAll = () => {
@@ -195,20 +185,16 @@ export function RequestHistory({
     const {
       id,
       method,
-      name,
       url,
       status,
-      responseStatus,
-      responseTime,
       createdAt,
     } = request;
 
     return (
       <List.Item
         key={id}
-        className="cursor-pointer border-b border-gray-100 p-1 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+        className="cursor-pointer border-b border-gray-100 p-1 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
         onClick={() => {
-          onSelectRequest?.(request);
           onLoadRequest(request);
         }}
         actions={[
@@ -231,48 +217,32 @@ export function RequestHistory({
       >
         <List.Item.Meta
           title={
-            <div className="flex items-center justify-between">
-              <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="text-xs font-normal">
+              <div className="flex items-center justify-between">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <Tag
+                    color={getMethodColor(method)}
+                    className="font-mono text-xs"
+                  >
+                    {method}
+                  </Tag>
+                  <Text className="truncate text-sm" title={url}>
+                    {url}
+                  </Text>
+                </div>
                 <Tag
-                  color={getMethodColor(method)}
-                  className="font-mono text-xs"
+                  color={getStatusColor(status)}
+                  className="flex-shrink-0 text-xs"
                 >
-                  {method}
+                  {getStatusText(status)}
                 </Tag>
-                <Text className="truncate text-sm font-medium" title={name}>
-                  {name}
-                </Text>
               </div>
-              <Tag
-                color={getStatusColor(status)}
-                className="flex-shrink-0 text-xs"
-              >
-                {getStatusText(status)}
-              </Tag>
             </div>
           }
           description={
-            <div className="space-y-1">
-              <Tooltip title={url}>
-                <Text className="block truncate text-xs text-gray-500">
-                  {url}
-                </Text>
-              </Tooltip>
-              <div className="flex items-center justify-between text-xs text-gray-400">
-                <span>{formatTimestamp(createdAt)}</span>
-                <div className="flex items-center gap-2">
-                  {responseStatus && (
-                    <span
-                      className={`${responseStatus >= 400 ? 'text-red-500' : 'text-green-500'}`}
-                    >
-                      {responseStatus}
-                    </span>
-                  )}
-                  {responseTime && <span>{responseTime}ms</span>}
-                </div>
-              </div>
-            </div>
+            <div className="text-xs font-normal">{formatTimestamp(createdAt)}</div>
           }
+
         />
       </List.Item>
     );
@@ -286,7 +256,6 @@ export function RequestHistory({
       title={
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <HistoryOutlined />
             <span>{t('apiDebug.requestHistory')}</span>
             <Text type="secondary" className="text-xs">
               ({totalCount})
@@ -304,26 +273,16 @@ export function RequestHistory({
                 className="text-gray-400 hover:text-red-500"
               />
             </Tooltip>
-            <Tooltip title={t('apiDebug.refresh')}>
-              <Button
-                type="text"
-                size="small"
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                loading={isLoading}
-                className="text-gray-400 hover:text-blue-500"
-              />
-            </Tooltip>
           </div>
         </div>
       }
       styles={{
         body: {
           display: 'flex',
-          flex:1,
+          flex: 1,
           flexDirection: 'column',
           padding: 0,
-          overflow:'auto'
+          overflow: 'auto'
         },
       }}
     >
@@ -331,16 +290,14 @@ export function RequestHistory({
         <div className="p-4 text-center">
           <Text type="danger">{t('apiDebug.loadHistoryFailed')}</Text>
           <br />
-          <Button size="small" onClick={handleRefresh} className="mt-2">
-            {t('apiDebug.retry')}
-          </Button>
         </div>
-      ) : requests.length === 0 && !isLoading ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t('apiDebug.noHistory')}
-          className="py-8"
-        />
+      ) : requests.length ===0 && !isLoading ? (
+        <div className='flex flex-1 items-center justify-center'>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={t('apiDebug.noHistory')}
+          />
+        </div>
       ) : (
         <div className="overflow-y-auto">
           <Spin spinning={isLoading}>
@@ -353,7 +310,7 @@ export function RequestHistory({
             />
           </Spin>
           {requests.length > 0 && requests.length < totalCount && (
-            <div className="border-t border-gray-100 p-2 text-center dark:border-gray-700">
+            <div className="border-t border-gray-100 pb-4 text-center dark:border-gray-700">
               <Button
                 size="small"
                 type="link"

@@ -83,6 +83,9 @@ importers:
       monaco-editor:
         specifier: ^0.52.2
         version: 0.52.2
+      pretty-bytes:
+        specifier: ^7.0.0
+        version: 7.0.0
       pretty-ms:
         specifier: ^9.2.0
         version: 9.2.0
@@ -4233,6 +4236,10 @@ packages:
     resolution: {integrity: sha512-FFw039TmrBqFK8ma/7OL3sDz/VytdtJr044/QUJtH0wK9lb9jLq9tJyIxUwtQJHwar2BqtiA4iCWSwo9JLkzFg==}
     engines: {node: '>=6'}
 
+  pretty-bytes@7.0.0:
+    resolution: {integrity: sha512-U5otLYPR3L0SVjHGrkEUx5mf7MxV2ceXeE7VwWPk+hyzC5drNohsOGNPDZqxCqyX1lkbEN4kl1LiI8QFd7r0ZA==}
+    engines: {node: '>=20'}
+
   pretty-format@27.5.1:
     resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
@@ -7772,11 +7779,11 @@ snapshots:
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 9.6.1
-      '@types/estree': 1.0.7
+      '@types/estree': 1.0.8
 
   '@types/eslint@9.6.1':
     dependencies:
-      '@types/estree': 1.0.7
+      '@types/estree': 1.0.8
       '@types/json-schema': 7.0.15
 
   '@types/estree@0.0.39': {}
@@ -10334,6 +10341,8 @@ snapshots:
 
   pretty-bytes@5.6.0: {}
 
+  pretty-bytes@7.0.0: {}
+
   pretty-format@27.5.1:
     dependencies:
       ansi-regex: 5.0.1
@@ -11747,7 +11756,7 @@ snapshots:
   webpack@5.99.9:
     dependencies:
       '@types/eslint-scope': 3.7.7
-      '@types/estree': 1.0.7
+      '@types/estree': 1.0.8
       '@types/json-schema': 7.0.15
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1

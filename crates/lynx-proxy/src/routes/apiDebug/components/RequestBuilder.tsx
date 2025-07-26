@@ -1,8 +1,7 @@
 import { Button, Select, Input, Space } from 'antd';
 import {
-  PlayCircleOutlined,
+  SendOutlined,
   LoadingOutlined,
-  ImportOutlined,
 } from '@ant-design/icons';
 import { HttpMethod } from '../../../services/generated/utoipaAxum.schemas';
 
@@ -12,7 +11,6 @@ interface RequestBuilderProps {
   onMethodChange: (method: string) => void;
   onUrlChange: (url: string) => void;
   onSend: () => void;
-  onImportCurl?: () => void;
   isLoading?: boolean;
 }
 
@@ -32,7 +30,6 @@ export function RequestBuilder({
   onMethodChange,
   onUrlChange,
   onSend,
-  onImportCurl,
   isLoading = false,
 }: RequestBuilderProps) {
   return (
@@ -57,24 +54,14 @@ export function RequestBuilder({
         className="flex-1"
       />
 
-      {onImportCurl && (
-        <Button
-          icon={<ImportOutlined />}
-          onClick={onImportCurl}
-          title="Import from cURL"
-        >
-          Import
-        </Button>
-      )}
 
       <Button
         type="primary"
         onClick={onSend}
         disabled={!url || isLoading}
-        icon={isLoading ? <LoadingOutlined /> : <PlayCircleOutlined />}
-        className="min-w-25"
+        icon={isLoading ? <LoadingOutlined /> : <SendOutlined />}
       >
-        {isLoading ? 'Sending' : 'Send'}
+        {isLoading ? '发送中' : '发送'}
       </Button>
     </Space.Compact>
   );

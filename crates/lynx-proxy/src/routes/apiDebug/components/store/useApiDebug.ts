@@ -9,6 +9,8 @@ import {
   setResponse,
   setCurlModalVisible,
   setIsLoading,
+  setActiveTab,
+  setLayoutDirection,
   importCurl,
   setFromRequest,
   updateUrlAndParams,
@@ -40,6 +42,8 @@ export const useApiDebug = () => {
     setCurlModalVisible: (visible: boolean) =>
       dispatch(setCurlModalVisible(visible)),
     setIsLoading: (loading: boolean) => dispatch(setIsLoading(loading)),
+    setActiveTab: (tab: string) => dispatch(setActiveTab(tab)),
+    setLayoutDirection: (direction: 'horizontal' | 'vertical') => dispatch(setLayoutDirection(direction)),
 
     // Complex actions
     importCurl: (data: {

@@ -29,16 +29,16 @@ impl MigrationTrait for Migration {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::migration::Migrator;
     use sea_orm::{Database, EntityTrait, PaginatorTrait};
-    use sea_orm_migration::MigratorTrait;
 
     #[tokio::test]
     async fn test_migration() {
         let db = Database::connect("sqlite::memory:").await.unwrap();
 
-        // 运行迁移
-        Migrator::up(&db, None).await.unwrap();
+        // 只运行当前迁移，而不是所有迁移
+        let manager = SchemaManager::new(&db);
+        let migration = Migration;
+        migration.up(&manager).await.unwrap();
 
         // 验证表是否存在（通过尝试查询）
         use crate::entities::api_debug::Entity;
@@ -46,6 +46,6 @@ mod tests {
         assert_eq!(count, 0);
 
         // 回滚迁移
-        Migrator::down(&db, None).await.unwrap();
+        migration.down(&manager).await.unwrap();
     }
 }

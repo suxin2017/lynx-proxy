@@ -41,6 +41,7 @@
     "lodash": "^4.17.21",
     "material-file-icons": "^2.4.0",
     "monaco-editor": "^0.52.2",
+    "pretty-bytes": "^7.0.0",
     "pretty-ms": "^9.2.0",
     "pretty-time": "^1.1.0",
     "prismjs": "^1.30.0",
