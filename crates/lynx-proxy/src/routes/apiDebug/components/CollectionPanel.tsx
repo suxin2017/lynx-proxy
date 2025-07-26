@@ -1,4 +1,3 @@
-import React from 'react';
 import { CollectionPanel as TreeCollectionPanel } from './CollectionTree';
 import type { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
 

@@ -3,6 +3,7 @@ import {
   PlayCircleOutlined,
   LoadingOutlined,
   ImportOutlined,
+  SaveOutlined,
 } from '@ant-design/icons';
 import { HttpMethod } from '../../../services/generated/utoipaAxum.schemas';
 
@@ -13,6 +14,7 @@ interface RequestBuilderProps {
   onUrlChange: (url: string) => void;
   onSend: () => void;
   onImportCurl?: () => void;
+  onSaveToCollection?: () => void;
   isLoading?: boolean;
 }
 
@@ -33,6 +35,7 @@ export function RequestBuilder({
   onUrlChange,
   onSend,
   onImportCurl,
+  onSaveToCollection,
   isLoading = false,
 }: RequestBuilderProps) {
   return (
@@ -64,6 +67,17 @@ export function RequestBuilder({
           title="Import from cURL"
         >
           Import
+        </Button>
+      )}
+
+      {onSaveToCollection && (
+        <Button
+          icon={<SaveOutlined />}
+          onClick={onSaveToCollection}
+          disabled={!url}
+          title="Save to Collection"
+        >
+          Save
         </Button>
       )}
 

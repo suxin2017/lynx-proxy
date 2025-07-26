@@ -8,16 +8,17 @@ const TreeToolbar: React.FC = () => {
   const { showCreateFolderModal } = useTreeUI();
 
   return (
-    <div className="px-4">
+    <div className="p-4">
       <Space direction="vertical" className="w-full">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">API 集合</h3>
+          <span className="text-sm font-medium">集合</span>
           <Button
             type="primary"
+            size="small"
             icon={<PlusOutlined />}
             onClick={() => showCreateFolderModal()}
           >
-            新建文件夹
+            新建
           </Button>
         </div>
         <TreeSearch />

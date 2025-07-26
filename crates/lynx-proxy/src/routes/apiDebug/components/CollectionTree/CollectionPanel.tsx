@@ -1,8 +1,7 @@
+import type { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
 import React from 'react';
-import { Card } from 'antd';
 import TreeContainer from './TreeContainer';
 import { TreeProvider } from './store/treeStore';
-import type { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
 
 interface CollectionPanelProps {
   onNodeSelect?: (node: TreeNodeResponse) => void;

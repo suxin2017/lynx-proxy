@@ -16,7 +16,19 @@ export interface ApiDebugState {
   response: FormattedResponse | null;
   curlModalVisible: boolean;
   isLoading: boolean;
+  activeTab: string;
+  layoutDirection: 'horizontal' | 'vertical';
 }
+
+// 从 localStorage 读取布局方向
+const getLayoutDirectionFromStorage = (): 'horizontal' | 'vertical' => {
+  try {
+    const stored = localStorage.getItem('apiDebug_layoutDirection');
+    return stored === 'vertical' ? 'vertical' : 'horizontal';
+  } catch {
+    return 'horizontal';
+  }
+};
 
 // 初始状态
 const initialState: ApiDebugState = {
@@ -28,6 +40,8 @@ const initialState: ApiDebugState = {
   response: null,
   curlModalVisible: false,
   isLoading: false,
+  activeTab: 'params',
+  layoutDirection: getLayoutDirectionFromStorage(),
 };
 
 // 从URL中解析查询参数的工具函数
@@ -112,6 +126,20 @@ const apiDebugSlice = createSlice({
 
     setIsLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
+    },
+
+    setActiveTab: (state, action: PayloadAction<string>) => {
+      state.activeTab = action.payload;
+    },
+
+    setLayoutDirection: (state, action: PayloadAction<'horizontal' | 'vertical'>) => {
+      state.layoutDirection = action.payload;
+      // 保存到 localStorage
+      try {
+        localStorage.setItem('apiDebug_layoutDirection', action.payload);
+      } catch (error) {
+        console.warn('Failed to save layout direction to localStorage:', error);
+      }
     },
 
     importCurl: (
@@ -297,6 +325,8 @@ export const {
   setResponse,
   setCurlModalVisible,
   setIsLoading,
+  setActiveTab,
+  setLayoutDirection,
   importCurl,
   setFromRequest,
   updateUrlAndParams,

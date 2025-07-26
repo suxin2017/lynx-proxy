@@ -13,7 +13,6 @@ interface TreeViewProps {
 
 const TreeView: React.FC<TreeViewProps> = ({ onNodeSelect, selectedNodeId }) => {
   const {
-    treeData,
     selectNode,
     expandNode,
     selectedKeys,
@@ -49,7 +48,7 @@ const TreeView: React.FC<TreeViewProps> = ({ onNodeSelect, selectedNodeId }) => 
     }));
   }, []);
 
-  const handleSelect: TreeProps['onSelect'] = (selectedKeys, info) => {
+  const handleSelect: TreeProps['onSelect'] = (selectedKeys) => {
     const nodeKey = selectedKeys[0] as string;
     selectNode(selectedKeys as string[]);
     
@@ -84,7 +83,7 @@ const TreeView: React.FC<TreeViewProps> = ({ onNodeSelect, selectedNodeId }) => 
   const antdTreeData = convertToAntdTreeData(currentTreeData);
 
   return (
-    <div className="flex-1 overflow-auto py-4">
+    <div className="flex-1 pb-4">
       <Tree
         treeData={antdTreeData}
         onSelect={handleSelect}
@@ -97,7 +96,6 @@ const TreeView: React.FC<TreeViewProps> = ({ onNodeSelect, selectedNodeId }) => 
         showLine
         showIcon={false}
         draggable
-        blockNode
         onDrop={async (info) => {
           const { dragNode, node, dropToGap } = info;
           

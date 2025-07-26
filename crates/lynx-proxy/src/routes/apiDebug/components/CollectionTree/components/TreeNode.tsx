@@ -1,17 +1,16 @@
-import React from 'react';
-import { Button, Dropdown } from 'antd';
-import {
-  FolderOutlined,
-  FileOutlined,
-  PlusOutlined,
-  MoreOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
 import type { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
+import {
+  ApiOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FolderOutlined,
+  MoreOutlined,
+  PlusOutlined
+} from '@ant-design/icons';
+import { Button, Dropdown, Modal, Tooltip, message } from 'antd';
+import React from 'react';
 import { useTreeUI } from '../context/TreeContext';
 import { useTreeStore } from '../store/treeStore';
-import { Modal, message } from 'antd';
 
 interface TreeNodeProps {
   node: TreeNodeResponse;
@@ -31,7 +30,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node }) => {
       onOk: async () => {
         try {
           await deleteNode(node.id!);
-          message.success('删除成功');
         } catch (error) {
           message.error('删除失败');
         }
@@ -67,13 +65,15 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node }) => {
 
   return (
     <div className="flex items-center justify-between group">
-      <div className="flex items-center">
+      <div className="flex items-center min-w-0 flex-1">
         {node.nodeType === 'folder' ? (
-          <FolderOutlined className="mr-2 text-blue-500" />
+          <FolderOutlined className="mr-2 text-blue-500 !text-blue-500 flex-shrink-0" />
         ) : (
-          <FileOutlined className="mr-2 text-green-500" />
+          <ApiOutlined className="mr-2 text-orange-500 !text-orange-500 flex-shrink-0" />
         )}
-        <span>{highlightText(node.name || '', searchValue)}</span>
+        <Tooltip title={node.name} placement="top">
+          <span className="truncate w-38">{highlightText(node.name || '', searchValue)}</span>
+        </Tooltip>
       </div>
       <Dropdown
         menu={{ items: menuItems }}
