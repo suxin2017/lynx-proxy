@@ -1,6 +1,7 @@
 pub use sea_orm_migration::prelude::*;
 
 pub mod api_debug;
+pub mod api_debug_tree;
 pub mod app_config;
 pub mod request_processing;
 
@@ -13,6 +14,7 @@ impl MigratorTrait for Migrator {
             Box::new(app_config::Migration),
             Box::new(request_processing::Migration),
             Box::new(api_debug::Migration),
+            Box::new(api_debug_tree::Migration),
         ]
     }
 }

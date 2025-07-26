@@ -1,61 +1,51 @@
-import { message, Segmented, Button } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
-import { RequestBuilder } from './RequestBuilder';
-import { HeadersEditor } from './HeadersEditor';
-import { QueryParamsEditor } from './QueryParamsEditor';
-import { BodyEditor } from './BodyEditor';
-import { ResponseViewer } from './ResponseViewer';
-import { CurlImportModal } from './CurlImportModal';
-import { RequestHistory } from './RequestHistory';
-import { CreateResponseOverrideButton } from './CreateResponseOverrideButton';
-import { useExecuteApiRequest } from '../../../services/generated/api-debug-executor/api-debug-executor';
-import { getListDebugEntriesQueryKey } from '../../../services/generated/api-debug/api-debug';
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  HttpMethod,
-  ApiDebugResponse,
-} from '../../../services/generated/utoipaAxum.schemas';
-import { QueryParamItem, FormattedResponse } from './types';
 import { CommonCard } from '@/routes/settings/components/CommonCard';
-import { useApiDebug } from './store';
+import { ColumnHeightOutlined, ColumnWidthOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { useQueryClient } from '@tanstack/react-query';
+import { Button, message } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-const TAB_KEYS = {
-  PARAMS: 'params',
-  HEADERS: 'headers',
-  BODY: 'body',
-} as const;
+import { useExecuteApiRequest } from '../../../services/generated/api-debug-executor/api-debug-executor';
+import { getListDebugEntriesQueryKey, useUpdateDebugEntry } from '../../../services/generated/api-debug/api-debug';
+import {
+  ApiDebugResponse,
+  HttpMethod,
+  UpdateApiDebugRequest,
+} from '../../../services/generated/utoipaAxum.schemas';
+import { CreateResponseOverrideButton } from './CreateResponseOverrideButton';
+import { CurlImportModal } from './CurlImportModal';
+import { MainContent } from './MainContent';
+import { RequestBuilder } from './RequestBuilder';
+import SaveToCollectionModal from './SaveToCollectionModal';
+import { Sidebar } from './Sidebar';
+import { useApiDebug } from './store';
+import { FormattedResponse } from './types';
+import { NodeSelectionProvider } from './CollectionTree/context/NodeSelectionContext';
 
 export function ApiDebugPage() {
-  const [activeTab, setActiveTab] = useState<string>(TAB_KEYS.PARAMS);
   const [historyVisible, setHistoryVisible] = useState<boolean>(true);
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   const {
+    id,
     method,
     url,
     headers,
     queryParams,
     body,
-    response,
     curlModalVisible,
+    layoutDirection,
     setMethod,
-    setHeaders,
-    setBody,
     setResponse,
     setCurlModalVisible,
+    setLayoutDirection,
     importCurl,
     updateUrlAndParams,
-    updateParamsAndUrl,
     loadFromApiDebugResponse,
   } = useApiDebug();
 
-  // 自定义的查询参数设置函数，同时更新URL
-  const handleQueryParamsChange = (newParams: QueryParamItem[]) => {
-    updateParamsAndUrl(newParams);
-  };
+  const [saveToCollectionModalVisible, setSaveToCollectionModalVisible] = useState(false);
+
 
   // 自定义的URL设置函数，同时解析查询参数
   const handleUrlChange = (newUrl: string) => {
@@ -90,6 +80,22 @@ export function ApiDebugPage() {
         console.error('Request failed:', error);
         message.error(t('apiDebug.requestFailed'));
         setResponse(null);
+      },
+    },
+  });
+
+  const updateDebugEntryMutation = useUpdateDebugEntry<Error>({
+    mutation: {
+      onSuccess: () => {
+        message.success('API Debug 更新成功');
+        // 刷新历史记录
+        queryClient.invalidateQueries({
+          queryKey: getListDebugEntriesQueryKey(),
+        });
+      },
+      onError: (error) => {
+        console.error('Update failed:', error);
+        message.error('API Debug 更新失败');
       },
     },
   });
@@ -169,127 +175,169 @@ export function ApiDebugPage() {
     loadFromApiDebugResponse(request);
   };
 
-  const tabItems = [
-    {
-      key: TAB_KEYS.PARAMS,
-      label: `${t('apiDebug.params')} (${queryParams.filter((p) => p.enabled).length})`,
-      children: (
-        <QueryParamsEditor
-          queryParams={queryParams}
-          onChange={handleQueryParamsChange}
-        />
-      ),
-    },
-    {
-      key: TAB_KEYS.HEADERS,
-      label: `${t('apiDebug.headers')} (${headers.filter((h) => h.enabled).length})`,
-      children: <HeadersEditor headers={headers} onChange={setHeaders} />,
-    },
-    {
-      key: TAB_KEYS.BODY,
-      label: t('apiDebug.body'),
-      children: (
-        <BodyEditor body={body} onBodyChange={setBody} headers={headers} />
-      ),
-    },
-  ];
-
-  const renderTabContent = () => {
-    const currentTab = tabItems.find((item) => item.key === activeTab);
-    return currentTab?.children;
+  const handleSaveToCollection = () => {
+    if (!url) {
+      message.warning(t('apiDebug.enterUrl'));
+      return;
+    }
+    setSaveToCollectionModalVisible(true);
   };
 
+  const handleUpdateApiDebug = () => {
+    if (!id) {
+      message.warning('没有可更新的 API Debug ID');
+      return;
+    }
+
+    if (!url) {
+      message.warning(t('apiDebug.enterUrl'));
+      return;
+    }
+
+    // Build URL with query parameters
+    let finalUrl = url;
+    const enabledQueryParams = queryParams.filter(
+      (param) => param.enabled && param.key,
+    );
+    if (enabledQueryParams.length > 0) {
+      const urlObject = new URL(url.startsWith('http') ? url : `http://${url}`);
+      enabledQueryParams.forEach((param) => {
+        urlObject.searchParams.set(param.key, param.value);
+      });
+      finalUrl = urlObject.toString();
+    }
+
+    // Convert headers array to object
+    const headersObject: Record<string, string> = {};
+    headers
+      .filter((header) => header.enabled && header.key && header.value)
+      .forEach((header) => {
+        headersObject[header.key] = header.value;
+      });
+
+    const updateData: UpdateApiDebugRequest = {
+      method: method as HttpMethod,
+      url: finalUrl,
+      headers: Object.keys(headersObject).length > 0 ? headersObject : undefined,
+      body: body || undefined,
+      name: `${method} ${finalUrl}`,
+    };
+
+    updateDebugEntryMutation.mutate({ id, data: updateData });
+  };
+
+
   return (
-    <div className="flex flex-1">
-      {/* History Sidebar */}
-      {historyVisible && (
-        <div className="w-80  flex flex-col">
-          <RequestHistory
-            onLoadRequest={handleLoadFromHistory}
-            className="flex flex-1 max-h-[98vh] flex-col"
-          />
-        </div>
-      )}
+    <NodeSelectionProvider>
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        {historyVisible && (
+          <div className="w-80 flex flex-col">
+            <Sidebar
+              onLoadRequest={handleLoadFromHistory}
+              className="flex flex-1 max-h-[98vh] flex-col"
+            />
+          </div>
+        )}
 
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <CommonCard
-          title={
-            <div className="flex items-center gap-2">
-              <Button
-                type="text"
-                icon={
-                  historyVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
-                }
-                onClick={() => setHistoryVisible(!historyVisible)}
-                className="text-gray-500 hover:text-blue-500"
-              />
-              <span>{t('apiDebug.title')}</span>
-            </div>
-          }
-          extra={
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setCurlModalVisible(true)}
-              >
-                {t('apiDebug.importCurl')}
-              </Button>
-              <CreateResponseOverrideButton />
-            </div>
-          }
-          className="flex flex-1 flex-col"
-        >
-          <div className='flex flex-col flex-1'>
+        {/* Main Content */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <CommonCard
+            extra={
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setCurlModalVisible(true)}
+                >
+                  {t('apiDebug.importCurl')}
+                </Button>
+                <CreateResponseOverrideButton />
+                  <Button
+                    onClick={handleSaveToCollection}
+                    disabled={!url}
+                    title="Save to Collection"
+                  >
+                    保存
+                  </Button>
 
-            {/* Request Builder */}
-            <div className="mt-2 shadow-sm">
-              <RequestBuilder
-                method={method}
-                url={url}
-                onMethodChange={setMethod}
-                onUrlChange={handleUrlChange}
-                onSend={handleSendRequest}
-                isLoading={executeRequestMutation.isPending}
-              />
-            </div>
+                {!!id && handleUpdateApiDebug && (
+                  <Button
+                    onClick={handleUpdateApiDebug}
+                    disabled={!url || updateDebugEntryMutation.isPending}
+                    title="Update API Debug"
+                  >
+                    更新
+                  </Button>
+                )}
+              </div>
+            }
+            className="flex flex-1 flex-col pb-0"
+          >
+            <div className='flex flex-col flex-1'>
 
-            {/* Main Content */}
-            <div className="mt-px flex flex-1 overflow-hidden">
-              {/* Left Panel - Request Configuration */}
-              <div className="w-1/2 overflow-auto border-r border-gray-300 dark:border-gray-500">
-                <div className="py-4">
-                  <Segmented
-                    value={activeTab}
-                    onChange={setActiveTab}
-                    options={tabItems.map((item) => ({
-                      label: item.label,
-                      value: item.key,
-                    }))}
+              {/* Request Builder */}
+              <div className="mt-2 shadow-sm">
+                <RequestBuilder
+                  method={method}
+                  url={url}
+                  onMethodChange={setMethod}
+                  onUrlChange={handleUrlChange}
+                  onSend={handleSendRequest}
+                  isLoading={executeRequestMutation.isPending}
+                />
+              </div>
+
+              {/* Main Content */}
+              <MainContent />
+              {/* Layout Direction Toggle */}
+              <div className='flex justify-between'>
+                <div className="flex justify-start">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="text"
+                      icon={
+                        historyVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
+                      }
+                      onClick={() => setHistoryVisible(!historyVisible)}
+                      className="text-gray-500 hover:text-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    size='small'
+                    type="text"
+                    icon={layoutDirection === 'horizontal' ? <ColumnHeightOutlined /> : <ColumnWidthOutlined />}
+                    onClick={() => setLayoutDirection(layoutDirection === 'horizontal' ? 'vertical' : 'horizontal')}
+                    className="text-gray-500 hover:text-blue-500"
+                    title={layoutDirection === 'horizontal' ? '切换到垂直布局' : '切换到水平布局'}
                   />
-                  <div className="">{renderTabContent()}</div>
                 </div>
               </div>
 
-              {/* Right Panel - Response */}
-              <div className="w-1/2 overflow-auto">
-                <ResponseViewer
-                  response={response}
-                  isLoading={executeRequestMutation.isPending}
-                  error={executeRequestMutation.error?.message}
-                />
-              </div>
             </div>
 
-            {/* cURL Import Modal */}
-            <CurlImportModal
-              visible={curlModalVisible}
-              onClose={() => setCurlModalVisible(false)}
-              onImport={handleImportCurl}
-            />
-          </div>
+          </CommonCard>
+        </div>
+        {/* cURL Import Modal */}
+        <CurlImportModal
+          visible={curlModalVisible}
+          onClose={() => setCurlModalVisible(false)}
+          onImport={handleImportCurl}
+        />
 
-        </CommonCard>
+        {/* Save to Collection Modal */}
+        <SaveToCollectionModal
+          visible={saveToCollectionModalVisible}
+          onClose={() => setSaveToCollectionModalVisible(false)}
+          requestData={{
+            method,
+            url,
+            headers,
+            queryParams,
+            body,
+          }}
+        />
       </div>
-    </div>
+    </NodeSelectionProvider>
   );
 }
