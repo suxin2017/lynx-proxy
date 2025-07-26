@@ -26,7 +26,7 @@ impl TryFrom<MessageEvent> for SseData {
     type Error = anyhow::Error;
 
     fn try_from(value: MessageEvent) -> Result<Self, Self::Error> {
-        let timestamp = chrono::Utc::now().timestamp();
+        let timestamp = chrono::Utc::now().timestamp_millis();
 
         match value {
             MessageEvent::OnRequestStart(trace_id, req) => Ok(SseData {

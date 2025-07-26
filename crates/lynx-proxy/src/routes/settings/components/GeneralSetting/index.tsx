@@ -70,19 +70,19 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
           try {
             await updateGeneralSettingMutation.mutateAsync({ data: { ...value } });
             
-            if (value.connectType !== generalSetting?.connectType) {
-              modal.confirm({
-                title: t('settings.general.connectType.changeConfirm.title'),
-                content: t('settings.general.connectType.changeConfirm.content'),
-                onOk: () => {
-                  messageApi.success(t('settings.general.actions.save'));
-                  location.reload();
-                },
-              });
-            } else {
+            // if (value.connectType !== generalSetting?.connectType) {
+            //   modal.confirm({
+            //     title: t('settings.general.connectType.changeConfirm.title'),
+            //     content: t('settings.general.connectType.changeConfirm.content'),
+            //     onOk: () => {
+            //       messageApi.success(t('settings.general.actions.save'));
+            //       location.reload();
+            //     },
+            //   });
+            // } else {
               messageApi.success(t('settings.general.actions.save'));
               refetch();
-            }
+            // }
           } catch (error) {
             messageApi.error(t('settings.general.actions.saveFailed') || 'Save failed');
           }
@@ -135,9 +135,9 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
           ]}
         >
           <Select>
-            <Select.Option value={ConnectType.ShortPoll}>
+            {/* <Select.Option value={ConnectType.ShortPoll}>
               {t('settings.general.connectType.shortPoll')}
-            </Select.Option>
+            </Select.Option> */}
             <Select.Option value={ConnectType.SSE}>
               {t('settings.general.connectType.sse')}
             </Select.Option>
