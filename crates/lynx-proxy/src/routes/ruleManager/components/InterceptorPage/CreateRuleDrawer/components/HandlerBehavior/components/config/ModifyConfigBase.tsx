@@ -55,16 +55,8 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
             ),
             children: (
               <div className="space-y-4">
-                <Text type="secondary">
-                  {t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.statusCodeDesc',
-                  )}
-                </Text>
                 <Form.Item
                   name={[field.name, 'handlerType', 'statusCode']}
-                  label={t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.common.statusCode',
-                  )}
                   rules={[
                     {
                       type: 'number',
@@ -103,13 +95,6 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
           ),
       children: (
         <div className="space-y-4">
-          <Text type="secondary">
-            {t(
-              isResponse
-                ? 'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.headersDesc'
-                : 'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.headersDesc',
-            )}
-          </Text>
           <Form.List name={[field.name, 'handlerType', 'modifyHeaders']}>
             {(headerFields, { add: addHeader, remove: removeHeader }) => (
               <div className="space-y-2">
@@ -232,16 +217,8 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
             ),
             children: (
               <div className="space-y-4">
-                <Text type="secondary">
-                  {t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.methodDesc',
-                  )}
-                </Text>
                 <Form.Item
                   name={[field.name, 'handlerType', 'modifyMethod']}
-                  label={t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.newMethod',
-                  )}
                 >
                   <Select
                     placeholder={t(
@@ -267,16 +244,8 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
             ),
             children: (
               <div className="space-y-4">
-                <Text type="secondary">
-                  {t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.urlDesc',
-                  )}
-                </Text>
                 <Form.Item
                   name={[field.name, 'handlerType', 'modifyUrl']}
-                  label={t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.newUrl',
-                  )}
                   rules={[
                     {
                       type: 'url',
@@ -305,30 +274,8 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
             'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.body',
           ),
       children: (
-        <div className="space-y-4">
-          <Text type="secondary">
-            {isResponse
-              ? t(
-                  'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.bodyDesc',
-                )
-              : t(
-                  'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.bodyDesc',
-                )}
-          </Text>
           <Form.Item
             name={[field.name, 'handlerType', 'modifyBody']}
-            label={t(
-              'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.common.newBody',
-              {
-                type: isResponse
-                  ? t(
-                      'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.body',
-                    )
-                  : t(
-                      'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.body',
-                    ),
-              },
-            )}
           >
             <TextArea
               rows={isResponse ? 8 : 6}
@@ -349,28 +296,16 @@ export const ModifyConfigBase: React.FC<ModifyConfigBaseProps> = ({
               )}
             />
           </Form.Item>
-        </div>
       ),
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <Text strong>
-        {isResponse
-          ? t(
-              'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.response.title',
-            )
-          : t(
-              'ruleManager.createRuleDrawer.handlerBehavior.modifyConfig.request.title',
-            )}
-      </Text>
-
+    <div >
       <Collapse
         items={collapseItems}
         size="small"
         defaultActiveKey={['headers', 'body']}
-        ghost
       />
 
       <div className="text-sm text-gray-500">

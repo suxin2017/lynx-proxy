@@ -23,8 +23,6 @@ export const HtmlScriptInjectorConfig: React.FC<HtmlScriptInjectorConfigProps> =
 
   return (
     <div className="space-y-4">
-      <Text strong>{t('ruleManager.quickAdd.htmlScriptInjector.config.title')}</Text>
-
 
       <div className="space-y-4">
         <Form.Item

@@ -18,10 +18,6 @@ export const BlockHandlerConfig: React.FC<BlockHandlerConfigProps> = ({
 
   return (
     <div className="space-y-4">
-      <Text strong>
-        {t('ruleManager.createRuleDrawer.handlerBehavior.blockHandler.title')}
-      </Text>
-
       <div className="grid grid-cols-2 gap-4">
         <Form.Item
           name={[field.name, 'handlerType', 'statusCode']}
