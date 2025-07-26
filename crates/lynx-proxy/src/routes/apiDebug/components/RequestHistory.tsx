@@ -1,33 +1,33 @@
 import {
-  Card,
-  List,
-  Button,
-  Typography,
-  Tag,
-  Tooltip,
-  Empty,
-  Spin,
-  Modal,
-  message,
-} from 'antd';
-import {
-  HistoryOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
   ClearOutlined,
+  DeleteOutlined,
+  HistoryOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import {
-  useListDebugEntries,
-  useDeleteDebugEntry,
+  Button,
+  Card,
+  Empty,
+  List,
+  Modal,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
   useClearAllDebugEntries,
+  useDeleteDebugEntry,
+  useListDebugEntries,
 } from '../../../services/generated/api-debug/api-debug';
 import {
   ApiDebugResponse,
   HttpMethod,
   RequestStatus,
 } from '../../../services/generated/utoipaAxum.schemas';
-import { useState, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -66,6 +66,7 @@ export function RequestHistory({
   className,
 }: RequestHistoryProps) {
   const [page, setPage] = useState(1);
+  const [allRequests, setAllRequests] = useState<ApiDebugResponse[]>([]);
   const pageSize = 20;
   const { t } = useTranslation();
 
@@ -97,6 +98,8 @@ export function RequestHistory({
   const deleteRequestMutation = useDeleteDebugEntry({
     mutation: {
       onSuccess: () => {
+        setPage(1);
+        setAllRequests([]);
         refetch();
       },
     },
@@ -106,6 +109,8 @@ export function RequestHistory({
     mutation: {
       onSuccess: () => {
         message.success(t('apiDebug.clearSuccess'));
+        setPage(1);
+        setAllRequests([]);
         refetch();
       },
       onError: (error) => {
@@ -121,6 +126,8 @@ export function RequestHistory({
   };
 
   const handleRefresh = () => {
+    setPage(1);
+    setAllRequests([]);
     refetch();
   };
 
@@ -137,9 +144,25 @@ export function RequestHistory({
     });
   };
 
-  const requests = useMemo(() => {
-    return historyData?.data?.data || [];
-  }, [historyData]);
+  // 当新数据加载时，更新累积的请求列表
+  useEffect(() => {
+    if (historyData?.data?.data) {
+      const newRequests = historyData.data.data;
+      if (page === 1) {
+        // 第一页或刷新时，替换所有数据
+        setAllRequests(newRequests);
+      } else {
+        // 后续页面，追加到现有数据
+        setAllRequests(prev => {
+          const existingIds = new Set(prev.map(req => req.id));
+          const uniqueNewRequests = newRequests.filter(req => !existingIds.has(req.id));
+          return [...prev, ...uniqueNewRequests];
+        });
+      }
+    }
+  }, [historyData, page]);
+
+  const requests = allRequests;
 
   const totalCount = historyData?.data?.total || 0;
 
