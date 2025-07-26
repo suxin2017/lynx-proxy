@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { useSelector } from 'react-redux';
 import { IViewMessageEventStoreValue, RootState } from './useSortPoll';
+import { FilterEngine } from '@/routes/network/components/FilterTemplate/filterEngine';
+import { useFilterTemplate } from '@/routes/network/components/FilterTemplate/context';
+import { ExtendedMessageEventStoreValue } from './messageEventCache';
 
 export interface IRequestTreeNode {
   id: string;
@@ -445,6 +448,8 @@ const requestTreeSlice = createSlice({
  * 获取过滤后的树数据
  */
 export const useTreeData = () => {
+  const { state: filterTemplateState } = useFilterTemplate();
+
   return useSelector((state: RootState) => {
     return dfsFilter(state.requestTree.requestTree, (node) => {
       // 对于没有记录的中间节点，直接返回true
@@ -452,6 +457,7 @@ export const useTreeData = () => {
         return true;
       }
 
+      // 首先应用原有的URI和MIME类型过滤
       // 检查URI过滤条件
       if (
         state.requestTable.filterUri &&
@@ -460,20 +466,18 @@ export const useTreeData = () => {
         return false;
       }
 
-      // 检查MIME类型过滤条件
-      if (!state.requestTable.filterMimeType.length) {
-        return true;
-      }
-
-      const mimeType = node.record.response?.headers?.['content-type'] || '';
-
-      if (
-        !state.requestTable.filterMimeType.some((type) =>
-          mimeType.includes(type),
-        )
-      ) {
-        return false;
-      }
+      // 应用过滤引擎
+       const enabledTemplates = filterTemplateState.templates.filter(template => template.enabled);
+       
+       if (enabledTemplates.length) {
+         // 将单个节点记录包装成数组进行过滤
+         const filterResult = FilterEngine.filter(
+           [node.record] as ExtendedMessageEventStoreValue[], 
+           enabledTemplates
+         );
+         // 如果过滤结果为空，说明该节点不匹配任何启用的模板
+         return !!filterResult.filtered.length;
+       }
 
       return true;
     });

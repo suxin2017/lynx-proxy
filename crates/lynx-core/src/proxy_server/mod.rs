@@ -172,7 +172,6 @@ impl ProxyServer {
         let message_event_store = Arc::new(MessageEventCache::default());
         let message_event_cannel = MessageEventChannel::new();
         let message_event_cannel = Arc::new(message_event_cannel);
-        message_event_cannel.setup_short_poll(message_event_store.clone());
         let static_dir = self.static_dir.clone();
         let addr_str = listener.local_addr()?.to_string();
         let authority = Authority::from_str(&addr_str)?;
@@ -184,8 +183,8 @@ impl ProxyServer {
        
         let general_setting_dao = GeneralSettingDao::new(db_connect.clone());
         if let Ok(setting) = general_setting_dao.get_general_setting().await {
-            println!("connect_type: {:?}", setting.connect_type);
             if matches!(setting.connect_type, ConnectType::ShortPoll) {
+                message_event_cannel.setup_short_poll(message_event_store.clone());
             }
         }
 
