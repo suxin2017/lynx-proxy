@@ -74,6 +74,13 @@ export const CreateRuleForm = forwardRef<
     try {
       console.log('Form data:', values);
 
+      // 校验是否有处理器
+      if (!values.handlers || values.handlers.length === 0) {
+        message.error('请至少添加一个处理器');
+        return;
+      }
+
+
       // Convert form values to API request format
       const requestRule = formValuesToRequestRule(values);
       console.log('API request data:', requestRule);

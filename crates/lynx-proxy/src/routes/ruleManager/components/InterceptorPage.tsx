@@ -129,7 +129,7 @@ const InnerInterceptorPage: React.FC = () => {
       title: t('ruleManager.table.priority'),
       dataIndex: 'priority',
       key: 'priority',
-      width: 80,
+      width: 90,
       sorter: (a, b) => a.priority - b.priority,
     },
     {
