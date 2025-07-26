@@ -1,4 +1,5 @@
 import { useI18n } from '@/contexts';
+import { DownOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React from 'react';
 
@@ -144,8 +145,9 @@ export const AddHandlerButton: React.FC<AddHandlerButtonProps> = ({ add }) => {
       placement="bottomLeft"
       trigger={['click']}
     >
-      <Button type="dashed" >
+      <Button>
         {t('ruleManager.quickAdd.prefix')}
+        <DownOutlined />
       </Button>
     </Dropdown>
   );

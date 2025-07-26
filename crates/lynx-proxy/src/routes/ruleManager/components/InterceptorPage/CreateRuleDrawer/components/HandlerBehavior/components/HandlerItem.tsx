@@ -1,17 +1,11 @@
 import { HandlerRule } from '@/services/generated/utoipaAxum.schemas';
 import {
-  CaretDownOutlined,
-  CaretLeftOutlined,
-  CaretUpOutlined,
   DeleteOutlined,
-  DownOutlined,
-  UpOutlined,
 } from '@ant-design/icons';
 import { Button, Card, Form, Switch, Typography } from 'antd';
 import React from 'react';
 import { HandlerConfig } from './config';
 import { useI18n } from '@/contexts';
-import { useHandlerCollapse } from './handlerCollapseContext';
 
 const { Text } = Typography;
 
@@ -33,8 +27,6 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
       form,
     );
     const { t } = useI18n();
-    const { toggleExpand, isExpanded } = useHandlerCollapse();
-    const expanded = isExpanded(index);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getHandlerTypeDisplayName = (handlerType: any) => {
@@ -56,54 +48,10 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
       );
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getHandlerDescription = (handlerType: any) => {
-      if (!handlerType?.type) return '';
-
-      const descMap = {
-        block:
-          t('ruleManager.handlerDescriptions.statusCode', {
-            code: handlerType.statusCode || 403,
-          }) +
-          ', ' +
-          t('ruleManager.handlerDescriptions.reason'),
-        delay: t('ruleManager.handlerDescriptions.delay', {
-          delayMs: handlerType.delayMs || 1000,
-          delayType: handlerType.delayType || 'beforeRequest',
-        }),
-        modifyRequest: t('ruleManager.handlerDescriptions.modifyRequest'),
-        modifyResponse: t('ruleManager.handlerDescriptions.modifyResponse'),
-        localFile: t('ruleManager.handlerDescriptions.file', {
-          path:
-            handlerType.filePath ||
-            t(
-              'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.notSet',
-            ),
-        }),
-        proxyForward: t('ruleManager.handlerDescriptions.forwardTo', {
-          host:
-            (handlerType.targetScheme ? handlerType.targetScheme + '://' : '') +
-            handlerType.targetAuthority ||
-            t(
-              'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.notSet',
-            ),
-        }),
-        htmlScriptInjector: t(
-          'ruleManager.handlerDescriptions.htmlScriptInjector',
-        ),
-      };
-
-      return descMap[handlerType.type as keyof typeof descMap] || '';
-    };
-
-    const handleToggleExpand = () => {
-      toggleExpand(index);
-    };
-
     return (
       <Card size="small" className="handler-item">
-        {/* 折叠面板头部 */}
-        <div className="flex items-center justify-between py-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200" onClick={handleToggleExpand}>
+        {/* 头部 */}
+        <div className="flex items-center justify-between py-3 bg-gray-50 rounded-lg mb-3">
           <div className="flex items-center">
             <Text strong>
               {getHandlerTypeDisplayName(handlerData?.handlerType)}
@@ -115,81 +63,23 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
               valuePropName="checked"
               noStyle
             >
-              <Switch
-                size="small"
-                onClick={(checked, e) => e.stopPropagation()}
-              />
+              <Switch size="small" />
             </Form.Item>
             <Button
               type="text"
               size="small"
               danger
               icon={<DeleteOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
+              onClick={onDelete}
               title={t('ruleManager.createRuleDrawer.handlerBehavior.handlerItem.delete')}
-            />
-            <Button
-              type="text"
-              size="small"
-              icon={expanded ? <CaretLeftOutlined /> : <CaretDownOutlined />}
-              title={expanded ? t('ruleManager.createRuleDrawer.handlerBehavior.handlerItem.collapse') : t('ruleManager.createRuleDrawer.handlerBehavior.handlerItem.expand')}
             />
           </div>
         </div>
-        {/* 预览内容 - 仅在未展开时显示 */}
-        {!expanded && (
-          <div className="space-y-2 mb-4">
-            <div>
-              <Text strong>
-                {t(
-                  'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.name',
-                )}
-                :{' '}
-              </Text>
-              <Text>
-                {handlerData?.name ||
-                  t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.unnamed',
-                  )}
-              </Text>
-            </div>
-            {handlerData?.description && (
-              <div>
-                <Text strong>
-                  {t(
-                    'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.description',
-                  )}
-                  :{' '}
-                </Text>
-                <Text type="secondary">{handlerData.description}</Text>
-              </div>
-            )}
-            <div>
-              <Text strong>
-                {t(
-                  'ruleManager.createRuleDrawer.handlerBehavior.handlerItem.configuration',
-                )}
-                :{' '}
-              </Text>
-              <Text type="secondary">
-                {getHandlerDescription(handlerData?.handlerType)}
-              </Text>
-            </div>
-          </div>
-        )}
-        {/* 折叠内容区域 */}
-        <div
-          className={`grid transition-all duration-100 ease-in-out ${expanded ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0'
-            }`}
-        >
-          <div className="overflow-hidden">
-            {handlerData && (
-              <HandlerConfig field={field} handler={handlerData?.handlerType} />
-            )}
-          </div>
+        {/* 配置内容 */}
+        <div>
+          {handlerData && (
+            <HandlerConfig field={field} handler={handlerData?.handlerType} />
+          )}
         </div>
       </Card>
     );
