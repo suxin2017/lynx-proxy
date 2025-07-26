@@ -543,7 +543,7 @@
       "handlerBehavior": {
         "title": "处理行为",
         "description": "定义当请求匹配规则时要执行的处理动作，可以添加多个处理器",
-        "noHandlers": "暂无处理器，点击下方按钮添加处理器",
+        "noHandlers": "暂无处理器，请添加处理器",
         "modifyConfig": {
           "common": {
             "statusCode": "状态码",
