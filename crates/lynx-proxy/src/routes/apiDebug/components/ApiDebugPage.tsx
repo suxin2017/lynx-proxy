@@ -7,6 +7,7 @@ import { BodyEditor } from './BodyEditor';
 import { ResponseViewer } from './ResponseViewer';
 import { CurlImportModal } from './CurlImportModal';
 import { RequestHistory } from './RequestHistory';
+import { CreateResponseOverrideButton } from './CreateResponseOverrideButton';
 import { useExecuteApiRequest } from '../../../services/generated/api-debug-executor/api-debug-executor';
 import { getListDebugEntriesQueryKey } from '../../../services/generated/api-debug/api-debug';
 import { useQueryClient } from '@tanstack/react-query';
@@ -199,13 +200,13 @@ export function ApiDebugPage() {
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1">
       {/* History Sidebar */}
       {historyVisible && (
-        <div className="w-80 flex-shrink-0 ">
+        <div className="w-80  flex flex-col">
           <RequestHistory
             onLoadRequest={handleLoadFromHistory}
-            className=""
+            className="flex flex-1 max-h-[98vh] flex-col"
           />
         </div>
       )}
@@ -227,12 +228,14 @@ export function ApiDebugPage() {
             </div>
           }
           extra={
-            <Button
-              onClick={() => setCurlModalVisible(true)}
-              className="ml-auto"
-            >
-              {t('apiDebug.importCurl')}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setCurlModalVisible(true)}
+              >
+                {t('apiDebug.importCurl')}
+              </Button>
+              <CreateResponseOverrideButton />
+            </div>
           }
           className="flex flex-1 flex-col"
         >

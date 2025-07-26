@@ -25,7 +25,7 @@ const UrlPatternInput = React.memo(
   }) => {
     const { t } = useI18n();
     return (
-      <div className="">
+      <div className="flex flex-col flex-1">
         <div className="mb-2 flex items-center justify-between">
           <Text strong className="block">
             {t('ruleManager.createRuleDrawer.captureRule.urlPattern')}
@@ -400,7 +400,7 @@ export const SimpleCaptureCondition: React.FC<SimpleCaptureConditionProps> =
     );
 
     return (
-      <Space direction="vertical" className="" size="middle">
+      <Space direction="vertical" className="w-full" size="middle">
         {showUrlPattern && (
           <UrlPatternInput
             urlPattern={value.urlPattern ? { ...value.urlPattern } : undefined}
