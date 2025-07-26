@@ -101,7 +101,7 @@ export const CreateRuleForm = forwardRef<
   };
 
   return (
-    <div className="flexflex-col">
+    <div className="flex flex-col">
       <Form
         form={form}
         layout="vertical"
@@ -112,7 +112,7 @@ export const CreateRuleForm = forwardRef<
         className="flex flex-1 flex-col"
         initialValues={getInitialFormValues()}
       >
-        <div className="flex-1 space-y-0">
+        <div className="flex-1 flex flex-col">
           <BasicInfo />
 
           <CaptureRule />

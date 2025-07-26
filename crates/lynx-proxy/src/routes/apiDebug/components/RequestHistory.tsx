@@ -297,9 +297,10 @@ export function RequestHistory({
       styles={{
         body: {
           display: 'flex',
+          flex:1,
           flexDirection: 'column',
-          height: '100%',
           padding: 0,
+          overflow:'auto'
         },
       }}
     >
