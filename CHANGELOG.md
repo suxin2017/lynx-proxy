@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.8] - 2025-07-26
+
+### 🚀 Features
+
+- Pwa support
+- Filter template
+- *(apiDebug)* 添加响应覆盖功能按钮并优化布局样式
+
+### 🚜 Refactor
+
+- *(apiDebug)* 优化请求历史记录的分页和状态管理
+
 ## [0.3.7] - 2025-07-25
 
 ### 🚀 Features
