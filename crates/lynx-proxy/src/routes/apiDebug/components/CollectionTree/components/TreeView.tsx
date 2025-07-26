@@ -4,14 +4,11 @@ import type { DataNode, TreeProps } from 'antd/es/tree';
 import type { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
 import { useTreeStore } from '../store/treeStore';
 import { useTreeUI } from '../context/TreeContext';
+import { useNodeSelectionContext } from '../context/NodeSelectionContext';
 import TreeNode from './TreeNode';
 
-interface TreeViewProps {
-  onNodeSelect?: (node: TreeNodeResponse) => void;
-  selectedNodeId?: string;
-}
-
-const TreeView: React.FC<TreeViewProps> = ({ onNodeSelect, selectedNodeId }) => {
+const TreeView: React.FC = () => {
+  const { selectedNodeId, handleNodeSelect } = useNodeSelectionContext();
   const {
     selectNode,
     expandNode,
@@ -50,9 +47,8 @@ const TreeView: React.FC<TreeViewProps> = ({ onNodeSelect, selectedNodeId }) => 
 
   const handleSelect: TreeProps['onSelect'] = (selectedKeys) => {
     const nodeKey = selectedKeys[0] as string;
-    selectNode(selectedKeys as string[]);
     
-    if (nodeKey && onNodeSelect) {
+    if (nodeKey) {
       // 查找对应的节点数据
       const findNode = (nodes: TreeNodeResponse[], key: string): TreeNodeResponse | null => {
         for (const node of nodes) {
@@ -68,9 +64,13 @@ const TreeView: React.FC<TreeViewProps> = ({ onNodeSelect, selectedNodeId }) => 
       };
       
       const selectedNode = findNode(getCurrentTreeData(), nodeKey);
-      if (selectedNode) {
-        onNodeSelect(selectedNode);
+      
+      // 如果是request类型节点，阻止选中
+      if (selectedNode && selectedNode.nodeType === 'request') {
+        handleNodeSelect(selectedNode);
       }
+      
+      selectNode(selectedKeys as string[]);
     }
   };
 

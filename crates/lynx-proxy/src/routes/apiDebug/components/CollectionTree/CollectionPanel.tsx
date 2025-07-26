@@ -1,24 +1,12 @@
-import type { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
 import React from 'react';
 import TreeContainer from './TreeContainer';
 import { TreeProvider } from './store/treeStore';
 
-interface CollectionPanelProps {
-  onNodeSelect?: (node: TreeNodeResponse) => void;
-  selectedNodeId?: string;
-}
-
-const CollectionPanel: React.FC<CollectionPanelProps> = ({
-  onNodeSelect,
-  selectedNodeId,
-}) => {
+const CollectionPanel: React.FC = () => {
   return (
     <TreeProvider>
       <div className="h-full flex flex-col">
-        <TreeContainer
-          onNodeSelect={onNodeSelect}
-          selectedNodeId={selectedNodeId}
-        />
+        <TreeContainer />
       </div>
     </TreeProvider>
   );

@@ -1,5 +1,5 @@
 import constate from 'constate';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
 import { useGetTree, useCreateFolder, useMoveNode, useRenameNode, useDeleteNode } from '@/services/generated/api-debug-tree/api-debug-tree';
 import { message } from 'antd';
@@ -34,6 +34,20 @@ function useTreeState() {
 
   // 获取树数据
   const { data: treeData, isLoading, error, refetch } = useGetTree();
+
+  // 当树数据加载完成时，自动展开第一层节点
+  useEffect(() => {
+    if (treeData?.data?.nodes && treeData.data.nodes.length > 0 && state.expandedKeys.length === 0) {
+      const firstLevelKeys = treeData.data.nodes
+        .filter(node => node.nodeType === 'folder')
+        .map(node => node.id?.toString())
+        .filter(Boolean) as string[];
+      
+      if (firstLevelKeys.length > 0) {
+        setState(prev => ({ ...prev, expandedKeys: firstLevelKeys }));
+      }
+    }
+  }, [treeData, state.expandedKeys.length]);
 
   // 创建文件夹
   const createFolderMutation = useCreateFolder({

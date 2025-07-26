@@ -8,6 +8,7 @@ import { IViewMessageEventStoreValue } from '../../../../store/useSortPoll';
 
 // 定义状态类型
 export interface ApiDebugState {
+  id?:number;
   method: string;
   url: string;
   headers: HeaderItem[];
@@ -258,7 +259,9 @@ const apiDebugSlice = createSlice({
       action: PayloadAction<ApiDebugResponse>,
     ) => {
       const request = action.payload;
-
+      if(request.id){
+        state.id = request.id;
+      }
       // Set basic request data
       state.method = request.method;
       state.url = request.url;

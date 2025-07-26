@@ -86,7 +86,7 @@ function useTreeUIState() {
       if (part.toLowerCase() === searchText.toLowerCase()) {
         return React.createElement('span', {
           key: index,
-          className: 'bg-yellow-300 text-yellow-900 px-1 rounded font-medium'
+          className: 'bg-yellow-100 dark:bg-yellow-600 px-1 rounded'
         }, part);
       }
       return part;

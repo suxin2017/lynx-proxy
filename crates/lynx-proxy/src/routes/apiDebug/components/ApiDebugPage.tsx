@@ -5,11 +5,11 @@ import { Button, message } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useExecuteApiRequest } from '../../../services/generated/api-debug-executor/api-debug-executor';
-import { getListDebugEntriesQueryKey } from '../../../services/generated/api-debug/api-debug';
+import { getListDebugEntriesQueryKey, useUpdateDebugEntry } from '../../../services/generated/api-debug/api-debug';
 import {
   ApiDebugResponse,
   HttpMethod,
-  TreeNodeResponse,
+  UpdateApiDebugRequest,
 } from '../../../services/generated/utoipaAxum.schemas';
 import { CreateResponseOverrideButton } from './CreateResponseOverrideButton';
 import { CurlImportModal } from './CurlImportModal';
@@ -19,14 +19,15 @@ import SaveToCollectionModal from './SaveToCollectionModal';
 import { Sidebar } from './Sidebar';
 import { useApiDebug } from './store';
 import { FormattedResponse } from './types';
+import { NodeSelectionProvider } from './CollectionTree/context/NodeSelectionContext';
 
 export function ApiDebugPage() {
   const [historyVisible, setHistoryVisible] = useState<boolean>(true);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   const {
+    id,
     method,
     url,
     headers,
@@ -79,6 +80,22 @@ export function ApiDebugPage() {
         console.error('Request failed:', error);
         message.error(t('apiDebug.requestFailed'));
         setResponse(null);
+      },
+    },
+  });
+
+  const updateDebugEntryMutation = useUpdateDebugEntry<Error>({
+    mutation: {
+      onSuccess: () => {
+        message.success('API Debug 更新成功');
+        // 刷新历史记录
+        queryClient.invalidateQueries({
+          queryKey: getListDebugEntriesQueryKey(),
+        });
+      },
+      onError: (error) => {
+        console.error('Update failed:', error);
+        message.error('API Debug 更新失败');
       },
     },
   });
@@ -166,126 +183,161 @@ export function ApiDebugPage() {
     setSaveToCollectionModalVisible(true);
   };
 
-  // 处理集合树节点选择
-  const handleNodeSelect = async (node: TreeNodeResponse) => {
-    setSelectedNodeId(node.id?.toString());
-
-    // 如果是request节点且有关联的api_debug_id，则加载请求数据
-    if (node.nodeType === 'request' && node.apiDebugId) {
-      try {
-        const response = await queryClient.fetchQuery({
-          queryKey: [`/api_debug/debug/${node.apiDebugId}`],
-          queryFn: async () => {
-            const { getDebugEntry } = await import('../../../services/generated/api-debug/api-debug');
-            return getDebugEntry(node.apiDebugId!);
-          },
-        });
-
-        if (response.data) {
-          loadFromApiDebugResponse(response.data);
-        }
-      } catch (error) {
-        console.error('Failed to load request from collection:', error);
-        message.error('加载请求失败');
-      }
+  const handleUpdateApiDebug = () => {
+    if (!id) {
+      message.warning('没有可更新的 API Debug ID');
+      return;
     }
+
+    if (!url) {
+      message.warning(t('apiDebug.enterUrl'));
+      return;
+    }
+
+    // Build URL with query parameters
+    let finalUrl = url;
+    const enabledQueryParams = queryParams.filter(
+      (param) => param.enabled && param.key,
+    );
+    if (enabledQueryParams.length > 0) {
+      const urlObject = new URL(url.startsWith('http') ? url : `http://${url}`);
+      enabledQueryParams.forEach((param) => {
+        urlObject.searchParams.set(param.key, param.value);
+      });
+      finalUrl = urlObject.toString();
+    }
+
+    // Convert headers array to object
+    const headersObject: Record<string, string> = {};
+    headers
+      .filter((header) => header.enabled && header.key && header.value)
+      .forEach((header) => {
+        headersObject[header.key] = header.value;
+      });
+
+    const updateData: UpdateApiDebugRequest = {
+      method: method as HttpMethod,
+      url: finalUrl,
+      headers: Object.keys(headersObject).length > 0 ? headersObject : undefined,
+      body: body || undefined,
+      name: `${method} ${finalUrl}`,
+    };
+
+    updateDebugEntryMutation.mutate({ id, data: updateData });
   };
 
+
   return (
-    <div className="flex flex-1">
-      {/* Sidebar */}
-      {historyVisible && (
-        <div className="w-80 flex flex-col">
-          <Sidebar
-            onLoadRequest={handleLoadFromHistory}
-            onNodeSelect={handleNodeSelect}
-            selectedNodeId={selectedNodeId}
-            className="flex flex-1 max-h-[98vh] flex-col"
-          />
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <CommonCard
-          extra={
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setCurlModalVisible(true)}
-              >
-                {t('apiDebug.importCurl')}
-              </Button>
-              <CreateResponseOverrideButton />
-            </div>
-          }
-          className="flex flex-1 flex-col pb-0"
-        >
-          <div className='flex flex-col flex-1'>
-
-            {/* Request Builder */}
-            <div className="mt-2 shadow-sm">
-              <RequestBuilder
-                method={method}
-                url={url}
-                onMethodChange={setMethod}
-                onUrlChange={handleUrlChange}
-                onSend={handleSendRequest}
-                onSaveToCollection={handleSaveToCollection}
-                isLoading={executeRequestMutation.isPending}
-              />
-            </div>
-
-            {/* Main Content */}
-            <MainContent />
-            {/* Layout Direction Toggle */}
-            <div className='flex justify-between'>
-            <div className="flex justify-start">
-              <div className="flex items-center gap-2">
-              <Button
-                type="text"
-                icon={
-                  historyVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
-                }
-                onClick={() => setHistoryVisible(!historyVisible)}
-                className="text-gray-500 hover:text-blue-500"
-              />
-            </div>
-            </div>
-            <div className="flex justify-end">
-              <Button
-                size='small'
-                type="text"
-                icon={layoutDirection === 'horizontal' ? <ColumnHeightOutlined /> : <ColumnWidthOutlined />}
-                onClick={() => setLayoutDirection(layoutDirection === 'horizontal' ? 'vertical' : 'horizontal')}
-                className="text-gray-500 hover:text-blue-500"
-                title={layoutDirection === 'horizontal' ? '切换到垂直布局' : '切换到水平布局'}
-              />
-            </div>
-            </div>
-
+    <NodeSelectionProvider>
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        {historyVisible && (
+          <div className="w-80 flex flex-col">
+            <Sidebar
+              onLoadRequest={handleLoadFromHistory}
+              className="flex flex-1 max-h-[98vh] flex-col"
+            />
           </div>
+        )}
 
-        </CommonCard>
+        {/* Main Content */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <CommonCard
+            extra={
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setCurlModalVisible(true)}
+                >
+                  {t('apiDebug.importCurl')}
+                </Button>
+                <CreateResponseOverrideButton />
+                  <Button
+                    onClick={handleSaveToCollection}
+                    disabled={!url}
+                    title="Save to Collection"
+                  >
+                    保存
+                  </Button>
+
+                {!!id && handleUpdateApiDebug && (
+                  <Button
+                    onClick={handleUpdateApiDebug}
+                    disabled={!url || updateDebugEntryMutation.isPending}
+                    title="Update API Debug"
+                  >
+                    更新
+                  </Button>
+                )}
+              </div>
+            }
+            className="flex flex-1 flex-col pb-0"
+          >
+            <div className='flex flex-col flex-1'>
+
+              {/* Request Builder */}
+              <div className="mt-2 shadow-sm">
+                <RequestBuilder
+                  method={method}
+                  url={url}
+                  onMethodChange={setMethod}
+                  onUrlChange={handleUrlChange}
+                  onSend={handleSendRequest}
+                  isLoading={executeRequestMutation.isPending}
+                />
+              </div>
+
+              {/* Main Content */}
+              <MainContent />
+              {/* Layout Direction Toggle */}
+              <div className='flex justify-between'>
+                <div className="flex justify-start">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="text"
+                      icon={
+                        historyVisible ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />
+                      }
+                      onClick={() => setHistoryVisible(!historyVisible)}
+                      className="text-gray-500 hover:text-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    size='small'
+                    type="text"
+                    icon={layoutDirection === 'horizontal' ? <ColumnHeightOutlined /> : <ColumnWidthOutlined />}
+                    onClick={() => setLayoutDirection(layoutDirection === 'horizontal' ? 'vertical' : 'horizontal')}
+                    className="text-gray-500 hover:text-blue-500"
+                    title={layoutDirection === 'horizontal' ? '切换到垂直布局' : '切换到水平布局'}
+                  />
+                </div>
+              </div>
+
+            </div>
+
+          </CommonCard>
+        </div>
+        {/* cURL Import Modal */}
+        <CurlImportModal
+          visible={curlModalVisible}
+          onClose={() => setCurlModalVisible(false)}
+          onImport={handleImportCurl}
+        />
+
+        {/* Save to Collection Modal */}
+        <SaveToCollectionModal
+          visible={saveToCollectionModalVisible}
+          onClose={() => setSaveToCollectionModalVisible(false)}
+          requestData={{
+            method,
+            url,
+            headers,
+            queryParams,
+            body,
+          }}
+        />
       </div>
-      {/* cURL Import Modal */}
-      <CurlImportModal
-        visible={curlModalVisible}
-        onClose={() => setCurlModalVisible(false)}
-        onImport={handleImportCurl}
-      />
-
-      {/* Save to Collection Modal */}
-      <SaveToCollectionModal
-        visible={saveToCollectionModalVisible}
-        onClose={() => setSaveToCollectionModalVisible(false)}
-        requestData={{
-          method,
-          url,
-          headers,
-          queryParams,
-          body,
-        }}
-      />
-    </div>
+    </NodeSelectionProvider>
   );
 }
