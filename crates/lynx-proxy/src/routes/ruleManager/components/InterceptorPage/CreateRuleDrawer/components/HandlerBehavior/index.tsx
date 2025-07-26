@@ -1,8 +1,8 @@
-import { Space, Typography, Form } from 'antd';
-import React from 'react';
-import { HandlerList } from './components/HandlerList';
-import { AddHandlerButton } from './components/AddHandlerButton';
 import { useI18n } from '@/contexts';
+import { Form, Typography } from 'antd';
+import React from 'react';
+import { AddHandlerButton } from './components/AddHandlerButton';
+import { HandlerList } from './components/HandlerList';
 
 const { Title, Text } = Typography;
 
@@ -12,22 +12,21 @@ export const HandlerBehavior: React.FC<HandlerBehaviorProps> = () => {
   const { t } = useI18n();
 
   return (
-    <Space direction="vertical" className="">
-      <Title level={5} className="mb-2">
-        {t('ruleManager.createRuleDrawer.handlerBehavior.title')}
-      </Title>
-      <Text type="secondary" className="mb-4 block">
-        {t('ruleManager.createRuleDrawer.handlerBehavior.description')}
-      </Text>
-
-      <Form.List name="handlers">
-        {(fields, { add, remove }) => (
-          <div className="space-y-4">
+    <Form.List name="handlers">
+      {(fields, { add, remove }) => (
+        <div>
+          <div className='flex justify-between items-center'>
+            <Title level={5} className="m-0">
+              {t('ruleManager.createRuleDrawer.handlerBehavior.title')}
+            </Title>
             <AddHandlerButton add={add} />
-            <HandlerList fields={fields} remove={remove} />
           </div>
-        )}
-      </Form.List>
-    </Space>
+          <Text type="secondary" className="mb-4 block">
+            {t('ruleManager.createRuleDrawer.handlerBehavior.description')}
+          </Text>
+          <HandlerList fields={fields} remove={remove} />
+        </div>
+      )}
+    </Form.List>
   );
 };

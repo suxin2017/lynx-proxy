@@ -163,6 +163,13 @@ export default defineConfig({
           },
         ],
       },
+      // 忽略特定的警告
+      ignoreWarnings: [
+        {
+          module: /monaco-editor/,
+          message: /Critical dependency: require function is used in a way in which dependencies cannot be statically extracted/,
+        },
+      ],
     },
   },
 });

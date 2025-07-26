@@ -22,6 +22,8 @@ import {
   CreateRuleDrawerProvider,
   useCreateRuleDrawer,
 } from './InterceptorPage/CreateRuleDrawer';
+import { ModifyResponseModal } from './InterceptorPage/ModifyResponseModal';
+import { ModifyResponseModalProvider } from './InterceptorPage/ModifyResponseModal/context';
 import { useI18n } from '@/contexts';
 
 const { Title, Text } = Typography;
@@ -121,7 +123,7 @@ const InnerInterceptorPage: React.FC = () => {
       title: t('ruleManager.table.action'),
       key: 'action',
       width: 200,
-      render: (_, record) => <ActionCell handlers={record.handlers} />,
+      render: (_, record) => <ActionCell handlers={record.handlers} ruleData={record} />,
     },
     {
       title: t('ruleManager.table.priority'),
@@ -285,6 +287,7 @@ const InnerInterceptorPage: React.FC = () => {
       </CommonCard>
 
       <CreateRuleDrawer />
+      <ModifyResponseModal />
     </>
   );
 };
@@ -292,7 +295,9 @@ const InnerInterceptorPage: React.FC = () => {
 export const InterceptorPage: React.FC = () => {
   return (
     <CreateRuleDrawerProvider>
-      <InnerInterceptorPage />
+      <ModifyResponseModalProvider>
+        <InnerInterceptorPage />
+      </ModifyResponseModalProvider>
     </CreateRuleDrawerProvider>
   );
 };

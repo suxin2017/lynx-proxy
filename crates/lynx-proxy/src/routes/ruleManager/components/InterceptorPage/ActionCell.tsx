@@ -7,11 +7,14 @@ import {
 } from '@/services/generated/utoipaAxum.schemas';
 import { get } from 'lodash';
 import { useI18n } from '@/contexts';
+import { useModifyResponseModal } from './ModifyResponseModal/context';
+import { RiEditLine } from '@remixicon/react';
 
 const { Text } = Typography;
 
 interface ActionCellProps {
   handlers: HandlerRule[];
+  ruleData?: any; // 完整的规则数据
 }
 
 // Handler类型对应的标签颜色和显示文本
@@ -177,7 +180,7 @@ const useGetHandlerDescription = (handler: HandlerRule): string => {
   }
 };
 
-export const ActionCell: React.FC<ActionCellProps> = ({ handlers }) => {
+export const ActionCell: React.FC<ActionCellProps> = ({ handlers, ruleData }) => {
   const { t } = useI18n();
 
   if (!handlers || handlers.length === 0) {
@@ -217,6 +220,7 @@ export const ActionCell: React.FC<ActionCellProps> = ({ handlers }) => {
             handler={handler}
             index={index}
             length={sortedHandlers.length}
+            ruleData={ruleData}
           />
         );
       })}
@@ -228,16 +232,46 @@ const ActionItem: React.FC<{
   handler: HandlerRule;
   index: number;
   length: number;
-}> = ({ handler, index, length }) => {
+  ruleData?: any;
+}> = ({ handler, index, length, ruleData }) => {
   const config = useHandlerRuleTypeConfig(handler?.handlerType);
   const content = useGetHandlerDescription(handler);
+  const { openModal } = useModifyResponseModal();
+
+  const handleTagClick = () => {
+    if (handler.handlerType.type === 'modifyResponse') {
+      // 获取当前的响应配置
+      const statusCode = get(handler, 'handlerType.modifyStatusCode');
+      const body = get(handler, 'handlerType.modifyBody', '');
+      
+      openModal({
+        responseContent: typeof body === 'string' ? body : JSON.stringify(body, null, 2),
+        statusCode: statusCode || undefined,
+        ruleData: ruleData,
+      });
+    }
+  };
+
+  const isModifyResponse = handler.handlerType.type === 'modifyResponse';
 
   return (
     <div
       key={handler.id || index}
       style={{ marginBottom: index < length - 1 ? 4 : 0 }}
     >
-      <Tag color={config.color}>{config.text}</Tag>
+      <Tag 
+        color={config.color}
+        style={{ cursor: isModifyResponse ? 'pointer' : 'default' }}
+        onClick={isModifyResponse ? handleTagClick : undefined}
+      >
+        {config.text}
+        {isModifyResponse && (
+          <RiEditLine 
+            size={12} 
+            style={{ marginLeft: 4, verticalAlign: 'middle' }} 
+          />
+        )}
+      </Tag>
       <br />
       <Text type="secondary" style={{ fontSize: '12px' }}>
         {content}

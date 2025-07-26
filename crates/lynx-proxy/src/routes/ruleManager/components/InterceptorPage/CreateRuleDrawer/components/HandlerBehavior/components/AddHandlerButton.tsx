@@ -1,6 +1,6 @@
-import { Button } from 'antd';
-import React from 'react';
 import { useI18n } from '@/contexts';
+import { Button, Dropdown, MenuProps } from 'antd';
+import React from 'react';
 
 interface AddHandlerButtonProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,25 +127,26 @@ export const AddHandlerButton: React.FC<AddHandlerButtonProps> = ({ add }) => {
     },
   ];
 
+  const menuItems: MenuProps['items'] = quickAddItems.map((item) => ({
+    key: item.key,
+    label: item.name,
+    onClick: () =>
+      add({
+        handlerType: item.config,
+        name: item.name,
+        enabled: true,
+      }),
+  }));
+
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2">
-        {quickAddItems.map((item) => (
-          <Button
-            key={item.key}
-            onClick={() =>
-              add({
-                handlerType: item.config,
-                name: item.name,
-                enabled: true,
-              })
-            }
-          >
-            {t('ruleManager.quickAdd.prefix')}
-            {item.name}
-          </Button>
-        ))}
-      </div>
-    </div>
+    <Dropdown
+      menu={{ items: menuItems }}
+      placement="bottomLeft"
+      trigger={['click']}
+    >
+      <Button type="dashed" >
+        {t('ruleManager.quickAdd.prefix')}
+      </Button>
+    </Dropdown>
   );
 };

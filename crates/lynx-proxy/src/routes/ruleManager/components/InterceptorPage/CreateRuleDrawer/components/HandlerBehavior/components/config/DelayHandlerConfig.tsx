@@ -33,10 +33,6 @@ export const DelayHandlerConfig: React.FC<DelayHandlerConfigProps> = ({
 
   return (
     <div className="space-y-4">
-      <Text strong>
-        {t('ruleManager.createRuleDrawer.handlerBehavior.delayHandler.title')}
-      </Text>
-
       <div className="grid grid-cols-2 gap-4">
         <Form.Item
           name={[field.name, 'handlerType', 'delayMs']}
