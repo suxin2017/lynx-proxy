@@ -371,7 +371,7 @@
       "unknown": "未知动作"
     },
     "quickAdd": {
-      "prefix": "快速添加：",
+      "prefix": "快速添加",
       "blockRequest": {
         "name": "阻止请求",
         "description": "使用 403 状态码阻止请求"

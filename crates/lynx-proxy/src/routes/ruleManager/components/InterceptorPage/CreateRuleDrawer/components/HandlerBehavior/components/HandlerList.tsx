@@ -1,7 +1,8 @@
 import { Typography } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import { HandlerItem } from './HandlerItem';
 import { useI18n } from '@/contexts';
+import { HandlerCollapseProvider } from './handlerCollapseContext';
 
 const { Text } = Typography;
 
@@ -14,7 +15,6 @@ interface HandlerListProps {
 }
 
 export const HandlerList: React.FC<HandlerListProps> = ({ fields, remove }) => {
-  const [editingHandler, setEditingHandler] = useState<number | null>(null);
   const { t } = useI18n();
 
   if (fields.length === 0) {
@@ -28,20 +28,18 @@ export const HandlerList: React.FC<HandlerListProps> = ({ fields, remove }) => {
   }
 
   return (
-    <div className="space-y-3">
-      {fields.map((field, index) => (
-        <div key={field.key} className={`transition-all duration-200`}>
-          <HandlerItem
-            field={field}
-            index={index}
-            isEditing={editingHandler === field.name}
-            onEdit={() => setEditingHandler(field.name)}
-            onSave={() => setEditingHandler(null)}
-            onCancel={() => setEditingHandler(null)}
-            onDelete={() => remove(field.name)}
-          />
-        </div>
-      ))}
-    </div>
+    <HandlerCollapseProvider>
+      <div className="space-y-3">
+        {fields.map((field, index) => (
+          <div key={field.key} className={`transition-all duration-200`}>
+            <HandlerItem
+              field={field}
+              index={index}
+              onDelete={() => remove(field.name)}
+            />
+          </div>
+        ))}
+      </div>
+    </HandlerCollapseProvider>
   );
 };

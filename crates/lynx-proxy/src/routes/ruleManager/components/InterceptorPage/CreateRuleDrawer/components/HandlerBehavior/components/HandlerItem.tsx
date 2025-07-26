@@ -1,14 +1,17 @@
 import { HandlerRule } from '@/services/generated/utoipaAxum.schemas';
 import {
-  CheckOutlined,
-  CloseOutlined,
+  CaretDownOutlined,
+  CaretLeftOutlined,
+  CaretUpOutlined,
   DeleteOutlined,
-  EditOutlined,
+  DownOutlined,
+  UpOutlined,
 } from '@ant-design/icons';
 import { Button, Card, Form, Switch, Typography } from 'antd';
 import React from 'react';
 import { HandlerConfig } from './config';
 import { useI18n } from '@/contexts';
+import { useHandlerCollapse } from './handlerCollapseContext';
 
 const { Text } = Typography;
 
@@ -18,22 +21,20 @@ interface HandlerItemProps {
     name: number;
   };
   index: number;
-  isEditing: boolean;
-  onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
   onDelete: () => void;
   isDragging?: boolean;
 }
 
 export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
-  ({ field, index: _, isEditing, onEdit, onSave, onCancel, onDelete }) => {
+  ({ field, index, onDelete }) => {
     const form = Form.useFormInstance();
     const handlerData: HandlerRule = Form.useWatch(
       ['handlers', field.name],
       form,
     );
     const { t } = useI18n();
+    const { toggleExpand, isExpanded } = useHandlerCollapse();
+    const expanded = isExpanded(index);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getHandlerTypeDisplayName = (handlerType: any) => {
@@ -95,65 +96,52 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
       return descMap[handlerType.type as keyof typeof descMap] || '';
     };
 
+    const handleToggleExpand = () => {
+      toggleExpand(index);
+    };
+
     return (
-      <Card
-        size="small"
-        className={`handler-item transition-all duration-200`}
-        title={
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <Text strong>
-                  {getHandlerTypeDisplayName(handlerData?.handlerType)}
-                </Text>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Form.Item
-                name={[field.name, 'enabled']}
-                valuePropName="checked"
-                noStyle
-              >
-                <Switch size="small" />
-              </Form.Item>
-              {!isEditing ? (
-                <>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={onEdit}
-                  />
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={onDelete}
-                  />
-                </>
-              ) : (
-                <>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CheckOutlined />}
-                    onClick={onSave}
-                  />
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CloseOutlined />}
-                    onClick={onCancel}
-                  />
-                </>
-              )}
-            </div>
+      <Card size="small" className="handler-item">
+        {/* 折叠面板头部 */}
+        <div className="flex items-center justify-between py-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200" onClick={handleToggleExpand}>
+          <div className="flex items-center">
+            <Text strong>
+              {getHandlerTypeDisplayName(handlerData?.handlerType)}
+            </Text>
           </div>
-        }
-      >
-        {!isEditing ? (
-          <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Form.Item
+              name={[field.name, 'enabled']}
+              valuePropName="checked"
+              noStyle
+            >
+              <Switch
+                size="small"
+                onClick={(checked, e) => e.stopPropagation()}
+              />
+            </Form.Item>
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              title={t('ruleManager.createRuleDrawer.handlerBehavior.handlerItem.delete')}
+            />
+            <Button
+              type="text"
+              size="small"
+              icon={expanded ? <CaretLeftOutlined /> : <CaretDownOutlined />}
+              title={expanded ? t('ruleManager.createRuleDrawer.handlerBehavior.handlerItem.collapse') : t('ruleManager.createRuleDrawer.handlerBehavior.handlerItem.expand')}
+            />
+          </div>
+        </div>
+        {/* 预览内容 - 仅在未展开时显示 */}
+        {!expanded && (
+          <div className="space-y-2 mb-4">
             <div>
               <Text strong>
                 {t(
@@ -191,12 +179,18 @@ export const HandlerItem: React.FC<HandlerItemProps> = React.memo(
               </Text>
             </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            {/* 处理器配置部分 */}
-            <HandlerConfig field={field} handler={handlerData.handlerType} />
-          </div>
         )}
+        {/* 折叠内容区域 */}
+        <div
+          className={`grid transition-all duration-100 ease-in-out ${expanded ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0'
+            }`}
+        >
+          <div className="overflow-hidden">
+            {handlerData && (
+              <HandlerConfig field={field} handler={handlerData?.handlerType} />
+            )}
+          </div>
+        </div>
       </Card>
     );
   },

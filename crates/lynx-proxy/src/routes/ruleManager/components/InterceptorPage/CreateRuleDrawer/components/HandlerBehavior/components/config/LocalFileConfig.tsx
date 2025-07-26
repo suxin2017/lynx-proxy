@@ -34,8 +34,6 @@ export const LocalFileConfig: React.FC<LocalFileConfigProps> = ({ field }) => {
   ];
   return (
     <div className="space-y-4">
-      <Text strong>本地文件配置</Text>
-
       <div className="space-y-4">
         <Form.Item
           name={[field.name, 'handlerType', 'filePath']}
