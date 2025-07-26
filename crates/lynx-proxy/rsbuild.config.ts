@@ -114,6 +114,46 @@ export default defineConfig({
     rspack: {
       plugins: [
         TanStackRouterRspack(),
+        // 只在生产环境下添加 Workbox 插件用于生成 Service Worker
+        ...(isDevelopment ? [] : [
+          new GenerateSW({
+            clientsClaim: true,
+            skipWaiting: true,
+            runtimeCaching: [
+              {
+                urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
+                handler: 'StaleWhileRevalidate',
+                options: {
+                  cacheName: 'google-fonts-stylesheets',
+                },
+              },
+              {
+                urlPattern: /^https:\/\/fonts\.gstatic\.com\//,
+                handler: 'CacheFirst',
+                options: {
+                  cacheName: 'google-fonts-webfonts',
+                  expiration: {
+                    maxEntries: 30,
+                    maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                  },
+                },
+              },
+              {
+                urlPattern: /\/api\//,
+                handler: 'NetworkFirst',
+                options: {
+                  cacheName: 'api-cache',
+                  expiration: {
+                    maxEntries: 50,
+                    maxAgeSeconds: 60 * 5, // 5 minutes
+                  },
+                },
+              },
+            ],
+            // 排除不需要缓存的文件
+            exclude: [/\.map$/, /manifest$/, /\.htaccess$/],
+          }),
+        ]),
       ],
       module: {
         rules: [
