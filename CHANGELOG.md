@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025-07-26
+
+### 🚀 Features
+
+- Better content modify
+- Api debug tree ([#46](https://github.com/suxin2017/lynx-server/issues/46))
+
 ## [0.3.8] - 2025-07-26
 
 ### 🚀 Features
