@@ -1,10 +1,10 @@
 import { LanguageSelector } from '@/components/LanguageSelector';
-import { ConnectType } from '@/store/useGeneralState';
-import { Button, Form, InputNumber, message, Select, Space, Typography, App, Spin } from 'antd';
-import React from 'react';
 import { useI18n } from '@/contexts';
-import { CommonCard } from '../CommonCard';
 import { useGetGeneralSetting, useUpdateGeneralSetting } from '@/services/generated/general-setting/general-setting';
+import { ConnectType } from '@/store/useGeneralState';
+import { Button, Form, InputNumber, message, Select, Space, Spin, Typography } from 'antd';
+import React from 'react';
+import { CommonCard } from '../CommonCard';
 
 interface IGeneralSettingProps { }
 
@@ -15,7 +15,7 @@ export const GeneralSetting: React.FC<IGeneralSettingProps> = () => {
   const [messageApi, contextHolder] = message.useMessage();
   const { t } = useI18n();
   // const { language, setLanguage } = useI18n();
-  const { modal } = App.useApp();
+  // const { modal } = App.useApp();
 
   const generalSetting = generalSettingResponse?.data;
 
