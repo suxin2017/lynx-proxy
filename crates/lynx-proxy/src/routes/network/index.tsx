@@ -14,6 +14,7 @@ import {
 import { AutoScrollProvider } from './components/store/autoScrollStore';
 import { Structure } from './components/Structure';
 import { SearchRequestUrlInput } from './components/TableFilter';
+import { FilterTemplate, ActiveTemplatesTags } from './components/FilterTemplate';
 
 const { Title } = Typography;
 
@@ -39,12 +40,14 @@ function InnerComponent() {
                 <CleanRequestButton />
               </div>
             </div>
-            {/* ToolBar */}
-            <div className="flex gap-2">
-              <SearchRequestUrlInput />
-              {/* <FilterTemplate /> */}
-              <ShowTypeSegmented />
-            </div>
+         
+              <div className="flex gap-2">
+                <SearchRequestUrlInput />
+                <FilterTemplate />
+                <ShowTypeSegmented />
+              </div>
+              <ActiveTemplatesTags />
+
             {state === 'Sequence' && <Sequence />}
             {state === 'Structure' && <Structure />}
           </div>

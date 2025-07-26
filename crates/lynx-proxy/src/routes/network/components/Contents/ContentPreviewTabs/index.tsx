@@ -146,16 +146,16 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
 
     const contentTypeMedia =
       contentTypeImage || contentTypeVideo || contentTypeFont;
-    let mediaLabel = 'Media Preview';
+    let mediaLabel = '媒体预览';
     if (contentTypeMedia) {
       if (contentTypeImage) {
-        mediaLabel = 'Image Preview';
+        mediaLabel = '图片预览';
       }
       if (contentTypeVideo) {
-        mediaLabel = 'Video Preview';
+        mediaLabel = '视频预览';
       }
       if (contentTypeFont) {
-        mediaLabel = 'Font Preview';
+        mediaLabel = '字体预览';
       }
     }
     return filter(

@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { useSelector } from 'react-redux';
 import { IViewMessageEventStoreValue, RootState } from './useSortPoll';
+import { FilterEngine } from '@/routes/network/components/FilterTemplate/filterEngine';
+import { useFilterTemplate } from '@/routes/network/components/FilterTemplate/context';
+import { ExtendedMessageEventStoreValue } from './messageEventCache';
 
 export interface RequestTableState {
   requests: IViewMessageEventStoreValue[];
@@ -116,8 +119,11 @@ export const useRequestLogCount = () => {
   return useSelector((state: RootState) => state.requestTable.requests.length);
 };
 export const useFilteredTableData = () => {
+  const { state: filterTemplateState } = useFilterTemplate();
+  
   return useSelector((state: RootState) => {
-    return state.requestTable.requests
+    // 首先应用原有的URI和MIME类型过滤
+    let filteredData = state.requestTable.requests
       .filter((requestValue) => {
         if (!state.requestTable.filterUri) {
           return true;
@@ -125,16 +131,20 @@ export const useFilteredTableData = () => {
         return requestValue.request?.url?.includes(
           state.requestTable.filterUri,
         );
-      })
-      .filter((request) => {
-        if (state.requestTable.filterMimeType.length === 0) {
-          return true;
-        }
-        const mimeType = request.response?.headers?.['content-type'] || '';
-        return state.requestTable.filterMimeType.some((type) =>
-          mimeType.includes(type),
-        );
       });
+    
+
+    // 如果过滤模板状态可用，则应用过滤引擎
+    if (filterTemplateState?.templates) {
+      const filterResult = FilterEngine.filter(
+        filteredData as ExtendedMessageEventStoreValue[], 
+        filterTemplateState.templates
+      );
+      return filterResult.filtered as IViewMessageEventStoreValue[];
+    }
+    
+    // 如果过滤模板不可用，直接返回基础过滤结果
+    return filteredData;
   });
 };
 
