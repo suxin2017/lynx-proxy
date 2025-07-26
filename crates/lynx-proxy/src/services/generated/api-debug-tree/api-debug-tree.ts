@@ -24,6 +24,7 @@ import type {
 import type {
   CreateFolderRequest,
   CreateRequestNodeRequest,
+  DeleteNodeParams,
   GetChildrenParams,
   GetNodeParams,
   GetNodePathParams,
@@ -579,27 +580,28 @@ export function useGetNode<
   return query;
 }
 
-export const deleteNode = () => {
-  return customInstance<unknown>({
+export const deleteNode = (params: DeleteNodeParams) => {
+  return customInstance<ResponseDataWrapperTupleUnit>({
     url: `/api_debug_tree/tree/node`,
     method: 'DELETE',
+    params,
   });
 };
 
 export const getDeleteNodeMutationOptions = <
-  TError = unknown,
+  TError = void,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof deleteNode>>,
     TError,
-    void,
+    { params: DeleteNodeParams },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof deleteNode>>,
   TError,
-  void,
+  { params: DeleteNodeParams },
   TContext
 > => {
   const mutationKey = ['deleteNode'];
@@ -613,9 +615,11 @@ export const getDeleteNodeMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof deleteNode>>,
-    void
-  > = () => {
-    return deleteNode();
+    { params: DeleteNodeParams }
+  > = (props) => {
+    const { params } = props ?? {};
+
+    return deleteNode(params);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -625,14 +629,14 @@ export type DeleteNodeMutationResult = NonNullable<
   Awaited<ReturnType<typeof deleteNode>>
 >;
 
-export type DeleteNodeMutationError = unknown;
+export type DeleteNodeMutationError = void;
 
-export const useDeleteNode = <TError = unknown, TContext = unknown>(
+export const useDeleteNode = <TError = void, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof deleteNode>>,
       TError,
-      void,
+      { params: DeleteNodeParams },
       TContext
     >;
   },
@@ -640,7 +644,7 @@ export const useDeleteNode = <TError = unknown, TContext = unknown>(
 ): UseMutationResult<
   Awaited<ReturnType<typeof deleteNode>>,
   TError,
-  void,
+  { params: DeleteNodeParams },
   TContext
 > => {
   const mutationOptions = getDeleteNodeMutationOptions(options);

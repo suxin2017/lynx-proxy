@@ -210,6 +210,18 @@ export const getGetNodeResponseMock = (
   ...overrideResponse,
 });
 
+export const getDeleteNodeResponseMock = (
+  overrideResponse: Partial<ResponseDataWrapperTupleUnit> = {},
+): ResponseDataWrapperTupleUnit => ({
+  code: faker.helpers.arrayElement(Object.values(ResponseCode)),
+  data: {},
+  message: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.string.alpha(20), null]),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
+
 export const getGetNodePathResponseMock = (
   overrideResponse: Partial<ResponseDataWrapperVecTreeNodeResponse> = {},
 ): ResponseDataWrapperVecTreeNodeResponse => ({
@@ -503,17 +515,26 @@ export const getGetNodeMockHandler = (
 
 export const getDeleteNodeMockHandler = (
   overrideResponse?:
-    | unknown
+    | ResponseDataWrapperTupleUnit
     | ((
         info: Parameters<Parameters<typeof http.delete>[1]>[0],
-      ) => Promise<unknown> | unknown),
+      ) =>
+        | Promise<ResponseDataWrapperTupleUnit>
+        | ResponseDataWrapperTupleUnit),
 ) => {
   return http.delete('*/api_debug_tree/tree/node', async (info) => {
     await delay(1000);
-    if (typeof overrideResponse === 'function') {
-      await overrideResponse(info);
-    }
-    return new HttpResponse(null, { status: 200 });
+
+    return new HttpResponse(
+      JSON.stringify(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === 'function'
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getDeleteNodeResponseMock(),
+      ),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
   });
 };
 

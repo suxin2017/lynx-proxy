@@ -1562,6 +1562,13 @@ export type GetNodeParams = {
   id: number;
 };
 
+export type DeleteNodeParams = {
+  /**
+   * 要删除的节点ID
+   */
+  id: number;
+};
+
 export type GetNodePathParams = {
   /**
    * 节点ID

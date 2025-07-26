@@ -280,12 +280,12 @@ async fn rename_node(
     delete,
     path = "/tree/node",
     tags = ["API Debug Tree"],
-    // params(DeleteNodeParams),
-    // responses(
-    //     (status = 200, description = "节点删除成功", body = EmptyOkResponse),
-    //     (status = 404, description = "节点不存在"),
-    //     (status = 500, description = "删除节点失败")
-    // )
+    params(DeleteNodeParams),
+    responses(
+        (status = 200, description = "节点删除成功", body = EmptyOkResponse),
+        (status = 404, description = "节点不存在"),
+        (status = 500, description = "删除节点失败")
+    )
 )]
 async fn delete_node(
     State(RouteState { db, .. }): State<RouteState>,
