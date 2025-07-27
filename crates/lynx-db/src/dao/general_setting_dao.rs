@@ -119,6 +119,16 @@ impl GeneralSettingDao {
 
         Ok(())
     }
+
+    pub async fn update_connect_type(&self, connect_type: ConnectType) -> Result<()> {
+        let setting = self.get_general_setting().await?;
+        let new_setting = GeneralSetting {
+            max_log_size: setting.max_log_size,
+            connect_type,
+            language: setting.language,
+        };
+        self.update_general_setting(new_setting).await
+    }
 }
 
 #[cfg(test)]

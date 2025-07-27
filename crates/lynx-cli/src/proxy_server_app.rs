@@ -10,19 +10,22 @@ use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
 use lynx_core::proxy_server::{ProxyServerBuilder, StaticDir};
 use sea_orm::ConnectOptions;
 use tracing::info;
+use lynx_core::{ proxy_server::ConnectType as ProxyConnectType};
 
 pub struct ProxyServerApp {
     port: u16,
     data_dir: Option<String>,
     daemon: bool,
+    connect_type: ProxyConnectType,
 }
 
 impl ProxyServerApp {
-    pub fn new(port: u16, data_dir: Option<String>, daemon: bool) -> Self {
+    pub fn new(port: u16, data_dir: Option<String>, daemon: bool, connect_type: ProxyConnectType) -> Self {
         Self {
             port,
             data_dir,
             daemon,
+            connect_type,
         }
     }
 
@@ -66,6 +69,7 @@ impl ProxyServerApp {
             .server_ca_manager(Arc::new(server_ca_manager))
             .db_config(db_connect)
             .static_dir(Arc::new(StaticDir(assets_dir)))
+            .connect_type(self.connect_type.clone())
             .build()
             .await?;
 
@@ -125,7 +129,7 @@ mod tests {
     use super::*;
 
     fn create_test_app(data_dir: Option<String>) -> ProxyServerApp {
-        ProxyServerApp::new(7788, data_dir, false)
+        ProxyServerApp::new(7788, data_dir, false, ProxyConnectType::ShortPoll)
     }
 
     #[tokio::test]

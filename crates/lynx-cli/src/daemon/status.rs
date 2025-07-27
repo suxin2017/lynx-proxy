@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::SystemTime;
 
+use crate::{ConnectType, LogLevel};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DaemonStatus {
     pub pid: u32,
@@ -10,6 +12,8 @@ pub struct DaemonStatus {
     pub start_time: SystemTime,
     pub data_dir: PathBuf,
     pub connection_url: Option<Vec<String>>,
+    pub log_level: LogLevel,
+    pub connect_type: ConnectType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -20,7 +24,7 @@ pub enum ProcessStatus {
 }
 
 impl DaemonStatus {
-    pub fn new(pid: u32, port: u16, data_dir: PathBuf) -> Self {
+    pub fn new(pid: u32, port: u16, data_dir: PathBuf, log_level: LogLevel, connect_type: ConnectType) -> Self {
         Self {
             pid,
             port,
@@ -28,6 +32,8 @@ impl DaemonStatus {
             start_time: SystemTime::now(),
             data_dir,
             connection_url: None,
+            log_level,
+            connect_type,
         }
     }
 

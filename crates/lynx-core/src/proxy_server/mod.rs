@@ -14,7 +14,10 @@ use hyper_util::service::TowerToHyperService;
 use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
 use lynx_db::dao::client_proxy_dao::ClientProxyDao;
-use lynx_db::dao::general_setting_dao::{ConnectType, GeneralSettingDao};
+use lynx_db::dao::general_setting_dao::GeneralSettingDao;
+
+// Re-export ConnectType for external use
+pub use lynx_db::dao::general_setting_dao::ConnectType;
 use lynx_db::migration::Migrator;
 use rcgen::Certificate;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
@@ -23,7 +26,7 @@ use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
-use tracing::{Instrument, debug, instrument, trace, trace_span, warn};
+use tracing::{debug, info, instrument, trace, trace_span, warn, Instrument};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::common::{HyperReq, is_https_tcp_stream};
@@ -68,6 +71,8 @@ pub struct ProxyServer {
 
     #[builder(setter(skip))]
     pub db_connect: Arc<DatabaseConnection>,
+
+    pub connect_type: ConnectType,
 }
 
 impl ProxyServerBuilder {
@@ -89,8 +94,16 @@ impl ProxyServerBuilder {
         let api_custom_certs = self.api_custom_certs.clone().flatten();
         let db_config = self.db_config.clone().expect("db_config is required");
         let db_con = Database::connect(db_config.clone()).await?;
-        
+
         Migrator::up(&db_con, None).await?;
+        let db_arc = Arc::new(db_con);
+
+        if let Some(connect_type) = &self.connect_type {
+            let general_setting_dao = GeneralSettingDao::new(db_arc.clone());
+            general_setting_dao
+                .update_connect_type(connect_type.clone())
+                .await?;
+        }
 
         Ok(ProxyServer {
             port: self.port.flatten(),
@@ -104,7 +117,8 @@ impl ProxyServerBuilder {
                 .server_ca_manager
                 .clone()
                 .expect("server_ca_manager is required"),
-            db_connect: Arc::new(db_con),
+            db_connect: db_arc,
+            connect_type: self.connect_type.as_ref().unwrap_or(&ConnectType::SSE).clone(),
         })
     }
 }
@@ -180,9 +194,9 @@ impl ProxyServer {
 
         let db_connect = self.db_connect.clone();
 
-       
         let general_setting_dao = GeneralSettingDao::new(db_connect.clone());
         if let Ok(setting) = general_setting_dao.get_general_setting().await {
+            info!("connect_type: {:?}", setting.connect_type);
             if matches!(setting.connect_type, ConnectType::ShortPoll) {
                 message_event_cannel.setup_short_poll(message_event_store.clone());
             }
