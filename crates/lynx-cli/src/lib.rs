@@ -11,14 +11,43 @@ pub mod proxy_server_app;
 
 pub use daemon::DaemonManager;
 pub use log_config::LogConfig;
+use lynx_core::{ proxy_server::ConnectType as ProxyConnectType};
+
 
 pub use proxy_server_app::ProxyServerApp;
+use serde::{Deserialize, Serialize};
 
 #[derive(Parser, Debug, Clone)]
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
     pub command: Commands,
+}
+
+#[derive(Debug, Clone,Serialize,Deserialize, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+pub enum ConnectType {
+    /// 短轮询
+    ShortPoll,
+    /// 服务器发送事件
+    SSE,
+}
+
+impl Display for ConnectType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConnectType::ShortPoll => write!(f, "short-poll"),
+            ConnectType::SSE => write!(f, "sse"),
+        }
+    }
+}
+
+impl From<ConnectType> for ProxyConnectType {
+    fn from(value: ConnectType) -> Self {
+        match value {
+            ConnectType::ShortPoll => ProxyConnectType::ShortPoll,
+            ConnectType::SSE => ProxyConnectType::SSE,
+        }
+    }
 }
 
 #[derive(ClapArgs, Debug, Clone)]
@@ -34,6 +63,13 @@ pub struct ServerArgs {
     /// - Windows: %APPDATA%\suxin2017\lynx\data
     #[arg(long)]
     pub data_dir: Option<String>,
+
+    /// Log level for the proxy server
+    #[arg(long, value_enum, default_value_t = LogLevel::Info)]
+    pub log_level: LogLevel,
+
+    #[arg(long, value_enum, default_value_t = ConnectType::SSE)]
+    pub connect_type: ConnectType,
 }
 
 #[derive(Subcommand, Debug, Clone)]
@@ -54,17 +90,13 @@ pub enum Commands {
         #[command(flatten)]
         server_args: ServerArgs,
 
-        /// Log level for the proxy server
-        #[arg(long, value_enum, default_value_t = LogLevel::Info)]
-        log_level: LogLevel,
-
         /// Run in daemon mode (hidden)
         #[arg(long, hide = true, default_value_t = false)]
         daemon: bool,
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Debug, Clone,Serialize,Deserialize, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum LogLevel {
     Silent,
     Info,
@@ -72,6 +104,7 @@ pub enum LogLevel {
     Debug,
     Trace,
 }
+
 
 impl Display for LogLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -10,12 +10,17 @@ async fn main() -> Result<()> {
 
     match args.command {
         Commands::Start {
-            server_args: ServerArgs { port, data_dir },
+            server_args: ServerArgs { port, data_dir,log_level,connect_type },
         } => {
             let resolved_data_dir = resolve_data_dir(data_dir)?;
             let manager = DaemonManager::new(None)?;
             manager
-                .start_daemon(port, Some(resolved_data_dir.to_string_lossy().to_string()))
+                .start_daemon(
+                    port,
+                    Some(resolved_data_dir.to_string_lossy().to_string()),
+                    log_level,
+                    connect_type,
+                )
                 .await?;
         }
         Commands::Stop => {
@@ -31,9 +36,8 @@ async fn main() -> Result<()> {
             manager.show_status()?;
         }
         Commands::Run {
-            server_args: ServerArgs { port, data_dir },
+            server_args: ServerArgs { port, data_dir, log_level,connect_type },
             daemon,
-            log_level,
         } => {
             let resolved_data_dir = resolve_data_dir(data_dir)?;
 
@@ -49,6 +53,7 @@ async fn main() -> Result<()> {
                 port,
                 Some(resolved_data_dir.to_string_lossy().to_string()),
                 daemon,
+                connect_type.into(),
             );
             app.start_server().await?;
 
