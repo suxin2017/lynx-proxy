@@ -7,7 +7,7 @@ import {
   MoreOutlined,
   PlusOutlined
 } from '@ant-design/icons';
-import { Button, Dropdown, Modal, Tooltip, message } from 'antd';
+import { Button, Dropdown, Modal, message } from 'antd';
 import React from 'react';
 import { useTreeUI } from '../context/TreeContext';
 import { useTreeStore } from '../store/treeStore';
@@ -71,9 +71,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node }) => {
         ) : (
           <ApiOutlined className="mr-2 text-orange-500 !text-orange-500 flex-shrink-0" />
         )}
-        <Tooltip title={node.name} placement="top">
-          <span className="truncate w-38">{highlightText(node.name || '', searchValue)}</span>
-        </Tooltip>
+          <span className="truncate w-full">{highlightText(node.name || '', searchValue)}</span>
       </div>
       <Dropdown
         menu={{ items: menuItems }}

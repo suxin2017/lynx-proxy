@@ -17,6 +17,7 @@ pub struct CreateApiDebugRequest {
     pub body: Option<String>,
     pub content_type: Option<String>,
     pub timeout: Option<i32>,
+    pub is_history: bool,
 }
 
 /// Request for updating an API debug entry
@@ -58,6 +59,7 @@ pub struct ApiDebugResponse {
     pub error_message: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    pub is_history: bool,
 }
 
 impl From<Model> for ApiDebugResponse {
@@ -82,6 +84,7 @@ impl From<Model> for ApiDebugResponse {
             error_message: model.error_message,
             created_at: model.created_at,
             updated_at: model.updated_at,
+            is_history: model.is_history,
         }
     }
 }
@@ -104,6 +107,7 @@ impl From<CreateApiDebugRequest> for ActiveModel {
             response_body: NotSet,
             response_time: NotSet,
             error_message: NotSet,
+            is_history: Set(req.is_history),
             created_at: Set(now),
             updated_at: Set(now),
         }
@@ -119,6 +123,7 @@ pub struct ApiDebugQueryParams {
     pub method: Option<HttpMethod>,
     pub status: Option<RequestStatus>,
     pub search: Option<String>,
+    pub is_history: Option<bool>,
 }
 
 /// Paginated response for API debug entries
@@ -251,6 +256,10 @@ impl ApiDebugDao {
             );
         }
 
+        if let Some(is_history) = params.is_history {
+            query = query.filter(api_debug::Column::IsHistory.eq(is_history));
+        }
+
         // Get total count
         let total = query.clone().count(self.db.as_ref()).await?;
 
@@ -322,9 +331,12 @@ impl ApiDebugDao {
         })
     }
 
-    /// Clear all API debug entries
+    /// Clear all API debug entries that are history records
     pub async fn clear_all(&self) -> Result<u64> {
-        let result = Entity::delete_many().exec(self.db.as_ref()).await?;
+        let result = Entity::delete_many()
+            .filter(api_debug::Column::IsHistory.eq(true))
+            .exec(self.db.as_ref())
+            .await?;
 
         Ok(result.rows_affected)
     }
@@ -367,6 +379,7 @@ mod tests {
             body: Some(r#"{"test": "data"}"#.to_string()),
             content_type: Some("application/json".to_string()),
             timeout: Some(30),
+            is_history: false,
         };
 
         let result = dao.create(req).await.unwrap();
@@ -388,6 +401,7 @@ mod tests {
             body: None,
             content_type: None,
             timeout: None,
+            is_history: false,
         };
 
         let created = dao.create(req).await.unwrap();
@@ -414,6 +428,7 @@ mod tests {
                 body: None,
                 content_type: None,
                 timeout: None,
+                is_history: false,
             };
             dao.create(req).await.unwrap();
         }
@@ -424,6 +439,7 @@ mod tests {
             method: None,
             status: None,
             search: None,
+            is_history: None,
         };
 
         let result = dao.list(params).await.unwrap();

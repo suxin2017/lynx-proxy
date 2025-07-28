@@ -1,6 +1,6 @@
 import { DownOutlined, FilterOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActiveTemplatesTags } from './ActiveTemplatesTags';
 import { useFilterTemplate } from './context';
 import { FilterTemplateModal } from './FilterTemplateModal';
@@ -12,7 +12,7 @@ const FilterTemplateContent: React.FC = () => {
   const handleMenuClick: MenuProps['onClick'] = ({ key, domEvent }) => {
     // 阻止默认行为，防止下拉框关闭
     domEvent.stopPropagation();
-    
+
     if (key === 'manage') {
       openModal();
       setDropdownOpen(false)
@@ -26,6 +26,17 @@ const FilterTemplateContent: React.FC = () => {
       // 切换模板状态时保持下拉框打开
     }
   };
+
+  useEffect(() => {
+    function cloneDropdownOpen() {
+      setDropdownOpen(false);
+    }
+
+    document.body.addEventListener("click", cloneDropdownOpen);
+    return () => {
+      document.body.removeEventListener("click", cloneDropdownOpen);
+    }
+  }, [dropdownOpen])
 
   const menuItems: MenuProps['items'] = [
     {
@@ -47,9 +58,8 @@ const FilterTemplateContent: React.FC = () => {
             <span className={template.enabled ? '' : 'text-gray-400'}>
               {template.name}
             </span>
-            <span className={`ml-2 text-xs ${
-              template.enabled ? 'text-green-600' : 'text-gray-400'
-            }`}>
+            <span className={`ml-2 text-xs ${template.enabled ? 'text-green-600' : 'text-gray-400'
+              }`}>
               {template.enabled ? '已开启' : '已关闭'}
             </span>
           </div>
@@ -67,11 +77,11 @@ const FilterTemplateContent: React.FC = () => {
           selectable: false,
         }}
         open={dropdownOpen}
-        onOpenChange={(open)=>{
-          setDropdownOpen(open);
-        }}
       >
-        <Button onClick={() => setDropdownOpen(true)} className="flex items-center">
+        <Button onClick={(e) => {
+          e.stopPropagation();
+          setDropdownOpen(true);
+        }} className="flex items-center">
           <FilterOutlined className="mr-1" />
           过滤模板
           <DownOutlined className="ml-1" />
