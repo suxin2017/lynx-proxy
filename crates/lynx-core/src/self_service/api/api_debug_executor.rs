@@ -105,6 +105,7 @@ async fn execute_api_request(
         body: request.body.clone(),
         content_type: actual_content_type, // Use the actual content-type from headers
         timeout: request.timeout.map(|t| t as i32),
+        is_history: true,
     };
 
     let debug_entry = dao.create(create_request).await.map_err(|e| {
