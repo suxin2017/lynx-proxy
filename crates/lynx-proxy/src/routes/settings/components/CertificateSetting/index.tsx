@@ -1,23 +1,18 @@
-import { Alert, Button, Input, QRCode, Space, Typography, message } from 'antd';
-import { CommonCard } from '../CommonCard';
-import {
-  RiCheckboxCircleLine,
-  RiCloseCircleLine,
-  RiFileCopyLine,
-  RiShieldLine,
-} from '@remixicon/react';
-import { useGetHealth } from '@/services/generated/default/default';
+import { AXIOS_INSTANCE } from '@/services/customInstance';
 import {
   getDownloadCertificateQueryKey,
   useGetCertPath,
 } from '@/services/generated/certificate/certificate';
-import { CertInstallDesc } from './CertInstallDesc';
-import { AXIOS_INSTANCE } from '@/services/customInstance';
+import {
+  RiFileCopyLine
+} from '@remixicon/react';
+import { Button, Input, QRCode, Space, Typography, message } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { CommonCard } from '../CommonCard';
+import { CertInstallDesc } from './CertInstallDesc';
 
 export const CertificatesSetting: React.FC = () => {
   const { t } = useTranslation();
-  const { data, refetch } = useGetHealth();
   const { data: certPathData } = useGetCertPath();
 
   return (
@@ -27,41 +22,6 @@ export const CertificatesSetting: React.FC = () => {
       subTitle={t('settings.certificate.subtitle')}
     >
       <div className="flex flex-1 flex-col">
-        {data === 'ok' ? (
-          <Alert
-            type="success"
-            className="mt-3"
-            icon={<RiCheckboxCircleLine className="h-6" size={18} />}
-            description={
-              <>
-                <Typography.Title level={4} className="m-0">
-                  {t('settings.certificate.installed.title')}
-                </Typography.Title>
-                <Typography.Text strong>
-                  {t('settings.certificate.installed.description')}
-                </Typography.Text>
-              </>
-            }
-            showIcon
-          />
-        ) : (
-          <Alert
-            type="error"
-            className="mt-3"
-            icon={<RiCloseCircleLine className="h-6" size={18} />}
-            description={
-              <>
-                <Typography.Title level={4} className="m-0">
-                  {t('settings.certificate.notInstalled.title')}
-                </Typography.Title>
-                <Typography.Text strong>
-                  {t('settings.certificate.notInstalled.description')}
-                </Typography.Text>
-              </>
-            }
-            showIcon
-          />
-        )}
         <Typography.Title level={5} className="mt-3">
           {t('settings.certificate.certPath')}
         </Typography.Title>
@@ -76,14 +36,6 @@ export const CertificatesSetting: React.FC = () => {
               }
             }}
           />
-          <Button
-            onClick={() => {
-              refetch();
-            }}
-            icon={<RiShieldLine size={16} />}
-          >
-            {t('settings.certificate.checkStatus')}
-          </Button>
         </div>
         <Typography.Title level={5} className="mt-3">
           {t('settings.certificate.installCert')}
