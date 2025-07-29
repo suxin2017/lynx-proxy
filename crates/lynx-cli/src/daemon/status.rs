@@ -14,6 +14,7 @@ pub struct DaemonStatus {
     pub connection_url: Option<Vec<String>>,
     pub log_level: LogLevel,
     pub connect_type: ConnectType,
+    pub local_only: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -24,7 +25,7 @@ pub enum ProcessStatus {
 }
 
 impl DaemonStatus {
-    pub fn new(pid: u32, port: u16, data_dir: PathBuf, log_level: LogLevel, connect_type: ConnectType) -> Self {
+    pub fn new(pid: u32, port: u16, data_dir: PathBuf, log_level: LogLevel, connect_type: ConnectType, local_only: bool) -> Self {
         Self {
             pid,
             port,
@@ -34,6 +35,7 @@ impl DaemonStatus {
             connection_url: None,
             log_level,
             connect_type,
+            local_only,
         }
     }
 

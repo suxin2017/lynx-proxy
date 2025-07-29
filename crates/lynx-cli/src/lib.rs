@@ -70,6 +70,10 @@ pub struct ServerArgs {
 
     #[arg(long, value_enum, default_value_t = ConnectType::SSE)]
     pub connect_type: ConnectType,
+
+    /// Enable local only mode (only bind to loopback addresses)
+    #[arg(long, default_value_t = false)]
+    pub local_only: bool,
 }
 
 #[derive(Subcommand, Debug, Clone)]
