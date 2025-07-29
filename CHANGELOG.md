@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.3] - 2025-07-29
+
+### 🚀 Features
+
+- *(cli)* Support localhost only mode
+
 ## [0.4.2] - 2025-07-29
 
 ### 🐛 Bug Fixes
