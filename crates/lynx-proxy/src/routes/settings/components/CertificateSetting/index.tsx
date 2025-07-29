@@ -10,10 +10,13 @@ import { Button, Input, QRCode, Space, Typography, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CommonCard } from '../CommonCard';
 import { CertInstallDesc } from './CertInstallDesc';
+import { useGetBaseInfo } from '@/services/generated/system/system';
 
 export const CertificatesSetting: React.FC = () => {
   const { t } = useTranslation();
   const { data: certPathData } = useGetCertPath();
+  const { data } = useGetBaseInfo();
+
 
   return (
     <CommonCard
@@ -21,7 +24,7 @@ export const CertificatesSetting: React.FC = () => {
       title={t('settings.certificate.title')}
       subTitle={t('settings.certificate.subtitle')}
     >
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col w-full">
         <Typography.Title level={5} className="mt-3">
           {t('settings.certificate.certPath')}
         </Typography.Title>
@@ -40,20 +43,33 @@ export const CertificatesSetting: React.FC = () => {
         <Typography.Title level={5} className="mt-3">
           {t('settings.certificate.installCert')}
         </Typography.Title>
-        <Space size={8} direction="vertical" className="flex  items-center">
-          <QRCode
-            size={256}
-            value={AXIOS_INSTANCE.getUri() + getDownloadCertificateQueryKey()[0]}
-          />
-          <Button type="link">
-            <a
-              href={AXIOS_INSTANCE.getUri() + getDownloadCertificateQueryKey()[0]}
-              download
-            >
-              {t('settings.certificate.downloadCert')}
-            </a>
-          </Button>
-        </Space>
+
+        <div className='flex w-full overflow-auto gap-4 justify-between'>
+
+          {data?.map((item) => {
+            const certUrl = "http://" + item + AXIOS_INSTANCE.getUri() + getDownloadCertificateQueryKey()[0];
+
+            return (
+              <Space size={8} direction="vertical" className="flex items-center">
+                <QRCode
+                  size={256}
+                  value={certUrl}
+                />
+                <Button type="link">
+                  <a
+                    href={certUrl}
+                    download
+                  >
+                    {t('settings.certificate.downloadCert')}
+                  </a>
+                </Button>
+                <a href={certUrl}>
+                  {certUrl}
+                </a>
+              </Space>
+            )
+          })}
+        </div>
         <CertInstallDesc />
       </div>
     </CommonCard>
