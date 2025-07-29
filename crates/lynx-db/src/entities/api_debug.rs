@@ -98,6 +98,8 @@ pub struct Model {
     /// Error message if request failed
     #[sea_orm(column_type = "Text", nullable)]
     pub error_message: Option<String>,
+    /// Is history request
+    pub is_history: bool,
     #[serde(skip)]
     pub created_at: i64,
     #[serde(skip)]
@@ -158,6 +160,7 @@ impl Model {
             response_body: None,
             response_time: None,
             error_message: None,
+            is_history: true,
             created_at: now,
             updated_at: now,
         }

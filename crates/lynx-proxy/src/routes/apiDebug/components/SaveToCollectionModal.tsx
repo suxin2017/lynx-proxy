@@ -108,6 +108,7 @@ const SaveToCollectionModal: React.FC<SaveToCollectionModalProps> = ({
         body: requestData.body || undefined,
         contentType: headersObject['Content-Type'] || headersObject['content-type'] || undefined,
         timeout: 30,
+        isHistory: false,
       };
 
       const debugEntryResponse = await createDebugEntryMutation.mutateAsync({
@@ -185,10 +186,13 @@ const SaveToCollectionModal: React.FC<SaveToCollectionModalProps> = ({
         <Form.Item
           label="保存位置"
           name="parentId"
-          help="选择要保存到的文件夹，不选择则保存到根目录"
+          rules={[
+            { required: true, message: '请选择保存位置' },
+          ]}
+          help="选择要保存到的文件夹"
         >
           <TreeSelect
-            placeholder="选择文件夹（可选）"
+            placeholder="请选择文件夹"
             allowClear
             treeDefaultExpandAll
             loading={treeLoading}

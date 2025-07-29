@@ -23,6 +23,7 @@ async fn test_create_and_get_api_debug_entry() -> Result<()> {
         body: None,
         content_type: None,
         timeout: Some(30),
+        is_history: false,
     };
 
     let response = client
@@ -86,6 +87,7 @@ async fn test_update_and_delete_api_debug_entry() -> Result<()> {
         body: None,
         content_type: None,
         timeout: Some(30),
+        is_history: false,
     };
 
     let create_response = client

@@ -30,6 +30,8 @@ pub struct DebugQueryParams {
     pub status: Option<RequestStatus>,
     /// Search in name and URL
     pub search: Option<String>,
+    /// Filter by is_history
+    pub is_history: Option<bool>,
 }
 
 #[utoipa::path(
@@ -80,6 +82,7 @@ async fn list_debug_entries(
         method: params.method,
         status: params.status,
         search: params.search,
+        is_history: params.is_history,
     };
 
     let result = dao.list(dao_params).await.map_err(|e| {

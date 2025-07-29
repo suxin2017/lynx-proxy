@@ -82,7 +82,7 @@ export function RequestHistory({
     refetch,
     error,
   } = useListDebugEntries(
-    { page, perPage: pageSize },
+    { page, perPage: pageSize,isHistory:true },
     {
       query: {
         enabled: true,

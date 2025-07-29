@@ -45,6 +45,7 @@ export const getListDebugEntriesResponseMock = (
         undefined,
       ]),
       id: faker.number.int({ min: undefined, max: undefined }),
+      isHistory: faker.datatype.boolean(),
       method: faker.helpers.arrayElement(Object.values(HttpMethod)),
       name: faker.string.alpha(20),
       responseBody: faker.helpers.arrayElement([
@@ -115,6 +116,7 @@ export const getCreateDebugEntryResponseMock = (
       undefined,
     ]),
     id: faker.number.int({ min: undefined, max: undefined }),
+    isHistory: faker.datatype.boolean(),
     method: faker.helpers.arrayElement(Object.values(HttpMethod)),
     name: faker.string.alpha(20),
     responseBody: faker.helpers.arrayElement([
@@ -209,6 +211,7 @@ export const getGetDebugEntryResponseMock = (
       undefined,
     ]),
     id: faker.number.int({ min: undefined, max: undefined }),
+    isHistory: faker.datatype.boolean(),
     method: faker.helpers.arrayElement(Object.values(HttpMethod)),
     name: faker.string.alpha(20),
     responseBody: faker.helpers.arrayElement([
@@ -274,6 +277,7 @@ export const getUpdateDebugEntryResponseMock = (
       undefined,
     ]),
     id: faker.number.int({ min: undefined, max: undefined }),
+    isHistory: faker.datatype.boolean(),
     method: faker.helpers.arrayElement(Object.values(HttpMethod)),
     name: faker.string.alpha(20),
     responseBody: faker.helpers.arrayElement([

@@ -1,6 +1,7 @@
 use crate::entities::api_debug_tree::{self, ActiveModel, Entity, Model, NodeType};
 use anyhow::Result;
 use sea_orm::*;
+use sea_orm::prelude::Expr;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use utoipa::ToSchema;
@@ -205,28 +206,46 @@ impl ApiDebugTreeDao {
                 }
             }
             
-            let mut active_model: ActiveModel = model.into();
+            let original_parent_id = model.parent_id;
+            let original_sort_order = model.sort_order;
+            let target_parent_id = req.target_parent_id;
             
-            // 更新父节点
-            if req.target_parent_id != *active_model.parent_id.as_ref() {
-                active_model.parent_id = Set(req.target_parent_id);
-                
-                // 如果没有指定新的排序，则放到目标父节点的最后
-                if req.new_sort_order.is_none() {
-                    let max_order = self.get_max_sort_order(req.target_parent_id).await?;
-                    active_model.sort_order = Set(max_order + 1);
+            // 开启事务处理排序逻辑
+            let txn = self.db.begin().await?;
+            
+            // 判断是否跨父节点移动
+            let is_cross_parent_move = original_parent_id != target_parent_id;
+            
+            if is_cross_parent_move {
+                // 跨父节点移动
+                self.handle_cross_parent_move(
+                    &txn, 
+                    id, 
+                    original_parent_id, 
+                    original_sort_order,
+                    target_parent_id, 
+                    req.new_sort_order
+                ).await?;
+            } else {
+                // 同父节点内移动
+                if let Some(new_sort_order) = req.new_sort_order {
+                    if new_sort_order != original_sort_order {
+                        self.handle_same_parent_move(
+                            &txn, 
+                            id, 
+                            original_parent_id, 
+                            original_sort_order, 
+                            new_sort_order
+                        ).await?;
+                    }
                 }
             }
             
-            // 更新排序
-            if let Some(new_order) = req.new_sort_order {
-                active_model.sort_order = Set(new_order);
-            }
+            txn.commit().await?;
             
-            active_model.updated_at = Set(chrono::Utc::now().timestamp());
-            
-            let updated_model = Entity::update(active_model).exec(self.db.as_ref()).await?;
-            Ok(Some(updated_model.into()))
+            // 返回更新后的节点
+            let updated_model = Entity::find_by_id(id).one(self.db.as_ref()).await?;
+            Ok(updated_model.map(|m| m.into()))
         } else {
             Ok(None)
         }
@@ -281,6 +300,203 @@ impl ApiDebugTreeDao {
         Ok(result.rows_affected > 0)
     }
 
+    /// 处理跨父节点移动
+    async fn handle_cross_parent_move(
+        &self,
+        txn: &DatabaseTransaction,
+        node_id: i32,
+        original_parent_id: Option<i32>,
+        original_sort_order: i32,
+        target_parent_id: Option<i32>,
+        new_sort_order: Option<i32>,
+    ) -> Result<()> {
+        // 1. 在原父节点中移除该节点，调整后续节点的排序
+        self.adjust_sort_order_after_removal(txn, original_parent_id, original_sort_order).await?;
+        
+        // 2. 确定在目标父节点中的排序位置
+        let target_sort_order = if let Some(order) = new_sort_order {
+            // 在目标父节点中为新节点腾出位置
+            self.adjust_sort_order_for_insertion(txn, target_parent_id, order).await?;
+            order
+        } else {
+            // 如果没有指定排序，则放到目标父节点的最后
+            self.get_max_sort_order_in_txn(txn, target_parent_id).await? + 1
+        };
+        
+        // 3. 更新节点的父节点和排序
+        let active_model = ActiveModel {
+            id: Set(node_id),
+            parent_id: Set(target_parent_id),
+            sort_order: Set(target_sort_order),
+            updated_at: Set(chrono::Utc::now().timestamp()),
+            ..Default::default()
+        };
+        
+        Entity::update(active_model).exec(txn).await?;
+        Ok(())
+    }
+    
+    /// 处理同父节点内移动
+    async fn handle_same_parent_move(
+        &self,
+        txn: &DatabaseTransaction,
+        node_id: i32,
+        parent_id: Option<i32>,
+        original_sort_order: i32,
+        new_sort_order: i32,
+    ) -> Result<()> {
+        if original_sort_order == new_sort_order {
+            return Ok(());
+        }
+        
+        if original_sort_order < new_sort_order {
+            // 向后移动：将原位置到新位置之间的节点向前移动
+            self.shift_nodes_forward(txn, parent_id, original_sort_order + 1, new_sort_order).await?;
+        } else {
+            // 向前移动：将新位置到原位置之间的节点向后移动
+            self.shift_nodes_backward(txn, parent_id, new_sort_order, original_sort_order - 1).await?;
+        }
+        
+        // 更新目标节点的排序
+        let active_model = ActiveModel {
+            id: Set(node_id),
+            sort_order: Set(new_sort_order),
+            updated_at: Set(chrono::Utc::now().timestamp()),
+            ..Default::default()
+        };
+        
+        Entity::update(active_model).exec(txn).await?;
+        Ok(())
+    }
+    
+    /// 在移除节点后调整排序
+    async fn adjust_sort_order_after_removal(
+        &self,
+        txn: &DatabaseTransaction,
+        parent_id: Option<i32>,
+        removed_sort_order: i32,
+    ) -> Result<()> {
+        let mut query = Entity::update_many();
+        
+        if let Some(pid) = parent_id {
+            query = query.filter(api_debug_tree::Column::ParentId.eq(pid));
+        } else {
+            query = query.filter(api_debug_tree::Column::ParentId.is_null());
+        }
+        
+        query
+            .filter(api_debug_tree::Column::SortOrder.gt(removed_sort_order))
+            .col_expr(api_debug_tree::Column::SortOrder, Expr::col(api_debug_tree::Column::SortOrder).sub(1))
+            .col_expr(api_debug_tree::Column::UpdatedAt, Expr::value(chrono::Utc::now().timestamp()))
+            .exec(txn)
+            .await?;
+        
+        Ok(())
+    }
+    
+    /// 为插入节点调整排序
+    async fn adjust_sort_order_for_insertion(
+        &self,
+        txn: &DatabaseTransaction,
+        parent_id: Option<i32>,
+        insert_position: i32,
+    ) -> Result<()> {
+        let mut query = Entity::update_many();
+        
+        if let Some(pid) = parent_id {
+            query = query.filter(api_debug_tree::Column::ParentId.eq(pid));
+        } else {
+            query = query.filter(api_debug_tree::Column::ParentId.is_null());
+        }
+        
+        query
+            .filter(api_debug_tree::Column::SortOrder.gte(insert_position))
+            .col_expr(api_debug_tree::Column::SortOrder, Expr::col(api_debug_tree::Column::SortOrder).add(1))
+            .col_expr(api_debug_tree::Column::UpdatedAt, Expr::value(chrono::Utc::now().timestamp()))
+            .exec(txn)
+            .await?;
+        
+        Ok(())
+    }
+    
+    /// 将节点向前移动（排序值减1）
+    async fn shift_nodes_forward(
+        &self,
+        txn: &DatabaseTransaction,
+        parent_id: Option<i32>,
+        start_order: i32,
+        end_order: i32,
+    ) -> Result<()> {
+        let mut query = Entity::update_many();
+        
+        if let Some(pid) = parent_id {
+            query = query.filter(api_debug_tree::Column::ParentId.eq(pid));
+        } else {
+            query = query.filter(api_debug_tree::Column::ParentId.is_null());
+        }
+        
+        query
+            .filter(api_debug_tree::Column::SortOrder.between(start_order, end_order))
+            .col_expr(api_debug_tree::Column::SortOrder, Expr::col(api_debug_tree::Column::SortOrder).sub(1))
+            .col_expr(api_debug_tree::Column::UpdatedAt, Expr::value(chrono::Utc::now().timestamp()))
+            .exec(txn)
+            .await?;
+        
+        Ok(())
+    }
+    
+    /// 将节点向后移动（排序值加1）
+    async fn shift_nodes_backward(
+        &self,
+        txn: &DatabaseTransaction,
+        parent_id: Option<i32>,
+        start_order: i32,
+        end_order: i32,
+    ) -> Result<()> {
+        let mut query = Entity::update_many();
+        
+        if let Some(pid) = parent_id {
+            query = query.filter(api_debug_tree::Column::ParentId.eq(pid));
+        } else {
+            query = query.filter(api_debug_tree::Column::ParentId.is_null());
+        }
+        
+        query
+            .filter(api_debug_tree::Column::SortOrder.between(start_order, end_order))
+            .col_expr(api_debug_tree::Column::SortOrder, Expr::col(api_debug_tree::Column::SortOrder).add(1))
+            .col_expr(api_debug_tree::Column::UpdatedAt, Expr::value(chrono::Utc::now().timestamp()))
+            .exec(txn)
+            .await?;
+        
+        Ok(())
+    }
+    
+    /// 在事务中获取指定父节点下的最大排序值
+    async fn get_max_sort_order_in_txn(
+        &self,
+        txn: &DatabaseTransaction,
+        parent_id: Option<i32>,
+    ) -> Result<i32> {
+        let mut query = Entity::find();
+        
+        if let Some(pid) = parent_id {
+            query = query.filter(api_debug_tree::Column::ParentId.eq(pid));
+        } else {
+            query = query.filter(api_debug_tree::Column::ParentId.is_null());
+        }
+        
+        let max_order = query
+            .select_only()
+            .column_as(api_debug_tree::Column::SortOrder.max(), "max_order")
+            .into_tuple::<Option<i32>>()
+            .one(txn)
+            .await?
+            .flatten()
+            .unwrap_or(0);
+            
+        Ok(max_order)
+    }
+    
     /// 调整同级节点排序
     pub async fn reorder_nodes(&self, parent_id: Option<i32>, node_orders: Vec<(i32, i32)>) -> Result<()> {
         let txn = self.db.begin().await?;
@@ -387,7 +603,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_move_node() {
+    async fn test_move_node_cross_parent() {
         let db = Arc::new(setup_test_db().await);
         let dao = ApiDebugTreeDao::new(db);
 
@@ -402,22 +618,125 @@ mod tests {
             parent_id: None,
         }).await.unwrap();
 
-        // 在文件夹1中创建一个请求
-        let request = dao.create_request_node(CreateRequestNodeRequest {
-            name: "测试请求".to_string(),
+        // 在文件夹1中创建多个请求
+        let _request1 = dao.create_request_node(CreateRequestNodeRequest {
+            name: "请求1".to_string(),
             parent_id: Some(folder1.id),
             api_debug_id: 456,
         }).await.unwrap();
+        
+        let request2 = dao.create_request_node(CreateRequestNodeRequest {
+            name: "请求2".to_string(),
+            parent_id: Some(folder1.id),
+            api_debug_id: 457,
+        }).await.unwrap();
+        
+        let _request3 = dao.create_request_node(CreateRequestNodeRequest {
+            name: "请求3".to_string(),
+            parent_id: Some(folder1.id),
+            api_debug_id: 458,
+        }).await.unwrap();
 
-        // 将请求移动到文件夹2
+        // 将请求2移动到文件夹2
         let move_req = MoveNodeRequest {
             target_parent_id: Some(folder2.id),
             new_sort_order: Some(1),
         };
 
-        let moved_node = dao.move_node(request.id, move_req).await.unwrap().unwrap();
+        let moved_node = dao.move_node(request2.id, move_req).await.unwrap().unwrap();
         assert_eq!(moved_node.parent_id, Some(folder2.id));
         assert_eq!(moved_node.sort_order, 1);
+        
+        // 验证原文件夹中剩余节点的排序
+        let folder1_children = dao.get_children(Some(folder1.id)).await.unwrap();
+        assert_eq!(folder1_children.len(), 2);
+        assert_eq!(folder1_children[0].name, "请求1");
+        assert_eq!(folder1_children[0].sort_order, 1);
+        assert_eq!(folder1_children[1].name, "请求3");
+        assert_eq!(folder1_children[1].sort_order, 2);
+        
+        // 验证目标文件夹中的节点
+        let folder2_children = dao.get_children(Some(folder2.id)).await.unwrap();
+        assert_eq!(folder2_children.len(), 1);
+        assert_eq!(folder2_children[0].name, "请求2");
+        assert_eq!(folder2_children[0].sort_order, 1);
+    }
+    
+    #[tokio::test]
+    async fn test_move_node_same_parent() {
+        let db = Arc::new(setup_test_db().await);
+        let dao = ApiDebugTreeDao::new(db);
+
+        // 创建一个文件夹
+        let folder = dao.create_folder(CreateFolderRequest {
+            name: "测试文件夹".to_string(),
+            parent_id: None,
+        }).await.unwrap();
+
+        // 在文件夹中创建多个请求
+        let _request1 = dao.create_request_node(CreateRequestNodeRequest {
+            name: "请求1".to_string(),
+            parent_id: Some(folder.id),
+            api_debug_id: 456,
+        }).await.unwrap();
+        
+        let request2 = dao.create_request_node(CreateRequestNodeRequest {
+            name: "请求2".to_string(),
+            parent_id: Some(folder.id),
+            api_debug_id: 457,
+        }).await.unwrap();
+        
+        let _request3 = dao.create_request_node(CreateRequestNodeRequest {
+            name: "请求3".to_string(),
+            parent_id: Some(folder.id),
+            api_debug_id: 458,
+        }).await.unwrap();
+        
+        let request4 = dao.create_request_node(CreateRequestNodeRequest {
+            name: "请求4".to_string(),
+            parent_id: Some(folder.id),
+            api_debug_id: 459,
+        }).await.unwrap();
+
+        // 将请求2从位置2移动到位置4（向后移动）
+        let move_req = MoveNodeRequest {
+            target_parent_id: Some(folder.id),
+            new_sort_order: Some(4),
+        };
+
+        dao.move_node(request2.id, move_req).await.unwrap();
+        
+        // 验证移动后的排序
+        let children = dao.get_children(Some(folder.id)).await.unwrap();
+        assert_eq!(children.len(), 4);
+        assert_eq!(children[0].name, "请求1");
+        assert_eq!(children[0].sort_order, 1);
+        assert_eq!(children[1].name, "请求3");
+        assert_eq!(children[1].sort_order, 2);
+        assert_eq!(children[2].name, "请求4");
+        assert_eq!(children[2].sort_order, 3);
+        assert_eq!(children[3].name, "请求2");
+        assert_eq!(children[3].sort_order, 4);
+        
+        // 将请求4从位置3移动到位置1（向前移动）
+        let move_req2 = MoveNodeRequest {
+            target_parent_id: Some(folder.id),
+            new_sort_order: Some(1),
+        };
+
+        dao.move_node(request4.id, move_req2).await.unwrap();
+        
+        // 验证移动后的排序
+        let children2 = dao.get_children(Some(folder.id)).await.unwrap();
+        assert_eq!(children2.len(), 4);
+        assert_eq!(children2[0].name, "请求4");
+        assert_eq!(children2[0].sort_order, 1);
+        assert_eq!(children2[1].name, "请求1");
+        assert_eq!(children2[1].sort_order, 2);
+        assert_eq!(children2[2].name, "请求3");
+        assert_eq!(children2[2].sort_order, 3);
+        assert_eq!(children2[3].name, "请求2");
+        assert_eq!(children2[3].sort_order, 4);
     }
 
     #[tokio::test]
@@ -658,6 +977,7 @@ mod tests {
             body: Some(r#"{"username": "test@example.com", "password": "password123"}"#.to_string()),
             content_type: Some("application/json".to_string()),
             timeout: Some(30),
+            is_history: false,
         }).await.unwrap();
 
         let register_api = api_debug_dao.create(CreateApiDebugRequest {
@@ -670,6 +990,7 @@ mod tests {
             body: Some(r#"{"username": "newuser@example.com", "password": "newpass123", "email": "newuser@example.com"}"#.to_string()),
             content_type: Some("application/json".to_string()),
             timeout: Some(30),
+            is_history: false,
         }).await.unwrap();
 
         let get_profile_api = api_debug_dao.create(CreateApiDebugRequest {
@@ -683,6 +1004,7 @@ mod tests {
             body: None,
             content_type: None,
             timeout: Some(15),
+            is_history: false,
         }).await.unwrap();
 
         let update_profile_api = api_debug_dao.create(CreateApiDebugRequest {
@@ -696,6 +1018,7 @@ mod tests {
             body: Some(r#"{"nickname": "新昵称", "avatar": "https://example.com/avatar.jpg"}"#.to_string()),
             content_type: Some("application/json".to_string()),
             timeout: Some(30),
+            is_history: false,
         }).await.unwrap();
 
         // 将API debug记录关联到树节点

@@ -1,9 +1,9 @@
-import constate from 'constate';
-import { useState, useCallback, useEffect } from 'react';
+import { useCreateFolder, useDeleteNode, useGetTree, useRenameNode } from '@/services/generated/api-debug-tree/api-debug-tree';
 import { TreeNodeResponse } from '@/services/generated/utoipaAxum.schemas';
-import { useGetTree, useCreateFolder, useMoveNode, useRenameNode, useDeleteNode } from '@/services/generated/api-debug-tree/api-debug-tree';
-import { message } from 'antd';
 import { useQueryClient } from '@tanstack/react-query';
+import { message } from 'antd';
+import constate from 'constate';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface TreeNode extends TreeNodeResponse {
   children?: TreeNode[];
@@ -21,7 +21,7 @@ interface TreeState {
 
 function useTreeState() {
   const queryClient = useQueryClient();
-  
+
   const [state, setState] = useState<TreeState>({
     selectedKeys: [],
     expandedKeys: [],
@@ -42,7 +42,7 @@ function useTreeState() {
         .filter(node => node.nodeType === 'folder')
         .map(node => node.id?.toString())
         .filter(Boolean) as string[];
-      
+
       if (firstLevelKeys.length > 0) {
         setState(prev => ({ ...prev, expandedKeys: firstLevelKeys }));
       }
@@ -55,13 +55,13 @@ function useTreeState() {
       onSuccess: () => {
         message.success('文件夹创建成功');
         queryClient.invalidateQueries({ queryKey: ['/api_debug_tree/tree'] });
-        
+
         // 如果有父节点，自动展开父节点
         if (state.createNodeParentId) {
           setState(prev => ({
             ...prev,
-            expandedKeys: prev.expandedKeys.includes(state.createNodeParentId!) 
-              ? prev.expandedKeys 
+            expandedKeys: prev.expandedKeys.includes(state.createNodeParentId!)
+              ? prev.expandedKeys
               : [...prev.expandedKeys, state.createNodeParentId!],
             isCreatingNode: false,
             createNodeParentId: null,
@@ -77,18 +77,7 @@ function useTreeState() {
     },
   });
 
-  // 移动节点
-  const moveNodeMutation = useMoveNode({
-    mutation: {
-      onSuccess: () => {
-        // 移动成功不显示提示
-        queryClient.invalidateQueries({ queryKey: ['/api_debug_tree/tree'] });
-      },
-      onError: () => {
-        message.error('节点移动失败');
-      },
-    },
-  });
+
 
   // 重命名节点
   const renameNodeMutation = useRenameNode({
@@ -167,16 +156,7 @@ function useTreeState() {
     });
   }, [createFolderMutation]);
 
-  // 移动节点
-  const moveNode = useCallback((nodeId: number, targetParentId?: number, newSortOrder?: number) => {
-    moveNodeMutation.mutate({
-      data: {
-        targetParentId: targetParentId || null,
-        newSortOrder: newSortOrder || null,
-      },
-      params: { id: nodeId },
-    });
-  }, [moveNodeMutation]);
+
 
   // 重命名节点
   const renameNode = useCallback((nodeId: number, name: string) => {
@@ -204,7 +184,7 @@ function useTreeState() {
     treeData: treeData?.data?.nodes || [],
     isLoading,
     error,
-    
+
     // 操作方法
     selectNode,
     expandNode,
@@ -213,15 +193,13 @@ function useTreeState() {
     startCreateNode,
     cancelCreateNode,
     createFolder,
-    moveNode,
     renameNode,
     deleteNode,
     setDragOverNode,
     refetch,
-    
+
     // 加载状态
     isCreatingFolder: createFolderMutation.isPending,
-    isMovingNode: moveNodeMutation.isPending,
     isRenamingNode: renameNodeMutation.isPending,
     isDeletingNode: deleteNodeMutation.isPending,
   };

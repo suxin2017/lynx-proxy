@@ -35,7 +35,7 @@ export const Detail: React.FC<IDetailProps> = (_props) => {
 
   return (
     <div className="flex flex-1 flex-col w-full">
-      <div className='w-10'>
+      <div>
         <Segmented options={initialItems.map(item => ({ label: item.label, value: item.key }))} onChange={(v) => {
           setSelectKey(v)
         }} />
