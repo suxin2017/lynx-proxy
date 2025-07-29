@@ -43,7 +43,7 @@ impl DaemonManager {
         })
     }
 
-    pub async fn start_daemon(&self, port: u16, data_dir: Option<String>,log_level: LogLevel,connect_type: ConnectType) -> Result<()> {
+    pub async fn start_daemon(&self, port: u16, data_dir: Option<String>,log_level: LogLevel,connect_type: ConnectType, local_only: bool) -> Result<()> {
         // Check if daemon is already running
         if let Ok(status) = self.get_status() {
             if status.is_running() && self.is_process_running(status.pid) {
@@ -62,7 +62,7 @@ impl DaemonManager {
         };
 
         // Start the daemon process
-        let status = self.spawn_daemon_process(port, data_dir.clone(), log_level, connect_type).await?;
+        let status = self.spawn_daemon_process(port, data_dir.clone(), log_level, connect_type, local_only).await?;
 
         // Save status
         self.save_status(&status)?;
@@ -124,6 +124,7 @@ impl DaemonManager {
         let data_dir = Some(current_status.data_dir.to_string_lossy().to_string());
         let log_level = current_status.log_level;
         let connect_type = current_status.connect_type;
+        let local_only = current_status.local_only;
 
         // Stop the daemon
         if let Err(e) = self.stop_daemon() {
@@ -134,7 +135,7 @@ impl DaemonManager {
         std::thread::sleep(std::time::Duration::from_millis(500));
 
         // Start the daemon again
-        self.start_daemon(port, data_dir, log_level, connect_type).await?;
+        self.start_daemon(port, data_dir, log_level, connect_type, local_only).await?;
 
         println!(
             "{}",
@@ -381,7 +382,7 @@ impl DaemonManager {
     }
 
     /// 启动守护进程
-    async fn spawn_daemon_process(&self, port: u16, data_dir: PathBuf, log_level: LogLevel, connect_type: ConnectType) -> Result<DaemonStatus> {
+    async fn spawn_daemon_process(&self, port: u16, data_dir: PathBuf, log_level: LogLevel, connect_type: ConnectType, local_only: bool) -> Result<DaemonStatus> {
         let current_exe = std::env::current_exe()?;
         let mut command = Command::new(&current_exe);
         command
@@ -394,7 +395,13 @@ impl DaemonManager {
             .arg("--log-level")
             .arg(log_level.to_string())
             .arg("--connect-type")
-            .arg(connect_type.to_string())
+            .arg(connect_type.to_string());
+        
+        if local_only {
+            command.arg("--local-only");
+        }
+        
+        command
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .stdin(Stdio::null());
@@ -404,7 +411,7 @@ impl DaemonManager {
         let child = command.spawn()?;
         let pid = child.id();
 
-        let mut status = DaemonStatus::new(pid, port, data_dir, log_level, connect_type);
+        let mut status = DaemonStatus::new(pid, port, data_dir, log_level, connect_type, local_only);
 
         std::mem::forget(child);
 

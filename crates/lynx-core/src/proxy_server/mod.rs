@@ -73,6 +73,9 @@ pub struct ProxyServer {
     pub db_connect: Arc<DatabaseConnection>,
 
     pub connect_type: ConnectType,
+
+    #[builder(default = "false")]
+    pub local_only: bool,
 }
 
 impl ProxyServerBuilder {
@@ -82,11 +85,18 @@ impl ProxyServerBuilder {
             .unwrap_or_default();
 
         let port = self.port.flatten().unwrap_or(0);
+        let local_only = self.local_only.unwrap_or(false);
         let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
             .filter(|(_, ip)| ip.is_ipv4())
-            .filter(|(_, ip)| ip.is_loopback())
+            .filter(|(_, ip)| {
+                if local_only {
+                    ip.is_loopback()
+                } else {
+                    true // 支持所有IPv4地址
+                }
+            })
             .map(|(_, ip)| ip)
             .map(|ip| SocketAddr::new(ip, port))
             .collect();
@@ -119,6 +129,7 @@ impl ProxyServerBuilder {
                 .expect("server_ca_manager is required"),
             db_connect: db_arc,
             connect_type: self.connect_type.as_ref().unwrap_or(&ConnectType::SSE).clone(),
+            local_only,
         })
     }
 }
