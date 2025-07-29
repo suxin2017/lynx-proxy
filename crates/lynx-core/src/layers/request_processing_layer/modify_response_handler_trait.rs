@@ -39,11 +39,14 @@ impl HandlerTrait for ModifyResponseConfig {
         if let Some(ref new_body) = self.modify_body {
             let body_bytes = new_body.as_bytes().to_vec();
 
+            // Remove compression-related headers since the response is being modified
+            let headers = response.headers_mut();
+            headers.remove("content-encoding");
+            headers.remove("transfer-encoding");
+
             // Update content-length header
             if let Ok(content_length) = body_bytes.len().to_string().parse() {
-                response
-                    .headers_mut()
-                    .insert("content-length", content_length);
+                headers.insert("content-length", content_length);
             }
 
             // Replace the body with the new content
@@ -262,6 +265,34 @@ mod tests {
         assert_eq!(result.headers().get("Good-Header").unwrap(), "good-value");
         assert!(result.headers().get("Invalid\nHeader").is_none());
         assert!(result.headers().get("Valid-Header").is_none());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_modify_body_removes_compression_headers() -> Result<()> {
+        let new_body_content = "Modified response body";
+        let config = ModifyResponseConfig {
+            modify_headers: None,
+            modify_body: Some(new_body_content.to_string()),
+            modify_method: None,
+            modify_status_code: None,
+        };
+
+        // Create a response with compression headers
+        let mut response = create_test_response();
+        response.headers_mut().insert("content-encoding", "gzip".parse().unwrap());
+        response.headers_mut().insert("transfer-encoding", "chunked".parse().unwrap());
+
+        let result = config.handle_response(response).await?;
+
+        // Check that compression headers are removed
+        assert!(result.headers().get("content-encoding").is_none());
+        assert!(result.headers().get("transfer-encoding").is_none());
+
+        // Check content-length header is updated
+        let content_length = result.headers().get("content-length").unwrap();
+        assert_eq!(content_length, &new_body_content.len().to_string());
 
         Ok(())
     }
