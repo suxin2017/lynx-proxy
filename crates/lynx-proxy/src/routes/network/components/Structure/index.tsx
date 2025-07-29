@@ -33,7 +33,6 @@ export const Structure: React.FC<IStructureProps> = () => {
               <RequestTree />
             </Splitter.Panel>
             <Splitter.Panel className="flex " size={splitSize[1]} min={'40%'} max="90%" >
-              123
               <Detail />
             </Splitter.Panel>
           </Splitter>

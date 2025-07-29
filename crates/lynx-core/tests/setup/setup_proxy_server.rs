@@ -45,6 +45,7 @@ pub async fn setup_proxy_server(
 }
 
 
+#[allow(dead_code)]
 pub async fn setup_short_poll_proxy_server(
     custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
 ) -> Result<ProxyServer> {

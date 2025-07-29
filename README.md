@@ -1,54 +1,62 @@
 # Lynx Proxy
 
-English | [简体中文](README.zh-CN.md)
+[English](README.md) | 简体中文
 
 [![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
-**Lynx Proxy** is a proxy and traffic capture tool developed in Rust, built with mainstream Rust networking libraries including hyper, axum, and tower to address various development needs, such as API inspection during mobile development, script injection, and redirecting static resources to local services during web development
+**Lynx Proxy** 是一款基于 Rust 语言开发的代理抓包工具，项目采用 hyper、axum、tower 等主流 Rust 网络库，以满足不同在开发阶段的需求，比如移动端开发时候查看接口，脚本注入，web 端开发时候将静态资源指向本地服务
 
-## Features
+## 功能特性
 
-- **Common Protocol Support**: Supports HTTP(S) and WS(S)
-- **Web Client**: Built with modern web technologies, supports both light and dark themes,support PWA
-- **Rust Ecosystem**: Built on mainstream libraries like hyper, axum, and tower
-- **Request Panel**:
-  - List View
-  - Tree View 
-- **Rule Capture and Processing**
-  - Capture and process requests by adding rules
-  - Rules
-    - Simple Rules (Glob matching, regex matching, HostName, exact matching)
-    - Complex Rules (AND, OR, NOR)
-- **Installation and Upgrade Script Support**
-  - One-line script installation, no runtime required
-- **Cross-platform Support**
-  - Supports Windows, macOS, and Linux platforms
+- **常见协议支持**：支持 HTTP(S) 与 WS(S)
+- **Web 客户端**：使用流行的现代 web 技术，支持亮色与暗色两种主题,支持PWA
+- **Rust 生态**：基于 hyper、axum、tower 等主流库开发。
+- **请求面板**：
+  - 列表视图
+  - 树形视图
+- **规则捕获与处理**
+  - 通过添加规则进行请求捕获，同时进行请求处理
+  - 规则
+    - 简单规则 （Glob 匹配，正则匹配，HostName，精确匹配）
+    - 复杂规则 （AND、OR、NOR）
+  - 处理
+    - 请求修改
+    - 请求延迟
+    - 请求拦截
+    - 脚本注入
+- **请求调试**
+  - 支持发送请求
+  - 历史记录
+  - 请求目录
+- **安装与升级脚本支持**
+  - 安装只需要一行脚本，不需要安装任何运行时
+- **跨平台支持**
+  - 支持 Window、Macos、Linux 平台
 
-## Screenshots
+## 功能展示
 
-### HTTP/HTTPS Proxy
+### HTTP/HTTPS 代理
 
-![HTTP Proxy Example](./images/newhttp.png)
+![HTTP 代理示例](./images/newhttp.png)
 
-### WebSocket Proxy
+### WebSocket 代理
 
-![WebSocket Proxy Example](./images/newws.png)
+![WebSocket 代理示例](./images/newws.png)
 
-### Tree Structure View
+### 树形结构视图
 
-![Tree Structure View Example](./images/newtree.png)
+![树形结构视图示例](./images/newtree.png)
 
-### Rule Configuration
+### 规则配置
 
-![Rule Configuration](./images/rule.png)
+![规则配置](./images/rule.png)
 
-### One Click Add Rule
+### 发送请求
 
-![Context Menu](./images/contextmenu.png)
-![Context Menu2](./images/contextmenu2.png)
+![api debug](./images/api_debug.png)
 
-### Cli 
+### Cli 查询状态
 
 ```bash
 PS C:\Users\xx> lynx-cli status
@@ -61,9 +69,10 @@ Start Time: 1749816127 seconds since epoch
 Process Running: Yes
 ```
 
-## Usage
 
-### Installation
+## 使用
+
+### 安装
 
 #### Bash
 ```bash
@@ -76,18 +85,18 @@ curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/r
 powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.ps1 | iex"
 ```
 
-### Quick Start
+### 快速开始
 
 ```bash
 lynx-cli run
 ```
 
-### Command Line Arguments
+### 命令行参数
 
 ```
 Lynx Proxy Server
 
-Usage: lynx-cli.exe <COMMAND>
+Usage: lynx-cli <COMMAND>
 
 Commands:
   start    Start the background proxy service
@@ -104,61 +113,62 @@ Options:
 
 ### Start
 ```
-Start the background proxy service
+通过守护进程启动后台服务
 
-Usage: lynx-cli.exe start [OPTIONS]
+Usage: lynx-cli start [OPTIONS]
 
 Options:
-  -p, --port <PORT>          proxy server port [default: 7788]
-      --data-dir <DATA_DIR>  data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
-  -h, --help                 Print help
+  -p, --port <PORT>                  proxy server port [default: 7788]
+      --data-dir <DATA_DIR>          data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
+      --log-level <LOG_LEVEL>        Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
+      --connect-type <CONNECT_TYPE>  [default: sse] [possible values: short-poll, sse]
+      --local-only                   Enable local only mode (only bind to loopback addresses)
+  -h, --help                         Print help (see more with '--help')
 ```
 
 ### Run
 ```
-Start the proxy server in foreground mode
+直接启动服务
 
-Usage: lynx-cli.exe run [OPTIONS]
+Usage: lynx-cli run [OPTIONS]
 
 Options:
-  -p, --port <PORT>            proxy server port [default: 7788]
-      --data-dir <DATA_DIR>    data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
-      --log-level <LOG_LEVEL>  Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
-  -h, --help                   Print help
+  -p, --port <PORT>                  proxy server port [default: 7788]
+      --data-dir <DATA_DIR>          data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
+      --log-level <LOG_LEVEL>        Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
+      --connect-type <CONNECT_TYPE>  [default: sse] [possible values: short-poll, sse]
+      --local-only                   Enable local only mode (only bind to loopback addresses)
+  -h, --help                         Print help (see more with '--help')
 ```
+## 贡献指南
 
-## Contributing Guide
+欢迎社区贡献！请按照以下流程参与开发：
 
-Community contributions are welcome! Please follow these steps to participate in development:
-
-1. Fork this repository
-2. Create a new branch: `git checkout -b feature-branch`
-3. Install dependencies
-   - Install [taskfile](https://taskfile.dev/)
-   - Install UI related dependencies
+1. Fork 本仓库
+2. 创建新分支：`git checkout -b feature-branch`
+3. 安装依赖
+   - 安装 [taskfile](https://taskfile.dev/)
+   - 安装 UI 相关依赖
      ```bash
      task setup-ui
      ```
-   - Start development environment
+   - 启动开发环境
      ```bash
      task dev
      ```
-4. Commit changes: `git commit -am 'Add new feature'`
-5. Push branch: `git push origin feature-branch`
-6. Create Pull Request
+4. 提交更改：`git commit -am 'Add new feature'`
+5. 推送分支：`git push origin feature-branch`
+6. 创建 Pull Request
 
-## License
+## 许可证
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+本项目采用 MIT 许可证，详情请参阅 [LICENSE](LICENSE) 文件。
 
-## Contact Us
+## 联系我们
 
-For any questions or suggestions, please submit feedback through GitHub Issues.
+如有任何问题或建议，请通过 GitHub Issues 提交反馈。
 
-## Project Status
+## 项目状态
 
-The project is still under active development, welcome to follow and participate!
+项目已经可以使用，功能迭代仍在积极开发中，欢迎关注和参与！
 
-## Future Plans
-
-https://v0-modern-proxy-tool-wq.vercel.app/
