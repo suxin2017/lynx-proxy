@@ -1,31 +1,28 @@
-import {
-  RiAddLine,
-  RiCheckboxCircleLine,
-  RiCloseCircleLine,
-  RiDeleteBinLine,
-} from '@remixicon/react';
-import {
-  Form,
-  Switch,
-  Input,
-  Button,
-  Typography,
-  InputNumber,
-  Space,
-  Empty,
-  message,
-} from 'antd';
-import { FormListProps } from 'antd/es/form';
-import React from 'react';
-import { CommonCard } from '../CommonCard';
-import { useGetHealth } from '@/services/generated/default/default';
-import { useTranslation } from 'react-i18next';
+import { PageLoading } from '@/components/PageLoading';
 import {
   useGetHttpsCaptureFilter,
   useUpdateHttpsCaptureFilter,
 } from '@/services/generated/https-capture/https-capture';
-import { PageLoading } from '@/components/PageLoading';
 import { DomainFilter } from '@/services/generated/utoipaAxum.schemas';
+import {
+  RiAddLine,
+  RiDeleteBinLine
+} from '@remixicon/react';
+import {
+  Button,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Space,
+  Switch,
+  Typography,
+} from 'antd';
+import { FormListProps } from 'antd/es/form';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { CommonCard } from '../CommonCard';
 
 const defaultSSLConfig: DomainFilter = {
   enabled: true,
@@ -146,7 +143,6 @@ export const IncludeDomainList: React.FC<{ name: FormListProps['name'] }> = ({
 
 export const NetworkSetting: React.FC = () => {
   const [form] = Form.useForm();
-  const { data } = useGetHealth();
   const { t } = useTranslation();
   const { data: httpsCaptureData, isLoading } = useGetHttpsCaptureFilter();
   const { isPending: isSubmiting, mutateAsync: updateHttpsCaptureFilter } =
@@ -205,20 +201,6 @@ export const NetworkSetting: React.FC = () => {
               </Typography.Title>
               <Typography.Paragraph className="mb-0 flex items-center gap-2">
                 <span>{t('networkSetting.captureHttps.description')}</span>
-                <span className="flex items-center gap-1">
-                  {t('networkSetting.captureHttps.status')}:
-                  {data === 'ok' ? (
-                    <RiCheckboxCircleLine
-                      className="inline-block text-green-400 dark:text-green-500"
-                      size={14}
-                    />
-                  ) : (
-                    <RiCloseCircleLine
-                      className="inline-block text-red-400 dark:text-red-500"
-                      size={14}
-                    />
-                  )}
-                </span>
               </Typography.Paragraph>
             </Space>
             <Form.Item noStyle name="enabled" valuePropName="checked">
