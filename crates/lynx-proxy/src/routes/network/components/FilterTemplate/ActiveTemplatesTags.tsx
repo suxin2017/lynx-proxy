@@ -20,7 +20,7 @@ export const ActiveTemplatesTags: React.FC = () => {
   return (
     <div className="overflow-x-auto">
       <Space wrap={false} className="whitespace-nowrap">
-        <Tag onClick={() => {
+        <Tag className="cursor-pointer" onClick={() => {
           activeTemplates.forEach(template => toggleTemplateEnabled(template.id));
         }}>
           清除全部
