@@ -48,6 +48,7 @@ export interface ApiDebugResponse {
   errorMessage?: ApiDebugResponseErrorMessage;
   headers?: ApiDebugResponseHeaders;
   id: number;
+  isHistory: boolean;
   method: HttpMethod;
   name: string;
   responseBody?: ApiDebugResponseResponseBody;
@@ -203,6 +204,7 @@ export interface CreateApiDebugRequest {
   body?: CreateApiDebugRequestBody;
   contentType?: CreateApiDebugRequestContentType;
   headers?: CreateApiDebugRequestHeaders;
+  isHistory: boolean;
   method: HttpMethod;
   name: string;
   timeout?: CreateApiDebugRequestTimeout;
@@ -965,6 +967,7 @@ export type ResponseDataWrapperApiDebugResponseData = {
   errorMessage?: ResponseDataWrapperApiDebugResponseDataErrorMessage;
   headers?: ResponseDataWrapperApiDebugResponseDataHeaders;
   id: number;
+  isHistory: boolean;
   method: HttpMethod;
   name: string;
   responseBody?: ResponseDataWrapperApiDebugResponseDataResponseBody;
@@ -1539,6 +1542,10 @@ export type ListDebugEntriesParams = {
    * Search in name and URL
    */
   search?: string | null;
+  /**
+   * Filter by is_history
+   */
+  isHistory?: boolean | null;
 };
 
 export type GetChildrenParams = {

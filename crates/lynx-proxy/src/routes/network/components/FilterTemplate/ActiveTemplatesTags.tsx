@@ -20,6 +20,11 @@ export const ActiveTemplatesTags: React.FC = () => {
   return (
     <div className="overflow-x-auto">
       <Space wrap={false} className="whitespace-nowrap">
+        <Tag onClick={() => {
+          activeTemplates.forEach(template => toggleTemplateEnabled(template.id));
+        }}>
+          清除全部
+        </Tag>
         {activeTemplates.map(template => (
           <Tag
             key={template.id}
