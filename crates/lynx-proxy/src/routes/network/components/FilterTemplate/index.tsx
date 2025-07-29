@@ -1,4 +1,4 @@
-import { DownOutlined, FilterOutlined } from '@ant-design/icons';
+import { FilterOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { ActiveTemplatesTags } from './ActiveTemplatesTags';
@@ -42,7 +42,6 @@ const FilterTemplateContent: React.FC = () => {
     {
       key: 'manage',
       label: '管理模板',
-      icon: <FilterOutlined />,
     },
     {
       type: 'divider',
@@ -84,7 +83,6 @@ const FilterTemplateContent: React.FC = () => {
         }} className="flex items-center">
           <FilterOutlined className="mr-1" />
           过滤模板
-          <DownOutlined className="ml-1" />
         </Button>
       </Dropdown>
       <FilterTemplateModal />
