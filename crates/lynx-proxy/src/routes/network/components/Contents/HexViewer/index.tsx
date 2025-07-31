@@ -118,8 +118,8 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
     const headers = Array.from({ length: 16 }, (_, i) => formatHex(i));
     return (
       <div className="flex flex-col border-b border-gray-300">
-        <div className="mb-2 flex justify-end">
-          <span className="mr-2 text-gray-600">Character Set:</span>
+        <div className="mb-2 flex justify-end items-center">
+          <span className="mr-2 text-gray-600">字符集:</span>
           <Select
             value={charset}
             onChange={(value: CharsetType) => setCharset(value)}
@@ -260,22 +260,25 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
 
   return (
     <div
-      className="flex-1 flex flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+      className="flex w-48  overflow-auto h-full w-full min-w-0 flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
       onMouseUp={endSelection} // Finish selection
     >
-      {renderHeader()}
-      <div className="flex-1">
-        <AutoSizer>
-          {({ height, width }) => (
-            <List
-              height={height}
-              width={width}
-              rowCount={Math.ceil(data.length / 16)}
-              rowHeight={24}
-              rowRenderer={renderRow}
-            />
-          )}
-        </AutoSizer>
+      <div className="flex h-full w-full min-w-0 flex-col" style={{ minWidth: 680 }}>
+        {renderHeader()}
+        <div className="flex-1 min-w-0 select-none">
+          <AutoSizer>
+            {({ height, width }) => (
+              <List
+                height={height}
+                width={width}
+                rowCount={Math.ceil(data.length / 16)}
+                rowHeight={24}
+                rowRenderer={renderRow}
+              />
+            )}
+          </AutoSizer>
+        </div>
+
       </div>
     </div>
   );

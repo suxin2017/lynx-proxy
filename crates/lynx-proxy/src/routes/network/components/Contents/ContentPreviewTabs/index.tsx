@@ -231,7 +231,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
   return (
     <div className="flex-1 flex flex-col" >
       <Segmented value={activeKey} options={items.map(item => ({ label: item.label, value: item.key }))} onChange={(key) => setActiveKey(key)} />
-      <div className="flex-1 overflow-auto flex" >
+      <div className="flex-1 flex" >
         {items.find(item => item.key === activeKey)?.children}
       </div>
     </div>
