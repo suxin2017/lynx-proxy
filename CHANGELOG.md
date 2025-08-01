@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.7] - 2025-08-01
+
+### 🐛 Bug Fixes
+
+- 在其上下文中，该请求的地址无效
+
 ## [0.4.6] - 2025-08-01
 
 ### 🐛 Bug Fixes
