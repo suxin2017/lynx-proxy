@@ -1,24 +1,24 @@
 import { ExtendedMessageEventStoreValue } from '@/store/messageEventCache';
 
 // 过滤条件类型
-export type FilterConditionType = 
-  | 'url' 
-  | 'method' 
-  | 'status' 
-  | 'requestHeaders' 
-  | 'responseHeaders' 
-  | 'requestBody' 
+export type FilterConditionType =
+  | 'url'
+  | 'method'
+  | 'status'
+  | 'requestHeaders'
+  | 'responseHeaders'
+  | 'requestBody'
   | 'responseBody';
 
 // 过滤操作符
-export type FilterOperator = 
-  | 'contains' 
-  | 'equals' 
-  | 'startsWith' 
-  | 'endsWith' 
-  | 'regex' 
-  | 'greaterThan' 
-  | 'lessThan' 
+export type FilterOperator =
+  | 'contains'
+  | 'equals'
+  | 'startsWith'
+  | 'endsWith'
+  | 'regex'
+  | 'greaterThan'
+  | 'lessThan'
   | 'between';
 
 // 单个过滤条件
@@ -61,7 +61,7 @@ export const PRESET_TEMPLATES: FilterTemplate[] = [
       },
     ],
     isPreset: true,
-    enabled: true,
+    enabled: false,
   },
   // 媒体资源类
   {
@@ -77,7 +77,7 @@ export const PRESET_TEMPLATES: FilterTemplate[] = [
       },
     ],
     isPreset: true,
-    enabled: true,
+    enabled: false,
   },
   // API 请求类
   {
@@ -93,7 +93,7 @@ export const PRESET_TEMPLATES: FilterTemplate[] = [
       },
     ],
     isPreset: true,
-    enabled: true,
+    enabled: false,
   },
   // 错误请求
   {
@@ -109,7 +109,7 @@ export const PRESET_TEMPLATES: FilterTemplate[] = [
       },
     ],
     isPreset: true,
-    enabled: true,
+    enabled: false,
   },
   // POST 请求
   {
@@ -125,6 +125,6 @@ export const PRESET_TEMPLATES: FilterTemplate[] = [
       },
     ],
     isPreset: true,
-    enabled: true,
+    enabled: false,
   }
 ];

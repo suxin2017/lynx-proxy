@@ -36,6 +36,7 @@ pub const STATUS_PATH: &str = "/status";
 pub const JSON_PATH: &str = "/json";
 pub const POST_ECHO_PATH: &str = "/post_echo";
 pub const TIMEOUT_PATH: &str = "/timeout";
+pub const SSE_PATH: &str = "/sse";
 
 pub enum MockPath {
     Hello,
@@ -51,6 +52,7 @@ pub enum MockPath {
     Json,
     PostEcho,
     Timeout,
+    Sse,
     NotFound,
 }
 
@@ -87,6 +89,7 @@ impl From<&str> for MockPath {
             JSON_PATH => MockPath::Json,
             POST_ECHO_PATH => MockPath::PostEcho,
             TIMEOUT_PATH => MockPath::Timeout,
+            SSE_PATH => MockPath::Sse,
             _ => MockPath::NotFound,
         }
     }
@@ -108,6 +111,7 @@ impl Display for MockPath {
             MockPath::Json => write!(f, "{}", JSON_PATH),
             MockPath::PostEcho => write!(f, "{}", POST_ECHO_PATH),
             MockPath::Timeout => write!(f, "{}", TIMEOUT_PATH),
+            MockPath::Sse => write!(f, "{}", SSE_PATH),
             MockPath::NotFound => write!(f, "/"),
         }
     }
@@ -330,6 +334,25 @@ pub async fn mock_server_fn(
                     .map_err(|err| anyhow!("{err}"))
                     .boxed(),
             );
+            Ok(res)
+        }
+        (&Method::GET, MockPath::Sse) => {
+            // SSE endpoint: sends an event every 500ms, 10 times
+            let (tx, rx) = tokio::sync::mpsc::channel::<String>(10);
+            tokio::spawn(async move {
+                for i in 1..=100 {
+                    let event = format!("data: SSE message {}\n\n", i);
+                    if tx.send(event).await.is_err() {
+                        break;
+                    }
+                    tokio::time::sleep(Duration::from_millis(500)).await;
+                }
+            });
+            let stream = tokio_stream::wrappers::ReceiverStream::new(rx)
+                .map(|data| Ok(Frame::data(Bytes::from(data))));
+            let body = BodyExt::boxed(StreamBody::new(stream));
+            let mut res = Response::new(body);
+            res.headers_mut().insert(CONTENT_TYPE, "text/event-stream".parse().unwrap());
             Ok(res)
         }
         _ => {

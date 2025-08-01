@@ -260,7 +260,7 @@ const HexViewer: React.FC<HexViewerProps> = ({ arrayBuffer }) => {
 
   return (
     <div
-      className="flex w-48  overflow-auto h-full w-full min-w-0 flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+      className="flex w-48 overflow-auto h-full min-w-0 flex-col rounded-sm border border-gray-300  p-1 font-mono text-xs text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
       onMouseUp={endSelection} // Finish selection
     >
       <div className="flex h-full w-full min-w-0 flex-col" style={{ minWidth: 680 }}>
