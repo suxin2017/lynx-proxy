@@ -58,7 +58,6 @@ export const useSse = () => {
 
     useEffect(() => {
         if (netWorkCaptureStatusData?.data.recordingStatus === "pauseRecording" && connectType === ConnectType.SSE) {
-
             sseManager.setOnEventCallback(handleSseEvent);
             sseManager.setOnStatusChangeCallback(handleStatusChange);
 
@@ -66,7 +65,7 @@ export const useSse = () => {
                 const formattedEvents = events.filter(item => item.status !== "Initial").filter(filterConnectRequest).map(formatItem).map(item => cloneDeep(item));
                 console.log('🔄 直接通过缓存回调更新 Redux store:', formattedEvents);
                 const currentSelectUpdateRequest = selectRequest?.traceId ? formattedEvents.find(item => item.traceId === selectRequest?.traceId) : null;
-
+                console.log('当前选中的请求:',selectRequest?.traceId, currentSelectUpdateRequest);
                 if (currentSelectUpdateRequest) {
                     setSelectRequest(currentSelectUpdateRequest);
                 }
@@ -78,17 +77,8 @@ export const useSse = () => {
             if (!sseManager.isConnected()) {
                 connect();
             }
-
         }
-
-        const cache = eventCache.current;
-
-        return () => {
-            console.log('🔌 组件卸载，断开 SSE 连接...');
-            disconnect();
-            cache?.removeInsertOrUpdateCallback();
-        };
-    }, [connectType, dispatch, netWorkCaptureStatusData]);
+    }, [connectType, dispatch, netWorkCaptureStatusData, selectRequest?.traceId, setSelectRequest]);
 
 
     useEffect(() => {

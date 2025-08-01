@@ -11,6 +11,7 @@ import Websocket from '../../Websocket';
 import FormViewer from '../FormView';
 import { MediaViewer } from '../MediaViewer';
 import TextView from '../TextViewer';
+import { SSEView } from '../SSEView';
 
 interface IContentsProps {
   title: string;
@@ -31,6 +32,7 @@ export enum ContentPreviewType {
   Media = 'Media',
   Websocket = 'Websocket',
   Base64 = 'Base64',
+  SSE = 'SSE',
 }
 
 function useAsyncMemo<T>(
@@ -96,6 +98,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       'application/x-www-form-urlencoded',
     );
     const contentTypeWebsocket = !!contentType?.includes('websocket');
+    const contentTypeSSE = !!contentType?.includes('text/event-stream');
     return {
       contentTypeJson,
       contentTypeFont,
@@ -109,6 +112,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       contentType,
       contentTypeForm,
       contentTypeWebsocket,
+      contentTypeSSE
     };
   }, [contentType]);
   const defaultActiveKey = useMemo(() => {
@@ -142,6 +146,7 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
       contentTypeForm,
       contentTypeFont,
       contentTypeWebsocket,
+      contentTypeSSE,
     } = contentTypeCheck;
 
     const contentTypeMedia =
@@ -201,7 +206,15 @@ export const ContentPreviewTabs: React.FC<IContentsProps> = ({
             />
           ),
         }),
-
+        ifTrue(contentTypeSSE, {
+          key: ContentPreviewType.SSE,
+          label: 'SSE',
+          children: (
+            <SSEView
+              arrayBuffer={body}
+            />
+          ),
+        }),
         {
           key: ContentPreviewType.Hex,
           label: 'Hex',
