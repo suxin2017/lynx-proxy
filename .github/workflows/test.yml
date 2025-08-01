@@ -25,9 +25,10 @@ jobs:
           ${{ runner.os }}-cargo-
 
     - name: Install Task
-      uses: arduino/setup-task@v2
+      uses: arduino/setup-task@v1
       with:
         version: 3.x
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Cache node_modules
       uses: actions/cache@v4
