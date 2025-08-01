@@ -94,7 +94,16 @@ impl ProxyServerBuilder {
                 if local_only {
                     ip.is_loopback()
                 } else {
-                    !ip.is_unspecified()
+                    match ip {
+                        std::net::IpAddr::V4(ipv4) => {
+                            // Exclude unspecified, link-local (169.254.x.x), multicast, and broadcast addresses
+                            !ipv4.is_unspecified() 
+                                && !ipv4.is_link_local() 
+                                && !ipv4.is_multicast() 
+                                && !ipv4.is_broadcast()
+                        }
+                        _ => false, // Already filtered for IPv4 above, but just in case
+                    }
                 }
             })
             .map(|(_, ip)| ip)
