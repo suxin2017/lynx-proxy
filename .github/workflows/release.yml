@@ -60,6 +60,8 @@ jobs:
           submodules: recursive
       - name: "BuildUi"
         uses: ./actions/build-ui
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: upload ui artifact
         uses: actions/upload-artifact@v4
