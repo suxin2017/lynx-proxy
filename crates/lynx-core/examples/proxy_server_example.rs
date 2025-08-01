@@ -48,6 +48,7 @@ async fn main() -> Result<()> {
             "sqlite://{}/lynx.db?mode=rwc",
             fixed_temp_dir_path.to_string_lossy()
         )))
+        // .local_only(false)
         .build()
         .await?;
     proxy_server.run().await?;
