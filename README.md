@@ -76,13 +76,13 @@ Process Running: Yes
 
 #### Bash
 ```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
 #### Powershell 
 
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.ps1 | iex"
 ```
 
 ### 快速开始
