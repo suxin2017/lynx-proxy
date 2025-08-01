@@ -26,7 +26,7 @@ use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
-use tracing::{debug, info, instrument, trace, trace_span, warn, Instrument};
+use tracing::{Instrument, debug, info, instrument, trace, trace_span, warn};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::common::{HyperReq, is_https_tcp_stream};
@@ -94,7 +94,7 @@ impl ProxyServerBuilder {
                 if local_only {
                     ip.is_loopback()
                 } else {
-                    true // 支持所有IPv4地址
+                    !ip.is_unspecified()
                 }
             })
             .map(|(_, ip)| ip)
@@ -128,7 +128,11 @@ impl ProxyServerBuilder {
                 .clone()
                 .expect("server_ca_manager is required"),
             db_connect: db_arc,
-            connect_type: self.connect_type.as_ref().unwrap_or(&ConnectType::SSE).clone(),
+            connect_type: self
+                .connect_type
+                .as_ref()
+                .unwrap_or(&ConnectType::SSE)
+                .clone(),
             local_only,
         })
     }
