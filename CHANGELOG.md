@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.6] - 2025-08-01
+
+### 🐛 Bug Fixes
+
+- Window ip bug ([#49](https://github.com/suxin2017/lynx-server/issues/49))
+- Window ip bug ([#50](https://github.com/suxin2017/lynx-server/issues/50))
+
 ## [0.4.5] - 2025-08-01
 
 ### 🚀 Features
