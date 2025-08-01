@@ -4,7 +4,7 @@ on: workflow_dispatch
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }} 
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -12,13 +12,33 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
+    - name: Cache Rust dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
     - name: Install Task
       uses: arduino/setup-task@v2
       with:
         version: 3.x
-    
-    - name: "BuildUi"
+
+        - name: Cache node_modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          crates/lynx-proxy/node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('crates/lynx-proxy/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-node-modules-
+
+    - name: Build UI
       uses: ./actions/build-ui
 
     - name: Install Rust toolchain
