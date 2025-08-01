@@ -1,5 +1,10 @@
 name: Build ui
 
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -24,7 +29,7 @@ runs:
       uses: arduino/setup-task@v2
       with:
         version: 3.x
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        repo-token: ${{ inputs.github-token }}
 
     - name: Pnpm Install
       run: task setup-ui
