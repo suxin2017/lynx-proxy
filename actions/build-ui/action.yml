@@ -12,6 +12,17 @@ runs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pnpm-store
+          crates/lynx-proxy/node_modules
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('crates/lynx-proxy/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+          
     - uses: pnpm/action-setup@v4
       name: Install pnpm
       with:
@@ -30,6 +41,16 @@ runs:
       with:
         version: 3.x
         repo-token: ${{ inputs.github-token }}
+
+    - name: Cache build output
+      uses: actions/cache@v4
+      with:
+        path: |
+          crates/lynx-proxy/dist
+          crates/lynx-cli/assets
+        key: ${{ runner.os }}-build-${{ hashFiles('crates/lynx-proxy/src/**', 'crates/lynx-proxy/public/**', 'crates/lynx-proxy/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
 
     - name: Pnpm Install
       run: task setup-ui
