@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.5] - 2025-08-01
+
+### 🚀 Features
+
+- Support sse
+
+### 🐛 Bug Fixes
+
+- Hex layout
+
 ## [0.4.4] - 2025-07-29
 
 ### 🚜 Refactor
