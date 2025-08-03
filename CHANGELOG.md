@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.8] - 2025-08-03
+
+### 🚀 Features
+
+- Support custom columns ([#54](https://github.com/suxin2017/lynx-server/issues/54))
+
 ## [0.4.7] - 2025-08-01
 
 ### 🐛 Bug Fixes
