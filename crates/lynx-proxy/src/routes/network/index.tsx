@@ -15,6 +15,8 @@ import { AutoScrollProvider } from './components/store/autoScrollStore';
 import { Structure } from './components/Structure';
 import { SearchRequestUrlInput } from './components/TableFilter';
 import { FilterTemplate, ActiveTemplatesTags } from './components/FilterTemplate';
+import { CustomColumnProvider } from './components/CustomColumn/hook';
+import CustomColumn from './components/CustomColumn';
 
 const { Title } = Typography;
 
@@ -29,29 +31,33 @@ function InnerComponent() {
   return (
     <AutoScrollProvider>
       <RequestContextMenuProvider>
-        <CommonCard>
-          <div className="flex   flex-1 flex-col gap-2 overflow-hidden">
-            <div className="flex items-center justify-between gap-2">
-              <Title level={4} style={{ margin: 0 }}>
-                {t('network.title')}
-              </Title>
-              <div className="flex items-center gap-2">
-                <RecordingStatusButton />
-                <CleanRequestButton />
+        <CustomColumnProvider>
+
+          <CommonCard>
+            <div className="flex  flex-1 flex-col gap-2 overflow-hidden">
+              <div className="flex items-center justify-between gap-2">
+                <Title level={4} style={{ margin: 0 }}>
+                  {t('network.title')}
+                </Title>
+                <div className="flex items-center gap-2">
+                  <RecordingStatusButton />
+                  <CleanRequestButton />
+                </div>
               </div>
-            </div>
-         
+
               <div className="flex gap-2">
                 <SearchRequestUrlInput />
+                {state === 'Sequence' && <CustomColumn />}
                 <FilterTemplate />
                 <ShowTypeSegmented />
               </div>
               <ActiveTemplatesTags />
 
-            {state === 'Sequence' && <Sequence />}
-            {state === 'Structure' && <Structure />}
-          </div>
-        </CommonCard>
+              {state === 'Sequence' && <Sequence />}
+              {state === 'Structure' && <Structure />}
+            </div>
+          </CommonCard>
+        </CustomColumnProvider>
       </RequestContextMenuProvider>
     </AutoScrollProvider>
   );
