@@ -99,6 +99,7 @@ utoipa = { version = "5.3.1", features = ["axum_extras"] }
 tower-http = { version = "0.6.4", features = ["cors", "fs"] }
 dashmap = "6.1.0"
 lynx-log = {path = "../lynx-log"}
+lynx-request = { path = "../lynx-request" }
 
 
 [dev-dependencies]

@@ -1,0 +1,47 @@
+[package]
+name = "lynx-request"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+edition.workspace = true
+license.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+repository.workspace = true
+include = ["src", "Cargo.toml", "README.md"]
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tracing = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+reqwest = { version = "0.12.18", features = [
+    "rustls-tls-manual-roots",
+    "gzip",
+    "json",
+    "stream",
+    "rustls-tls",
+    "cookies",
+    "brotli",
+    "deflate",
+] }
+tokio-rustls = { workspace = true }
+webpki-roots = "0.26.0"
+reqwest-websocket = "0.5.0"
+eventsource-stream = "0.2.3"
+tower = { workspace = true }
+rcgen = { version = "0.13.0", default-features = false, features = [
+    "x509-parser",
+    "pem",
+    "ring",
+] }
+derive_builder = "0.20.2"
+tokio-tungstenite = { version = "0.26.1", features = [
+    "rustls",
+    "rustls-tls-webpki-roots",
+    "connect",
+] }

@@ -5,7 +5,9 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use http::StatusCode;
+use http::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use utoipa::{PartialSchema, ToSchema, TupleUnit};
 
 #[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
@@ -101,4 +103,18 @@ impl IntoResponse for AppError {
 pub struct ErrorResponse {
     pub code: u16,
     pub message: String,
+}
+
+pub fn hashmap_to_headermap(
+    map: HashMap<String, String>,
+) -> Result<HeaderMap, Box<dyn std::error::Error>> {
+    let mut headers = HeaderMap::new();
+
+    for (k, v) in map {
+        let name = HeaderName::from_bytes(k.as_bytes())?;
+        let value = HeaderValue::from_str(&v)?;
+        headers.insert(name, value);
+    }
+
+    Ok(headers)
 }

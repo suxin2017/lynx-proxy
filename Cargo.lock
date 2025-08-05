@@ -1105,6 +1105,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "eventsource-stream"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74fef4569247a5f429d9156b9d0a2599914385dd189c539334c625d8099d90ab"
+dependencies = [
+ "futures-core",
+ "nom",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2101,6 +2112,7 @@ dependencies = [
  "lynx-db",
  "lynx-log",
  "lynx-mock",
+ "lynx-request",
  "mime_guess",
  "moka",
  "nanoid",
@@ -2204,6 +2216,26 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "lynx-request"
+version = "0.4.8"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "derive_builder",
+ "eventsource-stream",
+ "futures-util",
+ "rcgen",
+ "reqwest",
+ "reqwest-websocket",
+ "tokio",
+ "tokio-rustls",
+ "tokio-tungstenite",
+ "tower",
+ "tracing",
+ "webpki-roots 0.26.8",
 ]
 
 [[package]]

@@ -75,9 +75,6 @@ impl DbExtensionsExt for Extensions {
 }
 
 pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
-    let request_client = ex
-        .get_request_client()
-        .ok_or_else(|| anyhow::anyhow!("Missing request client in request"))?;
     let client_addr = ex
         .get_client_addr()
         .ok_or_else(|| anyhow::anyhow!("Missing client address in request"))?;
@@ -87,7 +84,6 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     let db = ex.get_db();
 
     let mut nex = Extensions::new();
-    nex.insert(request_client);
     nex.insert(client_addr);
     nex.insert(server_config);
     nex.insert(message_event_cannel);
