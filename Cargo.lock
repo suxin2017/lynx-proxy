@@ -2046,7 +2046,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-cert"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "anyhow",
  "rand 0.8.5",
@@ -2061,7 +2061,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-cli"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2084,7 +2084,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-core"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -2150,7 +2150,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-db"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2174,7 +2174,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-log"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "anyhow",
  "derive_builder",
@@ -2190,7 +2190,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-mock"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -3712,7 +3712,7 @@ dependencies = [
 
 [[package]]
 name = "self_signed_ca"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "rcgen",
 ]
@@ -5000,7 +5000,7 @@ dependencies = [
 
 [[package]]
 name = "websocket-client"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "futures-util",
  "http",
@@ -5014,7 +5014,7 @@ dependencies = [
 
 [[package]]
 name = "websocket-server"
-version = "0.4.9-alpha.1"
+version = "0.4.9-alpha.2"
 dependencies = [
  "anyhow",
  "futures-util",
