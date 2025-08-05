@@ -5,7 +5,7 @@ use lynx_cli::{Args, Commands, LogConfig, ProxyServerApp, ServerArgs, resolve_da
 use tokio::signal;
 
 #[global_allocator]
-static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
