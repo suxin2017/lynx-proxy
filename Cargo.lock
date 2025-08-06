@@ -1955,6 +1955,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
 
 [[package]]
+name = "libmimalloc-sys"
+version = "0.1.43"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf88cd67e9de251c1781dbe2f641a1a3ad66eaae831b8a2c38fbdc5ddae16d4d"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
 name = "libredox"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2036,7 +2046,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-cert"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "anyhow",
  "rand 0.8.5",
@@ -2051,7 +2061,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-cli"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2059,6 +2069,7 @@ dependencies = [
  "directories",
  "include_dir",
  "lynx-core",
+ "mimalloc",
  "reqwest",
  "rustls",
  "sea-orm",
@@ -2073,7 +2084,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-core"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -2139,7 +2150,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-db"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2163,7 +2174,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-log"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "anyhow",
  "derive_builder",
@@ -2179,7 +2190,7 @@ dependencies = [
 
 [[package]]
 name = "lynx-mock"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -2236,6 +2247,15 @@ name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
+
+[[package]]
+name = "mimalloc"
+version = "0.1.47"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1791cbe101e95af5764f06f20f6760521f7158f69dbf9d6baf941ee1bf6bc40"
+dependencies = [
+ "libmimalloc-sys",
+]
 
 [[package]]
 name = "mime"
@@ -3692,7 +3712,7 @@ dependencies = [
 
 [[package]]
 name = "self_signed_ca"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "rcgen",
 ]
@@ -4980,7 +5000,7 @@ dependencies = [
 
 [[package]]
 name = "websocket-client"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "futures-util",
  "http",
@@ -4994,7 +5014,7 @@ dependencies = [
 
 [[package]]
 name = "websocket-server"
-version = "0.4.8"
+version = "0.4.9-alpha.3"
 dependencies = [
  "anyhow",
  "futures-util",

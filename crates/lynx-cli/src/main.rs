@@ -4,6 +4,9 @@ use lynx_cli::daemon::DaemonManager;
 use lynx_cli::{Args, Commands, LogConfig, ProxyServerApp, ServerArgs, resolve_data_dir};
 use tokio::signal;
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
