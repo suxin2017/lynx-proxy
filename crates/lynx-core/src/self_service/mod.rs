@@ -1,8 +1,6 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use crate::client::ReqwestClient;
-use crate::client::request_client::RequestClientExt;
 use crate::common::Req;
 use crate::layers::extend_extension_layer::DbExtensionsExt;
 use crate::layers::message_package_layer::MessageEventChannel;
@@ -18,6 +16,8 @@ use axum::Router;
 use axum::response::Response;
 use file_service::get_file;
 use http::Method;
+use lynx_db::dao::client_proxy_dao::ClientProxyConfig;
+use lynx_db::dao::client_proxy_dao::ProxyConfig;
 use tower::ServiceExt;
 use utoipa::openapi::OpenApi;
 use utoipa::openapi::Server;
@@ -69,11 +69,11 @@ async fn get_health() -> &'static str {
 pub struct RouteState {
     pub db: Arc<sea_orm::DatabaseConnection>,
     pub net_request_cache: Arc<MessageEventCache>,
-    pub proxy_config: Arc<ProxyServerConfig>,
+    pub proxy_server_config: Arc<ProxyServerConfig>,
     pub access_addr_list: Arc<Vec<SocketAddr>>,
     pub static_dir: Option<Arc<StaticDir>>,
-    pub client: Arc<ReqwestClient>,
     pub message_event_channel: Arc<MessageEventChannel>,
+    pub client_proxy_config: Arc<ProxyConfig>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
@@ -82,15 +82,19 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
     let state = RouteState {
         db: req.extensions().get_db(),
         net_request_cache: req.extensions().get_message_event_store(),
-        proxy_config: req.extensions().get_proxy_server_config(),
+        proxy_server_config: req.extensions().get_proxy_server_config(),
         access_addr_list: req
             .extensions()
             .get::<Arc<Vec<SocketAddr>>>()
             .expect("access_addr_list not found")
             .clone(),
         static_dir: static_dir.cloned().flatten(),
-        client: req.extensions().get_reqwest_client(),
         message_event_channel: req.extensions().get_message_event_cannel(),
+        client_proxy_config: req
+            .extensions()
+            .get::<Arc<ProxyConfig>>()
+            .expect("client_proxy_config not found")
+            .clone(),
     };
     let cors = CorsLayer::new()
         .allow_methods([Method::GET])
@@ -117,7 +121,10 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
             "/request_processing",
             api::request_processing::router(state.clone()),
         )
-        .nest("/general_setting", api::general_setting::router(state.clone()))
+        .nest(
+            "/general_setting",
+            api::general_setting::router(state.clone()),
+        )
         .split_for_parts();
 
     openapi.servers = Some(vec![Server::new(SELF_SERVICE_PATH_PREFIX)]);

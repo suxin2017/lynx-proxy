@@ -2,18 +2,28 @@
 
 use async_trait::async_trait;
 use sea_orm::{Set, entity::prelude::*};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de};
 use serde_json::Value as JsonValue;
 use utoipa::ToSchema;
 
 /// HTTP method enumeration
 #[derive(
-    Debug, Clone, PartialEq, Eq, DeriveActiveEnum, EnumIter, Serialize, Deserialize, ToSchema,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    DeriveActiveEnum,
+    EnumIter,
+    Serialize,
+    Deserialize,
+    ToSchema,
+    Default,
 )]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(10))")]
 #[serde(rename_all = "UPPERCASE")]
 pub enum HttpMethod {
     #[sea_orm(string_value = "GET")]
+    #[default]
     Get,
     #[sea_orm(string_value = "POST")]
     Post,
@@ -29,20 +39,24 @@ pub enum HttpMethod {
     Options,
 }
 
-impl Default for HttpMethod {
-    fn default() -> Self {
-        Self::Get
-    }
-}
-
 /// Request status enumeration
 #[derive(
-    Debug, Clone, PartialEq, Eq, DeriveActiveEnum, EnumIter, Serialize, Deserialize, ToSchema,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    DeriveActiveEnum,
+    EnumIter,
+    Serialize,
+    Deserialize,
+    ToSchema,
+    Default,
 )]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::N(20))")]
 #[serde(rename_all = "camelCase")]
 pub enum RequestStatus {
     #[sea_orm(string_value = "pending")]
+    #[default]
     Pending,
     #[sea_orm(string_value = "success")]
     Success,
@@ -52,10 +66,28 @@ pub enum RequestStatus {
     Timeout,
 }
 
-impl Default for RequestStatus {
-    fn default() -> Self {
-        Self::Pending
-    }
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    DeriveActiveEnum,
+    EnumIter,
+    Serialize,
+    Deserialize,
+    ToSchema,
+    Default,
+)]
+#[sea_orm(rs_type = "String", db_type = "String(StringLen::N(20))")]
+#[serde(rename_all = "camelCase")]
+pub enum RequestType {
+    #[sea_orm(string_value = "http")]
+    #[default]
+    Http,
+    #[sea_orm(string_value = "websocket")]
+    Websocket,
+    #[sea_orm(string_value = "sse")]
+    Sse,
 }
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, ToSchema)]
@@ -67,6 +99,8 @@ pub struct Model {
     /// Request name/title
     #[sea_orm(column_type = "String(StringLen::N(255))")]
     pub name: String,
+    /// Request type (HTTP, WebSocket, SSE)
+    pub request_type: RequestType,
     /// HTTP method
     pub method: HttpMethod,
     /// Request URL
@@ -78,9 +112,6 @@ pub struct Model {
     /// Request body content (binary data)
     #[sea_orm(column_type = "Blob", nullable)]
     pub body: Option<Vec<u8>>,
-    /// Content type of request body
-    #[sea_orm(column_type = "String(StringLen::N(100))", nullable)]
-    pub content_type: Option<String>,
     /// Request timeout in seconds
     pub timeout: Option<i32>,
     /// Request status
@@ -143,16 +174,21 @@ impl ActiveModelBehavior for ActiveModel {
 
 impl Model {
     /// Create a new API debug request
-    pub fn new_request(name: String, method: HttpMethod, url: String) -> Self {
+    pub fn new_request(
+        name: String,
+        method: HttpMethod,
+        url: String,
+        request_type: RequestType,
+    ) -> Self {
         let now = chrono::Utc::now().timestamp();
         Self {
             id: 0, // Will be set by database
             name,
             method,
             url,
+            request_type,
             headers: None,
             body: None,
-            content_type: None,
             timeout: Some(30), // Default 30 seconds
             status: RequestStatus::Pending,
             response_status: None,

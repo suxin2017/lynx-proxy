@@ -1,4 +1,4 @@
-use crate::entities::api_debug::{self, ActiveModel, Entity, HttpMethod, Model, RequestStatus};
+use crate::entities::api_debug::{self, ActiveModel, Entity, HttpMethod, Model, RequestStatus, RequestType};
 use anyhow::Result;
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
@@ -15,8 +15,8 @@ pub struct CreateApiDebugRequest {
     pub url: String,
     pub headers: Option<JsonValue>,
     pub body: Option<String>,
-    pub content_type: Option<String>,
     pub timeout: Option<i32>,
+    pub request_type: RequestType,
     pub is_history: bool,
 }
 
@@ -29,7 +29,6 @@ pub struct UpdateApiDebugRequest {
     pub url: Option<String>,
     pub headers: Option<JsonValue>,
     pub body: Option<String>,
-    pub content_type: Option<String>,
     pub timeout: Option<i32>,
     pub status: Option<RequestStatus>,
     pub response_status: Option<i32>,
@@ -49,7 +48,6 @@ pub struct ApiDebugResponse {
     pub url: String,
     pub headers: Option<JsonValue>,
     pub body: Option<String>,
-    pub content_type: Option<String>,
     pub timeout: Option<i32>,
     pub status: RequestStatus,
     pub response_status: Option<i32>,
@@ -74,7 +72,6 @@ impl From<Model> for ApiDebugResponse {
             url: model.url,
             headers: model.headers,
             body: body_string,
-            content_type: model.content_type,
             timeout: model.timeout,
             status: model.status,
             response_status: model.response_status,
@@ -99,7 +96,6 @@ impl From<CreateApiDebugRequest> for ActiveModel {
             url: Set(req.url),
             headers: Set(req.headers),
             body: Set(req.body.map(|s| s.into_bytes())),
-            content_type: Set(req.content_type),
             timeout: Set(req.timeout),
             status: Set(RequestStatus::Pending),
             response_status: NotSet,
@@ -107,6 +103,7 @@ impl From<CreateApiDebugRequest> for ActiveModel {
             response_body: NotSet,
             response_time: NotSet,
             error_message: NotSet,
+            request_type: Set(req.request_type),
             is_history: Set(req.is_history),
             created_at: Set(now),
             updated_at: Set(now),
@@ -188,9 +185,6 @@ impl ApiDebugDao {
             }
             if let Some(body) = req.body {
                 active_model.body = Set(Some(body.into_bytes()));
-            }
-            if let Some(content_type) = req.content_type {
-                active_model.content_type = Set(Some(content_type));
             }
             if let Some(timeout) = req.timeout {
                 active_model.timeout = Set(Some(timeout));
@@ -377,8 +371,8 @@ mod tests {
             url: "https://api.example.com/test".to_string(),
             headers: Some(json!({"Content-Type": "application/json"})),
             body: Some(r#"{"test": "data"}"#.to_string()),
-            content_type: Some("application/json".to_string()),
             timeout: Some(30),
+            request_type: RequestType::Http,
             is_history: false,
         };
 
@@ -399,8 +393,8 @@ mod tests {
             url: "https://api.example.com/test".to_string(),
             headers: None,
             body: None,
-            content_type: None,
             timeout: None,
+            request_type: RequestType::Http,
             is_history: false,
         };
 
@@ -426,8 +420,8 @@ mod tests {
                 url: format!("https://api.example.com/test{}", i),
                 headers: None,
                 body: None,
-                content_type: None,
                 timeout: None,
+                request_type: RequestType::Http,
                 is_history: false,
             };
             dao.create(req).await.unwrap();

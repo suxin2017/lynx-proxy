@@ -1,17 +1,19 @@
-use crate::client::reqwest_client::ReqwestClient;
 use crate::self_service::{
     RouteState,
-    utils::{ResponseDataWrapper, ok},
+    utils::{ResponseDataWrapper, hashmap_to_headermap, ok},
 };
 use axum::{Json, extract::State, http::StatusCode};
-use lynx_db::dao::api_debug_dao::{ApiDebugDao, CreateApiDebugRequest, UpdateApiDebugRequest};
 use lynx_db::entities::api_debug::{HttpMethod, RequestStatus};
+use lynx_db::{
+    dao::api_debug_dao::{ApiDebugDao, CreateApiDebugRequest, UpdateApiDebugRequest},
+    entities::api_debug::RequestType,
+};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Instant;
+use std::{collections::HashMap, hash::Hash};
 use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
@@ -21,6 +23,8 @@ use utoipa_axum::{router::OpenApiRouter, routes};
 pub struct ExecuteApiDebugRequest {
     /// Name of the API request
     pub name: String,
+    /// type of http ws or sse
+    pub request_type: RequestType,
     /// HTTP method
     pub method: HttpMethod,
     /// Target URL
@@ -29,8 +33,6 @@ pub struct ExecuteApiDebugRequest {
     pub headers: Option<HashMap<String, String>>,
     /// Request body
     pub body: Option<String>,
-    /// Content type header
-    pub content_type: Option<String>,
     /// Timeout in seconds (default: 30)
     pub timeout: Option<u64>,
 }
@@ -46,7 +48,7 @@ pub struct ExecuteApiDebugResponse {
     /// HTTP response status code
     pub response_status: Option<i32>,
     /// Response headers as JSON
-    pub response_headers: Option<JsonValue>,
+    pub response_headers: Option<HashMap<String, String>>,
     /// Response body
     pub response_body: Option<String>,
     /// Response time in milliseconds
@@ -67,43 +69,37 @@ pub struct ExecuteApiDebugResponse {
     )
 )]
 async fn execute_api_request(
-    State(RouteState { db, client, .. }): State<RouteState>,
+    State(RouteState {
+        db,
+        client_proxy_config,
+        ..
+    }): State<RouteState>,
     Json(request): Json<ExecuteApiDebugRequest>,
 ) -> Result<Json<ResponseDataWrapper<ExecuteApiDebugResponse>>, StatusCode> {
     let dao = ApiDebugDao::new(db.clone());
 
-    // Convert headers to HeaderMap
     let mut header_map = HeaderMap::new();
-    if let Some(headers) = &request.headers {
-        for (key, value) in headers {
-            if let (Ok(header_name), Ok(header_value)) =
-                (HeaderName::from_str(key), HeaderValue::from_str(value))
-            {
-                header_map.insert(header_name, header_value);
-            }
-        }
-    }
 
-    // Note: content_type is no longer used here to avoid conflicts with headers.
-    // Users should set Content-Type directly in the headers field.
-
-    // Extract actual content-type from headers for database storage
-    let actual_content_type = header_map
-        .get("content-type")
-        .and_then(|value| value.to_str().ok())
-        .map(|s| s.to_string());
+    let header = request
+        .headers
+        .map(hashmap_to_headermap)
+        .transpose()
+        .map_err(|_| {
+            tracing::error!("Failed to convert headers to HeaderMap");
+            StatusCode::BAD_REQUEST
+        })?;
 
     // Create the initial debug entry
     let create_request = CreateApiDebugRequest {
         name: request.name.clone(),
         method: request.method.clone(),
+        request_type: request.request_type.clone(),
         url: request.url.clone(),
         headers: request
             .headers
             .as_ref()
             .map(|h| serde_json::to_value(h).unwrap_or(JsonValue::Null)),
         body: request.body.clone(),
-        content_type: actual_content_type, // Use the actual content-type from headers
         timeout: request.timeout.map(|t| t as i32),
         is_history: true,
     };
@@ -115,6 +111,17 @@ async fn execute_api_request(
 
     // Start timing
     let start_time = Instant::now();
+
+    let client = lynx_request::ReqwestClientBuilder::new()
+        .with_proxy(lynx_request::ReqwestProxyType::from_proxy_config(
+            &client_proxy_config.proxy_type,
+            client_proxy_config.url.as_ref(),
+        ))
+        .map_err(|e| {
+            tracing::error!("Failed to create HTTP client: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .build();
 
     // Execute the HTTP request
     let (status, response_status, response_headers, response_body, error_message) =
@@ -130,7 +137,6 @@ async fn execute_api_request(
         url: None,
         headers: None,
         body: None,
-        content_type: None,
         timeout: None,
         status: Some(status.clone()),
         response_status,

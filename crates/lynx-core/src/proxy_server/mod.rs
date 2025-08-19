@@ -254,16 +254,12 @@ impl ProxyServer {
                     &client_proxy_config.proxy_requests.proxy_type,
                     client_proxy_config.proxy_requests.url.as_ref(),
                 );
-                let api_debug_proxy_type = crate::client::ProxyType::from_proxy_config(
-                    &client_proxy_config.api_debug.proxy_type,
-                    client_proxy_config.api_debug.url.as_ref(),
-                );
+            
 
                 let request_client = Arc::new(
                     RequestClientBuilder::default()
                         .custom_certs(client_custom_certs.clone())
                         .proxy_requests_config(proxy_requests_type)
-                        .api_debug_proxy_config(api_debug_proxy_type)
                         .build()
                         .expect("build request client error"),
                 );
@@ -287,6 +283,7 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(message_event_cannel))
                         .layer(RequestExtensionLayer::new(access_addr_list))
                         .layer(RequestExtensionLayer::new(static_dir))
+                        .layer(RequestExtensionLayer::new(Arc::new(client_proxy_config.api_debug)))
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)
                         .layer(ErrorHandlerLayer)

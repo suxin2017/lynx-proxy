@@ -4,7 +4,7 @@ use anyhow::Result;
 use http::Extensions;
 use rcgen::Certificate;
 
-use crate::client::{ProxyType, ReqwestClient, ReqwestClientBuilder};
+use crate::client::ProxyType;
 
 use super::{
     http_client::{HttpClient, HttpClientBuilder},
@@ -15,7 +15,6 @@ use super::{
 pub struct RequestClient {
     http_client: Arc<HttpClient>,
     websocket_client: Arc<WebsocketClient>,
-    reqwest_client: Arc<ReqwestClient>,
 }
 
 #[derive(Default)]
@@ -44,11 +43,6 @@ impl RequestClientBuilder {
         self
     }
 
-    pub fn api_debug_proxy_config(mut self, proxy_config: ProxyType) -> Self {
-        self.api_debug_proxy_config = proxy_config;
-        self
-    }
-
     pub fn build(&self) -> Result<RequestClient> {
         let custom_certs = self.custom_certs.clone();
 
@@ -64,15 +58,7 @@ impl RequestClientBuilder {
                 .build()?,
         );
 
-        let reqwest_client = Arc::new(
-            ReqwestClientBuilder::default()
-                .custom_certs(self.api_custom_certs.clone())
-                .proxy_config(self.api_debug_proxy_config.clone())
-                .build()?,
-        );
-
         Ok(RequestClient {
-            reqwest_client,
             http_client,
             websocket_client,
         })
@@ -82,17 +68,11 @@ impl RequestClientBuilder {
 pub type ShareRequestClient = Arc<RequestClient>;
 
 pub trait RequestClientExt {
-    fn get_request_client(&self) -> Option<ShareRequestClient>;
     fn get_http_client(&self) -> Arc<HttpClient>;
     fn get_websocket_client(&self) -> Arc<WebsocketClient>;
-    fn get_reqwest_client(&self) -> Arc<ReqwestClient>;
 }
 
 impl RequestClientExt for Extensions {
-    fn get_request_client(&self) -> Option<ShareRequestClient> {
-        self.get::<ShareRequestClient>().map(Arc::clone)
-    }
-
     fn get_http_client(&self) -> Arc<HttpClient> {
         self.get::<ShareRequestClient>()
             .map(|c| Arc::clone(&c.http_client))
@@ -102,12 +82,6 @@ impl RequestClientExt for Extensions {
     fn get_websocket_client(&self) -> Arc<WebsocketClient> {
         self.get::<ShareRequestClient>()
             .map(|c| Arc::clone(&c.websocket_client))
-            .expect("RequestClient not found")
-    }
-
-    fn get_reqwest_client(&self) -> Arc<ReqwestClient> {
-        self.get::<ShareRequestClient>()
-            .map(|c| Arc::clone(&c.reqwest_client))
             .expect("RequestClient not found")
     }
 }

@@ -22,7 +22,7 @@ async fn get_cert_path(
     State(state): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<String>>, StatusCode> {
     Ok(Json(ok(state
-        .proxy_config
+        .proxy_server_config
         .root_cert_file_path
         .to_string_lossy()
         .to_string())))
@@ -41,7 +41,7 @@ async fn get_cert_path(
 async fn download_certificate(
     State(state): State<RouteState>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let cert_path = &state.proxy_config.root_cert_file_path;
+    let cert_path = &state.proxy_server_config.root_cert_file_path;
 
     // Try to open and read the certificate file
     let mut file = File::open(&cert_path)
