@@ -1,6 +1,6 @@
+use crate::error::CoreError;
 use crate::self_service::RouteState;
 use axum::{Json, extract::State};
-use http::StatusCode;
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 #[utoipa::path(
@@ -16,7 +16,7 @@ async fn get_base_info(
     State(RouteState {
         access_addr_list, ..
     }): State<RouteState>,
-) -> Result<Json<Vec<String>>, StatusCode> {
+) -> Result<Json<Vec<String>>, CoreError> {
     let info = access_addr_list
         .iter()
         .map(|addr| addr.to_string())

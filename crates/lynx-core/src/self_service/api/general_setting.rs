@@ -1,5 +1,6 @@
+use crate::error::{CoreError, ErrorResponse};
 use crate::self_service::RouteState;
-use crate::self_service::utils::{AppError, ErrorResponse, ResponseDataWrapper, ok};
+use crate::self_service::utils::{ResponseDataWrapper, ok};
 use axum::Json;
 use axum::extract::State;
 use lynx_db::dao::general_setting_dao::{GeneralSetting, GeneralSettingDao};
@@ -18,12 +19,12 @@ use utoipa_axum::routes;
 )]
 async fn get_general_setting(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<GeneralSetting>>, AppError> {
+) -> Result<Json<ResponseDataWrapper<GeneralSetting>>, CoreError> {
     let dao = GeneralSettingDao::new(db);
     let setting = dao
         .get_general_setting()
         .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        .map_err(|e| CoreError::Db { operation: "get general setting", source: anyhow::anyhow!(e) })?;
     Ok(Json(ok(setting)))
 }
 
@@ -40,11 +41,11 @@ async fn get_general_setting(
 async fn update_general_setting(
     State(RouteState { db, .. }): State<RouteState>,
     Json(setting): Json<GeneralSetting>,
-) -> Result<Json<ResponseDataWrapper<TupleUnit>>, AppError> {
+) -> Result<Json<ResponseDataWrapper<TupleUnit>>, CoreError> {
     let dao = GeneralSettingDao::new(db);
     dao.update_general_setting(setting)
         .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        .map_err(|e| CoreError::Db { operation: "update general setting", source: anyhow::anyhow!(e) })?;
     Ok(Json(ok(())))
 }
 

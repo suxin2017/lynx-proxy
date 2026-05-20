@@ -72,6 +72,7 @@ derive_builder = "0.20.2"
 local-ip-address = "0.6.3"
 serde_json = "1.0.135"
 serde = "1.0.217"
+thiserror = "1.0"
 nanoid = "0.4.0"
 sea-orm-migration = { version = "1.1.0", features = [
     "sqlx-sqlite",

@@ -1,13 +1,11 @@
-use axum::http::StatusCode;
 use axum::{Json, extract::State};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
+use crate::error::{CoreError, ErrorResponse};
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreValue;
 use crate::self_service::RouteState;
-use crate::self_service::utils::{
-    AppError, EmptyOkResponse, ErrorResponse, ResponseDataWrapper, empty_ok, ok,
-};
+use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
 use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
 
 use super::net_request_sse;
@@ -23,12 +21,12 @@ use super::net_request_sse;
 )]
 async fn get_capture_status(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<CaptureSwitch>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<CaptureSwitch>>, CoreError> {
     let dao = CaptureSwitchDao::new(db);
     let status = dao
         .get_capture_switch()
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "get capture switch", source: anyhow::anyhow!(e) })?;
     Ok(Json(ok(status)))
 }
 
@@ -43,12 +41,12 @@ async fn get_capture_status(
 )]
 async fn toggle_capture(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = CaptureSwitchDao::new(db.clone());
     let current_status = dao
         .get_capture_switch()
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "get capture switch for toggle", source: anyhow::anyhow!(e) })?;
 
     let new_status = match current_status.recording_status {
         RecordingStatus::StartRecording => RecordingStatus::PauseRecording,
@@ -59,7 +57,7 @@ async fn toggle_capture(
         recording_status: new_status,
     })
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(|e| CoreError::Db { operation: "update capture switch", source: anyhow::anyhow!(e) })?;
 
     Ok(Json(empty_ok()))
 }
@@ -92,17 +90,17 @@ async fn get_cached_requests(
         net_request_cache, ..
     }): State<RouteState>,
     Json(params): Json<GetRequestsData>,
-) -> Result<Json<ResponseDataWrapper<RecordRequests>>, AppError> {
+) -> Result<Json<ResponseDataWrapper<RecordRequests>>, CoreError> {
     let new_requests = net_request_cache.get_new_requests().await.map_err(|e| {
         tracing::error!("Failed to get new requests: {:?}", e);
-        AppError::DatabaseError(e.to_string())
+        CoreError::Db { operation: "get new requests", source: anyhow::anyhow!(e) }
     })?;
     let patch_requests = net_request_cache
         .get_request_by_keys(params.trace_ids.unwrap_or_default())
         .await
         .map_err(|e| {
             tracing::error!("Failed to get patch requests: {:?}", e);
-            AppError::DatabaseError(e.to_string())
+            CoreError::Db { operation: "get requests by keys", source: anyhow::anyhow!(e) }
         })?;
     Ok(Json(ok(RecordRequests {
         new_requests,

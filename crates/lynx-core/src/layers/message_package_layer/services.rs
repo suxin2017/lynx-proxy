@@ -17,6 +17,7 @@ use tracing::{Instrument, instrument, trace_span};
 
 use crate::{
     common::{Req, Res},
+    error::{CoreError, CoreResult},
     self_service::is_self_service,
 };
 
@@ -28,6 +29,7 @@ use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
 
 pub trait MessageEventLayerExt {
     fn get_message_event_cannel(&self) -> Arc<MessageEventChannel>;
+    fn try_get_message_event_cannel(&self) -> CoreResult<Arc<MessageEventChannel>>;
 }
 
 impl MessageEventLayerExt for Extensions {
@@ -35,6 +37,12 @@ impl MessageEventLayerExt for Extensions {
         self.get::<Arc<MessageEventChannel>>()
             .expect("MessageEventChannel not found in Extensions")
             .clone()
+    }
+
+    fn try_get_message_event_cannel(&self) -> CoreResult<Arc<MessageEventChannel>> {
+        self.get::<Arc<MessageEventChannel>>()
+            .cloned()
+            .ok_or(CoreError::MissingExtension { name: "MessageEventChannel" })
     }
 }
 
@@ -145,12 +153,13 @@ impl Drop for RequestAbortGuard {
 
 impl<S> Service<Req> for ProxyMessageEventService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response>
         + Clone
         + Send
         + Sync
         + 'static,
     S::Future: Send,
+    S::Error: Send + std::fmt::Debug,
 {
     type Response = S::Response;
     type Error = S::Error;

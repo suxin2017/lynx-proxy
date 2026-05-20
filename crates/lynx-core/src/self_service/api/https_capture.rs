@@ -1,5 +1,6 @@
+use crate::error::{CoreError, ErrorResponse};
 use crate::self_service::RouteState;
-use crate::self_service::utils::{AppError, ErrorResponse, ResponseDataWrapper, ok};
+use crate::self_service::utils::{ResponseDataWrapper, ok};
 use axum::Json;
 use axum::extract::State;
 use lynx_db::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
@@ -18,12 +19,12 @@ use utoipa_axum::routes;
 )]
 async fn get_https_capture_filter(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<CaptureFilter>>, AppError> {
+) -> Result<Json<ResponseDataWrapper<CaptureFilter>>, CoreError> {
     let dao = HttpsCaptureDao::new(db);
     let filter = dao
         .get_capture_filter()
         .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        .map_err(|e| CoreError::Db { operation: "get https capture filter", source: anyhow::anyhow!(e) })?;
     Ok(Json(ok(filter)))
 }
 
@@ -40,11 +41,11 @@ async fn get_https_capture_filter(
 async fn update_https_capture_filter(
     State(RouteState { db, .. }): State<RouteState>,
     Json(filter): Json<CaptureFilter>,
-) -> Result<Json<ResponseDataWrapper<()>>, AppError> {
+) -> Result<Json<ResponseDataWrapper<()>>, CoreError> {
     let dao = HttpsCaptureDao::new(db);
     dao.update_capture_filter(filter)
         .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        .map_err(|e| CoreError::Db { operation: "update https capture filter", source: anyhow::anyhow!(e) })?;
     Ok(Json(ok(())))
 }
 

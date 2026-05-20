@@ -1,7 +1,5 @@
 use std::task::{Context, Poll, ready};
 
-use anyhow::Result;
-use axum::response::Response;
 use pin_project_lite::pin_project;
 use tracing::Span;
 
@@ -13,16 +11,15 @@ pin_project! {
     }
 }
 
-impl<F> Future for LogFuture<F>
+impl<F, T, E> Future for LogFuture<F>
 where
-    F: Future<Output = Result<Response>>,
+    F: Future<Output = Result<T, E>>,
 {
-    type Output = F::Output;
+    type Output = Result<T, E>;
 
     fn poll(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let _enter = this.span.enter();
-        let res = ready!(this.f.poll(cx))?;
-        Poll::Ready(Ok(res))
+        Poll::Ready(ready!(this.f.poll(cx)))
     }
 }

@@ -86,7 +86,8 @@ impl ProxyServerBuilder {
 
         let port = self.port.flatten().unwrap_or(0);
         let local_only = self.local_only.unwrap_or(false);
-        let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
+        let network_interfaces = list_afinet_netifas()
+            .map_err(|e| anyhow!("get network interfaces error: {e}"))?;
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
             .filter(|(_, ip)| ip.is_ipv4())
@@ -111,7 +112,7 @@ impl ProxyServerBuilder {
             .collect();
         let custom_certs = self.custom_certs.clone().flatten();
         let api_custom_certs = self.api_custom_certs.clone().flatten();
-        let db_config = self.db_config.clone().expect("db_config is required");
+        let db_config = self.db_config.clone().ok_or_else(|| anyhow!("db_config is required"))?;
         let db_con = Database::connect(db_config.clone()).await?;
 
         Migrator::up(&db_con, None).await?;
@@ -129,13 +130,13 @@ impl ProxyServerBuilder {
             access_addr_list,
             custom_certs,
             api_custom_certs,
-            config: self.config.clone().expect("config is required"),
+            config: self.config.clone().ok_or_else(|| anyhow!("config is required"))?,
             db_config,
             static_dir: self.static_dir.clone().flatten(),
             server_ca_manager: self
                 .server_ca_manager
                 .clone()
-                .expect("server_ca_manager is required"),
+                .ok_or_else(|| anyhow!("server_ca_manager is required"))?,
             db_connect: db_arc,
             connect_type: self
                 .connect_type

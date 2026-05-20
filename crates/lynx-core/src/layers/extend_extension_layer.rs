@@ -9,6 +9,7 @@ use tower::Service;
 
 use crate::{
     client::request_client::RequestClientExt,
+    error::{CoreError, CoreResult},
     proxy_server::{ClientAddrRequestExt, server_config::ProxyServerConfigExtensionsExt},
 };
 
@@ -64,6 +65,7 @@ impl<S> tower::Layer<S> for ExtendExtensionsLayer {
 
 pub trait DbExtensionsExt {
     fn get_db(&self) -> Arc<sea_orm::DatabaseConnection>;
+    fn try_get_db(&self) -> CoreResult<Arc<sea_orm::DatabaseConnection>>;
 }
 
 impl DbExtensionsExt for Extensions {
@@ -71,6 +73,12 @@ impl DbExtensionsExt for Extensions {
         self.get::<Arc<sea_orm::DatabaseConnection>>()
             .expect("Missing database connection in request")
             .clone()
+    }
+
+    fn try_get_db(&self) -> CoreResult<Arc<sea_orm::DatabaseConnection>> {
+        self.get::<Arc<sea_orm::DatabaseConnection>>()
+            .cloned()
+            .ok_or(CoreError::MissingExtension { name: "DatabaseConnection" })
     }
 }
 

@@ -1,9 +1,10 @@
 use crate::client::reqwest_client::ReqwestClient;
+use crate::error::CoreError;
 use crate::self_service::{
     RouteState,
     utils::{ResponseDataWrapper, ok},
 };
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{Json, extract::State};
 use lynx_db::dao::api_debug_dao::{ApiDebugDao, CreateApiDebugRequest, UpdateApiDebugRequest};
 use lynx_db::entities::api_debug::{HttpMethod, RequestStatus};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -69,7 +70,7 @@ pub struct ExecuteApiDebugResponse {
 async fn execute_api_request(
     State(RouteState { db, client, .. }): State<RouteState>,
     Json(request): Json<ExecuteApiDebugRequest>,
-) -> Result<Json<ResponseDataWrapper<ExecuteApiDebugResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<ExecuteApiDebugResponse>>, CoreError> {
     let dao = ApiDebugDao::new(db.clone());
 
     // Convert headers to HeaderMap
@@ -110,7 +111,7 @@ async fn execute_api_request(
 
     let debug_entry = dao.create(create_request).await.map_err(|e| {
         tracing::error!("Failed to create debug entry: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "create debug entry", source: anyhow::anyhow!(e) }
     })?;
 
     // Start timing
@@ -145,7 +146,7 @@ async fn execute_api_request(
         .await
         .map_err(|e| {
             tracing::error!("Failed to update debug entry: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            CoreError::Db { operation: "update debug entry", source: anyhow::anyhow!(e) }
         })?;
 
     let final_entry = updated_entry.unwrap_or(debug_entry);

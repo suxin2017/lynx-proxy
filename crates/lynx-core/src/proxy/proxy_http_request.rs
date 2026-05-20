@@ -20,7 +20,7 @@ pub fn is_http_req(req: &Req) -> bool {
 #[instrument(skip_all)]
 async fn proxy_http_request_inner(req: Req) -> Result<Response> {
     let trace_id = req.extensions().get_trace_id().clone();
-    let http_client = req.extensions().get_http_client();
+    let http_client = req.extensions().try_get_http_client()?;
     http_client
         .request(req)
         .await

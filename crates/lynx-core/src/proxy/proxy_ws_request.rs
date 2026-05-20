@@ -62,7 +62,7 @@ pub fn is_websocket_req(req: &Req) -> bool {
 
 async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
     assert!(hyper_tungstenite::is_upgrade_request(&req));
-    let message_channel = req.extensions().get_message_event_cannel();
+    let message_channel = req.extensions().try_get_message_event_cannel()?;
     let trace_id = req.extensions().get_trace_id();
     let (_res, hyper_ws) = hyper_tungstenite::upgrade(&mut req, None)?;
 
@@ -70,7 +70,7 @@ async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
         .dispatch_on_websocket_start(trace_id.clone())
         .await;
 
-    let ws_client = req.extensions().get_websocket_client();
+    let ws_client = req.extensions().try_get_websocket_client()?;
     let ws_req: WebSocketReq = req.try_into()?;
 
     let (client_ws, res) = ws_client.request(ws_req).await.inspect_err(|e| {

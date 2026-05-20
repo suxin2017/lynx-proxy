@@ -1,5 +1,5 @@
 use crate::common::Req;
-use anyhow::Result;
+use crate::error::CoreResult;
 use axum::response::Response;
 
 /// Represents the type of result returned by request handling operations.
@@ -14,9 +14,9 @@ pub enum HandleRequestType {
 
 #[async_trait::async_trait]
 pub trait HandlerTrait {
-    async fn handle_request(&self, request: Req) -> Result<HandleRequestType>;
+    async fn handle_request(&self, request: Req) -> CoreResult<HandleRequestType>;
 
-    async fn handle_response(&self, response: Response) -> Result<Response> {
+    async fn handle_response(&self, response: Response) -> CoreResult<Response> {
         Ok(response)
     }
 }

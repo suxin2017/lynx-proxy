@@ -1,3 +1,4 @@
+use crate::error::CoreError;
 use crate::self_service::{
     RouteState,
     utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok},
@@ -5,7 +6,6 @@ use crate::self_service::{
 use axum::{
     Json,
     extract::{Query, State},
-    http::StatusCode,
 };
 use lynx_db::dao::api_debug_tree_dao::{
     ApiDebugTreeDao, CreateFolderRequest, CreateRequestNodeRequest, MoveNodeRequest,
@@ -102,12 +102,12 @@ pub struct GetNodePathParams {
 async fn create_folder(
     State(RouteState { db, .. }): State<RouteState>,
     Json(request): Json<CreateFolderRequest>,
-) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.create_folder(request).await.map_err(|e| {
         tracing::error!("Failed to create folder: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "create folder", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -127,12 +127,12 @@ async fn create_folder(
 async fn create_request_node(
     State(RouteState { db, .. }): State<RouteState>,
     Json(request): Json<CreateRequestNodeRequest>,
-) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.create_request_node(request).await.map_err(|e| {
         tracing::error!("Failed to create request node: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "create request node", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -152,17 +152,17 @@ async fn create_request_node(
 async fn get_node(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<GetNodeParams>,
-) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.get_node(params.id).await.map_err(|e| {
         tracing::error!("Failed to get node: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get node", source: anyhow::anyhow!(e) }
     })?;
 
     match result {
         Some(node) => Ok(Json(ok(node))),
-        None => Err(StatusCode::NOT_FOUND),
+        None => Err(CoreError::NotFound { message: format!("node {} not found", params.id) }),
     }
 }
 
@@ -177,12 +177,12 @@ async fn get_node(
 )]
 async fn get_tree(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<TreeResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<TreeResponse>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.get_tree().await.map_err(|e| {
         tracing::error!("Failed to get tree: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get tree", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -201,12 +201,12 @@ async fn get_tree(
 async fn get_children(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<GetChildrenParams>,
-) -> Result<Json<ResponseDataWrapper<Vec<TreeNodeResponse>>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<Vec<TreeNodeResponse>>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.get_children(params.parent_id).await.map_err(|e| {
         tracing::error!("Failed to get children: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get children", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -229,20 +229,20 @@ async fn move_node(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<MoveNodeParams>,
     Json(request): Json<MoveNodeRequest>,
-) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.move_node(params.id, request).await.map_err(|e| {
         tracing::error!("Failed to move node: {}", e);
         if e.to_string().contains("循环引用") {
-            return StatusCode::BAD_REQUEST;
+            return CoreError::Validation { message: "移动操作会造成循环引用".to_string() };
         }
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "move node", source: anyhow::anyhow!(e) }
     })?;
 
     match result {
         Some(node) => Ok(Json(ok(node))),
-        None => Err(StatusCode::NOT_FOUND),
+        None => Err(CoreError::NotFound { message: format!("node {} not found", params.id) }),
     }
 }
 
@@ -262,17 +262,17 @@ async fn rename_node(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<RenameNodeParams>,
     Json(request): Json<RenameNodeRequest>,
-) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<TreeNodeResponse>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.rename_node(params.id, request).await.map_err(|e| {
         tracing::error!("Failed to rename node: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "rename node", source: anyhow::anyhow!(e) }
     })?;
 
     match result {
         Some(node) => Ok(Json(ok(node))),
-        None => Err(StatusCode::NOT_FOUND),
+        None => Err(CoreError::NotFound { message: format!("node {} not found", params.id) }),
     }
 }
 
@@ -290,18 +290,18 @@ async fn rename_node(
 async fn delete_node(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<DeleteNodeParams>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.delete_node(params.id).await.map_err(|e| {
         tracing::error!("Failed to delete node: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "delete node", source: anyhow::anyhow!(e) }
     })?;
 
     if result {
         Ok(Json(empty_ok()))
     } else {
-        Err(StatusCode::NOT_FOUND)
+        Err(CoreError::NotFound { message: format!("node {} not found", params.id) })
     }
 }
 
@@ -320,12 +320,12 @@ async fn reorder_nodes(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<ReorderQueryParams>,
     Json(request): Json<ReorderNodesRequest>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     dao.reorder_nodes(params.parent_id, request.node_orders).await.map_err(|e| {
         tracing::error!("Failed to reorder nodes: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "reorder nodes", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(empty_ok()))
@@ -344,12 +344,12 @@ async fn reorder_nodes(
 async fn get_node_path(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<GetNodePathParams>,
-) -> Result<Json<ResponseDataWrapper<Vec<TreeNodeResponse>>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<Vec<TreeNodeResponse>>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.get_node_path(params.id).await.map_err(|e| {
         tracing::error!("Failed to get node path: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get node path", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -368,12 +368,12 @@ async fn get_node_path(
 async fn search_nodes(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<SearchQueryParams>,
-) -> Result<Json<ResponseDataWrapper<Vec<TreeNodeResponse>>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<Vec<TreeNodeResponse>>>, CoreError> {
     let dao = ApiDebugTreeDao::new(db);
 
     let result = dao.search_nodes(&params.keyword).await.map_err(|e| {
         tracing::error!("Failed to search nodes: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "search nodes", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))

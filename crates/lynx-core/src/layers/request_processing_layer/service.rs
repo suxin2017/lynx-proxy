@@ -1,11 +1,11 @@
 use super::handler_trait::{HandleRequestType, HandlerTrait};
 use crate::{
     common::Req,
+    error::CoreError,
     layers::{extend_extension_layer::DbExtensionsExt, trace_id_layer::service::TraceIdExt},
-    utils::full,
 };
 use anyhow::Result;
-use axum::response::{IntoResponse, Response};
+use axum::response::Response;
 use lynx_db::dao::request_processing_dao::{
     RequestProcessingDao, handlers::handler_rule::HandlerRuleType,
 };
@@ -26,11 +26,12 @@ impl<S> RequestProcessingService<S> {
 
 impl<S> Service<Req> for RequestProcessingService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response>
         + Clone
         + Send
         + Sync
         + 'static,
+    S::Error: From<anyhow::Error>,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -177,14 +178,10 @@ where
                     }
                     Err(e) => {
                         tracing::warn!("Handler '{}' failed: {}", handler.name, e);
-                        tracing::trace!("Creating error response for handler failure");
-                        // 如果处理器失败，我们需要创建一个错误响应
-                        let error_response = Response::builder()
-                            .status(500)
-                            .header("content-type", "text/plain")
-                            .body(full(format!("Handler processing failed: {}", e)))
-                            .unwrap_or_else(|_| Response::new(full("Internal server error")));
-                        return Ok(error_response.into_response());
+                        return Err(S::Error::from(anyhow::Error::from(CoreError::Internal {
+                            operation: "request processing handler execution",
+                            source: anyhow::anyhow!(e),
+                        })));
                     }
                 }
             }
@@ -214,7 +211,11 @@ where
                                 "Executing modify response handler for '{}'",
                                 handler.name
                             );
-                            response = modify_response_config.handle_response(response).await?;
+                            response = modify_response_config
+                                .handle_response(response)
+                                .await
+                                .map_err(anyhow::Error::from)
+                                .map_err(S::Error::from)?;
                         }
                         HandlerRuleType::HtmlScriptInjector(html_script_injector_config) => {
                             tracing::trace!(
@@ -223,7 +224,9 @@ where
                             );
                             response = html_script_injector_config
                                 .handle_response(response)
-                                .await?;
+                                .await
+                                .map_err(anyhow::Error::from)
+                                .map_err(S::Error::from)?;
                         }
                         HandlerRuleType::Delay(delay_config) => {
                             tracing::trace!(
@@ -231,7 +234,11 @@ where
                                 handler.name,
                                 delay_config.delay_type
                             );
-                            response = delay_config.handle_response(response).await?;
+                            response = delay_config
+                                .handle_response(response)
+                                .await
+                                .map_err(anyhow::Error::from)
+                                .map_err(S::Error::from)?;
                         }
                         _ => {
                             tracing::trace!(

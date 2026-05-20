@@ -1,14 +1,13 @@
-use anyhow::Result;
 use http::{Method, Uri};
 use http_body_util::{BodyExt, Full};
 use lynx_db::dao::request_processing_dao::handlers::ModifyRequestConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::common::Req;
+use crate::{common::Req, error::CoreResult};
 
 #[async_trait::async_trait]
 impl HandlerTrait for ModifyRequestConfig {
-    async fn handle_request(&self, mut request: Req) -> Result<HandleRequestType> {
+    async fn handle_request(&self, mut request: Req) -> CoreResult<HandleRequestType> {
         // Modify headers if specified
         if let Some(ref modify_headers) = self.modify_headers {
             let headers = request.headers_mut();
@@ -76,6 +75,7 @@ impl HandlerTrait for ModifyRequestConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
     use http::Request;
     use http_body_util::Empty;
     use std::collections::HashMap;

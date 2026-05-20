@@ -1,3 +1,4 @@
+use crate::error::CoreError;
 use crate::self_service::{
     RouteState,
     utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok},
@@ -6,7 +7,6 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use http::StatusCode;
 use lynx_db::dao::request_processing_dao::{
     CaptureRule, HandlerRule, RequestProcessingDao, RequestRule, RuleValidator,
 };
@@ -92,13 +92,13 @@ pub struct BatchRuleIdsRequest {
 async fn list_rules(
     State(RouteState { db, .. }): State<RouteState>,
     Query(query): Query<RuleListQuery>,
-) -> Result<Json<ResponseDataWrapper<RuleListResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<RuleListResponse>>, CoreError> {
     let dao = RequestProcessingDao::new(db);
 
     let mut rules = dao
         .list_rules()
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "list rules", source: anyhow::anyhow!(e) })?;
 
     if query.enabled_only.unwrap_or(false) {
         rules.retain(|rule| rule.enabled);
@@ -147,17 +147,17 @@ async fn list_rules(
 async fn get_rule(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
-) -> Result<Json<ResponseDataWrapper<RequestRule>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<RequestRule>>, CoreError> {
     let dao = RequestProcessingDao::new(db);
 
     let rule = dao
         .get_rule(id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "get rule", source: anyhow::anyhow!(e) })?;
 
     match rule {
         Some(rule) => Ok(Json(ok(rule))),
-        None => Err(StatusCode::NOT_FOUND),
+        None => Err(CoreError::NotFound { message: format!("rule {id} not found") }),
     }
 }
 
@@ -177,22 +177,22 @@ async fn get_rule(
 async fn delete_rule(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = RequestProcessingDao::new(db);
 
     // 首先检查规则是否存在
     let existing_rule = dao
         .get_rule(id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "get rule for delete", source: anyhow::anyhow!(e) })?;
 
     if existing_rule.is_none() {
-        return Err(StatusCode::NOT_FOUND);
+        return Err(CoreError::NotFound { message: format!("rule {id} not found") });
     }
 
     dao.delete_rule(id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "delete rule", source: anyhow::anyhow!(e) })?;
 
     Ok(Json(empty_ok()))
 }
@@ -215,22 +215,22 @@ async fn toggle_rule(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
     Json(request): Json<ToggleRuleRequest>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = RequestProcessingDao::new(db);
 
     // 首先检查规则是否存在
     let existing_rule = dao
         .get_rule(id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "get rule for toggle", source: anyhow::anyhow!(e) })?;
 
     if existing_rule.is_none() {
-        return Err(StatusCode::NOT_FOUND);
+        return Err(CoreError::NotFound { message: format!("rule {id} not found") });
     }
 
     dao.toggle_rule(id, request.enabled)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "toggle rule", source: anyhow::anyhow!(e) })?;
 
     Ok(Json(empty_ok()))
 }
@@ -246,12 +246,12 @@ async fn toggle_rule(
 )]
 async fn get_template_handlers(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<TemplateHandlersResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<TemplateHandlersResponse>>, CoreError> {
     let dao = RequestProcessingDao::new(db);
 
     let handlers = dao.get_template_handlers().await.map_err(|e| {
         tracing::error!("Failed to get template handlers: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get template handlers", source: anyhow::anyhow!(e) }
     })?;
 
     let response = TemplateHandlersResponse { handlers };
@@ -273,7 +273,7 @@ async fn get_template_handlers(
 async fn create_rule(
     State(RouteState { db, .. }): State<RouteState>,
     Json(request): Json<CreateRuleRequest>,
-) -> Result<Json<ResponseDataWrapper<CreateRuleResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<CreateRuleResponse>>, CoreError> {
     let dao = RequestProcessingDao::new(db);
 
     // Validate the rule
@@ -290,13 +290,13 @@ async fn create_rule(
     // Validate rule using validator
     RuleValidator::validate_rule(&rule).map_err(|e| {
         tracing::error!("Rule validation failed: {}", e);
-        StatusCode::BAD_REQUEST
+        CoreError::Validation { message: e.to_string() }
     })?;
 
     // Create the rule
     let rule_id = dao.create_rule(rule).await.map_err(|e| {
         tracing::error!("Failed to create rule: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "create rule", source: anyhow::anyhow!(e) }
     })?;
 
     let response = CreateRuleResponse { id: rule_id };
@@ -322,17 +322,17 @@ async fn update_rule(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
     Json(request): Json<UpdateRuleRequest>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = RequestProcessingDao::new(db);
 
     // 首先检查规则是否存在
     let existing_rule = dao.get_rule(id).await.map_err(|e| {
         tracing::error!("Failed to get rule: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get rule for update", source: anyhow::anyhow!(e) }
     })?;
 
     if existing_rule.is_none() {
-        return Err(StatusCode::NOT_FOUND);
+        return Err(CoreError::NotFound { message: format!("rule {id} not found") });
     }
 
     // Validate the rule
@@ -349,13 +349,13 @@ async fn update_rule(
     // Validate rule using validator
     RuleValidator::validate_rule(&rule).map_err(|e| {
         tracing::error!("Rule validation failed: {}", e);
-        StatusCode::BAD_REQUEST
+        CoreError::Validation { message: e.to_string() }
     })?;
 
     // Update the rule
     dao.update_rule(rule).await.map_err(|e| {
         tracing::error!("Failed to update rule: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "update rule", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(empty_ok()))
@@ -374,11 +374,11 @@ async fn update_rule(
 async fn batch_delete_rules(
     State(RouteState { db, .. }): State<RouteState>,
     Json(request): Json<BatchRuleIdsRequest>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = RequestProcessingDao::new(db);
     dao.batch_delete_rules(&request.ids)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "batch delete rules", source: anyhow::anyhow!(e) })?;
     Ok(Json(empty_ok()))
 }
 
@@ -395,11 +395,11 @@ async fn batch_delete_rules(
 async fn batch_enable_rules(
     State(RouteState { db, .. }): State<RouteState>,
     Json(request): Json<BatchRuleIdsRequest>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = RequestProcessingDao::new(db);
     dao.batch_toggle_rules(&request.ids, true)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "batch enable rules", source: anyhow::anyhow!(e) })?;
     Ok(Json(empty_ok()))
 }
 
@@ -416,11 +416,11 @@ async fn batch_enable_rules(
 async fn batch_disable_rules(
     State(RouteState { db, .. }): State<RouteState>,
     Json(request): Json<BatchRuleIdsRequest>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = RequestProcessingDao::new(db);
     dao.batch_toggle_rules(&request.ids, false)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| CoreError::Db { operation: "batch disable rules", source: anyhow::anyhow!(e) })?;
     Ok(Json(empty_ok()))
 }
 

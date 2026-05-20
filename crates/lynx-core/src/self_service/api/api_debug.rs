@@ -1,3 +1,4 @@
+use crate::error::CoreError;
 use crate::self_service::{
     RouteState,
     utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok},
@@ -5,7 +6,6 @@ use crate::self_service::{
 use axum::{
     Json,
     extract::{Path, Query, State},
-    http::StatusCode,
 };
 use lynx_db::dao::api_debug_dao::{
     ApiDebugDao, ApiDebugListResponse, ApiDebugQueryParams, ApiDebugResponse, ApiDebugStats,
@@ -48,12 +48,12 @@ pub struct DebugQueryParams {
 async fn create_debug_entry(
     State(RouteState { db, .. }): State<RouteState>,
     Json(request): Json<CreateApiDebugRequest>,
-) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, CoreError> {
     let dao = ApiDebugDao::new(db);
 
     let result = dao.create(request).await.map_err(|e| {
         tracing::error!("Failed to create API debug entry: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "create API debug entry", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -72,7 +72,7 @@ async fn create_debug_entry(
 async fn list_debug_entries(
     State(RouteState { db, .. }): State<RouteState>,
     Query(params): Query<DebugQueryParams>,
-) -> Result<Json<ResponseDataWrapper<ApiDebugListResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<ApiDebugListResponse>>, CoreError> {
     let dao = ApiDebugDao::new(db);
 
     // Convert local query params to DAO query params
@@ -87,7 +87,7 @@ async fn list_debug_entries(
 
     let result = dao.list(dao_params).await.map_err(|e| {
         tracing::error!("Failed to list API debug entries: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "list API debug entries", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -109,17 +109,17 @@ async fn list_debug_entries(
 async fn get_debug_entry(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
-) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, CoreError> {
     let dao = ApiDebugDao::new(db);
 
     let result = dao.get_by_id(id).await.map_err(|e| {
         tracing::error!("Failed to get API debug entry: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get API debug entry", source: anyhow::anyhow!(e) }
     })?;
 
     match result {
         Some(entry) => Ok(Json(ok(entry))),
-        None => Err(StatusCode::NOT_FOUND),
+        None => Err(CoreError::NotFound { message: format!("API debug entry {id} not found") }),
     }
 }
 
@@ -142,17 +142,17 @@ async fn update_debug_entry(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
     Json(request): Json<UpdateApiDebugRequest>,
-) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, CoreError> {
     let dao = ApiDebugDao::new(db);
 
     let result = dao.update(id, request).await.map_err(|e| {
         tracing::error!("Failed to update API debug entry: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "update API debug entry", source: anyhow::anyhow!(e) }
     })?;
 
     match result {
         Some(entry) => Ok(Json(ok(entry))),
-        None => Err(StatusCode::NOT_FOUND),
+        None => Err(CoreError::NotFound { message: format!("API debug entry {id} not found") }),
     }
 }
 
@@ -172,18 +172,18 @@ async fn update_debug_entry(
 async fn delete_debug_entry(
     State(RouteState { db, .. }): State<RouteState>,
     Path(id): Path<i32>,
-) -> Result<Json<EmptyOkResponse>, StatusCode> {
+) -> Result<Json<EmptyOkResponse>, CoreError> {
     let dao = ApiDebugDao::new(db);
 
     let result = dao.delete(id).await.map_err(|e| {
         tracing::error!("Failed to delete API debug entry: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "delete API debug entry", source: anyhow::anyhow!(e) }
     })?;
 
     if result {
         Ok(Json(empty_ok()))
     } else {
-        Err(StatusCode::NOT_FOUND)
+        Err(CoreError::NotFound { message: format!("API debug entry {id} not found") })
     }
 }
 
@@ -198,12 +198,12 @@ async fn delete_debug_entry(
 )]
 async fn get_debug_stats(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<ApiDebugStats>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<ApiDebugStats>>, CoreError> {
     let dao = ApiDebugDao::new(db);
 
     let result = dao.get_stats().await.map_err(|e| {
         tracing::error!("Failed to get API debug statistics: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "get API debug statistics", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))
@@ -220,12 +220,12 @@ async fn get_debug_stats(
 )]
 async fn clear_all_debug_entries(
     State(RouteState { db, .. }): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<u64>>, StatusCode> {
+) -> Result<Json<ResponseDataWrapper<u64>>, CoreError> {
     let dao = ApiDebugDao::new(db);
 
     let result = dao.clear_all().await.map_err(|e| {
         tracing::error!("Failed to clear all API debug entries: {}", e);
-        StatusCode::INTERNAL_SERVER_ERROR
+        CoreError::Db { operation: "clear all API debug entries", source: anyhow::anyhow!(e) }
     })?;
 
     Ok(Json(ok(result)))

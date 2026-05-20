@@ -10,16 +10,16 @@ use tokio::io::{AsyncReadExt, BufReader};
 use tracing::warn;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::common::Req;
+use crate::{common::Req, error::CoreResult};
 
 #[async_trait::async_trait]
 impl HandlerTrait for HtmlScriptInjectorConfig {
-    async fn handle_request(&self, request: Req) -> Result<HandleRequestType> {
+    async fn handle_request(&self, request: Req) -> CoreResult<HandleRequestType> {
         // Pass request through unchanged for response handlers
         Ok(HandleRequestType::Request(request))
     }
 
-    async fn handle_response(&self, mut response: Response) -> Result<Response> {
+    async fn handle_response(&self, mut response: Response) -> CoreResult<Response> {
         // Check if this is an HTML response
         if let Some(content_type) = response.headers().get("content-type") {
             let content_type_str = content_type.to_str().unwrap_or("");

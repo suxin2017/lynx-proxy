@@ -4,6 +4,8 @@ use anyhow::Result;
 use http::Extensions;
 use rcgen::Certificate;
 
+use crate::error::{CoreError, CoreResult};
+
 use crate::client::{ProxyType, ReqwestClient, ReqwestClientBuilder};
 
 use super::{
@@ -86,6 +88,8 @@ pub trait RequestClientExt {
     fn get_http_client(&self) -> Arc<HttpClient>;
     fn get_websocket_client(&self) -> Arc<WebsocketClient>;
     fn get_reqwest_client(&self) -> Arc<ReqwestClient>;
+    fn try_get_http_client(&self) -> CoreResult<Arc<HttpClient>>;
+    fn try_get_websocket_client(&self) -> CoreResult<Arc<WebsocketClient>>;
 }
 
 impl RequestClientExt for Extensions {
@@ -109,6 +113,18 @@ impl RequestClientExt for Extensions {
         self.get::<ShareRequestClient>()
             .map(|c| Arc::clone(&c.reqwest_client))
             .expect("RequestClient not found")
+    }
+
+    fn try_get_http_client(&self) -> CoreResult<Arc<HttpClient>> {
+        self.get::<ShareRequestClient>()
+            .map(|c| Arc::clone(&c.http_client))
+            .ok_or_else(|| CoreError::MissingExtension { name: "RequestClient" })
+    }
+
+    fn try_get_websocket_client(&self) -> CoreResult<Arc<WebsocketClient>> {
+        self.get::<ShareRequestClient>()
+            .map(|c| Arc::clone(&c.websocket_client))
+            .ok_or_else(|| CoreError::MissingExtension { name: "RequestClient" })
     }
 }
 

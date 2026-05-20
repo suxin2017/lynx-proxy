@@ -1,13 +1,12 @@
-use anyhow::Result;
 use http::Uri;
 use lynx_db::dao::request_processing_dao::handlers::proxy_forward_handler::ProxyForwardConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::common::Req;
+use crate::{common::Req, error::CoreResult};
 
 #[async_trait::async_trait]
 impl HandlerTrait for ProxyForwardConfig {
-    async fn handle_request(&self, mut request: Req) -> Result<HandleRequestType> {
+    async fn handle_request(&self, mut request: Req) -> CoreResult<HandleRequestType> {
         // Get the current request URI
         let current_uri = request.uri().clone();
         let original_uri_str = current_uri.to_string(); // 保存原始URI字符串用于日志
@@ -77,6 +76,7 @@ impl HandlerTrait for ProxyForwardConfig {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
 
     use crate::utils::empty;
 

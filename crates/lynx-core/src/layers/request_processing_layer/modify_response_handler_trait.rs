@@ -1,20 +1,19 @@
-use anyhow::Result;
 use axum::{body::Body, response::Response};
 use http::StatusCode;
 use http_body_util::{BodyExt, Full};
 use lynx_db::dao::request_processing_dao::handlers::modify_response_handler::ModifyResponseConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::common::Req;
+use crate::{common::Req, error::CoreResult};
 
 #[async_trait::async_trait]
 impl HandlerTrait for ModifyResponseConfig {
-    async fn handle_request(&self, request: Req) -> Result<HandleRequestType> {
+    async fn handle_request(&self, request: Req) -> CoreResult<HandleRequestType> {
         // Pass request through unchanged for response handlers
         Ok(HandleRequestType::Request(request))
     }
 
-    async fn handle_response(&self, mut response: Response) -> Result<Response> {
+    async fn handle_response(&self, mut response: Response) -> CoreResult<Response> {
         // Modify headers if specified
         if let Some(ref modify_headers) = self.modify_headers {
             let headers = response.headers_mut();
@@ -63,6 +62,7 @@ impl HandlerTrait for ModifyResponseConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
     use axum::{body::Body, response::Response};
     use http_body_util::Empty;
     use std::collections::HashMap;
