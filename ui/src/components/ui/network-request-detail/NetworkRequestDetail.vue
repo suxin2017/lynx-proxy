@@ -99,7 +99,7 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
 </script>
 
 <template>
-  <section :class="cn('flex h-full min-h-96 flex-col overflow-hidden rounded-lg border border-border bg-card', props.class)">
+  <section :class="cn('flex h-full min-h-96 flex-col overflow-hidden rounded-lg bg-card', props.class)">
     <div
       v-if="!props.record"
       class="flex h-full min-h-96 items-center justify-center px-6 text-sm text-muted-foreground"
@@ -108,7 +108,7 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
     </div>
 
     <template v-else>
-      <nav class="flex items-end gap-px border-b border-border bg-muted/30 px-1 pt-1">
+      <nav class="flex items-end gap-px border-b border-border bg-muted/30 px-1">
         <button
           v-for="tab in TABS"
           :key="tab"

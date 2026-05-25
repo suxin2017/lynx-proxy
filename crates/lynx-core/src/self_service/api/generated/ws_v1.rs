@@ -1,0 +1,60 @@
+// Generated from crates/lynx-core/protocol/ws.v1.asyncapi.yaml. Do not edit manually.
+
+pub const WS_VERSION: &str = "v1";
+pub const WS_CHANNEL_ADDRESS: &str = "/api/net_request/ws/message-events";
+
+pub mod frame_kind {
+pub const REQUEST: &str = "request";
+pub const RESPONSE: &str = "response";
+pub const EVENT: &str = "event";
+pub const ERROR: &str = "error";
+pub const PING: &str = "ping";
+pub const PONG: &str = "pong";
+}
+
+pub mod op {
+    pub const SYSTEM_PING: &str = "system.ping";
+    pub const CAPTURE_STATUS_GET: &str = "capture.status.get";
+    pub const CAPTURE_CONTROL_SET: &str = "capture.control.set";
+    pub const REQUEST_DETAIL_GET: &str = "request.detail.get";
+    pub const REQUEST_STREAM_SUBSCRIBE: &str = "request.stream.subscribe";
+    pub const REQUEST_STREAM_UNSUBSCRIBE: &str = "request.stream.unsubscribe";
+    pub const CAPTURE_STATUS_CHANGED: &str = "capture.status.changed";
+    pub const REQUEST_START: &str = "request.start";
+    pub const REQUEST_BODY: &str = "request.body";
+    pub const REQUEST_END: &str = "request.end";
+    pub const RESPONSE_START: &str = "response.start";
+    pub const RESPONSE_BODY: &str = "response.body";
+    pub const RESPONSE_END: &str = "response.end";
+    pub const WEBSOCKET_MESSAGE: &str = "websocket.message";
+    pub const WEBSOCKET_ERROR: &str = "websocket.error";
+    pub const SYSTEM_ERROR: &str = "system.error";
+
+    pub fn is_request_op(op: &str) -> bool {
+      matches!(
+        op,
+            "system.ping" |
+            "capture.status.get" |
+            "capture.control.set" |
+            "request.detail.get" |
+            "request.stream.subscribe" |
+            "request.stream.unsubscribe"
+        )
+    }
+
+    pub fn is_event_op(op: &str) -> bool {
+      matches!(
+        op,
+            "capture.status.changed" |
+            "request.start" |
+            "request.body" |
+            "request.end" |
+            "response.start" |
+            "response.body" |
+            "response.end" |
+            "websocket.message" |
+            "websocket.error" |
+            "system.error"
+        )
+    }
+}

@@ -1,6 +1,12 @@
 version: "3"
 
 tasks:
+  generate-ws-protocol:
+    desc: Generate WS protocol artifacts for backend and ui
+    cmds:
+      - node scripts/ws-generate-rust.mjs
+      - cd ui && npm run ws:generate
+
   dev:
     desc: Run development server
     deps: [dev-lynx-server, dev-ui]

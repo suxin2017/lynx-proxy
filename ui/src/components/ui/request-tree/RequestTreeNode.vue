@@ -29,6 +29,7 @@ const METHOD_COLORS: Record<string, string> = {
   DELETE: 'text-red-500',
   HEAD: 'text-cyan-500',
   OPTIONS: 'text-yellow-500',
+  CONNECT: 'text-teal-500',
 }
 
 function methodColor(method: string): string {
@@ -91,7 +92,7 @@ function handleClick() {
 <template>
   <!-- Fixed 32px row height is critical for TanStack Virtual size estimation -->
   <div
-    class="flex h-8 cursor-pointer items-center gap-2 rounded-sm border border-transparent px-2 text-xs transition-colors select-none"
+    class="flex h-6 cursor-pointer items-center gap-2 rounded-sm border border-transparent px-2 text-xs transition-colors select-none"
     :class="cn(
       'hover:bg-muted/50 hover:border-border/40',
       selected && 'bg-muted text-foreground border-border/60',
@@ -155,7 +156,7 @@ function handleClick() {
 
       <!-- Operation / verb -->
       <span
-        class="w-12 shrink-0 font-mono text-[11px] font-semibold uppercase tracking-wide"
+        class="w-12 shrink-0 font-mono text-xs uppercase tracking-wide"
         :class="methodColor(node.request.method)"
       >
         <template

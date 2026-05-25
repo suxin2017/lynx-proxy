@@ -13,18 +13,51 @@ import type { FlatTreeNode, TrafficRecord, RawNode } from './types'
  * - Empty segments from trailing/leading slashes are dropped
  */
 export function parseUrlToSegments(url: string): string[] {
+  const normalized = url.trim()
+  if (!normalized) return ['']
+
   try {
-    const parsed = new URL(url)
-    const origin = `${parsed.protocol}//${parsed.host}` // includes port if present
-    const pathSegments = parsed.pathname
-      .split('/')
-      .filter(s => s.length > 0)
-    return [origin, ...pathSegments]
+    const parsed = new URL(normalized)
+    // Prevent treating authority-form targets like "host:443" as custom schemes.
+    const isHttpLike = /^(https?|wss?):$/i.test(parsed.protocol)
+    if (isHttpLike && parsed.host) {
+      const origin = `${parsed.protocol}//${parsed.host}` // includes port if present
+      const pathSegments = parsed.pathname
+        .split('/')
+        .filter(s => s.length > 0)
+      return [origin, ...pathSegments]
+    }
   }
   catch {
-    // Fallback for malformed URLs: treat the whole string as one segment
-    return [url]
+    // Continue with relaxed parsing fallbacks.
   }
+
+  // CONNECT authority-form target: "host:port" or "[ipv6]:port".
+  const authority = normalized.replace(/^\/\//, '')
+  const isHostPort =
+    /^\[[0-9a-fA-F:]+\](?::\d+)?$/.test(authority)
+    || /^[^/\s:]+(?::\d+)?$/.test(authority)
+  if (isHostPort) {
+    return [authority]
+  }
+
+  // Host/path without scheme, e.g. "example.com/api/v1".
+  try {
+    const parsed = new URL(`https://${normalized}`)
+    if (parsed.host) {
+      const origin = `${parsed.protocol}//${parsed.host}`
+      const pathSegments = parsed.pathname
+        .split('/')
+        .filter(s => s.length > 0)
+      return [origin, ...pathSegments]
+    }
+  }
+  catch {
+    // Final fallback below.
+  }
+
+  // Fallback for malformed inputs: treat the whole string as one segment.
+  return [normalized]
 }
 
 // ---------------------------------------------------------------------------
@@ -93,20 +126,14 @@ export function pathToId(fullPath: string): string {
 }
 
 /**
- * Truncate a compressed label so it fits within a reasonable display width.
+ * Keep the full compressed label.
  *
- * Strategy: keep the LAST segments (most specific) and replace removed
- * leading segments with "…". The threshold is segment count based so the
- * result is predictable regardless of pixel width (CSS handles overflow).
- *
- * Examples:
- *   "v1/users/profile/settings/preferences" (6 segs) → "…/settings/preferences"
- *   "api.example.com"                        (1 seg)  → unchanged
+ * The previous leading-ellipsis strategy ("…/a/b") was removed to preserve
+ * the start of the path in tree rows.
  */
 export function truncateLabel(label: string, maxSegments = 3): string {
-  const parts = label.split('/')
-  if (parts.length <= maxSegments) return label
-  return `\u2026/${parts.slice(-maxSegments).join('/')}`
+  void maxSegments
+  return label
 }
 
 interface FlattenOptions {

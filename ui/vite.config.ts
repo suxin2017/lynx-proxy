@@ -14,6 +14,15 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(), vue()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:7788',
+        changeOrigin: true,
+        ws: true,
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src')

@@ -51,6 +51,12 @@ import { Info } from '@lucide/vue'
           返回首页
         </Button>
       </router-link>
+
+      <router-link to="/network" class="mt-2 block">
+        <Button class="w-full" variant="outline">
+          打开 Network
+        </Button>
+      </router-link>
     </div>
   </div>
 </template>

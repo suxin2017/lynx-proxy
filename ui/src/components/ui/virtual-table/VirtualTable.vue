@@ -20,6 +20,7 @@ interface VirtualTableProps<TData extends Record<string, unknown>> {
   estimateColumnWidth?: number
   emptyText?: string
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
+  rowClassName?: (row: Row<TData>, rowIndex: number) => HTMLAttributes["class"]
 }
 
 const props = withDefaults(defineProps<VirtualTableProps<TData>>(), {
@@ -151,14 +152,18 @@ function isStripedRow(rowIndex: number) {
 function isFrozenEdgeColumn(frozenColumnIndex: number) {
   return frozenColumnIndex === clampedFrozenLeftColumns.value - 1
 }
+
+function getRowClassName(row: Row<TData>, rowIndex: number) {
+  return props.rowClassName?.(row, rowIndex)
+}
 </script>
 
 <template>
   <div
     ref="scrollContainerRef"
     data-slot="virtual-table-container"
-    :class="cn('relative w-full overflow-auto rounded-md border bg-background', props.class)"
-    :style="{ height: `${props.height}px` }"
+    :class="cn('relative w-full overflow-auto rounded-md bg-background', props.class)"
+    :style="{ height: props.height ? `${props.height}px` : '100%' }"
   >
     <div
       data-slot="virtual-table"
@@ -181,7 +186,7 @@ function isFrozenEdgeColumn(frozenColumnIndex: number) {
                 height: `${props.headerHeight}px`,
               }"
               :class="[
-                'text-foreground sticky z-50 border-r border-border bg-background px-2 text-left align-middle text-sm font-medium whitespace-nowrap overflow-hidden',
+                'text-foreground sticky z-50 border-r border-border bg-background px-2 text-left align-middle text-xs whitespace-nowrap overflow-hidden',
                 isFrozenEdgeColumn(frozenColumnIndex) ? 'shadow-sm' : '',
               ]"
             >
@@ -213,7 +218,7 @@ function isFrozenEdgeColumn(frozenColumnIndex: number) {
                 maxWidth: `${virtualColumn.size}px`,
                 height: `${props.headerHeight}px`,
               }"
-              class="text-foreground border-r border-border bg-background px-2 text-left align-middle text-sm font-medium whitespace-nowrap overflow-hidden"
+              class="text-foreground border-r border-border bg-background px-2 text-left align-middle text-xs font-medium whitespace-nowrap overflow-hidden"
             >
               <div class="flex h-full min-w-0 items-center">
                 <div class="w-full min-w-0 truncate">
@@ -239,8 +244,9 @@ function isFrozenEdgeColumn(frozenColumnIndex: number) {
         <div
           data-slot="virtual-table-row"
           :class="[
-            'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 z-30 flex border-b border-border transition-colors',
+            'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 z-30 flex transition-colors',
             isStripedRow(frozenRowIndex) ? 'bg-muted' : 'bg-background',
+            getRowClassName(row, frozenRowIndex),
           ]"
           :style="{
             top: `${getFrozenRowTop(frozenRowIndex)}px`,
@@ -326,8 +332,9 @@ function isFrozenEdgeColumn(frozenColumnIndex: number) {
             v-if="getBodyRow(virtualRow.index)"
             data-slot="virtual-table-row"
             :class="[
-              'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 flex border-b border-border transition-colors',
+              'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 flex transition-colors',
               isStripedRow(clampedFrozenTopRows + virtualRow.index) ? 'bg-muted' : 'bg-background',
+              getRowClassName(getBodyRow(virtualRow.index), clampedFrozenTopRows + virtualRow.index),
             ]"
             :style="{
               transform: `translateY(${virtualRow.start}px)`,

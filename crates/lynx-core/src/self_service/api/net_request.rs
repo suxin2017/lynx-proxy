@@ -6,9 +6,9 @@ use crate::error::{CoreError, ErrorResponse};
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreValue;
 use crate::self_service::RouteState;
 use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
-use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
+use lynx_db::dao::net_request_dao::CaptureSwitch;
 
-use super::net_request_sse;
+use super::{net_request_service, net_request_sse, net_request_ws};
 
 #[utoipa::path(
     get,
@@ -20,13 +20,14 @@ use super::net_request_sse;
     )
 )]
 async fn get_capture_status(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(state): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<CaptureSwitch>>, CoreError> {
-    let dao = CaptureSwitchDao::new(db);
-    let status = dao
-        .get_capture_switch()
+    let status = net_request_service::get_capture_status(&state)
         .await
-        .map_err(|e| CoreError::Db { operation: "get capture switch", source: anyhow::anyhow!(e) })?;
+        .map_err(|e| CoreError::Db {
+            operation: "get capture switch",
+            source: anyhow::anyhow!(e),
+        })?;
     Ok(Json(ok(status)))
 }
 
@@ -40,24 +41,14 @@ async fn get_capture_status(
     )
 )]
 async fn toggle_capture(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(state): State<RouteState>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = CaptureSwitchDao::new(db.clone());
-    let current_status = dao
-        .get_capture_switch()
+    net_request_service::toggle_capture_status(&state)
         .await
-        .map_err(|e| CoreError::Db { operation: "get capture switch for toggle", source: anyhow::anyhow!(e) })?;
-
-    let new_status = match current_status.recording_status {
-        RecordingStatus::StartRecording => RecordingStatus::PauseRecording,
-        RecordingStatus::PauseRecording => RecordingStatus::StartRecording,
-    };
-
-    dao.update_capture_switch(CaptureSwitch {
-        recording_status: new_status,
-    })
-    .await
-    .map_err(|e| CoreError::Db { operation: "update capture switch", source: anyhow::anyhow!(e) })?;
+        .map_err(|e| CoreError::Db {
+            operation: "toggle capture switch",
+            source: anyhow::anyhow!(e),
+        })?;
 
     Ok(Json(empty_ok()))
 }
@@ -86,21 +77,29 @@ struct GetRequestsData {
     request_body = GetRequestsData,
 )]
 async fn get_cached_requests(
-    State(RouteState {
-        net_request_cache, ..
-    }): State<RouteState>,
+    State(state): State<RouteState>,
     Json(params): Json<GetRequestsData>,
 ) -> Result<Json<ResponseDataWrapper<RecordRequests>>, CoreError> {
-    let new_requests = net_request_cache.get_new_requests().await.map_err(|e| {
+    let new_requests = net_request_service::get_cached_requests(&state, Vec::new())
+        .await
+        .map_err(|e| {
         tracing::error!("Failed to get new requests: {:?}", e);
-        CoreError::Db { operation: "get new requests", source: anyhow::anyhow!(e) }
+        CoreError::Db {
+            operation: "get new requests",
+            source: anyhow::anyhow!(e),
+        }
     })?;
-    let patch_requests = net_request_cache
-        .get_request_by_keys(params.trace_ids.unwrap_or_default())
+    let patch_requests = net_request_service::get_cached_requests(
+        &state,
+        params.trace_ids.unwrap_or_default(),
+    )
         .await
         .map_err(|e| {
             tracing::error!("Failed to get patch requests: {:?}", e);
-            CoreError::Db { operation: "get requests by keys", source: anyhow::anyhow!(e) }
+            CoreError::Db {
+                operation: "get requests by keys",
+                source: anyhow::anyhow!(e),
+            }
         })?;
     Ok(Json(ok(RecordRequests {
         new_requests,
@@ -113,5 +112,6 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(toggle_capture, get_capture_status))
         .routes(routes!(get_cached_requests))
         .merge(net_request_sse::create_net_request_sse_routes())
+    .merge(net_request_ws::create_net_request_ws_routes())
         .with_state(state)
 }
