@@ -46,6 +46,10 @@
 
 :root {
   --radius: 0.35rem;
+  --scrollbar-size: 7px;
+  --scrollbar-thumb: oklch(0.708 0 0 / 45%);
+  --scrollbar-thumb-hover: oklch(0.556 0 0 / 58%);
+  --scrollbar-track: oklch(0.985 0 0 / 0%);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -80,6 +84,9 @@
 }
 
 .dark {
+  --scrollbar-thumb: oklch(0.708 0 0 / 40%);
+  --scrollbar-thumb-hover: oklch(0.922 0 0 / 52%);
+  --scrollbar-track: oklch(0.205 0 0 / 0%);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -116,6 +123,28 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+  *::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+  }
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  *::-webkit-scrollbar-thumb {
+    min-height: 24px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+    background-color: var(--scrollbar-thumb);
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
   }
   body {
     @apply bg-background text-foreground;

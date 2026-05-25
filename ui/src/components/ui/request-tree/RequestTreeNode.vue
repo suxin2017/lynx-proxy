@@ -91,10 +91,10 @@ function handleClick() {
 <template>
   <!-- Fixed 32px row height is critical for TanStack Virtual size estimation -->
   <div
-    class="flex h-8 cursor-pointer items-center gap-1 rounded px-1 text-sm select-none"
+    class="flex h-8 cursor-pointer items-center gap-2 rounded-sm border border-transparent px-2 text-xs transition-colors select-none"
     :class="cn(
-      'hover:bg-accent',
-      selected && 'bg-accent text-accent-foreground',
+      'hover:bg-muted/50 hover:border-border/40',
+      selected && 'bg-muted text-foreground border-border/60',
     )"
     :style="{ paddingLeft: `${props.node.depth * INDENT_PX + 4}px` }"
     :title="node.fullLabel"

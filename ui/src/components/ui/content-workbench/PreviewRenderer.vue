@@ -8,14 +8,14 @@ const props = withDefaults(defineProps<{
 </script>
 
 <template>
-  <div class="px-4 py-3">
+  <div class="px-2 py-1.5">
     <p
       v-if="props.hasFormattingError"
-      class="mb-2 text-xs text-destructive"
+      class="mb-1.5 text-[11px] text-destructive"
     >
       Content formatting failed. Showing raw content.
     </p>
 
-    <pre class="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-foreground">{{ props.content }}</pre>
+    <pre class="whitespace-pre-wrap wrap-break-word font-mono text-xs leading-5 text-foreground">{{ props.content }}</pre>
   </div>
 </template>

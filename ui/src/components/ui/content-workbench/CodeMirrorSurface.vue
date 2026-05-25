@@ -65,20 +65,24 @@ function createEditor() {
       EditorView.theme({
         '&': {
           backgroundColor: 'transparent',
-          fontSize: '0.875rem',
+          fontSize: '0.75rem',
         },
         '.cm-scroller': {
           fontFamily: 'var(--font-mono)',
-          lineHeight: '1.5rem',
+          lineHeight: '1.35rem',
           overflow: 'auto',
         },
         '.cm-content': {
-          padding: '0.75rem 1rem',
+          padding: '0.375rem 0.5rem 0.5rem',
         },
         '.cm-gutters': {
           backgroundColor: 'transparent',
           border: 'none',
           color: 'var(--color-muted-foreground)',
+          paddingRight: '0.25rem',
+        },
+        '.cm-gutterElement': {
+          padding: '0 0.25rem 0 0',
         },
         '.cm-activeLine, .cm-activeLineGutter': {
           backgroundColor: 'transparent',

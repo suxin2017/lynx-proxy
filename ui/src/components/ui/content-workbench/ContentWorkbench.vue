@@ -103,9 +103,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section :class="cn('overflow-hidden rounded-lg border border-border bg-card shadow-sm', props.class)">
-    <header class="flex h-9 items-center justify-between border-b border-border bg-muted/20 px-2.5">
-      <div class="text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">{{ type }}</div>
+  <section :class="cn('overflow-hidden rounded border border-border/70 bg-transparent', props.class)">
+    <header class="flex items-center justify-between px-2 py-1.5">
+      <div class="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{{ type }}</div>
 
       <div class="flex items-center gap-1.5">
         <Button
@@ -113,17 +113,17 @@ onBeforeUnmount(() => {
           type="button"
           variant="ghost"
           size="sm"
-          class="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+          class="h-5 gap-1 px-1 text-[10px] text-muted-foreground hover:text-foreground"
           @click="handleCopy"
         >
-          <Check v-if="copyState === 'copied'" class="size-3.5" />
-          <Copy v-else class="size-3.5" />
+          <Check v-if="copyState === 'copied'" class="size-3" />
+          <Copy v-else class="size-3" />
           <span>{{ copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy' }}</span>
         </Button>
       </div>
     </header>
 
-    <div class="relative overflow-hidden">
+    <div class="relative overflow-hidden px-1 pb-1">
       <PreviewRenderer
         v-if="surface === 'preview'"
         :content="normalized.displayValue"

@@ -102,7 +102,7 @@ function handleSelect(node: FlatTreeNode) {
           v-model="searchTerm"
           type="text"
           placeholder="Filter requests…"
-          class="h-7 w-full rounded border border-input bg-background px-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          class="h-8 w-full rounded-sm border border-input bg-background px-2 text-xs transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         >
       </div>
     </slot>
@@ -116,7 +116,7 @@ function handleSelect(node: FlatTreeNode) {
       <!-- Empty state -->
       <div
         v-if="filteredNodes.length === 0"
-        class="flex h-full items-center justify-center text-sm text-muted-foreground"
+        class="flex h-full items-center justify-center text-xs text-muted-foreground"
       >
         {{ searchTerm ? 'No matching requests' : 'No requests yet' }}
       </div>

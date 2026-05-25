@@ -92,19 +92,34 @@ export function useRequestTree(
 
     // After update, restore expandedSet by matching full paths
     nextTick(() => {
-      const newFlat = buildFlatTree(rawRoot.value, new Set())
-      const newPathToId = new Map<string, string>()
-      for (const node of newFlat) {
-        if (node.type === 'group') {
-          newPathToId.set(node.fullLabel, node.id)
+      // Incrementally expand: start with empty, then expand parent paths to reveal children
+      let currentExpanded = new Set<string>()
+      let iteration = 0
+      const maxIterations = 20
+
+      while (expandedPaths.size > 0 && iteration < maxIterations) {
+        iteration++
+        const newFlat = buildFlatTree(rawRoot.value, currentExpanded)
+        const newPathToId = new Map<string, string>()
+        for (const node of newFlat) {
+          if (node.type === 'group') {
+            newPathToId.set(node.fullLabel, node.id)
+          }
         }
+
+        let foundNew = false
+        for (const path of expandedPaths) {
+          const id = newPathToId.get(path)
+          if (id && !currentExpanded.has(id)) {
+            currentExpanded.add(id)
+            foundNew = true
+          }
+        }
+
+        if (!foundNew) break
       }
-      const restored = new Set<string>()
-      for (const path of expandedPaths) {
-        const id = newPathToId.get(path)
-        if (id) restored.add(id)
-      }
-      expandedSet.value = restored
+
+      expandedSet.value = currentExpanded
     })
   }
 
