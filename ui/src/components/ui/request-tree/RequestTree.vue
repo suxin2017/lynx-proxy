@@ -101,7 +101,7 @@ function handleSelect(node: FlatTreeNode) {
         <input
           v-model="searchTerm"
           type="text"
-          placeholder="Filter requests…"
+          placeholder="筛选请求…"
           class="h-8 w-full rounded-sm border border-input bg-background px-2 text-xs transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         >
       </div>
@@ -118,7 +118,7 @@ function handleSelect(node: FlatTreeNode) {
         v-if="filteredNodes.length === 0"
         class="flex h-full items-center justify-center text-xs text-muted-foreground"
       >
-        {{ searchTerm ? 'No matching requests' : 'No requests yet' }}
+        {{ searchTerm ? '无匹配请求' : '暂无请求' }}
       </div>
 
       <!-- Total height spacer -->

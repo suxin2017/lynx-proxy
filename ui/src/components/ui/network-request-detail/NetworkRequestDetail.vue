@@ -51,13 +51,13 @@ const timingRows = computed(() => {
   if (!timing) return [] as Array<{ key: string, label: string, value: number }>
 
   return [
-    { key: 'blocked', label: 'Blocked', value: timing.blockedMs ?? 0 },
-    { key: 'dns', label: 'DNS Lookup', value: timing.dnsMs ?? 0 },
-    { key: 'tcp', label: 'TCP Connect', value: timing.tcpMs ?? 0 },
-    { key: 'tls', label: 'TLS Handshake', value: timing.tlsMs ?? 0 },
-    { key: 'request', label: 'Request Sent', value: timing.requestSentMs ?? 0 },
-    { key: 'waiting', label: 'Waiting (TTFB)', value: timing.waitingMs ?? 0 },
-    { key: 'download', label: 'Download', value: timing.downloadMs ?? 0 },
+    { key: 'blocked', label: '阻塞', value: timing.blockedMs ?? 0 },
+    { key: 'dns', label: 'DNS 查询', value: timing.dnsMs ?? 0 },
+    { key: 'tcp', label: 'TCP 连接', value: timing.tcpMs ?? 0 },
+    { key: 'tls', label: 'TLS 握手', value: timing.tlsMs ?? 0 },
+    { key: 'request', label: '请求已发送', value: timing.requestSentMs ?? 0 },
+    { key: 'waiting', label: '等待中 (TTFB)', value: timing.waitingMs ?? 0 },
+    { key: 'download', label: '下载', value: timing.downloadMs ?? 0 },
   ]
 })
 
@@ -104,7 +104,7 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
       v-if="!props.record"
       class="flex h-full min-h-96 items-center justify-center px-6 text-sm text-muted-foreground"
     >
-      Select a request from the list to inspect details.
+      从列表中选择请求以查看详情。
     </div>
 
     <template v-else>
@@ -127,58 +127,58 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
         <div v-if="activeTab === 'overview'" class="space-y-4">
 
           <section class="space-y-1">
-            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">General</h3>
+            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">常规</h3>
             <dl class="space-y-1">
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Request URL</dt>
+                <dt class="text-muted-foreground">请求 URL</dt>
                 <dd class="font-mono break-all">{{ props.record.url }}</dd>
               </div>
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Request Method</dt>
+                <dt class="text-muted-foreground">请求方法</dt>
                 <dd class="font-mono">{{ props.record.method }}</dd>
               </div>
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Status Code</dt>
+                <dt class="text-muted-foreground">状态码</dt>
                 <dd class="font-mono">{{ props.record.statusCode ?? '-' }}</dd>
               </div>
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Remote Address</dt>
+                <dt class="text-muted-foreground">远端地址</dt>
                 <dd class="font-mono">{{ props.record.remoteAddress || '-' }}</dd>
               </div>
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Protocol</dt>
+                <dt class="text-muted-foreground">协议</dt>
                 <dd class="font-mono">{{ props.record.protocol || '-' }}</dd>
               </div>
             </dl>
           </section>
 
           <section class="space-y-1">
-            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Sizes</h3>
+            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">大小</h3>
             <dl class="space-y-1">
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Transferred</dt>
+                <dt class="text-muted-foreground">传输大小</dt>
                 <dd class="font-mono">{{ bytes(props.record.size?.responseBytes) }}</dd>
               </div>
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Resource Size</dt>
+                <dt class="text-muted-foreground">资源大小</dt>
                 <dd class="font-mono">{{ bytes(props.record.size?.decodedBytes) }}</dd>
               </div>
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Request Payload</dt>
+                <dt class="text-muted-foreground">请求负载</dt>
                 <dd class="font-mono">{{ bytes(props.record.size?.requestBytes) }}</dd>
               </div>
             </dl>
           </section>
 
           <section class="space-y-1">
-            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Timing</h3>
+            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">时序</h3>
             <dl class="space-y-1">
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Started</dt>
+                <dt class="text-muted-foreground">开始时间</dt>
                 <dd class="font-mono">{{ props.record.startTime || '-' }}</dd>
               </div>
               <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">Duration</dt>
+                <dt class="text-muted-foreground">耗时</dt>
                 <dd class="font-mono">{{ duration(props.record.durationMs) }}</dd>
               </div>
             </dl>
@@ -200,8 +200,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </nav>
 
           <section v-if="requestSubTab === 'query'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Query Parameters</div>
-            <div v-if="nonEmptyRows(props.record.query).length === 0" class="px-5 py-1 text-xs text-muted-foreground">No query parameters</div>
+            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">查询参数</div>
+            <div v-if="nonEmptyRows(props.record.query).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无查询参数</div>
             <div v-else class="max-h-56 overflow-auto">
               <table class="w-full text-xs">
                 <tbody>
@@ -215,8 +215,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </section>
 
           <section v-else-if="requestSubTab === 'headers'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Request Headers</div>
-            <div v-if="nonEmptyRows(props.record.requestHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">No request headers</div>
+            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">请求 Headers</div>
+            <div v-if="nonEmptyRows(props.record.requestHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Headers</div>
             <div v-else class="max-h-56 overflow-auto">
               <table class="w-full text-xs">
                 <tbody>
@@ -230,8 +230,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </section>
 
           <section v-else-if="requestSubTab === 'cookies'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Request Cookies</div>
-            <div v-if="nonEmptyRows(props.record.requestCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">No request cookies</div>
+            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">请求 Cookies</div>
+            <div v-if="nonEmptyRows(props.record.requestCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Cookies</div>
             <div v-else class="max-h-56 overflow-auto">
               <table class="w-full text-xs">
                 <tbody>
@@ -245,8 +245,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </section>
 
           <section v-else class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Request Body</div>
-            <div v-if="props.record.requestBody == null || props.record.requestBody === ''" class="px-5 py-1 text-xs text-muted-foreground">No request body</div>
+            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">请求 Body</div>
+            <div v-if="props.record.requestBody == null || props.record.requestBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无请求 Body</div>
             <ContentWorkbench
               v-else
               :type="bodyType(props.record.requestContentType, props.record.requestBody)"
@@ -271,8 +271,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </nav>
 
           <section v-if="responseSubTab === 'headers'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Response Headers</div>
-            <div v-if="nonEmptyRows(props.record.responseHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">No response headers</div>
+            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">响应 Headers</div>
+            <div v-if="nonEmptyRows(props.record.responseHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Headers</div>
             <div v-else class="max-h-56 overflow-auto">
               <table class="w-full text-xs">
                 <tbody>
@@ -286,8 +286,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </section>
 
           <section v-else-if="responseSubTab === 'cookies'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Response Cookies</div>
-            <div v-if="nonEmptyRows(props.record.responseCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">No response cookies</div>
+            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">响应 Cookies</div>
+            <div v-if="nonEmptyRows(props.record.responseCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Cookies</div>
             <div v-else class="max-h-56 overflow-auto">
               <table class="w-full text-xs">
                 <tbody>
@@ -301,8 +301,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </section>
 
           <section v-else class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Response Body</div>
-            <div v-if="props.record.responseBody == null || props.record.responseBody === ''" class="px-5 py-1 text-xs text-muted-foreground">No response body</div>
+            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">响应 Body</div>
+            <div v-if="props.record.responseBody == null || props.record.responseBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无响应 Body</div>
             <ContentWorkbench
               v-else
               :type="bodyType(props.record.responseContentType, props.record.responseBody)"
@@ -314,11 +314,11 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
 
         <div v-else class="space-y-2">
           <div class="flex items-center justify-between pb-1">
-            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Timing Breakdown</span>
+            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">时序拆解</span>
             <span class="font-mono text-[11px] font-semibold">{{ duration(totalTiming) }}</span>
           </div>
 
-          <div v-if="!props.record.timing" class="text-xs text-muted-foreground">No timing data</div>
+          <div v-if="!props.record.timing" class="text-xs text-muted-foreground">无时序数据</div>
 
           <div v-else class="space-y-2">
             <div v-for="row in timingRows" :key="row.key" class="grid grid-cols-[130px_1fr_72px] items-center gap-2 py-1">

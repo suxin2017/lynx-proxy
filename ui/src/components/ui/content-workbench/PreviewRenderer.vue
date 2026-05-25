@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
       v-if="props.hasFormattingError"
       class="mb-1.5 text-[11px] text-destructive"
     >
-      Content formatting failed. Showing raw content.
+      内容格式化失败，显示原始内容。
     </p>
 
     <pre class="whitespace-pre-wrap wrap-break-word font-mono text-xs leading-5 text-foreground">{{ props.content }}</pre>

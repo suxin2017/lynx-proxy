@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<VirtualTableProps<TData>>(), {
   frozenTopRows: 0,
   frozenLeftColumns: 0,
   estimateColumnWidth: 160,
-  emptyText: "No data",
+  emptyText: "无数据",
 })
 
 const scrollContainerRef = ref<HTMLElement | null>(null)

@@ -11,7 +11,7 @@ const counterStore = useCounterStore()
     <div class="w-full max-w-md rounded-lg border border-border bg-card p-8 shadow-md">
       <div class="mb-6 flex items-center justify-center">
         <Check class="mr-2 h-8 w-8 text-green-500" />
-        <h1 class="text-3xl font-bold text-foreground">Welcome</h1>
+        <h1 class="text-3xl font-bold text-foreground">欢迎</h1>
       </div>
 
       <p class="mb-8 text-center text-muted-foreground">
@@ -20,28 +20,28 @@ const counterStore = useCounterStore()
 
       <div class="mb-6 rounded-md bg-muted p-4 text-center">
         <p class="text-2xl font-bold text-foreground">{{ counterStore.count }}</p>
-        <p class="text-sm text-muted-foreground">Counter Value</p>
+        <p class="text-sm text-muted-foreground">计数值</p>
       </div>
 
       <div class="flex gap-2 mb-4">
         <Button @click="counterStore.increment" class="flex-1">
-          Increment
+          增加
         </Button>
         <Button @click="counterStore.decrement" variant="outline" class="flex-1">
-          Decrement
+          减少
         </Button>
       </div>
 
       <Button @click="counterStore.reset" variant="ghost" class="w-full mb-6">
-        Reset
+        重置
       </Button>
 
       <nav class="flex gap-2">
         <router-link to="/" class="flex-1 text-center text-sm text-blue-500 hover:underline">
-          Home
+          首页
         </router-link>
         <router-link to="/about" class="flex-1 text-center text-sm text-blue-500 hover:underline">
-          About
+          关于
         </router-link>
       </nav>
     </div>

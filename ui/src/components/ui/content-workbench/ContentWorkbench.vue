@@ -118,7 +118,7 @@ onBeforeUnmount(() => {
         >
           <Check v-if="copyState === 'copied'" class="size-3" />
           <Copy v-else class="size-3" />
-          <span>{{ copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy' }}</span>
+          <span>{{ copyState === 'copied' ? '已复制' : copyState === 'failed' ? '复制失败' : '复制' }}</span>
         </Button>
       </div>
     </header>
