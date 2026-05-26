@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::entities::capture::CaptureType;
+use crate::models::CaptureType;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

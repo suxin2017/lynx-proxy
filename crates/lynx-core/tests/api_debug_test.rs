@@ -1,7 +1,7 @@
 use anyhow::Result;
 use http::StatusCode;
-use lynx_db::dao::api_debug_dao::{CreateApiDebugRequest, UpdateApiDebugRequest};
-use lynx_db::entities::api_debug::{HttpMethod, RequestStatus};
+use lynx_storage::dao::api_debug_dao::{CreateApiDebugRequest, UpdateApiDebugRequest};
+use lynx_storage::models::{HttpMethod, RequestStatus};
 use serde_json::{Value, json};
 use setup::{base_url, setup_self_service_test_server::setup_self_service_test_server};
 
@@ -137,3 +137,4 @@ async fn test_update_and_delete_api_debug_entry() -> Result<()> {
 
     Ok(())
 }
+

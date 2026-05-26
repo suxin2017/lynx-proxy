@@ -3,7 +3,7 @@ use crate::self_service::RouteState;
 use crate::self_service::utils::{ResponseDataWrapper, ok};
 use axum::Json;
 use axum::extract::State;
-use lynx_db::dao::client_proxy_dao::{ClientProxyConfig, ClientProxyDao};
+use lynx_storage::dao::client_proxy_dao::{ClientProxyConfig, ClientProxyDao};
 use utoipa::TupleUnit;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -18,9 +18,9 @@ use utoipa_axum::routes;
     )
 )]
 async fn get_client_proxy_config(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<ClientProxyConfig>>, CoreError> {
-    let dao = ClientProxyDao::new(db);
+    let dao = ClientProxyDao::new(store);
     let config = dao
         .get_client_proxy_config()
         .await
@@ -39,10 +39,10 @@ async fn get_client_proxy_config(
     )
 )]
 async fn update_client_proxy_config(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Json(config): Json<ClientProxyConfig>,
 ) -> Result<Json<ResponseDataWrapper<()>>, CoreError> {
-    let dao = ClientProxyDao::new(db);
+    let dao = ClientProxyDao::new(store);
     dao.update_client_proxy_config(config)
         .await
         .map_err(|e| CoreError::Db { operation: "update client proxy config", source: anyhow::anyhow!(e) })?;
@@ -54,3 +54,5 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(get_client_proxy_config, update_client_proxy_config))
         .with_state(state)
 }
+
+

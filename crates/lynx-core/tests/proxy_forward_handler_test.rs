@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures_util::{SinkExt, TryStreamExt};
 use http::StatusCode;
-use lynx_db::dao::request_processing_dao::HandlerRule;
+use lynx_storage::dao::request_processing_dao::HandlerRule;
 use reqwest_websocket::Message;
 use setup::{
     mock_base_url, mock_rule::mock_test_rule,
@@ -17,7 +17,7 @@ async fn proxy_forward_handler_basic_test() -> Result<()> {
 
     // Setup proxy forward handler to redirect to the mock server
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
             Some(mock_server.addr.to_string()),
@@ -46,7 +46,7 @@ async fn proxy_forward_handler_preserves_path_and_query() -> Result<()> {
 
     // Setup proxy forward handler
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
             Some(mock_server.addr.to_string()),
@@ -73,7 +73,7 @@ async fn proxy_forward_handler_with_websocket() -> Result<()> {
 
     // Setup proxy forward handler to redirect to the mock server
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
             Some(mock_server.addr.to_string()),
@@ -105,7 +105,7 @@ async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
 
     // Setup proxy forward handler with invalid URL
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
             Some("invalid-url".to_string()),
@@ -126,3 +126,4 @@ async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
 
     Ok(())
 }
+

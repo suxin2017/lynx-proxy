@@ -1,5 +1,5 @@
 [package]
-name = "lynx-db"
+name = "lynx-storage"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -10,24 +10,21 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-sea-orm = { workspace = true, features = ["mock"] }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
-sea-orm-migration = { version = "1.1.0", features = [
-    "sqlx-sqlite",
-    "runtime-tokio-rustls",
-] }
 serde_json = "1.0.135"
 serde = "1.0.217"
 utoipa = { version = "5.3.1" }
 glob = "0.3"
 regex = "1.10"
 chrono = { version = "0.4", features = ["serde"] }
-async-trait = "0.1.88"
 axum = "0.8.4"
 http = { workspace = true }
 http-body-util = { workspace = true }
 thiserror = "1.0"
 bytes = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.12.0"

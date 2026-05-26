@@ -3,7 +3,7 @@ use super::{
     handlers::HandlerRule,
     types::{CaptureCondition, CaptureRule, RequestRule, SimpleCaptureCondition},
 };
-use crate::entities::capture::CaptureType;
+use crate::models::CaptureType;
 use glob::Pattern;
 use regex::Regex;
 use std::collections::HashSet;

@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use http_body_util::BodyExt;
-use lynx_db::dao::request_processing_dao::handlers::ThrottleHandlerConfig;
+use lynx_storage::dao::request_processing_dao::handlers::ThrottleHandlerConfig;
 use std::time::Duration;
 use tokio::time::sleep;
 
@@ -66,7 +66,7 @@ mod tests {
     use axum::http::Method;
     use http::Request;
     use http_body_util::BodyExt;
-    use lynx_db::dao::request_processing_dao::handlers::ThrottlePreset;
+    use lynx_storage::dao::request_processing_dao::handlers::ThrottlePreset;
     use std::time::Instant;
 
     #[tokio::test]

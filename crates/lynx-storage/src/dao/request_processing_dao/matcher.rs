@@ -3,7 +3,7 @@ use super::{
     error::RequestProcessingError,
     types::{CaptureCondition, CaptureRule, LogicalOperator, RequestRule, SimpleCaptureCondition},
 };
-use crate::entities::capture::CaptureType;
+use crate::models::CaptureType;
 use anyhow::Result;
 use axum::{body::HttpBody, extract::Request};
 use glob::Pattern;

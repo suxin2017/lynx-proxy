@@ -7,11 +7,11 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use lynx_db::dao::api_debug_dao::{
+use lynx_storage::dao::api_debug_dao::{
     ApiDebugDao, ApiDebugListResponse, ApiDebugQueryParams, ApiDebugResponse, ApiDebugStats,
     CreateApiDebugRequest, UpdateApiDebugRequest,
 };
-use lynx_db::entities::api_debug::{HttpMethod, RequestStatus};
+use lynx_storage::models::{HttpMethod, RequestStatus};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -46,10 +46,10 @@ pub struct DebugQueryParams {
     )
 )]
 async fn create_debug_entry(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Json(request): Json<CreateApiDebugRequest>,
 ) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, CoreError> {
-    let dao = ApiDebugDao::new(db);
+    let dao = ApiDebugDao::new(store);
 
     let result = dao.create(request).await.map_err(|e| {
         tracing::error!("Failed to create API debug entry: {}", e);
@@ -70,10 +70,10 @@ async fn create_debug_entry(
     )
 )]
 async fn list_debug_entries(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Query(params): Query<DebugQueryParams>,
 ) -> Result<Json<ResponseDataWrapper<ApiDebugListResponse>>, CoreError> {
-    let dao = ApiDebugDao::new(db);
+    let dao = ApiDebugDao::new(store);
 
     // Convert local query params to DAO query params
     let dao_params = ApiDebugQueryParams {
@@ -107,10 +107,10 @@ async fn list_debug_entries(
     )
 )]
 async fn get_debug_entry(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Path(id): Path<i32>,
 ) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, CoreError> {
-    let dao = ApiDebugDao::new(db);
+    let dao = ApiDebugDao::new(store);
 
     let result = dao.get_by_id(id).await.map_err(|e| {
         tracing::error!("Failed to get API debug entry: {}", e);
@@ -139,11 +139,11 @@ async fn get_debug_entry(
     )
 )]
 async fn update_debug_entry(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Path(id): Path<i32>,
     Json(request): Json<UpdateApiDebugRequest>,
 ) -> Result<Json<ResponseDataWrapper<ApiDebugResponse>>, CoreError> {
-    let dao = ApiDebugDao::new(db);
+    let dao = ApiDebugDao::new(store);
 
     let result = dao.update(id, request).await.map_err(|e| {
         tracing::error!("Failed to update API debug entry: {}", e);
@@ -170,10 +170,10 @@ async fn update_debug_entry(
     )
 )]
 async fn delete_debug_entry(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Path(id): Path<i32>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = ApiDebugDao::new(db);
+    let dao = ApiDebugDao::new(store);
 
     let result = dao.delete(id).await.map_err(|e| {
         tracing::error!("Failed to delete API debug entry: {}", e);
@@ -197,9 +197,9 @@ async fn delete_debug_entry(
     )
 )]
 async fn get_debug_stats(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<ApiDebugStats>>, CoreError> {
-    let dao = ApiDebugDao::new(db);
+    let dao = ApiDebugDao::new(store);
 
     let result = dao.get_stats().await.map_err(|e| {
         tracing::error!("Failed to get API debug statistics: {}", e);
@@ -219,9 +219,9 @@ async fn get_debug_stats(
     )
 )]
 async fn clear_all_debug_entries(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<u64>>, CoreError> {
-    let dao = ApiDebugDao::new(db);
+    let dao = ApiDebugDao::new(store);
 
     let result = dao.clear_all().await.map_err(|e| {
         tracing::error!("Failed to clear all API debug entries: {}", e);
@@ -242,3 +242,5 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(clear_all_debug_entries))
         .with_state(state)
 }
+
+

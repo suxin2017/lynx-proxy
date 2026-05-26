@@ -1,4 +1,3 @@
-use crate::entities::handler::{self, HandlerType};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -19,53 +18,6 @@ pub enum HandlerRuleType {
     HtmlScriptInjector(HtmlScriptInjectorConfig),
     Delay(DelayHandlerConfig),
     Throttle(ThrottleHandlerConfig),
-}
-
-impl From<&handler::Model> for HandlerRuleType {
-    fn from(model: &handler::Model) -> Self {
-        match model.handler_type {
-            HandlerType::Block => {
-                let config: BlockHandlerConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::Block(config)
-            }
-            HandlerType::ModifyRequest => {
-                let config: ModifyRequestConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::ModifyRequest(config)
-            }
-            HandlerType::LocalFile => {
-                let config: LocalFileConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::LocalFile(config)
-            }
-            HandlerType::ModifyResponse => {
-                let config: ModifyResponseConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::ModifyResponse(config)
-            }
-            HandlerType::ProxyForward => {
-                let config: ProxyForwardConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::ProxyForward(config)
-            }
-            HandlerType::HtmlScriptInjector => {
-                let config: HtmlScriptInjectorConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::HtmlScriptInjector(config)
-            }
-            HandlerType::Delay => {
-                let config: DelayHandlerConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::Delay(config)
-            }
-            HandlerType::Throttle => {
-                let config: ThrottleHandlerConfig =
-                    serde_json::from_value(model.config.clone()).unwrap_or_default();
-                HandlerRuleType::Throttle(config)
-            }
-        }
-    }
 }
 
 /// Handler rule configuration

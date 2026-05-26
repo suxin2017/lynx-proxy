@@ -1,6 +1,6 @@
 use anyhow::Result;
 use http::StatusCode;
-use lynx_db::dao::request_processing_dao::{HandlerRule, handlers::ThrottlePreset};
+use lynx_storage::dao::request_processing_dao::{HandlerRule, handlers::ThrottlePreset};
 use setup::{
     mock_base_url, mock_rule::mock_test_rule,
     setup_proxy_handler_server::setup_proxy_handler_server,
@@ -15,7 +15,7 @@ async fn request_processing_blocked() -> Result<()> {
     let base_url = mock_base_url(&mock_server);
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::block_handler(
             Some(403),
             Some("Request blocked by test rule".to_string()),
@@ -48,7 +48,7 @@ async fn local_file_handler_serve_html() -> Result<()> {
         .join("test.html");
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::local_file_handler(
             test_file.to_string_lossy().to_string(),
             Some("text/html".to_string()),
@@ -87,7 +87,7 @@ async fn local_file_handler_file_not_found() -> Result<()> {
         .join("nonexistent.txt");
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::local_file_handler(
             nonexistent_file.to_string_lossy().to_string(),
             Some("text/plain".to_string()),
@@ -120,7 +120,7 @@ async fn local_file_handler_custom_status_code() -> Result<()> {
         .join("test.txt");
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::local_file_handler(
             test_file.to_string_lossy().to_string(),
             Some("text/plain".to_string()),
@@ -153,7 +153,7 @@ async fn modify_request_handler_headers_only() -> Result<()> {
     headers.insert("X-Override-Header".to_string(), "new-value".to_string());
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_request_handler(
             Some(headers),
             None,
@@ -182,7 +182,7 @@ async fn modify_request_handler_method_only() -> Result<()> {
     let base_url = mock_base_url(&mock_server);
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_request_handler(
             None,
             None,
@@ -214,7 +214,7 @@ async fn modify_request_handler_body_only() -> Result<()> {
     let new_body = r#"{"modified": "true", "test": "data"}"#;
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_request_handler(
             None,
             Some(new_body.to_string()),
@@ -248,7 +248,7 @@ async fn modify_request_handler_url_only() -> Result<()> {
     let base_url = mock_base_url(&mock_server);
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_request_handler(
             None,
             None,
@@ -283,7 +283,7 @@ async fn modify_request_handler_multiple_modifications() -> Result<()> {
     headers.insert("X-Modified".to_string(), "true".to_string());
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_request_handler(
             Some(headers),
             Some(new_body.to_string()),
@@ -317,7 +317,7 @@ async fn modify_request_handler_empty_config() -> Result<()> {
     let base_url = mock_base_url(&mock_server);
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_request_handler(
             None, // No modifications
             None, None, None,
@@ -345,7 +345,7 @@ async fn modify_response_handler_status_code() -> Result<()> {
     let base_url = mock_base_url(&mock_server);
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_response_handler(
             None,
             None,
@@ -378,7 +378,7 @@ async fn modify_response_handler_headers() -> Result<()> {
     headers.insert("X-Server".to_string(), "lynx-proxy".to_string());
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_response_handler(
             Some(headers),
             None,
@@ -411,7 +411,7 @@ async fn modify_response_handler_body() -> Result<()> {
     let modified_body = r#"{"message": "Response modified by proxy", "original": "Hello, World!"}"#;
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_response_handler(
             None,
             Some(modified_body.to_string()),
@@ -446,7 +446,7 @@ async fn modify_response_handler_multiple_modifications() -> Result<()> {
     let modified_body = r#"{"status": "modified", "data": "test"}"#;
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_response_handler(
             Some(headers),
             Some(modified_body.to_string()),
@@ -480,7 +480,7 @@ async fn modify_response_handler_no_modifications() -> Result<()> {
     let base_url = mock_base_url(&mock_server);
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::modify_response_handler(
             None, // No modifications
             None, None, None,
@@ -508,7 +508,7 @@ async fn throttle_handler_offline_integration() -> Result<()> {
     let base_url = mock_base_url(&mock_server);
 
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::throttle_handler(ThrottlePreset::Offline)],
     )
     .await?;
@@ -524,3 +524,4 @@ async fn throttle_handler_offline_integration() -> Result<()> {
 
     Ok(())
 }
+

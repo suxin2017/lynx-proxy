@@ -2,7 +2,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use lynx_db::dao::request_processing_dao::handlers::LocalFileConfig;
+use lynx_storage::dao::request_processing_dao::handlers::LocalFileConfig;
 use mime_guess::from_path;
 use std::path::Path;
 use tokio::fs;

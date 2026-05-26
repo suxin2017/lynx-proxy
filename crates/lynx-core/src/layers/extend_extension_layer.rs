@@ -63,22 +63,22 @@ impl<S> tower::Layer<S> for ExtendExtensionsLayer {
     }
 }
 
-pub trait DbExtensionsExt {
-    fn get_db(&self) -> Arc<sea_orm::DatabaseConnection>;
-    fn try_get_db(&self) -> CoreResult<Arc<sea_orm::DatabaseConnection>>;
+pub trait DataStoreExtensionsExt {
+    fn get_data_store(&self) -> Arc<lynx_storage::DataStore>;
+    fn try_get_data_store(&self) -> CoreResult<Arc<lynx_storage::DataStore>>;
 }
 
-impl DbExtensionsExt for Extensions {
-    fn get_db(&self) -> Arc<sea_orm::DatabaseConnection> {
-        self.get::<Arc<sea_orm::DatabaseConnection>>()
-            .expect("Missing database connection in request")
+impl DataStoreExtensionsExt for Extensions {
+    fn get_data_store(&self) -> Arc<lynx_storage::DataStore> {
+        self.get::<Arc<lynx_storage::DataStore>>()
+            .expect("Missing data store in request")
             .clone()
     }
 
-    fn try_get_db(&self) -> CoreResult<Arc<sea_orm::DatabaseConnection>> {
-        self.get::<Arc<sea_orm::DatabaseConnection>>()
+    fn try_get_data_store(&self) -> CoreResult<Arc<lynx_storage::DataStore>> {
+        self.get::<Arc<lynx_storage::DataStore>>()
             .cloned()
-            .ok_or(CoreError::MissingExtension { name: "DatabaseConnection" })
+            .ok_or(CoreError::MissingExtension { name: "DataStore" })
     }
 }
 
@@ -92,7 +92,7 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     let server_config = ex.get_proxy_server_config();
     let message_event_cannel = ex.get_message_event_cannel();
     let message_event_store = ex.get_message_event_store();
-    let db = ex.get_db();
+    let store = ex.get_data_store();
 
     let mut nex = Extensions::new();
     nex.insert(request_client);
@@ -100,6 +100,6 @@ pub fn clone_extensions(ex: &Extensions) -> Result<Extensions> {
     nex.insert(server_config);
     nex.insert(message_event_cannel);
     nex.insert(message_event_store);
-    nex.insert(db);
+    nex.insert(store);
     Ok(nex)
 }

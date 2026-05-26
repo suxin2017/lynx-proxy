@@ -2,11 +2,11 @@ use super::handler_trait::{HandleRequestType, HandlerTrait};
 use crate::{
     common::Req,
     error::CoreError,
-    layers::{extend_extension_layer::DbExtensionsExt, trace_id_layer::service::TraceIdExt},
+    layers::{extend_extension_layer::DataStoreExtensionsExt, trace_id_layer::service::TraceIdExt},
 };
 use anyhow::Result;
 use axum::response::Response;
-use lynx_db::dao::request_processing_dao::{
+use lynx_storage::dao::request_processing_dao::{
     RequestProcessingDao, handlers::handler_rule::HandlerRuleType,
 };
 use std::{future::Future, pin::Pin, task::Poll};
@@ -43,7 +43,7 @@ where
 
     #[instrument(skip_all, name = "request_processing_service")]
     fn call(&mut self, request: Req) -> Self::Future {
-        let db: std::sync::Arc<sea_orm::DatabaseConnection> = request.extensions().get_db();
+        let store = request.extensions().get_data_store();
         let trace_id = request.extensions().get_trace_id();
 
         let mut inner = self.service.clone();
@@ -54,8 +54,7 @@ where
                 request.uri()
             );
 
-            let dao = RequestProcessingDao::new(db.clone());
-            // 查找匹配的规则
+            let dao = RequestProcessingDao::new(store.clone());
             tracing::trace!("Searching for matching rules for request");
             let matching_rules = match dao.find_matching_rules(&request).await {
                 Ok(rules) => {
@@ -65,7 +64,6 @@ where
                 Err(e) => {
                     tracing::warn!("Failed to find matching rules: {}", e);
                     tracing::trace!("Bypassing request processing due to rule lookup failure");
-                    // 如果查找规则失败，直接继续处理请求
                     return inner.call(request).await;
                 }
             };
@@ -98,14 +96,12 @@ where
                 }
             }
 
-            // 按执行顺序排序
             all_handlers.sort_by_key(|h| h.execution_order);
             tracing::trace!(
                 "Collected {} enabled handlers for execution",
                 all_handlers.len()
             );
 
-            // 执行处理器
             let mut current_request = request;
 
             for (index, handler) in all_handlers.iter().enumerate() {
@@ -181,7 +177,6 @@ where
                             response.status()
                         );
                         response.extensions_mut().insert(trace_id.clone());
-                        // 如果处理器返回响应，直接返回该响应
                         return Ok(response);
                     }
                     Err(e) => {
@@ -195,7 +190,6 @@ where
             }
 
             tracing::trace!("All handlers executed successfully, proceeding with modified request");
-            // 所有处理器执行完毕后，继续处理请求
             let mut response = inner.call(current_request).await?;
 
             if !all_handlers.is_empty() {
@@ -271,7 +265,6 @@ where
                 }
             }
 
-            // 确保响应包含 trace_id
             response.extensions_mut().insert(trace_id.clone());
 
             Ok(response)

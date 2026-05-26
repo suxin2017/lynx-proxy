@@ -3,7 +3,7 @@ use crate::self_service::RouteState;
 use crate::self_service::utils::{ResponseDataWrapper, ok};
 use axum::Json;
 use axum::extract::State;
-use lynx_db::dao::general_setting_dao::{GeneralSetting, GeneralSettingDao};
+use lynx_storage::dao::general_setting_dao::{GeneralSetting, GeneralSettingDao};
 use utoipa::TupleUnit;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -18,9 +18,9 @@ use utoipa_axum::routes;
     )
 )]
 async fn get_general_setting(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<GeneralSetting>>, CoreError> {
-    let dao = GeneralSettingDao::new(db);
+    let dao = GeneralSettingDao::new(store);
     let setting = dao
         .get_general_setting()
         .await
@@ -39,10 +39,10 @@ async fn get_general_setting(
     )
 )]
 async fn update_general_setting(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Json(setting): Json<GeneralSetting>,
 ) -> Result<Json<ResponseDataWrapper<TupleUnit>>, CoreError> {
-    let dao = GeneralSettingDao::new(db);
+    let dao = GeneralSettingDao::new(store);
     dao.update_general_setting(setting)
         .await
         .map_err(|e| CoreError::Db { operation: "update general setting", source: anyhow::anyhow!(e) })?;
@@ -54,3 +54,4 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(get_general_setting, update_general_setting))
         .with_state(state)
 }
+

@@ -3,8 +3,8 @@ use thiserror::Error;
 /// Specific error types for request processing operations
 #[derive(Error, Debug)]
 pub enum RequestProcessingError {
-    #[error("Database error: {0}")]
-    Database(#[from] sea_orm::DbErr),
+    #[error("Storage error: {0}")]
+    Storage(#[from] anyhow::Error),
 
     #[error("Rule not found with ID: {id}")]
     RuleNotFound { id: i32 },

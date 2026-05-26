@@ -1,6 +1,6 @@
 use http::{Method, Uri};
 use http_body_util::{BodyExt, Full};
-use lynx_db::dao::request_processing_dao::handlers::ModifyRequestConfig;
+use lynx_storage::dao::request_processing_dao::handlers::ModifyRequestConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
 use crate::{common::Req, error::CoreResult};

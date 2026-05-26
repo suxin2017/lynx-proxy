@@ -1,4 +1,4 @@
-use lynx_db::dao::request_processing_dao::handlers::{DelayHandlerConfig, DelayType};
+use lynx_storage::dao::request_processing_dao::handlers::{DelayHandlerConfig, DelayType};
 use rand::Rng;
 use std::time::Duration;
 use tokio::time::sleep;

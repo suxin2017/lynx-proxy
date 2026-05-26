@@ -13,15 +13,13 @@ use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
-use lynx_db::dao::client_proxy_dao::ClientProxyDao;
-use lynx_db::dao::general_setting_dao::GeneralSettingDao;
+use lynx_storage::DataStore;
+use lynx_storage::dao::client_proxy_dao::ClientProxyDao;
+use lynx_storage::dao::general_setting_dao::GeneralSettingDao;
 
 // Re-export ConnectType for external use
-pub use lynx_db::dao::general_setting_dao::ConnectType;
-use lynx_db::migration::Migrator;
+pub use lynx_storage::dao::general_setting_dao::ConnectType;
 use rcgen::Certificate;
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
-use sea_orm_migration::MigratorTrait;
 use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
@@ -67,10 +65,11 @@ pub struct ProxyServer {
 
     pub server_ca_manager: Arc<ServerCaManager>,
 
-    pub db_config: ConnectOptions,
+    #[builder(setter(strip_option))]
+    pub data_dir: Option<std::path::PathBuf>,
 
     #[builder(setter(skip))]
-    pub db_connect: Arc<DatabaseConnection>,
+    pub data_store: Arc<DataStore>,
 
     pub connect_type: ConnectType,
 
@@ -112,14 +111,15 @@ impl ProxyServerBuilder {
             .collect();
         let custom_certs = self.custom_certs.clone().flatten();
         let api_custom_certs = self.api_custom_certs.clone().flatten();
-        let db_config = self.db_config.clone().ok_or_else(|| anyhow!("db_config is required"))?;
-        let db_con = Database::connect(db_config.clone()).await?;
-
-        Migrator::up(&db_con, None).await?;
-        let db_arc = Arc::new(db_con);
+        let data_dir = self
+            .data_dir
+            .clone()
+            .flatten()
+            .ok_or_else(|| anyhow!("data_dir is required"))?;
+        let data_store = DataStore::new(data_dir).await?;
 
         if let Some(connect_type) = &self.connect_type {
-            let general_setting_dao = GeneralSettingDao::new(db_arc.clone());
+            let general_setting_dao = GeneralSettingDao::new(data_store.clone());
             general_setting_dao
                 .update_connect_type(connect_type.clone())
                 .await?;
@@ -131,13 +131,13 @@ impl ProxyServerBuilder {
             custom_certs,
             api_custom_certs,
             config: self.config.clone().ok_or_else(|| anyhow!("config is required"))?,
-            db_config,
+            data_dir: self.data_dir.clone().flatten(),
             static_dir: self.static_dir.clone().flatten(),
             server_ca_manager: self
                 .server_ca_manager
                 .clone()
                 .ok_or_else(|| anyhow!("server_ca_manager is required"))?,
-            db_connect: db_arc,
+            data_store,
             connect_type: self
                 .connect_type
                 .as_ref()
@@ -217,9 +217,9 @@ impl ProxyServer {
         let self_ca = server_ca_manager.get_server_config(&authority).await?;
         let tls_acceptor = TlsAcceptor::from(self_ca);
 
-        let db_connect = self.db_connect.clone();
+        let data_store = self.data_store.clone();
 
-        let general_setting_dao = GeneralSettingDao::new(db_connect.clone());
+        let general_setting_dao = GeneralSettingDao::new(data_store.clone());
         if let Ok(setting) = general_setting_dao.get_general_setting().await {
             info!("connect_type: {:?}", setting.connect_type);
             if matches!(setting.connect_type, ConnectType::ShortPoll) {
@@ -232,8 +232,8 @@ impl ProxyServer {
                 let (tcp_stream, client_addr) = listener.accept().await.expect("accept failed");
                 let tls_acceptor = tls_acceptor.clone();
 
-                // 获取客户端代理配置
-                let client_proxy_dao = ClientProxyDao::new(db_connect.clone());
+                // 获取客户端代理配�?
+                let client_proxy_dao = ClientProxyDao::new(data_store.clone());
                 let client_proxy_config = client_proxy_dao
                     .get_client_proxy_config()
                     .await
@@ -272,14 +272,14 @@ impl ProxyServer {
                 let server_ca_manager = server_ca_manager.clone();
                 let server_config = server_config.clone();
                 let message_event_cannel = message_event_cannel.clone();
-                let db_connect = db_connect.clone();
+                let data_store = data_store.clone();
                 let message_event_store = message_event_store.clone();
                 let access_addr_list = access_addr_list.clone();
                 let static_dir = static_dir.clone();
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
                     let svc = ServiceBuilder::new()
-                        .layer(RequestExtensionLayer::new(db_connect.clone()))
+                        .layer(RequestExtensionLayer::new(data_store.clone()))
                         .layer(RequestExtensionLayer::new(request_client))
                         .layer(RequestExtensionLayer::new(ClientAddr(client_addr)))
                         .layer(RequestExtensionLayer::new(server_ca_manager))
@@ -305,7 +305,7 @@ impl ProxyServer {
 
                     let svc = TowerToHyperService::new(transform_svc);
 
-                    // TODO： refactor this code let it be more simple
+                    // TODO�?refactor this code let it be more simple
                     if is_https_tcp_stream(&tcp_stream).await {
                         let tls_stream = match tls_acceptor.accept(tcp_stream).await {
                             Ok(tls_stream) => tls_stream,
@@ -379,7 +379,7 @@ mod tests {
         let proxy_server = ProxyServerBuilder::default()
             .config(Arc::new(server_config))
             .server_ca_manager(Arc::new(server_ca_manager))
-            .db_config(ConnectOptions::new("sqlite::memory:"))
+            .data_dir(fixed_temp_dir_path.join("db"))
             .build()
             .await?;
         Ok(proxy_server)

@@ -8,7 +8,6 @@ use include_dir::include_dir;
 use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
 use lynx_core::proxy_server::{ProxyServerBuilder, StaticDir};
-use sea_orm::ConnectOptions;
 use tracing::info;
 use lynx_core::{ proxy_server::ConnectType as ProxyConnectType};
 
@@ -60,16 +59,11 @@ impl ProxyServerApp {
         )
         .build()?;
 
-        let db_connect = ConnectOptions::new(format!(
-            "sqlite://{}/lynx.db?mode=rwc",
-            data_dir.to_string_lossy()
-        ));
-
         let mut proxy_server = ProxyServerBuilder::default()
             .config(Arc::new(server_config))
             .port(self.port)
             .server_ca_manager(Arc::new(server_ca_manager))
-            .db_config(db_connect)
+            .data_dir(data_dir.clone())
             .static_dir(Arc::new(StaticDir(assets_dir)))
             .connect_type(self.connect_type.clone())
             .local_only(self.local_only)

@@ -6,7 +6,7 @@ use crate::error::{CoreError, ErrorResponse};
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreValue;
 use crate::self_service::RouteState;
 use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
-use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
+use lynx_storage::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
 
 use super::net_request_sse;
 
@@ -20,9 +20,9 @@ use super::net_request_sse;
     )
 )]
 async fn get_capture_status(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<CaptureSwitch>>, CoreError> {
-    let dao = CaptureSwitchDao::new(db);
+    let dao = CaptureSwitchDao::new(store);
     let status = dao
         .get_capture_switch()
         .await
@@ -40,9 +40,9 @@ async fn get_capture_status(
     )
 )]
 async fn toggle_capture(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = CaptureSwitchDao::new(db.clone());
+    let dao = CaptureSwitchDao::new(store.clone());
     let current_status = dao
         .get_capture_switch()
         .await
@@ -115,3 +115,5 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .merge(net_request_sse::create_net_request_sse_routes())
         .with_state(state)
 }
+
+

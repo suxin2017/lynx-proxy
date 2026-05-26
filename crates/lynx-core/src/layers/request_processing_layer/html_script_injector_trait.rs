@@ -4,7 +4,7 @@ use axum::{body::Body, response::Response};
 use bytes::Bytes;
 use http::header::{CONTENT_ENCODING, CONTENT_LENGTH};
 use http_body_util::{BodyExt, Full};
-use lynx_db::dao::request_processing_dao::handlers::HtmlScriptInjectorConfig;
+use lynx_storage::dao::request_processing_dao::handlers::HtmlScriptInjectorConfig;
 use regex::Regex;
 use tokio::io::{AsyncReadExt, BufReader};
 use tracing::warn;

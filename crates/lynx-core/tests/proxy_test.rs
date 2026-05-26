@@ -1,5 +1,5 @@
 use anyhow::{Ok, Result};
-use lynx_db::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
+use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
 use lynx_mock::client::MockClient;
 use setup::{setup_mock_server::setup_mock_server, setup_proxy_server::setup_proxy_server};
 use std::sync::Arc;
@@ -11,7 +11,7 @@ async fn proxy_test() -> Result<()> {
     let proxy_server = setup_proxy_server(Some(Arc::new(vec![mock_server.cert.clone()]))).await?;
     let proxy_server_root_ca = proxy_server.server_ca_manager.ca_cert.clone();
 
-    HttpsCaptureDao::new(proxy_server.db_connect.clone())
+    HttpsCaptureDao::new(proxy_server.data_store.clone())
         .update_capture_filter(CaptureFilter {
             enabled: true,
             include_domains: vec![],
@@ -50,3 +50,4 @@ async fn test_real_world_request() -> Result<()> {
     // client.test_real_world_tls_websocket_request().await?;
     Ok(())
 }
+

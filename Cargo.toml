@@ -6,7 +6,7 @@ members = [
     "examples/*",
     "crates/lynx-cert",
     "crates/lynx-mock",
-    "crates/lynx-db",
+    "crates/lynx-storage",
 ]
 resolver = "2"
 

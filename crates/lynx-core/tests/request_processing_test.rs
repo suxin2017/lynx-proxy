@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use lynx_db::dao::request_processing_dao::RequestProcessingDao;
+use lynx_storage::dao::request_processing_dao::RequestProcessingDao;
 use reqwest::{Method, StatusCode};
 use serde_json::{Value, json};
 
@@ -38,7 +38,7 @@ async fn test_get_rule_crud_operations() -> Result<()> {
     let base_url = base_url(&server);
 
     // Create a test rule
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
     let rule_id = create_test_rule(&dao, "Test CRUD Rule", true).await?;
 
     // Test GET rule
@@ -84,7 +84,7 @@ async fn test_toggle_rule() -> Result<()> {
     let base_url = base_url(&server);
 
     // Create a disabled test rule
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
     let rule_id = create_test_rule(&dao, "Toggle Test Rule", false).await?;
 
     // Toggle to enabled
@@ -141,7 +141,7 @@ async fn test_get_template_handlers() -> Result<()> {
 async fn test_list_rules_with_pagination() -> Result<()> {
     let (server, client) = setup_self_service_test_server().await?;
     let base_url = base_url(&server);
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
 
     // Create multiple test rules
     for i in 1..=5 {
@@ -172,7 +172,7 @@ async fn test_list_rules_with_pagination() -> Result<()> {
 async fn test_list_rules_enabled_only() -> Result<()> {
     let (server, client) = setup_self_service_test_server().await?;
     let base_url = base_url(&server);
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
 
     // Create mixed enabled/disabled rules
     create_test_rule(&dao, "Enabled Rule 1", true).await?;
@@ -253,7 +253,7 @@ async fn test_rule_not_found_scenarios() -> Result<()> {
 async fn test_toggle_rule_disable() -> Result<()> {
     let (server, client) = setup_self_service_test_server().await?;
     let base_url = base_url(&server);
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
 
     // Create an enabled test rule
     let rule_id = create_test_rule(&dao, "Enable to Disable Rule", true).await?;
@@ -289,7 +289,7 @@ async fn test_toggle_rule_disable() -> Result<()> {
 async fn test_list_rules_with_large_page_size() -> Result<()> {
     let (server, client) = setup_self_service_test_server().await?;
     let base_url = base_url(&server);
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
 
     // Create a few test rules
     create_test_rule(&dao, "Rule A", true).await?;
@@ -422,7 +422,7 @@ async fn test_create_rule_api() -> Result<()> {
 async fn test_update_rule_api() -> Result<()> {
     let (server, client) = setup_self_service_test_server().await?;
     let base_url = base_url(&server);
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
 
     // Create a test rule first
     let rule_id = create_test_rule(&dao, "Original Rule", true).await?;
@@ -538,7 +538,7 @@ async fn test_update_rule_not_found() -> Result<()> {
 async fn test_batch_rule_operations() -> Result<()> {
     let (server, client) = setup_self_service_test_server().await?;
     let base_url = base_url(&server);
-    let dao = RequestProcessingDao::new(server.db_connect.clone());
+    let dao = RequestProcessingDao::new(server.data_store.clone());
 
     // 创建多条规则
     let mut rule_ids = Vec::new();
@@ -609,3 +609,4 @@ async fn test_batch_rule_operations() -> Result<()> {
 }
 
 // Helper functions
+
