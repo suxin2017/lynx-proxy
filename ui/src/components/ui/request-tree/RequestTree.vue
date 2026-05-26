@@ -62,7 +62,7 @@ watch(() => props.filter, (v) => {
 // Virtualizer
 // ---------------------------------------------------------------------------
 
-const ROW_HEIGHT = 22
+const ROW_HEIGHT = 32
 
 const scrollContainerRef = ref<HTMLElement | null>(null)
 

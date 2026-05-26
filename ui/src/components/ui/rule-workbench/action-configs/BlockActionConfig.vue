@@ -21,7 +21,7 @@ function update(partial: Partial<RuleBlockActionConfig>) {
 <template>
   <div class="grid gap-2 sm:grid-cols-2">
     <label class="grid gap-1 text-[11px] text-muted-foreground">
-      状态码
+      Status Code
       <input
         type="number"
         min="100"

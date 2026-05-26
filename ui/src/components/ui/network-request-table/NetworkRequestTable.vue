@@ -144,18 +144,8 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
 </script>
 
 <template>
-  <VirtualTable
-    :class="cn('w-full', props.class)"
-    :data="tableData"
-    :columns="columns"
-    :height="props.height"
-    :row-height="20"
-    :header-height="20"
-    :estimate-column-width="160"
-    :overscan-rows="12"
-    :overscan-columns="4"
-    :empty-text="'暂无请求'"
-    :get-row-id="(row) => String(row.id)"
-    :row-class-name="(row) => rowClassName(row as NetworkTableRow)"
-  />
+  <VirtualTable :class="cn('w-full', props.class)" :data="tableData" :columns="columns" :height="props.height"
+    :row-height="20" :header-height="20" :estimate-column-width="160" :overscan-rows="12" :overscan-columns="4"
+    :empty-text="'暂无请求'" :get-row-id="(row) => String(row.id)"
+    :row-class-name="(row) => rowClassName(row as unknown as NetworkTableRow)" />
 </template>

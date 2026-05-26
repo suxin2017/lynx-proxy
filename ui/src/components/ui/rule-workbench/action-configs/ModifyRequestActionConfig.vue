@@ -34,7 +34,7 @@ function removeHeader(index: number) {
 <template>
   <div class="grid gap-2 sm:grid-cols-2">
     <label class="grid gap-1 text-[11px] text-muted-foreground">
-      方法
+      Method
       <select
         class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring focus:ring-1"
         :value="props.config.modifyMethod"
@@ -68,13 +68,13 @@ function removeHeader(index: number) {
         <input
           class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring placeholder:text-muted-foreground focus:ring-1"
           :value="header.key"
-          placeholder="Header 名称"
+          placeholder="Header name"
           @input="updateHeader(idx, 'key', ($event.target as HTMLInputElement).value)"
         >
         <input
           class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring placeholder:text-muted-foreground focus:ring-1"
           :value="header.value"
-          placeholder="Header 值"
+          placeholder="Header value"
           @input="updateHeader(idx, 'value', ($event.target as HTMLInputElement).value)"
         >
         <button type="button" class="h-7 rounded-sm px-2 text-xs text-muted-foreground hover:text-foreground" @click="removeHeader(idx)">删除</button>

@@ -21,7 +21,7 @@ function update(partial: Partial<RuleProxyForwardActionConfig>) {
 <template>
   <div class="grid gap-2 sm:grid-cols-2">
     <label class="grid gap-1 text-[11px] text-muted-foreground">
-      协议
+      Scheme
       <input
         class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring placeholder:text-muted-foreground focus:ring-1"
         :value="props.config.targetScheme"

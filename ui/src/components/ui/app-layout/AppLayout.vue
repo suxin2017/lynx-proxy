@@ -86,7 +86,7 @@ function activateItem(key: string, disabled?: boolean) {
           :disabled="item.disabled"
           @click="activateItem(item.key, item.disabled)"
         >
-          <component :is="item.icon" class="h-6 w-6 transition-transform duration-150" :class="isActive(item.key) ? 'scale-110' : ''" />
+          <component :is="item.icon" class="h-5 w-5 transition-transform duration-150" :class="isActive(item.key) ? 'scale-110' : ''" />
         </button>
       </nav>
 
