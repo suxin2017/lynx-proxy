@@ -11,7 +11,7 @@ use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
 use http::Extensions;
 use http_body_util::BodyExt;
-use lynx_db::dao::net_request_dao::{CaptureSwitchDao, RecordingStatus};
+use lynx_storage::dao::net_request_dao::{CaptureSwitchDao, RecordingStatus};
 use tower::Service;
 use tracing::{Instrument, instrument, trace_span};
 
@@ -24,7 +24,7 @@ use crate::{
 use super::channel::MessageEventChannel;
 use super::message_event_data::copy_body_stream;
 use super::message_event_store::MessageEvent;
-use super::super::extend_extension_layer::DbExtensionsExt;
+use super::super::extend_extension_layer::DataStoreExtensionsExt;
 use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
 
 pub trait MessageEventLayerExt {
@@ -80,7 +80,7 @@ where
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();
         let trace_id_clone = trace_id.clone();
-        let db = request.extensions().get_db();
+        let db = request.extensions().get_data_store();
 
         let (part, old_body) = request.into_parts();
         let old_body = old_body.map_err(|e| anyhow!(e)).boxed();
@@ -174,7 +174,7 @@ where
         let message_event_channel = request.extensions().get_message_event_cannel();
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();
-        let db = request.extensions().get_db();
+        let db = request.extensions().get_data_store();
 
         let mut inner = self.service.clone();
 

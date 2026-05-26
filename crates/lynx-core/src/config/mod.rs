@@ -20,8 +20,8 @@ impl AppConfig {
     pub fn get_root_ca_key(&self) -> PathBuf {
         self.ca_root_dir.join("root_ca.key")
     }
-    pub fn get_db_path(&self) -> PathBuf {
-        self.db_root_dir.join("proxy.sqlite")
+    pub fn get_data_dir(&self) -> PathBuf {
+        self.db_root_dir.clone()
     }
 }
 

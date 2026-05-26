@@ -6,7 +6,7 @@ use crate::error::{CoreError, ErrorResponse};
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreValue;
 use crate::self_service::RouteState;
 use crate::self_service::utils::{EmptyOkResponse, ResponseDataWrapper, empty_ok, ok};
-use lynx_db::dao::net_request_dao::CaptureSwitch;
+use lynx_storage::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
 
 use super::{net_request_service, net_request_sse, net_request_ws};
 
@@ -20,9 +20,11 @@ use super::{net_request_service, net_request_sse, net_request_ws};
     )
 )]
 async fn get_capture_status(
-    State(state): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<CaptureSwitch>>, CoreError> {
-    let status = net_request_service::get_capture_status(&state)
+    let dao = CaptureSwitchDao::new(store);
+    let status = dao
+        .get_capture_switch()
         .await
         .map_err(|e| CoreError::Db {
             operation: "get capture switch",
@@ -41,9 +43,11 @@ async fn get_capture_status(
     )
 )]
 async fn toggle_capture(
-    State(state): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    net_request_service::toggle_capture_status(&state)
+    let dao = CaptureSwitchDao::new(store.clone());
+    let current_status = dao
+        .get_capture_switch()
         .await
         .map_err(|e| CoreError::Db {
             operation: "toggle capture switch",
@@ -115,3 +119,5 @@ pub fn router(state: RouteState) -> OpenApiRouter {
     .merge(net_request_ws::create_net_request_ws_routes())
         .with_state(state)
 }
+
+

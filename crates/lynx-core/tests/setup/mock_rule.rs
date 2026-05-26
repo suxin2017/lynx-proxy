@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use lynx_db::dao::request_processing_dao::{
+use lynx_storage::dao::request_processing_dao::{
     CaptureRule, HandlerRule, RequestProcessingDao, RequestRule,
     types::{CaptureCondition, SimpleCaptureCondition},
 };
-use lynx_db::entities::capture::CaptureType;
-use sea_orm::DatabaseConnection;
+use lynx_storage::DataStore;
+use lynx_storage::models::CaptureType;
 
 #[allow(dead_code)]
 pub async fn create_test_rule(
@@ -29,7 +29,7 @@ pub async fn create_test_rule(
 
 #[allow(dead_code)]
 pub fn create_basic_capture_rule() -> CaptureRule {
-    use lynx_db::dao::request_processing_dao::types::UrlPattern;
+    use lynx_storage::dao::request_processing_dao::types::UrlPattern;
 
     CaptureRule {
         id: None,
@@ -47,10 +47,10 @@ pub fn create_basic_capture_rule() -> CaptureRule {
 
 #[allow(dead_code)]
 pub async fn mock_test_rule(
-    db: Arc<DatabaseConnection>,
+    store: Arc<DataStore>,
     handlers: Vec<HandlerRule>,
 ) -> Result<i32> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
     let rule = RequestRule {
         id: None,
@@ -61,7 +61,7 @@ pub async fn mock_test_rule(
         capture: CaptureRule {
             id: None,
             condition: CaptureCondition::Simple(SimpleCaptureCondition {
-                url_pattern: Some(lynx_db::dao::request_processing_dao::types::UrlPattern {
+                url_pattern: Some(lynx_storage::dao::request_processing_dao::types::UrlPattern {
                     capture_type: CaptureType::Glob,
                     pattern: "*".to_string(),
                 }),
@@ -74,3 +74,4 @@ pub async fn mock_test_rule(
     };
     dao.create_rule(rule).await
 }
+

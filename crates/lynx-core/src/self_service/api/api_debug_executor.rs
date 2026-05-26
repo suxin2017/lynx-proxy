@@ -5,8 +5,8 @@ use crate::self_service::{
     utils::{ResponseDataWrapper, ok},
 };
 use axum::{Json, extract::State};
-use lynx_db::dao::api_debug_dao::{ApiDebugDao, CreateApiDebugRequest, UpdateApiDebugRequest};
-use lynx_db::entities::api_debug::{HttpMethod, RequestStatus};
+use lynx_storage::dao::api_debug_dao::{ApiDebugDao, CreateApiDebugRequest, UpdateApiDebugRequest};
+use lynx_storage::models::{HttpMethod, RequestStatus};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -68,10 +68,10 @@ pub struct ExecuteApiDebugResponse {
     )
 )]
 async fn execute_api_request(
-    State(RouteState { db, client, .. }): State<RouteState>,
+    State(RouteState { store, client, .. }): State<RouteState>,
     Json(request): Json<ExecuteApiDebugRequest>,
 ) -> Result<Json<ResponseDataWrapper<ExecuteApiDebugResponse>>, CoreError> {
-    let dao = ApiDebugDao::new(db.clone());
+    let dao = ApiDebugDao::new(store.clone());
 
     // Convert headers to HeaderMap
     let mut header_map = HeaderMap::new();
@@ -254,3 +254,5 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(execute_api_request))
         .with_state(state)
 }
+
+

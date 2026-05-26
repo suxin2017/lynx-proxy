@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::client::ReqwestClient;
 use crate::client::request_client::RequestClientExt;
 use crate::common::Req;
-use crate::layers::extend_extension_layer::DbExtensionsExt;
+use crate::layers::extend_extension_layer::DataStoreExtensionsExt;
 use crate::layers::message_package_layer::MessageEventChannel;
 use crate::layers::message_package_layer::MessageEventLayerExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
@@ -67,7 +67,7 @@ async fn get_health() -> &'static str {
 
 #[derive(Clone, Debug)]
 pub struct RouteState {
-    pub db: Arc<sea_orm::DatabaseConnection>,
+    pub store: Arc<lynx_storage::DataStore>,
     pub net_request_cache: Arc<MessageEventCache>,
     pub proxy_config: Arc<ProxyServerConfig>,
     pub access_addr_list: Arc<Vec<SocketAddr>>,
@@ -80,7 +80,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
     let static_dir = req.extensions().get::<Option<Arc<StaticDir>>>();
 
     let state = RouteState {
-        db: req.extensions().get_db(),
+        store: req.extensions().get_data_store(),
         net_request_cache: req.extensions().get_message_event_store(),
         proxy_config: req.extensions().get_proxy_server_config(),
         access_addr_list: req

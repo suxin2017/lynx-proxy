@@ -2,7 +2,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use lynx_db::dao::request_processing_dao::handlers::BlockHandlerConfig;
+use lynx_storage::dao::request_processing_dao::handlers::BlockHandlerConfig;
 
 use crate::{common::Req, error::CoreResult, utils::full};
 

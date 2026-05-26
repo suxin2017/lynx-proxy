@@ -7,7 +7,7 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use lynx_db::dao::request_processing_dao::{
+use lynx_storage::dao::request_processing_dao::{
     CaptureRule, HandlerRule, RequestProcessingDao, RequestRule, RuleValidator,
 };
 use serde::{Deserialize, Serialize};
@@ -90,10 +90,10 @@ pub struct BatchRuleIdsRequest {
     )
 )]
 async fn list_rules(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Query(query): Query<RuleListQuery>,
 ) -> Result<Json<ResponseDataWrapper<RuleListResponse>>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
     let mut rules = dao
         .list_rules()
@@ -145,10 +145,10 @@ async fn list_rules(
     )
 )]
 async fn get_rule(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Path(id): Path<i32>,
 ) -> Result<Json<ResponseDataWrapper<RequestRule>>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
     let rule = dao
         .get_rule(id)
@@ -175,12 +175,12 @@ async fn get_rule(
     )
 )]
 async fn delete_rule(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Path(id): Path<i32>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
-    // 首先检查规则是否存在
+    // 首先检查规则是否存�?
     let existing_rule = dao
         .get_rule(id)
         .await
@@ -212,13 +212,13 @@ async fn delete_rule(
     )
 )]
 async fn toggle_rule(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Path(id): Path<i32>,
     Json(request): Json<ToggleRuleRequest>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
-    // 首先检查规则是否存在
+    // 首先检查规则是否存�?
     let existing_rule = dao
         .get_rule(id)
         .await
@@ -245,9 +245,9 @@ async fn toggle_rule(
     )
 )]
 async fn get_template_handlers(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
 ) -> Result<Json<ResponseDataWrapper<TemplateHandlersResponse>>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
     let handlers = dao.get_template_handlers().await.map_err(|e| {
         tracing::error!("Failed to get template handlers: {}", e);
@@ -271,10 +271,10 @@ async fn get_template_handlers(
     )
 )]
 async fn create_rule(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Json(request): Json<CreateRuleRequest>,
 ) -> Result<Json<ResponseDataWrapper<CreateRuleResponse>>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
     // Validate the rule
     let rule = RequestRule {
@@ -319,13 +319,13 @@ async fn create_rule(
     )
 )]
 async fn update_rule(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Path(id): Path<i32>,
     Json(request): Json<UpdateRuleRequest>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
 
-    // 首先检查规则是否存在
+    // 首先检查规则是否存�?
     let existing_rule = dao.get_rule(id).await.map_err(|e| {
         tracing::error!("Failed to get rule: {}", e);
         CoreError::Db { operation: "get rule for update", source: anyhow::anyhow!(e) }
@@ -372,10 +372,10 @@ async fn update_rule(
     )
 )]
 async fn batch_delete_rules(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Json(request): Json<BatchRuleIdsRequest>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
     dao.batch_delete_rules(&request.ids)
         .await
         .map_err(|e| CoreError::Db { operation: "batch delete rules", source: anyhow::anyhow!(e) })?;
@@ -393,10 +393,10 @@ async fn batch_delete_rules(
     )
 )]
 async fn batch_enable_rules(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Json(request): Json<BatchRuleIdsRequest>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
     dao.batch_toggle_rules(&request.ids, true)
         .await
         .map_err(|e| CoreError::Db { operation: "batch enable rules", source: anyhow::anyhow!(e) })?;
@@ -414,10 +414,10 @@ async fn batch_enable_rules(
     )
 )]
 async fn batch_disable_rules(
-    State(RouteState { db, .. }): State<RouteState>,
+    State(RouteState { store, .. }): State<RouteState>,
     Json(request): Json<BatchRuleIdsRequest>,
 ) -> Result<Json<EmptyOkResponse>, CoreError> {
-    let dao = RequestProcessingDao::new(db);
+    let dao = RequestProcessingDao::new(store);
     dao.batch_toggle_rules(&request.ids, false)
         .await
         .map_err(|e| CoreError::Db { operation: "batch disable rules", source: anyhow::anyhow!(e) })?;
@@ -438,3 +438,5 @@ pub fn router(state: RouteState) -> OpenApiRouter {
         .routes(routes!(batch_disable_rules))
         .with_state(state)
 }
+
+

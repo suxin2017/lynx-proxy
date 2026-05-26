@@ -4,7 +4,7 @@ use lynx_core::self_service::{
     api::net_request::RecordRequests,
     utils::{ResponseCode, ResponseDataWrapper},
 };
-use lynx_db::dao::{general_setting_dao::{ConnectType, GeneralSetting, GeneralSettingDao}, net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus}};
+use lynx_storage::dao::{general_setting_dao::{ConnectType, GeneralSetting, GeneralSettingDao}, net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus}};
 use lynx_mock::client::MockClient;
 use setup::{setup_mock_server::setup_mock_server};
 use std::sync::Arc;
@@ -18,13 +18,13 @@ async fn proxy_log_test() -> Result<()> {
     let mut proxy_server = setup_short_poll_proxy_server(Some(Arc::new(vec![mock_server.cert.clone()]))).await?;
     let proxy_server_root_ca = proxy_server.server_ca_manager.ca_cert.clone();
 
-    CaptureSwitchDao::new(proxy_server.db_connect.clone())
+    CaptureSwitchDao::new(proxy_server.data_store.clone())
         .update_capture_switch(CaptureSwitch {
             recording_status: RecordingStatus::PauseRecording,
         })
         .await?;
 
-    GeneralSettingDao::new(proxy_server.db_connect.clone())
+    GeneralSettingDao::new(proxy_server.data_store.clone())
         .update_general_setting(GeneralSetting {
             language: "zh-CN".to_string(),
             max_log_size: 1000,
@@ -60,3 +60,4 @@ async fn proxy_log_test() -> Result<()> {
 
     Ok(())
 }
+
