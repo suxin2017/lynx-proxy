@@ -156,6 +156,14 @@ where
                         );
                         delay_config.handle_request(current_request).await
                     }
+                    HandlerRuleType::Throttle(throttle_config) => {
+                        tracing::trace!(
+                            "Executing throttle handler for '{}' (preset: {:?})",
+                            handler.name,
+                            throttle_config.preset
+                        );
+                        throttle_config.handle_request(current_request).await
+                    }
                 };
 
                 match handler_result {
@@ -235,6 +243,18 @@ where
                                 delay_config.delay_type
                             );
                             response = delay_config
+                                .handle_response(response)
+                                .await
+                                .map_err(anyhow::Error::from)
+                                .map_err(S::Error::from)?;
+                        }
+                        HandlerRuleType::Throttle(throttle_config) => {
+                            tracing::trace!(
+                                "Executing throttle response handler for '{}' (preset: {:?})",
+                                handler.name,
+                                throttle_config.preset
+                            );
+                            response = throttle_config
                                 .handle_response(response)
                                 .await
                                 .map_err(anyhow::Error::from)

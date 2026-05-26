@@ -1,6 +1,6 @@
 use anyhow::Result;
 use http::StatusCode;
-use lynx_db::dao::request_processing_dao::HandlerRule;
+use lynx_db::dao::request_processing_dao::{HandlerRule, handlers::ThrottlePreset};
 use setup::{
     mock_base_url, mock_rule::mock_test_rule,
     setup_proxy_handler_server::setup_proxy_handler_server,
@@ -497,6 +497,30 @@ async fn modify_response_handler_no_modifications() -> Result<()> {
 
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response.text().await?, "Hello, World!");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn throttle_handler_offline_integration() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
+    let client = client.get_proxy_client();
+    let base_url = mock_base_url(&mock_server);
+
+    mock_test_rule(
+        proxy_server.db_connect,
+        vec![HandlerRule::throttle_handler(ThrottlePreset::Offline)],
+    )
+    .await?;
+
+    let response = client
+        .get(format!("{base_url}/hello"))
+        .send()
+        .await
+        .expect("send request failed");
+
+    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(response.text().await?, "Network offline (simulated)");
 
     Ok(())
 }

@@ -2089,6 +2089,7 @@ dependencies = [
  "futures-util",
  "glob-match",
  "http",
+ "http-body",
  "http-body-util",
  "hyper",
  "hyper-http-proxy",

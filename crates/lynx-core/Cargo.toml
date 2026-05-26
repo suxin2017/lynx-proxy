@@ -21,6 +21,7 @@ tracing = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 hyper = { workspace = true }
+http-body = "1"
 http-body-util = { workspace = true }
 hyper-util = { workspace = true }
 hyper-tungstenite = "0.17.0"

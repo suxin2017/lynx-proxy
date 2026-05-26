@@ -4,7 +4,8 @@ use utoipa::ToSchema;
 
 use super::{
     BlockHandlerConfig, DelayHandlerConfig, DelayType, HtmlScriptInjectorConfig, LocalFileConfig, ModifyRequestConfig,
-    modify_response_handler::ModifyResponseConfig, proxy_forward_handler::ProxyForwardConfig,
+    ThrottleHandlerConfig, ThrottlePreset, modify_response_handler::ModifyResponseConfig,
+    proxy_forward_handler::ProxyForwardConfig,
 };
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
@@ -17,6 +18,7 @@ pub enum HandlerRuleType {
     ProxyForward(ProxyForwardConfig),
     HtmlScriptInjector(HtmlScriptInjectorConfig),
     Delay(DelayHandlerConfig),
+    Throttle(ThrottleHandlerConfig),
 }
 
 impl From<&handler::Model> for HandlerRuleType {
@@ -56,6 +58,11 @@ impl From<&handler::Model> for HandlerRuleType {
                 let config: DelayHandlerConfig =
                     serde_json::from_value(model.config.clone()).unwrap_or_default();
                 HandlerRuleType::Delay(config)
+            }
+            HandlerType::Throttle => {
+                let config: ThrottleHandlerConfig =
+                    serde_json::from_value(model.config.clone()).unwrap_or_default();
+                HandlerRuleType::Throttle(config)
             }
         }
     }
@@ -200,6 +207,40 @@ impl HandlerRule {
             name: "Delay Handler".to_string(),
             description: Some("Add processing delay to requests".to_string()),
             execution_order: 5, // Execute early to delay before processing
+            enabled: true,
+        }
+    }
+
+    pub fn throttle_handler(preset: ThrottlePreset) -> Self {
+        let (name, description) = match preset {
+            ThrottlePreset::Fast3G => (
+                "Throttle (Fast 3G)".to_string(),
+                Some("Simulate Fast 3G network (Chrome DevTools preset)".to_string()),
+            ),
+            ThrottlePreset::Slow3G => (
+                "Throttle (Slow 3G)".to_string(),
+                Some("Simulate Slow 3G network (Chrome DevTools preset)".to_string()),
+            ),
+            ThrottlePreset::Offline => (
+                "Throttle (Offline)".to_string(),
+                Some("Simulate offline network — block requests".to_string()),
+            ),
+            ThrottlePreset::Custom => (
+                "Throttle (Custom)".to_string(),
+                Some("Custom network throttling (latency + bandwidth)".to_string()),
+            ),
+        };
+        Self {
+            id: None,
+            handler_type: HandlerRuleType::Throttle(ThrottleHandlerConfig {
+                preset,
+                download_kbps: None,
+                upload_kbps: None,
+                latency_ms: None,
+            }),
+            name,
+            description,
+            execution_order: 5,
             enabled: true,
         }
     }

@@ -29,6 +29,8 @@ pub enum HandlerType {
     HtmlScriptInjector,
     #[sea_orm(string_value = "delay")]
     Delay,
+    #[sea_orm(string_value = "throttle")]
+    Throttle,
 }
 
 impl From<&HandlerRuleType> for HandlerType {
@@ -41,6 +43,7 @@ impl From<&HandlerRuleType> for HandlerType {
             HandlerRuleType::ProxyForward(_) => Self::ProxyForward,
             HandlerRuleType::HtmlScriptInjector(_) => Self::HtmlScriptInjector,
             HandlerRuleType::Delay(_) => Self::Delay,
+            HandlerRuleType::Throttle(_) => Self::Throttle,
         }
     }
 }
@@ -63,6 +66,9 @@ impl From<&HandlerRuleType> for JsonValue {
                 serde_json::to_value(config).unwrap_or_default()
             }
             HandlerRuleType::Delay(config) => {
+                serde_json::to_value(config).unwrap_or_default()
+            }
+            HandlerRuleType::Throttle(config) => {
                 serde_json::to_value(config).unwrap_or_default()
             }
         }
