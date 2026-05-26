@@ -24,16 +24,12 @@ hyper = { workspace = true }
 http-body = "1"
 http-body-util = { workspace = true }
 hyper-util = { workspace = true }
-hyper-tungstenite = "0.17.0"
+hyper-tungstenite = { workspace = true }
 http = { workspace = true }
 tokio-util = { workspace = true }
 tokio-rustls = { workspace = true }
 tokio-stream = { workspace = true }
-tokio-tungstenite = { version = "0.26.1", features = [
-    "rustls",
-    "rustls-tls-webpki-roots",
-    "connect",
-] }
+tokio-tungstenite = { workspace = true }
 futures-util = { workspace = true }
 bytes = { workspace = true }
 hyper-rustls = { version = "0.27.3", default-features = false, features = [
@@ -55,15 +51,11 @@ reqwest = { version = "0.12.18", features = [
     "brotli",
     "deflate",
 ] }
-webpki-roots = "0.26.0"
-rustls-pemfile = "2.2.0"
+webpki-roots = { workspace = true }
+rustls-pemfile = { workspace = true }
 moka = { version = "0.12.10", features = ["future"] }
 rand = "0.8.5"
-rcgen = { version = "0.13.0", default-features = false, features = [
-    "x509-parser",
-    "pem",
-    "ring",
-] }
+rcgen = { workspace = true }
 time = "0.3.37"
 rsa = "0.9.7"
 once_cell = { workspace = true }

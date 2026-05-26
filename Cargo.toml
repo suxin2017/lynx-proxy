@@ -43,9 +43,16 @@ rcgen = { version = "0.13.0", default-features = false, features = [
     "ring",
 ] }
 rustls-pemfile = "2.2.0"
+webpki-roots = "0.26.8"
+rustls = { version = "0.23.26", default-features = false, features = ["ring"] }
 include_dir = "0.7.4"
 
 hyper-tungstenite = "0.17.0"
+tokio-tungstenite = { version = "0.26.1", features = [
+    "rustls",
+    "rustls-tls-webpki-roots",
+    "connect",
+] }
 hyper = { version = "1", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 http-body-util = "0.1"

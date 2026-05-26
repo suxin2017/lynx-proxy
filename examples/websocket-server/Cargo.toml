@@ -10,19 +10,13 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-tokio = { version = "1.10.0", features = ["full"] }
-hyper = { version = "1", features = ["full"] }
-hyper-util = { version = "0.1", features = ["full"] }
-hyper-tungstenite = "0.17.0"
-tokio-stream = { version = "0.1.14", default-features = false, features = [
-    "sync",
-] }
-futures-util = "0.3.31"
+tokio = { workspace = true }
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+hyper-tungstenite = { workspace = true }
+tokio-stream = { workspace = true }
+futures-util = { workspace = true }
 anyhow = { workspace = true }
-tokio-rustls = { version = "0.26.0", default-features = false, features = [
-    "ring",
-    "tls12",
-    "logging",
-] }
-http-body-util = "0.1"
+tokio-rustls = { workspace = true }
+http-body-util = { workspace = true }
 rustls-pemfile = { workspace = true }
