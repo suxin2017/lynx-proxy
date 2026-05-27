@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -11,8 +10,6 @@ pub mod proxy_server_app;
 
 pub use daemon::DaemonManager;
 pub use log_config::LogConfig;
-use lynx_core::{ proxy_server::ConnectType as ProxyConnectType};
-
 
 pub use proxy_server_app::ProxyServerApp;
 use serde::{Deserialize, Serialize};
@@ -22,32 +19,6 @@ use serde::{Deserialize, Serialize};
 pub struct Args {
     #[command(subcommand)]
     pub command: Commands,
-}
-
-#[derive(Debug, Clone,Serialize,Deserialize, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-pub enum ConnectType {
-    /// 短轮询
-    ShortPoll,
-    /// 服务器发送事件
-    SSE,
-}
-
-impl Display for ConnectType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ConnectType::ShortPoll => write!(f, "short-poll"),
-            ConnectType::SSE => write!(f, "sse"),
-        }
-    }
-}
-
-impl From<ConnectType> for ProxyConnectType {
-    fn from(value: ConnectType) -> Self {
-        match value {
-            ConnectType::ShortPoll => ProxyConnectType::ShortPoll,
-            ConnectType::SSE => ProxyConnectType::SSE,
-        }
-    }
 }
 
 #[derive(ClapArgs, Debug, Clone)]
@@ -67,9 +38,6 @@ pub struct ServerArgs {
     /// Log level for the proxy server
     #[arg(long, value_enum, default_value_t = LogLevel::Info)]
     pub log_level: LogLevel,
-
-    #[arg(long, value_enum, default_value_t = ConnectType::SSE)]
-    pub connect_type: ConnectType,
 
     /// Enable local only mode (only bind to loopback addresses)
     #[arg(long, default_value_t = false)]
@@ -100,7 +68,7 @@ pub enum Commands {
     },
 }
 
-#[derive(Debug, Clone,Serialize,Deserialize, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum LogLevel {
     Silent,
     Info,
@@ -109,8 +77,7 @@ pub enum LogLevel {
     Trace,
 }
 
-
-impl Display for LogLevel {
+impl std::fmt::Display for LogLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LogLevel::Silent => write!(f, "silent"),
@@ -128,7 +95,6 @@ pub fn get_default_data_dir() -> Result<PathBuf> {
 
     let data_dir = project.data_dir().to_path_buf();
 
-    // Create the directory if it doesn't exist
     if !data_dir.exists() {
         std::fs::create_dir_all(&data_dir).map_err(|e| {
             anyhow::anyhow!(
@@ -142,18 +108,10 @@ pub fn get_default_data_dir() -> Result<PathBuf> {
     Ok(data_dir)
 }
 
-/// Get the data directory, using the provided path or falling back to default
-///
-/// # Arguments
-/// * `data_dir` - Optional data directory path
-///
-/// # Returns
-/// The resolved data directory path
 pub fn resolve_data_dir(data_dir: Option<String>) -> Result<PathBuf> {
     match data_dir {
         Some(path) => {
             let path_buf = PathBuf::from(path);
-            // Create the directory if it doesn't exist
             if !path_buf.exists() {
                 std::fs::create_dir_all(&path_buf).map_err(|e| {
                     anyhow::anyhow!(

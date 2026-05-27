@@ -37,6 +37,11 @@ x-lynx-ops:
     - request.detail.get
     - request.stream.subscribe
     - request.stream.unsubscribe
+    - settings.general.get
+    - settings.general.set
+    - settings.captureFilter.get
+    - settings.captureFilter.set
+    - settings.certificate.path.get
   event:
     - capture.status.changed
     - request.start

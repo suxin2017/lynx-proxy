@@ -416,7 +416,7 @@ function getRowClassName(row: Row<TData>, rowIndex: number) {
       <div
         v-else
         data-slot="virtual-table-empty"
-        class="flex items-center justify-center text-sm text-muted-foreground"
+        class="flex items-center justify-center text-xs text-muted-foreground"
         :style="{
           height: `${Math.max(160, props.height - props.headerHeight)}px`,
         }"

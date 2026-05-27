@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// Modify request handler configuration
-#[derive(Debug, Serialize, Deserialize, Default, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ModifyRequestConfig {
     pub modify_headers: Option<std::collections::HashMap<String, String>>,

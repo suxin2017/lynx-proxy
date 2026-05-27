@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 use super::{
     BlockHandlerConfig, DelayHandlerConfig, DelayType, HtmlScriptInjectorConfig, LocalFileConfig, ModifyRequestConfig,
@@ -7,7 +6,7 @@ use super::{
     proxy_forward_handler::ProxyForwardConfig,
 };
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum HandlerRuleType {
     Block(BlockHandlerConfig),
@@ -21,7 +20,7 @@ pub enum HandlerRuleType {
 }
 
 /// Handler rule configuration
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HandlerRule {
     pub id: Option<i32>,

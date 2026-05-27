@@ -3,16 +3,15 @@ use crate::storage::{DataStore, TreeFile, TreeNodeRecord, read_json_or_default, 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFolderRequest {
     pub name: String,
     pub parent_id: Option<i32>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRequestNodeRequest {
     pub name: String,
@@ -20,20 +19,20 @@ pub struct CreateRequestNodeRequest {
     pub api_debug_id: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MoveNodeRequest {
     pub target_parent_id: Option<i32>,
     pub new_sort_order: Option<i32>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RenameNodeRequest {
     pub name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeNodeResponse {
     pub id: i32,
@@ -44,7 +43,6 @@ pub struct TreeNodeResponse {
     pub sort_order: i32,
     pub created_at: i64,
     pub updated_at: i64,
-    #[schema(no_recursion)]
     pub children: Option<Vec<TreeNodeResponse>>,
 }
 
@@ -64,7 +62,7 @@ impl From<TreeNodeRecord> for TreeNodeResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeResponse {
     pub nodes: Vec<TreeNodeResponse>,

@@ -5,12 +5,15 @@ use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::response::IntoResponse;
 use base64::{Engine as _, engine::general_purpose};
 use futures_util::{SinkExt, StreamExt};
-use lynx_db::dao::net_request_dao::RecordingStatus;
+use lynx_storage::dao::net_request_dao::RecordingStatus;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tokio::sync::broadcast;
 use tracing::{debug, error, warn};
-use utoipa_axum::router::OpenApiRouter;
+use axum::Router;
+use axum::routing::get;
+use lynx_storage::dao::general_setting_dao::{GeneralSetting, GeneralSettingDao};
+use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
 
 use crate::layers::message_package_layer::message_event_store::MessageEvent;
 use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
@@ -433,6 +436,175 @@ async fn handle_client_request(
             *subscribed = false;
             send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "subscribed": false }))).await;
         }
+        op::SETTINGS_GENERAL_GET => {
+            let dao = GeneralSettingDao::new(state.store.clone());
+            match dao.get_general_setting().await {
+                Ok(setting) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(setting).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to get general setting",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::SETTINGS_GENERAL_SET => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing settings payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match serde_json::from_value::<GeneralSetting>(payload) {
+                Ok(setting) => {
+                    let dao = GeneralSettingDao::new(state.store.clone());
+                    match dao.update_general_setting(setting).await {
+                        Ok(()) => {
+                            send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ok": true }))).await;
+                        }
+                        Err(err) => {
+                            send_frame(
+                                socket_tx,
+                                error_frame(
+                                    frame.id,
+                                    frame.op,
+                                    "DB_ERROR",
+                                    "Failed to update general setting",
+                                    Some(json!({ "reason": err.to_string() })),
+                                ),
+                            )
+                            .await;
+                        }
+                    }
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse general setting",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::SETTINGS_CAPTURE_FILTER_GET => {
+            let dao = HttpsCaptureDao::new(state.store.clone());
+            match dao.get_capture_filter().await {
+                Ok(filter) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(filter).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to get capture filter",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::SETTINGS_CAPTURE_FILTER_SET => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing capture filter payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match serde_json::from_value::<CaptureFilter>(payload) {
+                Ok(filter) => {
+                    let dao = HttpsCaptureDao::new(state.store.clone());
+                    match dao.update_capture_filter(filter).await {
+                        Ok(()) => {
+                            send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ok": true }))).await;
+                        }
+                        Err(err) => {
+                            send_frame(
+                                socket_tx,
+                                error_frame(
+                                    frame.id,
+                                    frame.op,
+                                    "DB_ERROR",
+                                    "Failed to update capture filter",
+                                    Some(json!({ "reason": err.to_string() })),
+                                ),
+                            )
+                            .await;
+                        }
+                    }
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse capture filter",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::SETTINGS_CERTIFICATE_PATH_GET => {
+            send_frame(
+                socket_tx,
+                response_frame(
+                    frame.id,
+                    frame.op,
+                    json!({
+                        "path": state.proxy_config.root_cert_file_path.to_string_lossy(),
+                    }),
+                ),
+            )
+            .await;
+        }
         _ => {
             // covered by pre-validation above
         }
@@ -510,6 +682,6 @@ async fn message_events_ws(
     ws.on_upgrade(move |socket| message_events_ws_handler(socket, route_state))
 }
 
-pub fn create_net_request_ws_routes() -> OpenApiRouter<RouteState> {
-    OpenApiRouter::new().route("/ws/message-events", axum::routing::get(message_events_ws))
+pub fn router() -> Router<RouteState> {
+    Router::new().route("/ws/message-events", get(message_events_ws))
 }

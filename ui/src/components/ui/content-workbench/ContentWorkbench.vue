@@ -23,11 +23,13 @@ interface Props {
   language?: string
   showLineNumbers?: boolean
   showCopy?: boolean
+  frameless?: boolean
   class?: HTMLAttributes['class']
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showCopy: true,
+  frameless: false,
 })
 
 const copyState = ref<'idle' | 'copied' | 'failed'>('idle')
@@ -103,8 +105,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section :class="cn('overflow-hidden rounded border border-border/70 bg-transparent', props.class)">
-    <header class="flex items-center justify-between px-2 py-1.5">
+  <section :class="cn(
+    'overflow-hidden bg-transparent',
+    props.frameless ? '' : 'rounded border border-border/70',
+    props.class,
+  )">
+    <header :class="cn(
+      'flex items-center justify-between',
+      props.frameless ? 'min-h-5 px-2 py-0' : 'px-2 py-1.5',
+    )">
       <div class="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{{ type }}</div>
 
       <div class="flex items-center gap-1.5">
@@ -123,7 +132,10 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <div class="relative overflow-hidden px-1 pb-1">
+    <div :class="cn(
+      'relative overflow-hidden',
+      props.frameless ? 'p-0' : 'px-1 pb-1',
+    )">
       <PreviewRenderer
         v-if="surface === 'preview'"
         :content="normalized.displayValue"
@@ -135,6 +147,7 @@ onBeforeUnmount(() => {
         :content="normalized.displayValue"
         :language="language"
         :show-line-numbers="props.showLineNumbers ?? true"
+        :compact="props.frameless"
       />
     </div>
   </section>

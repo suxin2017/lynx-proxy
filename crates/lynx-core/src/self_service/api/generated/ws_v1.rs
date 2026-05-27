@@ -19,6 +19,11 @@ pub mod op {
     pub const REQUEST_DETAIL_GET: &str = "request.detail.get";
     pub const REQUEST_STREAM_SUBSCRIBE: &str = "request.stream.subscribe";
     pub const REQUEST_STREAM_UNSUBSCRIBE: &str = "request.stream.unsubscribe";
+    pub const SETTINGS_GENERAL_GET: &str = "settings.general.get";
+    pub const SETTINGS_GENERAL_SET: &str = "settings.general.set";
+    pub const SETTINGS_CAPTURE_FILTER_GET: &str = "settings.captureFilter.get";
+    pub const SETTINGS_CAPTURE_FILTER_SET: &str = "settings.captureFilter.set";
+    pub const SETTINGS_CERTIFICATE_PATH_GET: &str = "settings.certificate.path.get";
     pub const CAPTURE_STATUS_CHANGED: &str = "capture.status.changed";
     pub const REQUEST_START: &str = "request.start";
     pub const REQUEST_BODY: &str = "request.body";
@@ -38,7 +43,12 @@ pub mod op {
             "capture.control.set" |
             "request.detail.get" |
             "request.stream.subscribe" |
-            "request.stream.unsubscribe"
+            "request.stream.unsubscribe" |
+            "settings.general.get" |
+            "settings.general.set" |
+            "settings.captureFilter.get" |
+            "settings.captureFilter.set" |
+            "settings.certificate.path.get"
         )
     }
 

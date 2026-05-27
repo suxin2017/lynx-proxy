@@ -15,16 +15,12 @@ use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
 use lynx_storage::DataStore;
 use lynx_storage::dao::client_proxy_dao::ClientProxyDao;
-use lynx_storage::dao::general_setting_dao::GeneralSettingDao;
-
-// Re-export ConnectType for external use
-pub use lynx_storage::dao::general_setting_dao::ConnectType;
 use rcgen::Certificate;
 use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
-use tracing::{Instrument, debug, info, instrument, trace, trace_span, warn};
+use tracing::{Instrument, debug, instrument, trace, trace_span, warn};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::common::{HyperReq, is_https_tcp_stream};
@@ -71,8 +67,6 @@ pub struct ProxyServer {
     #[builder(setter(skip))]
     pub data_store: Arc<DataStore>,
 
-    pub connect_type: ConnectType,
-
     #[builder(default = "false")]
     pub local_only: bool,
 }
@@ -118,13 +112,6 @@ impl ProxyServerBuilder {
             .ok_or_else(|| anyhow!("data_dir is required"))?;
         let data_store = DataStore::new(data_dir).await?;
 
-        if let Some(connect_type) = &self.connect_type {
-            let general_setting_dao = GeneralSettingDao::new(data_store.clone());
-            general_setting_dao
-                .update_connect_type(connect_type.clone())
-                .await?;
-        }
-
         Ok(ProxyServer {
             port: self.port.flatten(),
             access_addr_list,
@@ -138,11 +125,6 @@ impl ProxyServerBuilder {
                 .clone()
                 .ok_or_else(|| anyhow!("server_ca_manager is required"))?,
             data_store,
-            connect_type: self
-                .connect_type
-                .as_ref()
-                .unwrap_or(&ConnectType::SSE)
-                .clone(),
             local_only,
         })
     }
@@ -219,20 +201,12 @@ impl ProxyServer {
 
         let data_store = self.data_store.clone();
 
-        let general_setting_dao = GeneralSettingDao::new(data_store.clone());
-        if let Ok(setting) = general_setting_dao.get_general_setting().await {
-            info!("connect_type: {:?}", setting.connect_type);
-            if matches!(setting.connect_type, ConnectType::ShortPoll) {
-                message_event_cannel.setup_short_poll(message_event_store.clone());
-            }
-        }
-
         tokio::spawn(async move {
             loop {
                 let (tcp_stream, client_addr) = listener.accept().await.expect("accept failed");
                 let tls_acceptor = tls_acceptor.clone();
 
-                // 获取客户端代理配�?
+                // ??????????
                 let client_proxy_dao = ClientProxyDao::new(data_store.clone());
                 let client_proxy_config = client_proxy_dao
                     .get_client_proxy_config()
@@ -305,7 +279,7 @@ impl ProxyServer {
 
                     let svc = TowerToHyperService::new(transform_svc);
 
-                    // TODO�?refactor this code let it be more simple
+                    // TODO??refactor this code let it be more simple
                     if is_https_tcp_stream(&tcp_stream).await {
                         let tls_stream = match tls_acceptor.accept(tcp_stream).await {
                             Ok(tls_stream) => tls_stream,

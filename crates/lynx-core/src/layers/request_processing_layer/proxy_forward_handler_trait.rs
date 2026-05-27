@@ -9,7 +9,7 @@ impl HandlerTrait for ProxyForwardConfig {
     async fn handle_request(&self, mut request: Req) -> CoreResult<HandleRequestType> {
         // Get the current request URI
         let current_uri = request.uri().clone();
-        let original_uri_str = current_uri.to_string(); // 保存原始URI字符串用于日�?
+        let original_uri_str = current_uri.to_string();
         let current_parts = current_uri.into_parts();
 
         // Build new URI with target configuration, keeping original components as fallback

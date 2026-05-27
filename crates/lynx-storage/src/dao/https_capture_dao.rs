@@ -2,25 +2,33 @@ use crate::storage::{DataStore, read_json_or_default, write_json_atomic};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DomainFilter {
-    #[schema(example = "example.com")]
     pub domain: String,
-    #[schema(example = true)]
     pub enabled: bool,
-    #[schema(minimum = 0, maximum = 65535, example = 443)]
     pub port: u16,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CaptureFilter {
+    #[serde(default)]
     pub include_domains: Vec<DomainFilter>,
+    #[serde(default)]
     pub exclude_domains: Vec<DomainFilter>,
     pub enabled: bool,
+}
+
+impl Default for CaptureFilter {
+    fn default() -> Self {
+        Self {
+            include_domains: Vec::new(),
+            exclude_domains: Vec::new(),
+            enabled: true,
+        }
+    }
 }
 
 impl Default for DomainFilter {

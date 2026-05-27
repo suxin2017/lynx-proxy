@@ -2,19 +2,16 @@ use crate::storage::{DataStore, read_json_or_default, write_json_atomic};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProxyConfig {
     #[serde(rename = "type")]
-    #[schema(example = "none")]
     pub proxy_type: String,
-    #[schema(example = "http://proxy.example.com:8080")]
     pub url: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientProxyConfig {
     pub proxy_requests: ProxyConfig,

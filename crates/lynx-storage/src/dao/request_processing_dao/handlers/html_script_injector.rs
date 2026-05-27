@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// HTML script injection handler configuration
-#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct HtmlScriptInjectorConfig {
     /// Content to inject into HTML pages

@@ -2,12 +2,11 @@ use std::collections::HashMap;
 
 use crate::models::CaptureType;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 use super::handlers::HandlerRule;
 
 /// 逻辑操作符
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LogicalOperator {
     And,
@@ -15,14 +14,14 @@ pub enum LogicalOperator {
     Not,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UrlPattern {
     pub capture_type: CaptureType,
     pub pattern: String,
 }
 /// 简单捕获条件
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SimpleCaptureCondition {
     pub url_pattern: Option<UrlPattern>,
@@ -32,18 +31,17 @@ pub struct SimpleCaptureCondition {
 }
 
 /// 复杂捕获规则（支持嵌套逻辑）
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ComplexCaptureRule {
     /// 逻辑操作符
     pub operator: LogicalOperator,
     /// 子条件列表
-    #[schema(no_recursion)]
     pub conditions: Vec<CaptureCondition>,
 }
 
 /// 捕获条件（简单或复杂）
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum CaptureCondition {
     Simple(SimpleCaptureCondition),
@@ -51,7 +49,7 @@ pub enum CaptureCondition {
 }
 
 /// 完整的捕获规则
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[derive(Default)]
 pub struct CaptureRule {
@@ -60,7 +58,7 @@ pub struct CaptureRule {
 }
 
 /// 请求处理规则
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestRule {
     pub id: Option<i32>,
@@ -73,7 +71,7 @@ pub struct RequestRule {
 }
 
 /// Modify request handler configuration
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ModifyRequestConfig {
     pub modify_headers: Option<std::collections::HashMap<String, String>>,
@@ -83,7 +81,7 @@ pub struct ModifyRequestConfig {
 }
 
 /// Local file handler configuration
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalFileConfig {
     pub file_path: String,

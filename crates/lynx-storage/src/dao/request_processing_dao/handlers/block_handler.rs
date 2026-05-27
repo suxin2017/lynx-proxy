@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// Block handler configuration
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockHandlerConfig {
     pub status_code: Option<u16>,

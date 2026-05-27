@@ -1,61 +1,29 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { Button, NetworkRequestDetail } from '@/components'
 import { type TrafficRecord } from '@/components/ui/request-tree'
 import { HorizontalSplitPanel, VerticalSplitPanel } from '@/components/ui/split-panels'
 import { NetworkRequestPanel, type RequestViewMode } from '@/components/ui/network-panels'
-import { useCaptureStore, useRequestStreamStore } from '@/stores'
-import { Disc2, ListTree, PlugZap, Table2, BrushCleaning, Sheet } from '@lucide/vue'
+import { useCaptureStore, useRequestStreamStore, useSettingsStore } from '@/stores'
+import { Disc2, ListTree, PlugZap, BrushCleaning, Sheet } from '@lucide/vue'
 import { cn } from '@/lib/utils'
-
-const VIEW_MODE_STORAGE_KEY = 'lynx.network.viewMode'
-const SPLIT_RATIO_STORAGE_KEY = 'lynx.network.splitRatio'
-const TABLE_SPLIT_RATIO_STORAGE_KEY = 'lynx.network.tableSplitRatio'
-const STREAM_ENABLED_STORAGE_KEY = 'lynx.network.streamEnabled'
-const DEFAULT_SPLIT_RATIO = 42
-const DEFAULT_TABLE_SPLIT_RATIO = 44
 
 const captureStore = useCaptureStore()
 const requestStreamStore = useRequestStreamStore()
+const settingsStore = useSettingsStore()
 
-const requestViewMode = ref<RequestViewMode>('table')
-const splitRatio = ref(DEFAULT_SPLIT_RATIO)
-const tableSplitRatio = ref(DEFAULT_TABLE_SPLIT_RATIO)
-const streamEnabled = ref(true)
+const {
+  viewMode: requestViewMode,
+  splitRatio,
+  tableSplitRatio,
+  streamEnabled,
+} = storeToRefs(settingsStore)
+
 const isDesktop = ref(false)
 
 let mediaQueryList: MediaQueryList | null = null
 let detachMediaQuery: (() => void) | null = null
-
-const clampSplitRatio = (value: number) => {
-  return Math.min(80, Math.max(20, value))
-}
-
-const hydrateLayoutPreference = () => {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  const storedMode = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY)
-  if (storedMode === 'table' || storedMode === 'tree') {
-    requestViewMode.value = storedMode
-  }
-
-  const storedRatio = Number(window.localStorage.getItem(SPLIT_RATIO_STORAGE_KEY))
-  if (Number.isFinite(storedRatio)) {
-    splitRatio.value = clampSplitRatio(storedRatio)
-  }
-
-  const storedTableRatio = Number(window.localStorage.getItem(TABLE_SPLIT_RATIO_STORAGE_KEY))
-  if (Number.isFinite(storedTableRatio)) {
-    tableSplitRatio.value = clampSplitRatio(storedTableRatio)
-  }
-
-  const storedStreamEnabled = window.localStorage.getItem(STREAM_ENABLED_STORAGE_KEY)
-  if (storedStreamEnabled === '0') {
-    streamEnabled.value = false
-  }
-}
 
 const bindDesktopMediaQuery = () => {
   if (typeof window === 'undefined') {
@@ -114,54 +82,20 @@ const handleViewModeChange = (mode: RequestViewMode) => {
   requestViewMode.value = mode
 }
 
-watch(requestViewMode, (mode) => {
-  if (typeof window === 'undefined') {
+watch(streamEnabled, async (enabled, previous) => {
+  if (previous === undefined) {
     return
   }
 
-  window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode)
-})
-
-watch(splitRatio, (value) => {
-  const clamped = clampSplitRatio(value)
-
-  if (Math.abs(clamped - value) > 0.01) {
-    splitRatio.value = clamped
-    return
+  if (enabled) {
+    await startStream()
+  } else {
+    await stopStream()
   }
-
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  window.localStorage.setItem(SPLIT_RATIO_STORAGE_KEY, clamped.toFixed(2))
-})
-
-watch(tableSplitRatio, (value) => {
-  const clamped = clampSplitRatio(value)
-
-  if (Math.abs(clamped - value) > 0.01) {
-    tableSplitRatio.value = clamped
-    return
-  }
-
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  window.localStorage.setItem(TABLE_SPLIT_RATIO_STORAGE_KEY, clamped.toFixed(2))
-})
-
-watch(streamEnabled, (enabled) => {
-  if (typeof window === 'undefined') {
-    return
-  }
-
-  window.localStorage.setItem(STREAM_ENABLED_STORAGE_KEY, enabled ? '1' : '0')
 })
 
 onMounted(async () => {
-  hydrateLayoutPreference()
+  settingsStore.hydrate()
   bindDesktopMediaQuery()
   captureStore.handleServerEvent()
   await captureStore.refreshStatus()
@@ -224,7 +158,7 @@ onBeforeUnmount(async () => {
           :aria-pressed="captureStore.isRecording"
           @click="setRecording(!captureStore.isRecording)"
         >
-          <Disc2 :class="cn('h-4 w-4', captureStore.isRecording ?'text-muted-foreground/60': 'text-primary')" />
+          <Disc2 :class="cn('h-4 w-4', captureStore.isRecording ? 'text-primary' : 'text-muted-foreground/60')" />
         </Button>
 
         <Button size="icon-sm" variant="ghost" title="Clear Requests" @click="requestStreamStore.clear">

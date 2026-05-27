@@ -5,9 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
 use tokio::fs;
-use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateApiDebugRequest {
     pub name: String,
@@ -20,7 +19,7 @@ pub struct CreateApiDebugRequest {
     pub is_history: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateApiDebugRequest {
     pub name: Option<String>,
@@ -38,7 +37,7 @@ pub struct UpdateApiDebugRequest {
     pub error_message: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiDebugResponse {
     pub id: i32,
@@ -131,7 +130,7 @@ impl ApiDebugRecord {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiDebugQueryParams {
     pub page: Option<u64>,
@@ -142,7 +141,7 @@ pub struct ApiDebugQueryParams {
     pub is_history: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiDebugListResponse {
     pub data: Vec<ApiDebugResponse>,
@@ -366,7 +365,7 @@ impl ApiDebugDao {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiDebugStats {
     pub total: u64,

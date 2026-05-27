@@ -9,23 +9,20 @@ use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
 use lynx_core::proxy_server::{ProxyServerBuilder, StaticDir};
 use tracing::info;
-use lynx_core::{ proxy_server::ConnectType as ProxyConnectType};
 
 pub struct ProxyServerApp {
     port: u16,
     data_dir: Option<String>,
     daemon: bool,
-    connect_type: ProxyConnectType,
     local_only: bool,
 }
 
 impl ProxyServerApp {
-    pub fn new(port: u16, data_dir: Option<String>, daemon: bool, connect_type: ProxyConnectType, local_only: bool) -> Self {
+    pub fn new(port: u16, data_dir: Option<String>, daemon: bool, local_only: bool) -> Self {
         Self {
             port,
             data_dir,
             daemon,
-            connect_type,
             local_only,
         }
     }
@@ -65,7 +62,6 @@ impl ProxyServerApp {
             .server_ca_manager(Arc::new(server_ca_manager))
             .data_dir(data_dir.clone())
             .static_dir(Arc::new(StaticDir(assets_dir)))
-            .connect_type(self.connect_type.clone())
             .local_only(self.local_only)
             .build()
             .await?;
@@ -126,7 +122,7 @@ mod tests {
     use super::*;
 
     fn create_test_app(data_dir: Option<String>) -> ProxyServerApp {
-        ProxyServerApp::new(7788, data_dir, false, ProxyConnectType::ShortPoll, false)
+        ProxyServerApp::new(7788, data_dir, false, false)
     }
 
     #[tokio::test]

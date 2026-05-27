@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// Tree node type
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum NodeType {
     Folder,

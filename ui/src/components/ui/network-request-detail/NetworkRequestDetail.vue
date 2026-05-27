@@ -3,17 +3,25 @@ import type { HTMLAttributes } from 'vue'
 import type { WorkbenchType } from '@/components/ui/content-workbench/utils'
 import type { NetworkDetailKeyValue, NetworkDetailRecord } from './types'
 
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { ContentWorkbench } from '@/components/ui/content-workbench'
+import { VerticalSplitPanel } from '@/components/ui/split-panels'
 import { cn } from '@/lib/utils'
+import {
+  detailLabelClass,
+  detailRowGridClass,
+  detailSectionTitleClass,
+  detailValueBreakClass,
+  detailValueClass,
+} from './detail-styles'
 
 const props = defineProps<{
   record?: NetworkDetailRecord | null
   class?: HTMLAttributes['class']
 }>()
 
-const TABS = ['overview', 'request', 'response', 'timing'] as const
+const TABS = ['overview', 'content'] as const
 const REQUEST_SUB_TABS = ['query', 'headers', 'cookies', 'body'] as const
 const RESPONSE_SUB_TABS = ['headers', 'cookies', 'body'] as const
 
@@ -21,9 +29,15 @@ type DetailTab = typeof TABS[number]
 type RequestSubTab = typeof REQUEST_SUB_TABS[number]
 type ResponseSubTab = typeof RESPONSE_SUB_TABS[number]
 
+const TAB_LABELS: Record<DetailTab, string> = {
+  overview: '概览',
+  content: '内容',
+}
+
 const activeTab = ref<DetailTab>('overview')
 const requestSubTab = ref<RequestSubTab>('headers')
 const responseSubTab = ref<ResponseSubTab>('headers')
+const contentSplitRatio = ref(44)
 
 watch(() => props.record?.id, () => {
   activeTab.value = 'overview'
@@ -31,51 +45,19 @@ watch(() => props.record?.id, () => {
   responseSubTab.value = 'headers'
 })
 
-const totalTiming = computed(() => {
-  const timing = props.record?.timing
-  if (!timing) return 0
-
-  return [
-    timing.blockedMs,
-    timing.dnsMs,
-    timing.tcpMs,
-    timing.tlsMs,
-    timing.requestSentMs,
-    timing.waitingMs,
-    timing.downloadMs,
-  ].reduce<number>((sum, part) => sum + (part ?? 0), 0)
-})
-
-const timingRows = computed(() => {
-  const timing = props.record?.timing
-  if (!timing) return [] as Array<{ key: string, label: string, value: number }>
-
-  return [
-    { key: 'blocked', label: '阻塞', value: timing.blockedMs ?? 0 },
-    { key: 'dns', label: 'DNS 查询', value: timing.dnsMs ?? 0 },
-    { key: 'tcp', label: 'TCP 连接', value: timing.tcpMs ?? 0 },
-    { key: 'tls', label: 'TLS 握手', value: timing.tlsMs ?? 0 },
-    { key: 'request', label: '请求已发送', value: timing.requestSentMs ?? 0 },
-    { key: 'waiting', label: '等待中 (TTFB)', value: timing.waitingMs ?? 0 },
-    { key: 'download', label: '下载', value: timing.downloadMs ?? 0 },
-  ]
-})
-
-function timingPercent(value: number): string {
-  if (!totalTiming.value || value <= 0) return '0%'
-  return `${Math.max(2, (value / totalTiming.value) * 100)}%`
-}
-
-function bytes(value?: number): string {
-  if (value == null) return '-'
-  if (value < 1024) return `${value} B`
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
-  return `${(value / (1024 * 1024)).toFixed(2)} MB`
-}
-
 function duration(value?: number): string {
   if (value == null) return '-'
   return `${value.toFixed(1)} ms`
+}
+
+function formatStartTime(iso?: string): string {
+  if (!iso) return '-'
+
+  const match = iso.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.(\d+))?/)
+  if (!match) return iso
+
+  const [, date, time, ms] = match
+  return ms ? `${date} ${time}.${ms}` : `${date} ${time}`
 }
 
 function nonEmptyRows(rows?: NetworkDetailKeyValue[]): NetworkDetailKeyValue[] {
@@ -99,10 +81,16 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
 </script>
 
 <template>
-  <section :class="cn('flex h-full min-h-96 flex-col overflow-hidden rounded-lg border border-border bg-card', props.class)">
+  <section
+    :class="cn(
+      'flex h-full min-h-0 flex-col overflow-hidden rounded-lg bg-card',
+      props.record && 'border border-border',
+      props.class,
+    )"
+  >
     <div
       v-if="!props.record"
-      class="flex h-full min-h-96 items-center justify-center px-6 text-sm text-muted-foreground"
+      class="flex h-full min-h-0 flex-1 items-center justify-center px-6 text-xs text-muted-foreground"
     >
       从列表中选择请求以查看详情。
     </div>
@@ -119,216 +107,186 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
             : 'hover:bg-background/60 hover:border-border/40'"
           @click="activeTab = tab"
         >
-          {{ tab }}
+          {{ TAB_LABELS[tab] }}
         </button>
       </nav>
 
-      <div class="flex-1 overflow-auto px-2 py-2 text-xs">
-        <div v-if="activeTab === 'overview'" class="space-y-4">
+      <div class="flex min-h-0 flex-1 px-2 py-2 text-xs">
+        <div v-if="activeTab === 'overview'" class="min-h-0 flex-1 space-y-3 overflow-auto px-0.5">
 
-          <section class="space-y-1">
-            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">常规</h3>
+          <section class="space-y-1.5">
+            <h3 :class="detailSectionTitleClass">常规</h3>
             <dl class="space-y-1">
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">请求 URL</dt>
-                <dd class="font-mono break-all">{{ props.record.url }}</dd>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">请求 URL</dt>
+                <dd :class="detailValueBreakClass">{{ props.record.url }}</dd>
               </div>
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">请求方法</dt>
-                <dd class="font-mono">{{ props.record.method }}</dd>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">请求方法</dt>
+                <dd :class="detailValueClass">{{ props.record.method }}</dd>
               </div>
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">状态码</dt>
-                <dd class="font-mono">{{ props.record.statusCode ?? '-' }}</dd>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">状态码</dt>
+                <dd :class="detailValueClass">{{ props.record.statusCode ?? '-' }}</dd>
               </div>
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">远端地址</dt>
-                <dd class="font-mono">{{ props.record.remoteAddress || '-' }}</dd>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">远端地址</dt>
+                <dd :class="detailValueClass">{{ props.record.remoteAddress || '-' }}</dd>
               </div>
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">协议</dt>
-                <dd class="font-mono">{{ props.record.protocol || '-' }}</dd>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">协议</dt>
+                <dd :class="detailValueClass">{{ props.record.protocol || '-' }}</dd>
               </div>
             </dl>
           </section>
 
-          <section class="space-y-1">
-            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">大小</h3>
+          <section class="space-y-1.5">
+            <h3 :class="detailSectionTitleClass">时序</h3>
             <dl class="space-y-1">
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">传输大小</dt>
-                <dd class="font-mono">{{ bytes(props.record.size?.responseBytes) }}</dd>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">开始时间</dt>
+                <dd :class="detailValueClass">{{ formatStartTime(props.record.startTime) }}</dd>
               </div>
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">资源大小</dt>
-                <dd class="font-mono">{{ bytes(props.record.size?.decodedBytes) }}</dd>
-              </div>
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">请求负载</dt>
-                <dd class="font-mono">{{ bytes(props.record.size?.requestBytes) }}</dd>
-              </div>
-            </dl>
-          </section>
-
-          <section class="space-y-1">
-            <h3 class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">时序</h3>
-            <dl class="space-y-1">
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">开始时间</dt>
-                <dd class="font-mono">{{ props.record.startTime || '-' }}</dd>
-              </div>
-              <div class="grid grid-cols-[130px_1fr] gap-2 py-0.5">
-                <dt class="text-muted-foreground">耗时</dt>
-                <dd class="font-mono">{{ duration(props.record.durationMs) }}</dd>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">耗时</dt>
+                <dd :class="detailValueClass">{{ duration(props.record.durationMs) }}</dd>
               </div>
             </dl>
           </section>
         </div>
 
-        <div v-else-if="activeTab === 'request'" class="space-y-2">
-          <nav class="flex flex-wrap items-center gap-1 px-1">
-            <button
-              v-for="subTab in REQUEST_SUB_TABS"
-              :key="subTab"
-              type="button"
-              class="h-6 rounded px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
-              :class="requestSubTab === subTab ? 'bg-muted text-foreground' : 'hover:bg-muted/40'"
-              @click="requestSubTab = subTab"
-            >
-              {{ subTab }}
-            </button>
-          </nav>
+        <div v-else class="min-h-0 flex-1">
+          <VerticalSplitPanel v-model="contentSplitRatio" class="h-full min-h-0" :min-top-px="180" :min-bottom-px="180">
+            <template #top>
+              <div class="flex h-full min-h-0 flex-col">
+                <nav class="flex flex-wrap items-center gap-1 px-1 py-0.5">
+                  <button
+                    v-for="subTab in REQUEST_SUB_TABS"
+                    :key="subTab"
+                    type="button"
+                    class="h-6 rounded px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+                    :class="requestSubTab === subTab ? 'bg-muted text-foreground' : 'hover:bg-muted/40'"
+                    @click="requestSubTab = subTab"
+                  >
+                    {{ subTab }}
+                  </button>
+                </nav>
 
-          <section v-if="requestSubTab === 'query'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">查询参数</div>
-            <div v-if="nonEmptyRows(props.record.query).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无查询参数</div>
-            <div v-else class="max-h-56 overflow-auto">
-              <table class="w-full text-xs">
-                <tbody>
-                  <tr v-for="row in nonEmptyRows(props.record.query)" :key="`qp-${row.key}-${row.value}`" class="align-top">
-                    <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
-                    <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+                <div class="min-h-0 flex-1 overflow-auto">
+                  <section v-if="requestSubTab === 'query'" class="space-y-1">
+                    <div v-if="nonEmptyRows(props.record.query).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无查询参数</div>
+                    <div v-else class="max-h-56 overflow-auto">
+                      <table class="w-full text-xs">
+                        <tbody>
+                          <tr v-for="row in nonEmptyRows(props.record.query)" :key="`qp-${row.key}-${row.value}`" class="align-top">
+                            <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
+                            <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
 
-          <section v-else-if="requestSubTab === 'headers'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">请求 Headers</div>
-            <div v-if="nonEmptyRows(props.record.requestHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Headers</div>
-            <div v-else class="max-h-56 overflow-auto">
-              <table class="w-full text-xs">
-                <tbody>
-                  <tr v-for="row in nonEmptyRows(props.record.requestHeaders)" :key="`rh-${row.key}-${row.value}`" class="align-top">
-                    <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
-                    <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+                  <section v-else-if="requestSubTab === 'headers'" class="space-y-1">
+                    <div v-if="nonEmptyRows(props.record.requestHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Headers</div>
+                    <div v-else class="max-h-56 overflow-auto">
+                      <table class="w-full text-xs">
+                        <tbody>
+                          <tr v-for="row in nonEmptyRows(props.record.requestHeaders)" :key="`rh-${row.key}-${row.value}`" class="align-top">
+                            <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
+                            <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
 
-          <section v-else-if="requestSubTab === 'cookies'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">请求 Cookies</div>
-            <div v-if="nonEmptyRows(props.record.requestCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Cookies</div>
-            <div v-else class="max-h-56 overflow-auto">
-              <table class="w-full text-xs">
-                <tbody>
-                  <tr v-for="row in nonEmptyRows(props.record.requestCookies)" :key="`rc-${row.key}-${row.value}`" class="align-top">
-                    <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
-                    <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+                  <section v-else-if="requestSubTab === 'cookies'" class="space-y-1">
+                    <div v-if="nonEmptyRows(props.record.requestCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Cookies</div>
+                    <div v-else class="max-h-56 overflow-auto">
+                      <table class="w-full text-xs">
+                        <tbody>
+                          <tr v-for="row in nonEmptyRows(props.record.requestCookies)" :key="`rc-${row.key}-${row.value}`" class="align-top">
+                            <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
+                            <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
 
-          <section v-else class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">请求 Body</div>
-            <div v-if="props.record.requestBody == null || props.record.requestBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无请求 Body</div>
-            <ContentWorkbench
-              v-else
-              :type="bodyType(props.record.requestContentType, props.record.requestBody)"
-              :content="props.record.requestBody"
-              :show-line-numbers="true"
-            />
-          </section>
-        </div>
-
-        <div v-else-if="activeTab === 'response'" class="space-y-2">
-          <nav class="flex flex-wrap items-center gap-1 px-1">
-            <button
-              v-for="subTab in RESPONSE_SUB_TABS"
-              :key="subTab"
-              type="button"
-              class="h-6 rounded px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
-              :class="responseSubTab === subTab ? 'bg-muted text-foreground' : 'hover:bg-muted/40'"
-              @click="responseSubTab = subTab"
-            >
-              {{ subTab }}
-            </button>
-          </nav>
-
-          <section v-if="responseSubTab === 'headers'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">响应 Headers</div>
-            <div v-if="nonEmptyRows(props.record.responseHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Headers</div>
-            <div v-else class="max-h-56 overflow-auto">
-              <table class="w-full text-xs">
-                <tbody>
-                  <tr v-for="row in nonEmptyRows(props.record.responseHeaders)" :key="`sh-${row.key}-${row.value}`" class="align-top">
-                    <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
-                    <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section v-else-if="responseSubTab === 'cookies'" class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">响应 Cookies</div>
-            <div v-if="nonEmptyRows(props.record.responseCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Cookies</div>
-            <div v-else class="max-h-56 overflow-auto">
-              <table class="w-full text-xs">
-                <tbody>
-                  <tr v-for="row in nonEmptyRows(props.record.responseCookies)" :key="`sc-${row.key}-${row.value}`" class="align-top">
-                    <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
-                    <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section v-else class="space-y-1">
-            <div class="px-1 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">响应 Body</div>
-            <div v-if="props.record.responseBody == null || props.record.responseBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无响应 Body</div>
-            <ContentWorkbench
-              v-else
-              :type="bodyType(props.record.responseContentType, props.record.responseBody)"
-              :content="props.record.responseBody"
-              :show-line-numbers="true"
-            />
-          </section>
-        </div>
-
-        <div v-else class="space-y-2">
-          <div class="flex items-center justify-between pb-1">
-            <span class="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">时序拆解</span>
-            <span class="font-mono text-[11px] font-semibold">{{ duration(totalTiming) }}</span>
-          </div>
-
-          <div v-if="!props.record.timing" class="text-xs text-muted-foreground">无时序数据</div>
-
-          <div v-else class="space-y-2">
-            <div v-for="row in timingRows" :key="row.key" class="grid grid-cols-[130px_1fr_72px] items-center gap-2 py-1">
-              <span class="truncate text-[11px] text-muted-foreground">{{ row.label }}</span>
-              <div class="h-1.5 overflow-hidden rounded bg-muted/60">
-                <div class="h-full bg-primary/80" :style="{ width: timingPercent(row.value) }" />
+                  <section v-else>
+                    <div v-if="props.record.requestBody == null || props.record.requestBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无请求 Body</div>
+                    <ContentWorkbench
+                      v-else
+                      :type="bodyType(props.record.requestContentType, props.record.requestBody)"
+                      :content="props.record.requestBody"
+                      :show-line-numbers="true"
+                      :frameless="bodyType(props.record.requestContentType, props.record.requestBody) === 'json'"
+                    />
+                  </section>
+                </div>
               </div>
-              <span class="text-right font-mono text-[11px]">{{ duration(row.value) }}</span>
-            </div>
-          </div>
+            </template>
+
+            <template #bottom>
+              <div class="flex h-full min-h-0 flex-col">
+                <nav class="flex flex-wrap items-center gap-1 px-1 py-0.5">
+                  <button
+                    v-for="subTab in RESPONSE_SUB_TABS"
+                    :key="subTab"
+                    type="button"
+                    class="h-6 rounded px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+                    :class="responseSubTab === subTab ? 'bg-muted text-foreground' : 'hover:bg-muted/40'"
+                    @click="responseSubTab = subTab"
+                  >
+                    {{ subTab }}
+                  </button>
+                </nav>
+
+                <div class="min-h-0 flex-1 overflow-auto">
+                  <section v-if="responseSubTab === 'headers'" class="space-y-1">
+                    <div v-if="nonEmptyRows(props.record.responseHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Headers</div>
+                    <div v-else class="max-h-56 overflow-auto">
+                      <table class="w-full text-xs">
+                        <tbody>
+                          <tr v-for="row in nonEmptyRows(props.record.responseHeaders)" :key="`sh-${row.key}-${row.value}`" class="align-top">
+                            <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
+                            <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  <section v-else-if="responseSubTab === 'cookies'" class="space-y-1">
+                    <div v-if="nonEmptyRows(props.record.responseCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Cookies</div>
+                    <div v-else class="max-h-56 overflow-auto">
+                      <table class="w-full text-xs">
+                        <tbody>
+                          <tr v-for="row in nonEmptyRows(props.record.responseCookies)" :key="`sc-${row.key}-${row.value}`" class="align-top">
+                            <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
+                            <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  <section v-else>
+                    <div v-if="props.record.responseBody == null || props.record.responseBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无响应 Body</div>
+                    <ContentWorkbench
+                      v-else
+                      :type="bodyType(props.record.responseContentType, props.record.responseBody)"
+                      :content="props.record.responseBody"
+                      :show-line-numbers="true"
+                      :frameless="bodyType(props.record.responseContentType, props.record.responseBody) === 'json'"
+                    />
+                  </section>
+                </div>
+              </div>
+            </template>
+          </VerticalSplitPanel>
         </div>
       </div>
     </template>

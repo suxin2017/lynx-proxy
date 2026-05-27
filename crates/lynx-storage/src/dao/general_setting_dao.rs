@@ -2,9 +2,8 @@ use crate::storage::{DataStore, read_json_or_default, write_json_atomic};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum ConnectType {
     #[serde(rename = "0")]
@@ -19,7 +18,7 @@ impl Default for ConnectType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneralSetting {
     pub max_log_size: i32,

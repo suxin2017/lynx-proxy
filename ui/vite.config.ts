@@ -14,6 +14,9 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(), vue()],
+  optimizeDeps: {
+    include: ['qrcode'],
+  },
   server: {
     proxy: {
       '/api': {

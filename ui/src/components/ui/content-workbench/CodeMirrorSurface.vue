@@ -16,9 +16,11 @@ const props = withDefaults(defineProps<{
   content: string
   language?: WorkbenchLanguage
   showLineNumbers?: boolean
+  compact?: boolean
 }>(), {
   language: 'plaintext',
   showLineNumbers: true,
+  compact: false,
 })
 
 const rootEl = ref<HTMLElement | null>(null)
@@ -73,7 +75,7 @@ function createEditor() {
           overflow: 'auto',
         },
         '.cm-content': {
-          padding: '0.375rem 0.5rem 0.5rem',
+          padding: props.compact ? '0 0.5rem 0.25rem' : '0.375rem 0.5rem 0.5rem',
         },
         '.cm-gutters': {
           backgroundColor: 'transparent',

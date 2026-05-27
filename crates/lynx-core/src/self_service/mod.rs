@@ -13,17 +13,13 @@ use crate::proxy_server::StaticDir;
 use crate::proxy_server::server_config::ProxyServerConfig;
 use crate::proxy_server::server_config::ProxyServerConfigExtensionsExt;
 use anyhow::Result;
-use api::{base_info, net_request};
+use api::{base_info, certificate, net_request};
 use axum::Router;
 use axum::response::Response;
+use axum::routing::get;
 use file_service::get_file;
 use http::Method;
 use tower::ServiceExt;
-use utoipa::openapi::OpenApi;
-use utoipa::openapi::Server;
-use utoipa_axum::router::OpenApiRouter;
-use utoipa_axum::routes;
-use utoipa_swagger_ui::SwaggerUi;
 pub mod api;
 pub mod file_service;
 pub mod utils;
@@ -60,12 +56,11 @@ pub fn is_self_service(req: &Req) -> bool {
         .unwrap_or(false)
 }
 
-#[utoipa::path(get,  path = "/health", responses((status = OK, body = String)))]
 async fn get_health() -> &'static str {
     "ok"
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RouteState {
     pub store: Arc<lynx_storage::DataStore>,
     pub net_request_cache: Arc<MessageEventCache>,
@@ -93,47 +88,21 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         message_event_channel: req.extensions().get_message_event_cannel(),
     };
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET])
+        .allow_methods([Method::GET, Method::PUT, Method::POST])
         .allow_origin(Any);
-    let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
-        .routes(routes!(get_health))
+
+    let api_router = Router::new()
+        .route("/health", get(get_health))
+        .nest("/net_request", net_request::router())
+        .nest("/certificate", certificate::router())
+        .nest("/base_info", base_info::router())
         .layer(cors)
-        .with_state(state.clone())
-        .nest("/net_request", net_request::router(state.clone()))
-        .nest("/certificate", api::certificate::router(state.clone()))
-        .nest("/base_info", base_info::router(state.clone()))
-        .nest("/https_capture", api::https_capture::router(state.clone()))
-        .nest("/client_proxy", api::client_proxy::router(state.clone()))
-        .nest("/api_debug", api::api_debug::router(state.clone()))
-        .nest(
-            "/api_debug_executor",
-            api::api_debug_executor::router(state.clone()),
-        )
-        .nest(
-            "/api_debug_tree",
-            api::api_debug_tree::router(state.clone()),
-        )
-        .nest(
-            "/request_processing",
-            api::request_processing::router(state.clone()),
-        )
-        .nest("/general_setting", api::general_setting::router(state.clone()))
-        .split_for_parts();
-
-    openapi.servers = Some(vec![Server::new(SELF_SERVICE_PATH_PREFIX)]);
-    let swagger_path = format!("{}/swagger-ui", SELF_SERVICE_PATH_PREFIX);
-    let api_docs_path = format!("{}/api-docs/openapi.json", SELF_SERVICE_PATH_PREFIX);
-
-    let swagger_router =
-        Router::new().merge(SwaggerUi::new(swagger_path).url(api_docs_path, openapi));
+        .with_state(state.clone());
 
     let router = Router::new()
         .fallback(get_file)
         .with_state(state.clone())
-        .nest(SELF_SERVICE_PATH_PREFIX, router)
-        .merge(swagger_router);
-
-    let router = router;
+        .nest(SELF_SERVICE_PATH_PREFIX, api_router);
 
     router
         .oneshot(req)

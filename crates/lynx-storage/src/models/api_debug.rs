@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// HTTP method enumeration
 #[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema,
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize,
 )]
 #[serde(rename_all = "UPPERCASE")]
 pub enum HttpMethod {
@@ -24,7 +23,7 @@ impl Default for HttpMethod {
 
 /// Request status enumeration
 #[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema,
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize,
 )]
 #[serde(rename_all = "camelCase")]
 pub enum RequestStatus {

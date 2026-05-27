@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// Delay handler configuration for adding request processing delays
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DelayHandlerConfig {
     /// Delay duration in milliseconds
@@ -14,7 +13,7 @@ pub struct DelayHandlerConfig {
 }
 
 /// Type of delay to apply
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum DelayType {
     /// Delay before processing the request

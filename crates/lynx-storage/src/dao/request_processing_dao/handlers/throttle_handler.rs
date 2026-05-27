@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// Chrome DevTools-style network throttling preset
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum ThrottlePreset {
     #[default]
@@ -13,7 +12,7 @@ pub enum ThrottlePreset {
 }
 
 /// Throttle handler configuration (latency + upload/download bandwidth)
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ThrottleHandlerConfig {
     pub preset: ThrottlePreset,

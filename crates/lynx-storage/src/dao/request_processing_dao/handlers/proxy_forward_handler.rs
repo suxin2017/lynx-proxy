@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProxyForwardConfig {
     pub target_scheme: Option<String>,

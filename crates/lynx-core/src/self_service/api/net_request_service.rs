@@ -1,16 +1,17 @@
 use anyhow::Result;
-use lynx_db::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
+use lynx_storage::dao::net_request_dao::{CaptureSwitch, CaptureSwitchDao, RecordingStatus};
 
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreValue;
+use crate::layers::trace_id_layer::service::TraceId;
 use crate::self_service::RouteState;
 
 pub async fn get_capture_status(state: &RouteState) -> Result<CaptureSwitch> {
-    let dao = CaptureSwitchDao::new(state.db.clone());
+    let dao = CaptureSwitchDao::new(state.store.clone());
     dao.get_capture_switch().await
 }
 
 pub async fn set_capture_recording(state: &RouteState, recording: bool) -> Result<CaptureSwitch> {
-    let dao = CaptureSwitchDao::new(state.db.clone());
+    let dao = CaptureSwitchDao::new(state.store.clone());
     let recording_status = if recording {
         RecordingStatus::StartRecording
     } else {
@@ -45,8 +46,8 @@ pub async fn get_request_detail(
     state: &RouteState,
     trace_id: String,
 ) -> Result<Option<MessageEventStoreValue>> {
-    let mut requests = state.net_request_cache.get_request_by_keys(vec![trace_id]).await?;
-    Ok(requests.pop())
+    let id: TraceId = std::sync::Arc::new(trace_id);
+    Ok(state.net_request_cache.get(&id))
 }
 
 pub fn recording_status_text(status: &RecordingStatus) -> &'static str {

@@ -90,9 +90,9 @@ function handleClick() {
 </script>
 
 <template>
-  <!-- Fixed 32px row height is critical for TanStack Virtual size estimation -->
+  <!-- Row height must match RequestTree ROW_HEIGHT for virtual scroll -->
   <div
-    class="flex h-6 cursor-pointer items-center gap-2 rounded-sm border border-transparent px-2 text-xs transition-colors select-none"
+    class="flex h-7 cursor-pointer items-center gap-1 rounded-sm border border-transparent px-1.5 text-xs transition-colors select-none"
     :class="cn(
       'hover:bg-muted/50 hover:border-border/40',
       selected && 'bg-muted text-foreground border-border/60',
@@ -156,7 +156,7 @@ function handleClick() {
 
       <!-- Operation / verb -->
       <span
-        class="w-12 shrink-0 font-mono text-xs uppercase tracking-wide"
+        class="shrink-0 min-w-12 pr-2.5 font-mono text-[10px] font-medium leading-none uppercase"
         :class="methodColor(node.request.method)"
       >
         <template

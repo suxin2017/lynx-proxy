@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
 /// Capture type enumeration
 #[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema,
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize,
 )]
 #[serde(rename_all = "camelCase")]
 pub enum CaptureType {

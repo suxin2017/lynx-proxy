@@ -57,7 +57,7 @@ pub enum CoreError {
     },
 }
 
-#[derive(Debug, Serialize, utoipa::ToSchema)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ErrorResponse {
     pub code: u16,

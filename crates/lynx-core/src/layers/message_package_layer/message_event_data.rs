@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use axum::body::Body as AxumBody;
 use base64::{Engine as _, engine::general_purpose};
 use bytes::Bytes;
-use http::{HeaderMap, Request, Response, Version};
+use http::{HeaderMap, Method, Request, Response, Version};
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::Body;
 use serde::{Deserialize, Serialize};
@@ -10,14 +10,10 @@ use std::collections::HashMap;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::warn;
 use url::Url;
-use utoipa::openapi::schema::Schema;
-use utoipa::openapi::{KnownFormat, ObjectBuilder, RefOr, SchemaFormat, Type};
-use utoipa::{PartialSchema, ToSchema};
-
 use crate::common::BoxBody;
 use crate::utils::empty;
 
-#[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 pub struct MessageHeaderSize(pub usize);
 
 pub trait ToHashMap {
@@ -49,7 +45,7 @@ impl ToStringVersion for Version {
     }
 }
 
-#[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageEventRequest {
     pub method: String,
@@ -60,7 +56,7 @@ pub struct MessageEventRequest {
     pub body: MessageEventBody,
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub enum WebSocketStatus {
     #[default]
     Start,
@@ -69,19 +65,19 @@ pub enum WebSocketStatus {
     Error(String),
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct MessageEventWebSocket {
     pub status: WebSocketStatus,
     pub message: Vec<WebSocketLog>,
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub enum TunnelStatus {
     #[default]
     Connected,
     Disconnected,
 }
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct MessageEventTunnel {
     pub status: TunnelStatus,
 }
@@ -97,7 +93,7 @@ impl From<&WebSocketMessage> for WebSocketStatus {
         }
     }
 }
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WebSocketLog {
     pub direction: WebSocketDirection,
@@ -105,7 +101,7 @@ pub struct WebSocketLog {
     pub message: WebSocketMessage,
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum WebSocketMessage {
     Text(Option<MessageEventBody>),
@@ -140,13 +136,13 @@ impl From<&Message> for WebSocketMessage {
     }
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum WebSocketDirection {
     ClientToServer,
     ServerToClient,
 }
 
-#[derive(Debug, Default, Deserialize, ToSchema, Serialize, Clone)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageEventResponse {
     pub status: u16,
@@ -172,19 +168,6 @@ impl MessageEventBody {
         self.0.as_ref()
     }
 }
-
-impl PartialSchema for MessageEventBody {
-    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
-        RefOr::T(Schema::Object(
-            ObjectBuilder::new()
-                .schema_type(Type::String)
-                .format(Some(SchemaFormat::KnownFormat(KnownFormat::Byte)))
-                .build(),
-        ))
-    }
-}
-
-impl ToSchema for MessageEventBody {}
 
 impl Serialize for MessageEventBody {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -252,12 +235,41 @@ impl From<HeaderMap> for MessageHeaderSize {
     }
 }
 
+fn request_url_from_http<B: Body>(req: &Request<B>) -> String {
+    let uri_str = req.uri().to_string();
+    if let Ok(url) = Url::parse(&uri_str) {
+        let scheme = url.scheme();
+        if scheme == "http" || scheme == "https" {
+            return url.to_string();
+        }
+    }
+
+    if *req.method() == Method::CONNECT {
+        return format!("https://{}", uri_str);
+    }
+
+    if let Some(host) = req
+        .headers()
+        .get(http::header::HOST)
+        .and_then(|value| value.to_str().ok())
+    {
+        let path = if uri_str.starts_with('/') {
+            uri_str.as_str()
+        } else if uri_str.is_empty() {
+            "/"
+        } else {
+            return format!("http://{}/{}", host, uri_str.trim_start_matches('/'));
+        };
+        return format!("http://{}{}", host, path);
+    }
+
+    uri_str
+}
+
 impl<B: Body> From<&Request<B>> for MessageEventRequest {
     fn from(req: &Request<B>) -> Self {
         let method = req.method().to_string();
-        let url = Url::parse(&req.uri().to_string())
-            .map(|url| url.to_string())
-            .unwrap_or_default();
+        let url = request_url_from_http(req);
         let headers = req.headers().to_hash_map();
         let version = req.version().to_string_version();
         let header_size = MessageHeaderSize::from(req.headers().clone());
@@ -369,6 +381,26 @@ mod tests {
             Some(&"application/json".to_string())
         );
         assert_eq!(message_event_request.body, MessageEventBody(Bytes::new()));
+    }
+
+    #[tokio::test]
+    async fn test_message_event_request_url_for_connect_and_relative_uri() {
+        let connect_req = Request::builder()
+            .method("CONNECT")
+            .uri("httpbin.org:443")
+            .body(full(""))
+            .unwrap();
+        let connect_event = MessageEventRequest::from(&connect_req);
+        assert_eq!(connect_event.url, "https://httpbin.org:443");
+
+        let relative_req = Request::builder()
+            .method("GET")
+            .uri("/get?n=1")
+            .header("Host", "httpbin.org")
+            .body(full(""))
+            .unwrap();
+        let relative_event = MessageEventRequest::from(&relative_req);
+        assert_eq!(relative_event.url, "http://httpbin.org/get?n=1");
     }
 
     #[tokio::test]

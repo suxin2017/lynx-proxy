@@ -2,9 +2,8 @@ use crate::storage::{DataStore, read_json_or_default, write_json_atomic};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use utoipa::ToSchema;
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum RecordingStatus {
     #[default]
@@ -12,7 +11,7 @@ pub enum RecordingStatus {
     PauseRecording,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CaptureSwitch {
     pub recording_status: RecordingStatus,

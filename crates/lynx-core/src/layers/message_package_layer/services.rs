@@ -97,7 +97,7 @@ where
             let need_capture = if let Ok(capture_switch) = capture_switch {
                 matches!(
                     capture_switch.recording_status,
-                    RecordingStatus::PauseRecording
+                    RecordingStatus::StartRecording
                 )
             } else {
                 false
@@ -180,17 +180,12 @@ where
 
         Box::pin(
             async move {
-                let mut guard = RequestAbortGuard {
-                    message_event_channel: message_event_channel.clone(),
-                    completed: false,
-                    trace_id: trace_id.clone(),
-                };
                 let capture_dao = CaptureSwitchDao::new(db.clone());
                 let capture_switch = capture_dao.get_capture_switch().await;
                 let need_capture = if let Ok(capture_switch) = capture_switch {
                     matches!(
                         capture_switch.recording_status,
-                        RecordingStatus::PauseRecording
+                        RecordingStatus::StartRecording
                     )
                 } else {
                     false
@@ -201,6 +196,11 @@ where
                     return future.await;
                 }
 
+                let mut guard = RequestAbortGuard {
+                    message_event_channel: message_event_channel.clone(),
+                    completed: false,
+                    trace_id: trace_id.clone(),
+                };
                 message_event_channel_clone
                     .dispatch_on_before_proxy(trace_id.clone())
                     .await;

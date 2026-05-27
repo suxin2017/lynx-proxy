@@ -67,7 +67,7 @@ function activateItem(key: string, disabled?: boolean) {
 <template>
   <section
     :class="cn(
-      'grid min-h-[420px] w-full grid-cols-[3rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-sidebar-border bg-background shadow-sm md:grid-cols-[3.25rem_minmax(0,1fr)]',
+      'grid min-h-0 w-full grid-cols-[3rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-sidebar-border bg-background shadow-sm md:grid-cols-[3.25rem_minmax(0,1fr)]',
       props.class,
     )"
   >
@@ -90,12 +90,12 @@ function activateItem(key: string, disabled?: boolean) {
         </button>
       </nav>
 
-      <div class="border-t border-sidebar-border p-1.5 md:p-2">
+      <div class="flex items-center justify-center border-t border-sidebar-border p-1.5 md:p-2">
         <slot name="sidebar-footer" />
       </div>
     </aside>
 
-    <main :class="cn('min-w-0 bg-background', props.panelClass)">
+    <main :class="cn('min-h-0 min-w-0 overflow-hidden bg-background', props.panelClass)">
       <slot :active-key="activeKey" />
     </main>
   </section>

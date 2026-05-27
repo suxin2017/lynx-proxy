@@ -23,6 +23,11 @@ export const WsOp = {
   RequestDetailGet: 'request.detail.get',
   RequestStreamSubscribe: 'request.stream.subscribe',
   RequestStreamUnsubscribe: 'request.stream.unsubscribe',
+  SettingsGeneralGet: 'settings.general.get',
+  SettingsGeneralSet: 'settings.general.set',
+  SettingsCaptureFilterGet: 'settings.captureFilter.get',
+  SettingsCaptureFilterSet: 'settings.captureFilter.set',
+  SettingsCertificatePathGet: 'settings.certificate.path.get',
   CaptureStatusChanged: 'capture.status.changed',
   RequestStart: 'request.start',
   RequestBody: 'request.body',
@@ -42,6 +47,11 @@ export type WsRequestOp =
   | 'request.detail.get'
   | 'request.stream.subscribe'
   | 'request.stream.unsubscribe'
+  | 'settings.general.get'
+  | 'settings.general.set'
+  | 'settings.captureFilter.get'
+  | 'settings.captureFilter.set'
+  | 'settings.certificate.path.get'
 
 export type WsEventOp =
   | 'capture.status.changed'
