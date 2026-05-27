@@ -1,6 +1,7 @@
 target
 sql.db
 crates/lynx-core/assets
+crates/lynx-core/tests/temp/
 # Local
 .DS_Store
 *.local

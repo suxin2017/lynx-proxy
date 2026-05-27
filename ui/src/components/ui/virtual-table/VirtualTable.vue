@@ -4,6 +4,7 @@ import type { Column, ColumnDef, Row } from "@tanstack/vue-table"
 import { computed, ref } from "vue"
 import { useVirtualizer } from "@tanstack/vue-virtual"
 import { FlexRender, getCoreRowModel, useVueTable } from "@tanstack/vue-table"
+import { usePrependScrollAnchor } from "@/composables/usePrependScrollAnchor"
 import { cn } from "@/lib/utils"
 
 interface VirtualTableProps<TData extends Record<string, unknown>> {
@@ -21,6 +22,8 @@ interface VirtualTableProps<TData extends Record<string, unknown>> {
   emptyText?: string
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
   rowClassName?: (row: Row<TData>, rowIndex: number) => HTMLAttributes["class"]
+  anchorScrollOnPrepend?: boolean | "auto"
+  selectedRowId?: string
 }
 
 const props = withDefaults(defineProps<VirtualTableProps<TData>>(), {
@@ -36,6 +39,17 @@ const props = withDefaults(defineProps<VirtualTableProps<TData>>(), {
 })
 
 const scrollContainerRef = ref<HTMLElement | null>(null)
+
+const tableData = computed(() => props.data)
+
+usePrependScrollAnchor({
+  scrollEl: scrollContainerRef,
+  items: tableData,
+  rowHeight: () => props.rowHeight,
+  getId: (row) => props.getRowId?.(row, 0) ?? String(row.id ?? ""),
+  anchorMode: () => props.anchorScrollOnPrepend,
+  selectedRowId: () => props.selectedRowId,
+})
 
 const table = useVueTable({
   get data() {

@@ -6,6 +6,7 @@ import { useVirtualizer } from '@tanstack/vue-virtual'
 import type { FlatTreeNode, TrafficRecord } from './types'
 import { useRequestTree } from './useRequestTree'
 import RequestTreeNode from './RequestTreeNode.vue'
+import { usePrependScrollAnchor } from '@/composables/usePrependScrollAnchor'
 import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -76,6 +77,15 @@ const virtualizer = useVirtualizer(computed(() => ({
 const virtualItems = computed(() => virtualizer.value.getVirtualItems())
 const totalSize = computed(() => virtualizer.value.getTotalSize())
 const highlightTerm = computed(() => searchTerm.value.trim())
+
+usePrependScrollAnchor({
+  scrollEl: scrollContainerRef,
+  items: filteredNodes,
+  rowHeight: ROW_HEIGHT,
+  getId: (node) => node.request?.id ?? node.id,
+  anchorMode: 'auto',
+  selectedRowId: () => props.modelValue,
+})
 
 // ---------------------------------------------------------------------------
 // Interaction handlers
