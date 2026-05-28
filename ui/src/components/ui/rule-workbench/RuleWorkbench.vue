@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed, ref, watch } from 'vue'
-import { CheckCircle2, CircleDashed, FileJson2, ListFilter, Split, TriangleAlert } from '@lucide/vue'
+import { CheckCircle2, CircleDashed, ListFilter, TriangleAlert } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { JsonEditor } from '@/components/ui/json-editor'
 import MatchConditionBuilder from './MatchConditionBuilder.vue'
 import ActionPipelineBuilder from './ActionPipelineBuilder.vue'
+import EditorModeTabs from './EditorModeTabs.vue'
 import { createRuleDraft } from './types'
+import type { ActionAssetTemplate } from '@/components/ui/rules-drawer/types'
 import type { RuleDraft } from './types'
+import { getRuleSaveStatusLabel, isRuleSaveDisabled } from './save-status'
 
 export type RuleEditorMode = 'visual' | 'dsl'
 export type RuleMobilePane = 'list' | 'editor'
@@ -33,6 +37,9 @@ interface RuleWorkbenchProps {
   valid?: boolean
   invalid?: boolean
   saving?: boolean
+  embedded?: boolean
+  showList?: boolean
+  actionAssets?: ActionAssetTemplate[]
   class?: HTMLAttributes['class']
 }
 
@@ -45,6 +52,9 @@ const props = withDefaults(defineProps<RuleWorkbenchProps>(), {
   valid: true,
   invalid: false,
   saving: false,
+  embedded: false,
+  showList: true,
+  actionAssets: () => [],
 })
 
 const emit = defineEmits<{
@@ -53,6 +63,8 @@ const emit = defineEmits<{
   'update:editorMode': [mode: RuleEditorMode]
   'update:mobilePane': [pane: RuleMobilePane]
   'save': [id: string]
+  'toggle-enabled': [id: string, enabled: boolean]
+  'save-action-asset': [asset: ActionAssetTemplate]
 }>()
 
 const searchTerm = ref('')
@@ -132,17 +144,19 @@ const selectedRule = computed(() => {
   return props.rules.find(rule => rule.id === selectedRuleIdLocal.value) ?? filteredRules.value[0]
 })
 
-const isSaveDisabled = computed(() => {
-  return props.loading || props.saving || props.invalid || !selectedRule.value
-})
+const isSaveDisabled = computed(() => isRuleSaveDisabled({
+  loading: props.loading,
+  saving: props.saving,
+  invalid: props.invalid,
+  hasSelection: !!selectedRule.value,
+}))
 
-const statusLabel = computed(() => {
-  if (props.loading) return '正在加载草稿'
-  if (props.invalid) return '无效'
-  if (!props.dirty) return '已保存'
-  if (props.valid) return '可保存'
-  return '草稿有变更'
-})
+const statusLabel = computed(() => getRuleSaveStatusLabel({
+  loading: props.loading,
+  invalid: props.invalid,
+  dirty: props.dirty,
+  valid: props.valid,
+}))
 
 function ruleStateLabel(state?: RuleWorkbenchRuleItem['state']) {
   if (state === 'invalid') return '无效'
@@ -194,38 +208,36 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
 <template>
   <section
     :class="cn(
-      'flex min-h-[520px] w-full flex-col overflow-hidden rounded-lg border border-border bg-background',
+      props.embedded
+        ? 'flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent'
+        : 'flex min-h-[520px] w-full flex-col overflow-hidden rounded-lg border border-border bg-background',
       props.class,
     )"
   >
-    <header class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2.5">
-      <div class="space-y-0.5">
-        <p class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          规则工作台
-        </p>
-        <p class="text-xs text-muted-foreground">
-          匹配目标 + 动作流水线 + 预览
-        </p>
-      </div>
+    <header v-if="!props.embedded" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+      <EditorModeTabs
+        :model-value="editorModeLocal"
+        @update:model-value="updateEditorMode"
+      />
 
       <div class="flex flex-wrap items-center gap-2">
-        <span
-          class="inline-flex items-center gap-1 rounded-sm border border-border bg-card px-2 py-1 text-[11px] font-medium"
-          :class="props.invalid ? 'text-destructive' : 'text-foreground'"
-        >
-          <TriangleAlert v-if="props.invalid" class="h-3.5 w-3.5" />
-          <CheckCircle2 v-else-if="!props.dirty" class="h-3.5 w-3.5 text-emerald-600" />
-          <CircleDashed v-else class="h-3.5 w-3.5" />
-          {{ statusLabel }}
-        </span>
+      <span
+        class="inline-flex items-center gap-1 rounded-sm border border-border bg-muted/30 px-2 py-1 text-[11px] font-medium"
+        :class="props.invalid ? 'text-destructive' : 'text-foreground'"
+      >
+        <TriangleAlert v-if="props.invalid" class="h-3.5 w-3.5" />
+        <CheckCircle2 v-else-if="!props.dirty" class="h-3.5 w-3.5 text-emerald-600" />
+        <CircleDashed v-else class="h-3.5 w-3.5" />
+        {{ statusLabel }}
+      </span>
 
-        <Button size="default" class="px-3" :disabled="isSaveDisabled" @click="requestSave">
-          {{ props.saving ? '保存中...' : '保存规则' }}
-        </Button>
+      <Button size="default" class="h-8 px-3 text-xs" :disabled="isSaveDisabled" @click="requestSave">
+        {{ props.saving ? '保存中...' : '保存' }}
+      </Button>
       </div>
     </header>
 
-    <div class="bg-muted/20 px-2 pt-2 md:hidden">
+    <div v-if="props.showList" class="bg-muted/20 px-2 pt-2 md:hidden">
       <div role="tablist" aria-label="移动端面板" class="flex border-b border-border/50">
         <button
           type="button"
@@ -256,8 +268,14 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
       </div>
     </div>
 
-    <div class="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)]">
+    <div
+      class="min-h-0 flex-1"
+      :class="props.showList
+        ? 'grid grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)]'
+        : 'flex min-h-0 flex-col'"
+    >
       <aside
+        v-if="props.showList"
         id="rule-pane-list"
         class="flex min-h-0 flex-col bg-muted/20 md:border-r md:border-border/55"
         :class="mobilePaneLocal !== 'list' ? 'hidden md:flex' : 'flex'"
@@ -281,81 +299,68 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
             没有匹配当前筛选条件的规则。
           </li>
           <li v-for="rule in filteredRules" :key="rule.id">
-            <button
-              type="button"
-              class="w-full rounded-md px-2.5 py-2 text-left transition-colors"
-              :class="rule.id === selectedRule?.id
-                ? 'bg-primary/10 shadow-sm ring-1 ring-primary/35'
-                : 'bg-background/80 hover:bg-accent/50'"
-              @click="updateSelectedRule(rule.id)"
+            <div
+              class="flex items-start gap-2 rounded-md px-2.5 py-2 transition-colors"
+              :class="[
+                rule.id === selectedRule?.id
+                  ? 'bg-primary/10 shadow-sm ring-1 ring-primary/35'
+                  : 'bg-background/80 hover:bg-accent/50',
+                !rule.enabled && 'opacity-70',
+              ]"
             >
-              <div class="flex items-center justify-between gap-2">
-                <p class="truncate text-xs font-semibold text-foreground">{{ rule.name }}</p>
-                <span class="text-[10px] font-medium" :class="ruleStateClass(rule.state)">
-                  {{ ruleStateLabel(rule.state) }}
-                </span>
+              <div class="pt-0.5" @click.stop>
+                <Switch
+                  :checked="rule.enabled"
+                  :aria-label="rule.enabled ? `禁用 ${rule.name}` : `启用 ${rule.name}`"
+                  @update:checked="emit('toggle-enabled', rule.id, $event)"
+                />
               </div>
-              <p class="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
-                {{ rule.summary || '暂无摘要。' }}
-              </p>
-              <div class="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-                <span>优先级 {{ rule.priority }}</span>
-                <span>{{ rule.enabled ? '已启用' : '已禁用' }}</span>
-              </div>
-            </button>
+              <button
+                type="button"
+                class="min-w-0 flex-1 text-left"
+                @click="updateSelectedRule(rule.id)"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <p class="truncate text-xs font-semibold text-foreground">{{ rule.name }}</p>
+                  <span class="shrink-0 text-[10px] font-medium" :class="ruleStateClass(rule.state)">
+                    {{ ruleStateLabel(rule.state) }}
+                  </span>
+                </div>
+                <p class="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+                  {{ rule.summary || '暂无摘要。' }}
+                </p>
+                <p class="mt-2 text-[10px] text-muted-foreground">
+                  优先级 {{ rule.priority }}
+                </p>
+              </button>
+            </div>
           </li>
         </ul>
       </aside>
 
       <main
         id="rule-pane-editor"
-        class="min-h-0 bg-muted/10"
-        :class="mobilePaneLocal !== 'editor' ? 'hidden md:block' : 'block'"
+        class="flex min-h-0 flex-1 flex-col bg-muted/10"
+        :class="props.showList
+          ? (mobilePaneLocal !== 'editor' ? 'hidden md:flex' : 'flex')
+          : 'flex'"
       >
-        <div class="flex h-full min-h-0 flex-col">
-          <div class="flex items-center justify-between border-b border-border px-3 py-2.5">
-            <div>
-              <p class="text-xs font-semibold text-foreground">
-                {{ selectedRule?.name || '未选择规则' }}
-              </p>
-              <p class="text-[11px] text-muted-foreground">
-                编排捕获条件与动作流水线。
-              </p>
-            </div>
-
-            <div role="tablist" aria-label="编辑模式" class="flex border-b border-border/50">
-              <button
-                type="button"
-                role="tab"
-                aria-controls="editor-mode-visual"
-                :aria-selected="editorModeLocal === 'visual'"
-                class="-mb-px inline-flex h-8 items-center gap-1.5 border-b-2 px-2.5 text-xs font-medium transition-colors"
-                :class="editorModeLocal === 'visual'
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'"
-                @click="updateEditorMode('visual')"
-              >
-                <Split class="h-3.5 w-3.5" />
-                可视化
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-controls="editor-mode-dsl"
-                :aria-selected="editorModeLocal === 'dsl'"
-                class="-mb-px inline-flex h-8 items-center gap-1.5 border-b-2 px-2.5 text-xs font-medium transition-colors"
-                :class="editorModeLocal === 'dsl'
-                  ? 'border-primary text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'"
-                @click="updateEditorMode('dsl')"
-              >
-                <FileJson2 class="h-3.5 w-3.5" />
-                DSL
-              </button>
-            </div>
+        <div class="flex min-h-0 flex-1 flex-col">
+          <div
+            v-if="!props.embedded"
+            class="border-b border-border px-3 py-2"
+          >
+            <p class="truncate text-xs font-semibold text-foreground">
+              {{ selectedRule?.name || '未选择规则' }}
+            </p>
           </div>
 
-          <div id="editor-mode-visual" class="grid min-h-0 flex-1 gap-3 overflow-auto p-3" v-if="editorModeLocal === 'visual'">
+          <div
+            id="editor-mode-visual"
+            class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-3"
+            v-if="editorModeLocal === 'visual'"
+          >
+            <div class="grid min-w-0 gap-3">
             <slot
               name="editor"
               :rule="selectedRule"
@@ -369,35 +374,26 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
 
               <ActionPipelineBuilder
                 :model-value="draftLocal.actions"
+                :assets="props.actionAssets"
                 @update:model-value="updateActions"
+                @save-as-asset="emit('save-action-asset', $event)"
               />
             </slot>
+            </div>
           </div>
 
-          <div id="editor-mode-dsl" class="grid min-h-0 flex-1 gap-3 overflow-auto p-3" v-else>
+          <div id="editor-mode-dsl" class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3" v-else>
             <slot
               name="editor"
               :rule="selectedRule"
               :mode="editorModeLocal"
               :draft="draftLocal"
             >
-              <article class="space-y-2">
-                <header class="mb-2 flex items-center justify-between">
-                  <h3 class="flex items-center gap-2 text-xs font-semibold text-foreground">
-                    <FileJson2 class="h-3.5 w-3.5 text-primary" />
-                    DSL 编辑器
-                  </h3>
-                  <span class="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    JSON 草稿
-                  </span>
-                </header>
-
-                <JsonEditor
-                  v-model="dslText"
-                  title="规则草稿"
-                  class="min-h-[360px]"
-                />
-              </article>
+              <JsonEditor
+                v-model="dslText"
+                compact
+                class="min-h-[360px]"
+              />
             </slot>
           </div>
         </div>

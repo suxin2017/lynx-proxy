@@ -53,15 +53,15 @@ function removeCondition(id: string) {
 </script>
 
 <template>
-  <article class="rounded-lg bg-muted/25 p-3.5">
-    <header class="sticky top-0 z-10 -mx-3.5 -mt-3.5 mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/40 bg-card/90 px-3.5 py-2.5 backdrop-blur-sm">
-      <div class="flex items-center gap-2">
+  <article class="min-w-0 rounded-lg bg-muted/25 p-3.5">
+    <header class="sticky top-0 z-10 -mx-3.5 -mt-3.5 mb-3 flex flex-wrap items-center justify-between gap-2 gap-y-2 border-b border-border/40 bg-card/90 px-3.5 py-2.5 backdrop-blur-sm">
+      <div class="flex min-w-0 items-center gap-2">
         <h3 class="flex items-center gap-2 text-xs font-semibold text-foreground">
-          <Route class="h-3.5 w-3.5 text-primary" />
+          <Route class="h-3.5 w-3.5 shrink-0 text-primary" />
           匹配目标
         </h3>
       </div>
-      <div class="inline-flex items-center gap-1 rounded-md bg-background/85 p-1 ring-1 ring-border/45">
+      <div class="flex max-w-full flex-wrap items-center gap-1 rounded-md bg-background/85 p-1 ring-1 ring-border/45">
         <Button variant="outline" size="default" class="px-2.5" @click="addCondition">
           添加条件
         </Button>
@@ -84,7 +84,7 @@ function removeCondition(id: string) {
     </p>
 
     <ul class="space-y-2.5">
-      <li v-for="(condition, idx) in conditions" :key="condition.id" class="rounded-md bg-background/95 p-2.5 shadow-sm ring-1 ring-border/30">
+      <li v-for="(condition, idx) in conditions" :key="condition.id" class="min-w-0 rounded-md bg-background/95 p-2.5 shadow-sm ring-1 ring-border/30">
         <div class="mb-2 flex items-center justify-between gap-2">
           <span class="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">条件 {{ idx + 1 }}</span>
           <Button

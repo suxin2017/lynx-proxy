@@ -54,3 +54,18 @@ export const Readonly: Story = {
     modelValue: '{\n  "code": 0,\n  "message": "ok"\n}',
   },
 }
+
+export const Compact: Story = {
+  args: {
+    compact: true,
+    modelValue: '{\n  "name": "Auth Header Rewrite",\n  "enabled": true\n}',
+  },
+  render: args => ({
+    components: { JsonEditor },
+    setup() {
+      const value = ref(args.modelValue)
+      return { args, value }
+    },
+    template: '<JsonEditor v-bind="args" v-model="value" class="min-h-[280px]" />',
+  }),
+}

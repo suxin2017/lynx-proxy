@@ -87,24 +87,6 @@ async function loadAll() {
   }
 }
 
-async function saveCaptureFilter() {
-  if (!capture.value || isPreview.value) {
-    return
-  }
-
-  saving.value = true
-  saveMessage.value = null
-
-  try {
-    await wsConnection.call(WsOp.SettingsCaptureFilterSet, capture.value)
-    saveMessage.value = 'HTTPS 抓包设置已保存'
-  } catch (err) {
-    saveMessage.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    saving.value = false
-  }
-}
-
 async function saveAll() {
   if (!general.value || !capture.value || isPreview.value) {
     return

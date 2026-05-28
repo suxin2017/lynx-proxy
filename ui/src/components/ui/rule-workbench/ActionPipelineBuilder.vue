@@ -1,28 +1,37 @@
 <script setup lang="ts">
-import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from '@lucide/vue'
+import { ref } from 'vue'
+import { ArrowDown, ArrowUp, BookmarkPlus, GripVertical, Library, Plus, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import ActionConfigRenderer from './ActionConfigRenderer.vue'
-import { changeActionType, createAction, getActionSummary, getActionValidationErrors } from './types'
-import type { RuleActionDraft, RuleHandlerType } from './types'
+import { actionFromAssetTemplate, assetTemplateFromAction } from '@/components/ui/rules-drawer/action-asset-bridge'
+import type { ActionAssetTemplate } from '@/components/ui/rules-drawer/types'
+import ActionAssetDialog from './ActionAssetDialog.vue'
+import ActionAssetPickerPopover from './ActionAssetPickerPopover.vue'
+import ActionHandlerEditor from './ActionHandlerEditor.vue'
+import { createAction, getActionSummary, getActionValidationErrors } from './types'
+import type { RuleActionDraft } from './types'
 
 interface ActionPipelineBuilderProps {
   modelValue: RuleActionDraft[]
+  assets?: ActionAssetTemplate[]
 }
 
-const props = defineProps<ActionPipelineBuilderProps>()
+const props = withDefaults(defineProps<ActionPipelineBuilderProps>(), {
+  assets: () => [],
+})
+
 const emit = defineEmits<{
   'update:modelValue': [next: RuleActionDraft[]]
+  'save-as-asset': [asset: ActionAssetTemplate]
 }>()
 
-const handlerTypes: RuleHandlerType[] = [
-  'modifyRequest',
-  'modifyResponse',
-  'block',
-  'localFile',
-  'proxyForward',
-  'delay',
-  'htmlScriptInjector',
-]
+const pickerOpen = ref(false)
+const pickerAnchorRef = ref<HTMLElement | null>(null)
+const saveDialogOpen = ref(false)
+const saveDraft = ref<ActionAssetTemplate | null>(null)
+
+function togglePicker() {
+  pickerOpen.value = !pickerOpen.value
+}
 
 function normalizeOrder(actions: RuleActionDraft[]): RuleActionDraft[] {
   return actions.map((action, idx) => ({
@@ -37,10 +46,6 @@ function updateAction(id: string, updater: (action: RuleActionDraft) => RuleActi
       action.id === id ? updater(action) : action
     )),
   ))
-}
-
-function updateActionType(id: string, type: RuleHandlerType) {
-  updateAction(id, draft => changeActionType(draft, type))
 }
 
 function moveAction(id: string, direction: -1 | 1) {
@@ -66,6 +71,22 @@ function addAction() {
   ]))
 }
 
+function addFromAsset(asset: ActionAssetTemplate) {
+  emit('update:modelValue', normalizeOrder([
+    ...props.modelValue,
+    actionFromAssetTemplate(asset, props.modelValue.length + 1),
+  ]))
+}
+
+function openSaveAsAsset(action: RuleActionDraft) {
+  saveDraft.value = assetTemplateFromAction(action)
+  saveDialogOpen.value = true
+}
+
+function confirmSaveAsAsset(asset: ActionAssetTemplate) {
+  emit('save-as-asset', asset)
+}
+
 function removeAction(id: string) {
   if (props.modelValue.length <= 1) return
   emit('update:modelValue', normalizeOrder(props.modelValue.filter(action => action.id !== id)))
@@ -77,16 +98,38 @@ function validationErrors(action: RuleActionDraft): string[] {
 </script>
 
 <template>
-  <article class="rounded-lg bg-muted/25 p-3.5">
+  <article class="min-w-0 rounded-lg bg-muted/25 p-3.5">
     <header class="sticky top-0 z-10 -mx-3.5 -mt-3.5 mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/40 bg-card/90 px-3.5 py-2.5 backdrop-blur-sm">
       <h3 class="flex items-center gap-2 text-xs font-semibold text-foreground">
         <GripVertical class="h-3.5 w-3.5 text-primary" />
         动作流水线
       </h3>
-      <Button variant="outline" size="default" class="px-2.5" @click="addAction">
-        <Plus class="h-3.5 w-3.5" />
-        添加 Handler
-      </Button>
+      <div class="flex flex-wrap items-center gap-2">
+        <div ref="pickerAnchorRef" class="inline-flex">
+          <Button
+            variant="outline"
+            size="default"
+            class="px-2.5"
+            :disabled="props.assets.length === 0"
+            :aria-expanded="pickerOpen"
+            aria-haspopup="listbox"
+            @click="togglePicker"
+          >
+            <Library class="h-3.5 w-3.5" />
+            从资产添加
+          </Button>
+          <ActionAssetPickerPopover
+            v-model:open="pickerOpen"
+            :anchor-el="pickerAnchorRef"
+            :assets="props.assets"
+            @pick="addFromAsset"
+          />
+        </div>
+        <Button variant="outline" size="default" class="px-2.5" @click="addAction">
+          <Plus class="h-3.5 w-3.5" />
+          添加 Handler
+        </Button>
+      </div>
     </header>
 
     <p class="mb-3 text-xs text-muted-foreground">
@@ -97,7 +140,7 @@ function validationErrors(action: RuleActionDraft): string[] {
       <li
         v-for="(action, idx) in props.modelValue"
         :key="action.id"
-        class="rounded-md bg-background/95 p-2.5 shadow-sm ring-1 ring-border/30"
+        class="min-w-0 rounded-md bg-background/95 p-2.5 shadow-sm ring-1 ring-border/30"
       >
         <div class="mb-2 flex items-center justify-between gap-2">
           <div class="min-w-0">
@@ -109,6 +152,15 @@ function validationErrors(action: RuleActionDraft): string[] {
             </p>
           </div>
           <div class="inline-flex items-center gap-1">
+            <Button
+              size="icon-sm"
+              class="h-7 w-7"
+              variant="ghost"
+              title="存为动作资产"
+              @click="openSaveAsAsset(action)"
+            >
+              <BookmarkPlus class="h-3.5 w-3.5" />
+            </Button>
             <Button size="icon-sm" class="h-7 w-7" variant="ghost" :disabled="idx === 0" @click="moveAction(action.id, -1)">
               <ArrowUp class="h-3.5 w-3.5" />
             </Button>
@@ -121,58 +173,10 @@ function validationErrors(action: RuleActionDraft): string[] {
           </div>
         </div>
 
-        <div class="grid gap-2 sm:grid-cols-2">
-          <label class="grid gap-1 text-[11px] text-muted-foreground">
-            类型
-            <select
-              class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring focus:ring-1"
-              :value="action.type"
-              @change="updateActionType(action.id, ($event.target as HTMLSelectElement).value as RuleHandlerType)"
-            >
-              <option v-for="handlerType in handlerTypes" :key="handlerType" :value="handlerType">
-                {{ handlerType }}
-              </option>
-            </select>
-          </label>
-
-          <label class="grid gap-1 text-[11px] text-muted-foreground">
-            启用
-            <select
-              class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring focus:ring-1"
-              :value="action.enabled ? 'true' : 'false'"
-              @change="updateAction(action.id, draft => ({ ...draft, enabled: ($event.target as HTMLSelectElement).value === 'true' }))"
-            >
-              <option value="true">已启用</option>
-              <option value="false">已禁用</option>
-            </select>
-          </label>
-
-          <label class="grid gap-1 text-[11px] text-muted-foreground sm:col-span-2">
-            名称
-            <input
-              class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring placeholder:text-muted-foreground focus:ring-1"
-              :value="action.name"
-              @input="updateAction(action.id, draft => ({ ...draft, name: ($event.target as HTMLInputElement).value }))"
-            >
-          </label>
-
-          <label class="grid gap-1 text-[11px] text-muted-foreground sm:col-span-2">
-            描述
-            <textarea
-              rows="2"
-              class="rounded-sm border border-input bg-background px-2 py-1.5 text-xs text-foreground outline-none ring-ring placeholder:text-muted-foreground focus:ring-1"
-              :value="action.description"
-              @input="updateAction(action.id, draft => ({ ...draft, description: ($event.target as HTMLTextAreaElement).value }))"
-            />
-          </label>
-
-          <div class="sm:col-span-2">
-            <ActionConfigRenderer
-              :action="action"
-              @update:action="next => updateAction(action.id, () => next)"
-            />
-          </div>
-        </div>
+        <ActionHandlerEditor
+          :model-value="action"
+          @update:model-value="next => updateAction(action.id, () => next)"
+        />
 
         <div class="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <span>执行顺序：{{ action.order }}</span>
@@ -180,5 +184,11 @@ function validationErrors(action: RuleActionDraft): string[] {
         </div>
       </li>
     </ul>
+
+    <ActionAssetDialog
+      v-model:open="saveDialogOpen"
+      :draft="saveDraft"
+      @save="confirmSaveAsAsset"
+    />
   </article>
 </template>

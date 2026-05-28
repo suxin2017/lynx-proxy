@@ -1,6 +1,8 @@
 export { default as RuleWorkbench } from './RuleWorkbench.vue'
 export { default as MatchConditionBuilder } from './MatchConditionBuilder.vue'
 export { default as ActionPipelineBuilder } from './ActionPipelineBuilder.vue'
+export { default as ActionHandlerEditor } from './ActionHandlerEditor.vue'
+export { default as EditorModeTabs } from './EditorModeTabs.vue'
 export { default as ActionConfigRenderer } from './ActionConfigRenderer.vue'
 export * from './action-configs'
 export type {
@@ -33,3 +35,5 @@ export {
   createRuleDraft,
   createSimpleCondition,
 } from './types'
+export { getRuleSaveStatusLabel, isRuleSaveDisabled } from './save-status'
+export type { RuleSaveStatusInput } from './save-status'
