@@ -1,0 +1,47 @@
+@top Program { Expr }
+
+@skip { space }
+
+Expr { OrExpr }
+
+OrExpr { AndExpr (OrOp AndExpr)* }
+AndExpr { NotExpr (AndOp NotExpr)* }
+NotExpr { NotOp NotExpr | Primary }
+
+Primary { Url | "(" Expr ")" }
+
+Url { Scheme? Host Port? Path? | Path }
+
+@tokens {
+  @precedence { AndOp, OrOp, NotOp, Scheme, Host, Port, Path }
+
+  space { std.whitespace+ }
+
+  AndOp { "AND" | "and" }
+  OrOp { "OR" | "or" }
+  NotOp { "NOT" | "not" }
+
+  "(" ")"
+
+  Scheme { HttpScheme | HttpsScheme | WsScheme | WssScheme }
+  HttpScheme { "http://" | "HTTP://" }
+  HttpsScheme { "https://" | "HTTPS://" }
+  WsScheme { "ws://" | "WS://" }
+  WssScheme { "wss://" | "WSS://" }
+
+  Host { "localhost" | IPv4 | Domain }
+
+  IPv4 { ipv4Octet "." ipv4Octet "." ipv4Octet "." ipv4Octet }
+  ipv4Octet { $[0-9] $[0-9]? $[0-9]? }
+
+  Domain { hostLabel ("." hostLabel)+ }
+  hostLabel { $[A-Za-z0-9] $[A-Za-z0-9-]* }
+
+  Port { ":" $[0-9]+ }
+
+  Path { "/" (pathSegment "/")* pathSegment? | "/" }
+  pathSegment { pathChar+ | "*" }
+  pathChar { $[A-Za-z0-9_~!$&'*+,;=:@%-] | "." | "*" }
+}
+
+@detectDelim

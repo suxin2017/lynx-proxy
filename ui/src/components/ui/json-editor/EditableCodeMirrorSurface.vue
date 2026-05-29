@@ -15,6 +15,10 @@ import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 const props = withDefaults(defineProps<{
   modelValue: string
   language?: WorkbenchLanguage
+  /** Provide a custom CodeMirror language extension (overrides `language`). */
+  languageExtension?: Extension
+  /** Additional CodeMirror extensions to load (e.g. autocomplete, lint). */
+  extensions?: Extension
   showLineNumbers?: boolean
   readOnly?: boolean
 }>(), {
@@ -32,6 +36,7 @@ const editorView = shallowRef<EditorView | null>(null)
 const languageCompartment = new Compartment()
 const lineNumbersCompartment = new Compartment()
 const editableCompartment = new Compartment()
+const extraExtensionsCompartment = new Compartment()
 let isApplyingExternalChange = false
 
 function resolveLanguageExtension(language: WorkbenchLanguage): Extension {
@@ -51,6 +56,10 @@ function resolveLanguageExtension(language: WorkbenchLanguage): Extension {
     default:
       return []
   }
+}
+
+function resolveEffectiveLanguageExtension(): Extension {
+  return props.languageExtension ?? resolveLanguageExtension(props.language)
 }
 
 function resolveLineNumberExtension(showLineNumbers: boolean): Extension {
@@ -120,9 +129,10 @@ function createEditor() {
           backgroundColor: 'color-mix(in oklab, var(--color-muted) 60%, transparent)',
         },
       }),
-      languageCompartment.of(resolveLanguageExtension(props.language)),
+      languageCompartment.of(resolveEffectiveLanguageExtension()),
       lineNumbersCompartment.of(resolveLineNumberExtension(props.showLineNumbers)),
       editableCompartment.of(resolveEditableExtension(props.readOnly)),
+      extraExtensionsCompartment.of(props.extensions ?? []),
     ],
   })
 
@@ -160,14 +170,36 @@ watch(() => props.modelValue, (modelValue) => {
   isApplyingExternalChange = false
 })
 
-watch(() => props.language, (language) => {
+watch(() => props.language, () => {
   const view = editorView.value
   if (!view) {
     return
   }
 
   view.dispatch({
-    effects: languageCompartment.reconfigure(resolveLanguageExtension(language)),
+    effects: languageCompartment.reconfigure(resolveEffectiveLanguageExtension()),
+  })
+})
+
+watch(() => props.languageExtension, () => {
+  const view = editorView.value
+  if (!view) {
+    return
+  }
+
+  view.dispatch({
+    effects: languageCompartment.reconfigure(resolveEffectiveLanguageExtension()),
+  })
+})
+
+watch(() => props.extensions, (extensions) => {
+  const view = editorView.value
+  if (!view) {
+    return
+  }
+
+  view.dispatch({
+    effects: extraExtensionsCompartment.reconfigure(extensions ?? []),
   })
 })
 
