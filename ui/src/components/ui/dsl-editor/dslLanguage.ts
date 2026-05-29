@@ -7,6 +7,8 @@ const urlScheme = Tag.define()
 const urlHost = Tag.define()
 const urlPort = Tag.define()
 const urlPath = Tag.define()
+const cliFlag = Tag.define()
+const cliValue = Tag.define()
 /** Highlight colors for DSL tokens (each URL part uses a distinct chart/destructive token). */
 export const dslHighlightColors = {
   keyword: 'var(--color-chart-2)',
@@ -15,6 +17,9 @@ export const dslHighlightColors = {
   port: 'var(--color-chart-5)',
   path: 'var(--color-chart-3)',
   paren: 'var(--color-muted-foreground)',
+  comment: 'var(--color-accent-foreground)',
+  cliFlag: 'var(--color-primary)',
+  cliValue: 'var(--color-destructive)',
 } as const
 
 const dslHighlighting = styleTags({
@@ -25,6 +30,11 @@ const dslHighlighting = styleTags({
   Host: urlHost,
   Port: urlPort,
   Path: urlPath,
+  LineComment: t.comment,
+  ShortFlag: cliFlag,
+  LongFlag: cliFlag,
+  CliValue: cliValue,
+  CliValueToken: cliValue,
   '( )': t.paren,
 })
 
@@ -42,6 +52,9 @@ const dslHighlight = HighlightStyle.define([
   { tag: urlHost, color: dslHighlightColors.host, fontWeight: '650' },
   { tag: urlPort, color: dslHighlightColors.port, fontWeight: '600' },
   { tag: urlPath, color: dslHighlightColors.path },
+  { tag: t.comment, color: dslHighlightColors.comment, fontStyle: 'italic' },
+  { tag: cliFlag, color: dslHighlightColors.cliFlag, fontWeight: '600' },
+  { tag: cliValue, color: dslHighlightColors.cliValue },
   { tag: t.paren, color: dslHighlightColors.paren },
 ])
 

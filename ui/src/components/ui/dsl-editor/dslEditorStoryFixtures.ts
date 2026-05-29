@@ -1,54 +1,48 @@
 /**
- * Storybook showcase: DSL URL + boolean operator boundary cases.
+ * Storybook: one valid DSL expression per entry (Program allows a single Expr?).
  * Uses example.com / localhost / 127.0.0.1 only.
  */
-export const dslBoundaryCaseExamples = [
-  '# host',
-  'example.com',
-  'localhost',
-  '127.0.0.1',
+export type DslStoryExample = {
+  label: string
+  value: string
+}
 
-  '# host + port / path',
-  'example.com:5678',
-  'example.com/',
-  'example.com/api',
-  'example.com/api/',
-  'example.com:5678/api/v1',
+export const dslStoryExamples: DslStoryExample[] = [
+  { label: 'Host only', value: 'example.com' },
+  { label: 'Localhost', value: 'localhost' },
+  { label: 'IPv4', value: '127.0.0.1' },
 
-  '# path only',
-  '/',
-  '/a',
-  '/a*',
-  '/a/',
-  '/api/v1/events/track',
+  { label: 'Host + port', value: 'example.com:5678' },
+  { label: 'Host + path', value: 'example.com/api/' },
+  { label: 'Host + port + path', value: 'example.com:5678/api/v1' },
 
-  '# schemes',
-  'http://example.com/',
-  'https://example.com/',
-  'ws://example.com/',
-  'wss://example.com/',
-  'HTTPS://example.com/api',
+  { label: 'Path only (/)', value: '/' },
+  { label: 'Path only (/a/)', value: '/a/' },
+  { label: 'Path multi-segment', value: '/api/v1/events/track' },
 
-  '# full URL (multi-segment path)',
-  'https://example.com/api/v1/events/track',
+  { label: 'Glob */a', value: '*/a' },
+  { label: 'Glob **/a', value: '**/a' },
+  { label: 'Glob /api/*/v1', value: '/api/*/v1' },
+  { label: 'Glob /api/**/track', value: '/api/**/track' },
 
-  '# boolean operators (AND / OR / NOT)',
-  'example.com AND /api',
-  'example.com OR /api',
-  'NOT example.com',
-  'example.com and /api',
-  'example.com or /api',
-  'not example.com',
+  { label: 'CLI short + long flags', value: 'example.com -h x-token=b --header foo=bar --header-include xxx' },
+  { label: 'CLI glued value', value: 'example.com --header=x-token=b' },
 
-  '# grouping & precedence',
-  '(example.com OR /api/)',
-  '(example.com OR /api/) AND NOT https://example.com/',
-  'example.com AND ( /api OR /health ) AND ws://example.com:8080/status',
+  { label: 'HTTP scheme', value: 'http://example.com/' },
+  { label: 'HTTPS + path', value: 'https://example.com/api/v1/events/track' },
+  { label: 'WebSocket', value: 'ws://example.com:8080/status' },
 
-  '# combined expression',
-  'example.com AND /api/v1/events/track OR https://example.com:443/health',
+  { label: 'AND', value: 'example.com AND /api' },
+  { label: 'OR', value: 'example.com OR /api' },
+  { label: 'NOT', value: 'NOT example.com' },
+  { label: 'Lowercase operators', value: 'example.com and /api or /health' },
 
-  '# invalid (AST should show ⚠)',
-  'example.com AND (',
-  '(example.com OR /api',
-].join('\n')
+  { label: 'Grouping + precedence', value: '(example.com OR /api/) AND NOT https://example.com/health' },
+  { label: 'Combined', value: 'example.com AND /api/v1/events/track OR https://example.com:443/health' },
+
+  { label: 'Comment + expression', value: '# match api traffic\nexample.com AND /api' },
+  { label: 'Trailing comment', value: 'example.com AND /api # production' },
+  { label: 'Comment only', value: '# notes only' },
+]
+
+export const defaultDslStoryExample = dslStoryExamples[0]!

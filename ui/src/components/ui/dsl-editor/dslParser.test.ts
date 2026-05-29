@@ -153,4 +153,52 @@ describe('dsl parser', () => {
     expect(nodeTexts(spans, 'Path')).toContain('/')
   })
 
+  it('ignores # line comments', () => {
+    expect(hasError(parseSpans('# host'))).toBe(false)
+    expect(hasError(parseSpans('# host\nexample.com'))).toBe(false)
+    expect(hasError(parseSpans('example.com AND /api # trailing'))).toBe(false)
+    expect(nodeTexts(parseSpans('example.com AND /api # trailing'), 'Host')).toEqual(['example.com'])
+  })
+
+  it('parses abstract CLI flags on URL operands', () => {
+    const spans = parseSpans('example.com -h x-token=b --header foo=bar --header-include xxx')
+
+    expect(hasError(spans)).toBe(false)
+    expect(nodeTexts(spans, 'ShortFlag')).toEqual(['-h'])
+    expect(nodeTexts(spans, 'LongFlag')).toEqual(['--header', '--header-include'])
+    expect(nodeTexts(spans, 'CliValue')).toEqual(['x-token=b', 'foo=bar', 'xxx'])
+  })
+
+  it('parses glued CLI flag values', () => {
+    const spans = parseSpans('example.com --header=x-token=b')
+
+    expect(hasError(spans)).toBe(false)
+    expect(nodeTexts(spans, 'LongFlag')).toEqual(['--header'])
+    expect(nodeTexts(spans, 'CliValue')).toEqual(['x-token=b'])
+    expect(nodeTexts(spans, 'EqSign')).toEqual(['='])
+  })
+
+  it('attaches CLI flags to the correct primary operand', () => {
+    const spans = parseSpans('example.com AND /api --foo bar')
+
+    expect(hasError(spans)).toBe(false)
+    expect(nodeTexts(spans, 'Host')).toEqual(['example.com'])
+    expect(nodeTexts(spans, 'Path')).toEqual(['/api'])
+    expect(nodeTexts(spans, 'LongFlag')).toEqual(['--foo'])
+    expect(nodeTexts(spans, 'CliValue')).toEqual(['bar'])
+  })
+
+  it('parses glob path segments and shorthand paths', () => {
+    expect(hasError(parseSpans('/api/*/v1'))).toBe(false)
+    expect(hasError(parseSpans('/api/**/track'))).toBe(false)
+    expect(hasError(parseSpans('/**/a'))).toBe(false)
+    expect(hasError(parseSpans('*/a'))).toBe(false)
+    expect(hasError(parseSpans('**/a'))).toBe(false)
+    expect(hasError(parseSpans('https://example.com/**/events'))).toBe(false)
+
+    expect(nodeTexts(parseSpans('*/a'), 'Path')).toEqual(['*/a'])
+    expect(nodeTexts(parseSpans('/**/a'), 'Path')).toEqual(['/**/a'])
+    expect(nodeTexts(parseSpans('/api/*/v1'), 'Path')).toEqual(['/api/*/v1'])
+  })
+
 })
