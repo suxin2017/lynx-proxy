@@ -22,8 +22,11 @@ describe.skipIf(!dslWasmAvailable)('formatDslAst', () => {
     expect(ast).toContain('Path')
   })
 
-  it('reports parse errors', () => {
-    expect(formatDslAst('example.com AND (')).toBe('(parse error)')
+  it('shows partial AST when parse fails mid-expression', () => {
+    const ast = formatDslAst('example.com AND (')
+    expect(ast).toContain('Program')
+    expect(ast).toContain('example.com')
+    expect(ast).toMatch(/parse error/i)
   })
 
   it('renders grouped OR branches in inspect AST', () => {

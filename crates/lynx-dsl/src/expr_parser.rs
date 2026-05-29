@@ -15,8 +15,25 @@ pub fn parse_expression(source: &str, base_offset: usize) -> Result<Option<Expr>
     Ok(Some(Expr { or, span }))
 }
 
+/// Like [`parse_expression`], but keeps successfully parsed terms and reports the first error.
+pub fn parse_expression_partial(source: &str, base_offset: usize) -> (Option<Expr>, Option<ParseError>) {
+    let trimmed = source.trim();
+    if trimmed.is_empty() {
+        return (None, None);
+    }
+
+    let local_start = source.find(trimmed).unwrap_or(0);
+    let absolute_start = base_offset + local_start;
+    let (or, error) = parse_or_expression_partial(trimmed, absolute_start);
+    if or.branches.is_empty() {
+        return (None, error);
+    }
+    let span = Span::new(absolute_start, absolute_start + trimmed.len());
+    (Some(Expr { or, span }), error)
+}
+
 fn parse_or_expression(source: &str, base_offset: usize) -> Result<OrExpr, ParseError> {
-    let parts = split_top_level(source, LogicOp::Or, base_offset)?;
+    let parts = split_top_level(source, LogicOp::Or, base_offset, false)?;
     let mut branches = Vec::with_capacity(parts.len());
     for part in parts {
         branches.push(parse_and_expression(part.text, base_offset + part.start)?);
@@ -25,14 +42,76 @@ fn parse_or_expression(source: &str, base_offset: usize) -> Result<OrExpr, Parse
     Ok(OrExpr { branches, span })
 }
 
+fn parse_or_expression_partial(source: &str, base_offset: usize) -> (OrExpr, Option<ParseError>) {
+    let parts = match split_top_level(source, LogicOp::Or, base_offset, true) {
+        Ok(parts) => parts,
+        Err(error) => {
+            return (
+                OrExpr {
+                    branches: Vec::new(),
+                    span: Span::new(base_offset, base_offset + source.len()),
+                },
+                Some(error),
+            );
+        }
+    };
+
+    let mut branches = Vec::with_capacity(parts.len());
+    let mut error = None;
+    for part in parts {
+        let (and_expr, part_error) =
+            parse_and_expression_partial(part.text, base_offset + part.start);
+        if !and_expr.terms.is_empty() {
+            branches.push(and_expr);
+        }
+        if let Some(part_error) = part_error {
+            error = Some(part_error);
+            break;
+        }
+    }
+
+    let span = Span::new(base_offset, base_offset + source.len());
+    (OrExpr { branches, span }, error)
+}
+
 fn parse_and_expression(source: &str, base_offset: usize) -> Result<AndExpr, ParseError> {
-    let parts = split_top_level(source, LogicOp::And, base_offset)?;
+    let parts = split_top_level(source, LogicOp::And, base_offset, false)?;
     let mut terms = Vec::with_capacity(parts.len());
     for part in parts {
         terms.push(parse_not_expression(part.text, base_offset + part.start)?);
     }
     let span = Span::new(base_offset, base_offset + source.len());
     Ok(AndExpr { terms, span })
+}
+
+fn parse_and_expression_partial(source: &str, base_offset: usize) -> (AndExpr, Option<ParseError>) {
+    let parts = match split_top_level(source, LogicOp::And, base_offset, true) {
+        Ok(parts) => parts,
+        Err(error) => {
+            return (
+                AndExpr {
+                    terms: Vec::new(),
+                    span: Span::new(base_offset, base_offset + source.len()),
+                },
+                Some(error),
+            );
+        }
+    };
+
+    let mut terms = Vec::with_capacity(parts.len());
+    let mut error = None;
+    for part in parts {
+        match parse_not_expression(part.text, base_offset + part.start) {
+            Ok(term) => terms.push(term),
+            Err(part_error) => {
+                error = Some(part_error);
+                break;
+            }
+        }
+    }
+
+    let span = Span::new(base_offset, base_offset + source.len());
+    (AndExpr { terms, span }, error)
 }
 
 fn parse_not_expression(source: &str, base_offset: usize) -> Result<NotExpr, ParseError> {
@@ -82,6 +161,7 @@ fn split_top_level(
     source: &str,
     op: LogicOp,
     base_offset: usize,
+    allow_unclosed_group: bool,
 ) -> Result<Vec<Segment<'_>>, ParseError> {
     let mut segments = Vec::new();
     let mut depth = 0usize;
@@ -129,6 +209,13 @@ fn split_top_level(
     }
 
     if depth != 0 {
+        if allow_unclosed_group {
+            let segment = &source[start..];
+            if !segment.trim().is_empty() {
+                segments.push(Segment { start, text: segment });
+            }
+            return Ok(segments);
+        }
         return Err(ParseError::Syntax {
             span: Span::new(
                 base_offset + source.len().saturating_sub(1),

@@ -6,8 +6,9 @@ import type {
   DslExpr,
   DslNotExpr,
   DslOrExpr,
+  DslParseErrorInfo,
+  DslParseProgramOutcome,
   DslPrimary,
-  DslProgram,
   DslSpan,
   DslSpanned,
   DslUrl,
@@ -132,6 +133,11 @@ function formatExpr(lines: string[], depth: number, source: string, expr: DslExp
   formatOrExpr(lines, depth + 1, source, expr.or)
 }
 
+function appendParseError(lines: string[], error: DslParseErrorInfo) {
+  lines.push('')
+  lines.push(`⚠ parse error: ${error.message} @${error.start}-${error.end}`)
+}
+
 export function formatDslAst(source: string) {
   if (!source.trim()) {
     return '(empty)'
@@ -141,17 +147,25 @@ export function formatDslAst(source: string) {
     return '(WASM not loaded — run npm run dsl:build)'
   }
 
-  const program = parseDslProgram(source) as DslProgram | null
-  if (!program) {
+  const outcome = parseDslProgram(source) as DslParseProgramOutcome | null
+  if (!outcome?.program) {
     return '(parse error)'
   }
+
+  const { program, error } = outcome
 
   const lines = ['Program']
   if (!program.expr) {
     lines.push('  (no expression)')
+    if (error) {
+      appendParseError(lines, error)
+    }
     return lines.join('\n')
   }
 
   formatExpr(lines, 1, source, program.expr)
+  if (error) {
+    appendParseError(lines, error)
+  }
   return lines.join('\n')
 }

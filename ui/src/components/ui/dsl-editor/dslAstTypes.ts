@@ -12,6 +12,17 @@ export interface DslProgram {
   expr: DslExpr | null
 }
 
+export interface DslParseErrorInfo {
+  message: string
+  start: number
+  end: number
+}
+
+export interface DslParseProgramOutcome {
+  program: DslProgram
+  error: DslParseErrorInfo | null
+}
+
 export interface DslExpr {
   or: DslOrExpr
   span: DslSpan

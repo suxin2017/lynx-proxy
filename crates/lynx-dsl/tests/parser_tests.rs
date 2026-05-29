@@ -1,4 +1,4 @@
-use lynx_dsl::{format_dsl, has_parse_errors, parse_program};
+use lynx_dsl::{format_dsl, has_parse_errors, parse_program, parse_program_partial};
 
 fn node_kinds(source: &str, kind: &str) -> Vec<String> {
     let validation = lynx_dsl::validate(source);
@@ -111,6 +111,14 @@ fn ignores_line_comments() {
 
 #[test]
 fn rejects_invalid_syntax() {
+    assert!(has_parse_errors("example.com AND ("));
+}
+
+#[test]
+fn partial_parse_keeps_valid_prefix_on_error() {
+    let outcome = parse_program_partial("example.com AND (");
+    assert!(outcome.program.expr.is_some());
+    assert!(outcome.error.is_some());
     assert!(has_parse_errors("example.com AND ("));
 }
 

@@ -1,8 +1,8 @@
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    collect_syntax_diagnostics, format_dsl, parse_program, validate, validate_dsl_document, Diagnostic,
-    ValidationResult,
+    collect_syntax_diagnostics, format_dsl, parse_program_partial, validate, validate_dsl_document,
+    Diagnostic, ValidationResult,
 };
 
 #[wasm_bindgen]
@@ -35,10 +35,8 @@ pub fn has_dsl_parse_errors(source: &str) -> bool {
 
 #[wasm_bindgen]
 pub fn parse_dsl_program_wasm(source: &str) -> JsValue {
-    match parse_program(source) {
-        Ok(program) => serde_wasm_bindgen::to_value(&program).unwrap_or(JsValue::NULL),
-        Err(_) => JsValue::NULL,
-    }
+    let outcome = parse_program_partial(source);
+    serde_wasm_bindgen::to_value(&outcome).unwrap_or(JsValue::NULL)
 }
 
 #[wasm_bindgen(start)]

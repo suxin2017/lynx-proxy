@@ -5,7 +5,9 @@ use crate::ast::{
     CliArg, CliArgValue, CliArgs, Primary, Program, Span, Spanned, Url,
 };
 use crate::error::ParseError;
+use crate::error::ParseErrorInfo;
 use crate::expr_parser::parse_expression;
+use crate::expr_parser::parse_expression_partial;
 use crate::expr_parser::parse_grouped_expression;
 use crate::span::span_from_pair;
 
@@ -41,6 +43,22 @@ pub fn parse_program(source: &str) -> Result<Program, ParseError> {
     let prepared = prepare_source(source);
     let expr = parse_expression(&prepared, 0)?;
     Ok(Program { expr })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct ParseProgramOutcome {
+    pub program: Program,
+    pub error: Option<ParseErrorInfo>,
+}
+
+/// Parse for inspection UIs: returns a partial AST when possible, plus the first error.
+pub fn parse_program_partial(source: &str) -> ParseProgramOutcome {
+    let prepared = prepare_source(source);
+    let (expr, error) = parse_expression_partial(&prepared, 0);
+    ParseProgramOutcome {
+        program: Program { expr },
+        error: error.map(ParseErrorInfo::from),
+    }
 }
 
 pub fn parse_primary_fragment(source: &str, base_offset: usize) -> Result<Primary, ParseError> {

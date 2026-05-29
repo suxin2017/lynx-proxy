@@ -15,6 +15,9 @@ pub use error::{FormatError, ParseError};
 pub use format::{
     can_format_dsl, format_dsl, is_dsl_formatted, validate_dsl_document, DslFormatValidationResult,
 };
-pub use parser::{has_parse_errors, mask_line_comments, normalize_logic_keywords, parse_program, prepare_source};
+pub use parser::{
+    has_parse_errors, mask_line_comments, normalize_logic_keywords, parse_program,
+    parse_program_partial, prepare_source, ParseProgramOutcome,
+};
 pub use highlight::HighlightSpan;
 pub use validate::{collect_syntax_diagnostics, validate, Diagnostic, ValidationResult};
