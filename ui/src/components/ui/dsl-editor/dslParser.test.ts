@@ -188,6 +188,28 @@ describe('dsl parser', () => {
     expect(nodeTexts(spans, 'CliValue')).toEqual(['bar'])
   })
 
+  it('parses example.xxx hosts with comments and CLI flags', () => {
+    const cases = [
+      'api.example.xxx OR # failover alias unused',
+      'beta.example.xxx -X POST --mode demo OR # smoke test target',
+      'cdn.example.xxx AND # cache layer only',
+      'NOT */rest/* AND -X POST',
+      'example.com -X POST',
+      'example.com - X POST',
+    ]
+    for (const input of cases) {
+      expect(hasError(parseSpans(input)), `expected valid: ${input}`).toBe(false)
+    }
+  })
+
+  it('parses -X POST as CLI-only primary', () => {
+    const spans = parseSpans('NOT */rest/* AND -X POST')
+    expect(hasError(spans)).toBe(false)
+    expect(nodeTexts(spans, 'ShortFlag')).toEqual(['-X'])
+    expect(nodeTexts(spans, 'CliValue')).toEqual(['POST'])
+    expect(nodeTexts(spans, 'Path')).toEqual(['*/rest/*'])
+  })
+
   it('parses glob path segments and shorthand paths', () => {
     expect(hasError(parseSpans('/api/*/v1'))).toBe(false)
     expect(hasError(parseSpans('/api/**/track'))).toBe(false)

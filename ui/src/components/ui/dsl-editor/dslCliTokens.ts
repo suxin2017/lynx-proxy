@@ -71,6 +71,9 @@ export const cliTokens = new ExternalTokenizer((input, stack) => {
       return
     }
     input.advance()
+    while (input.next === 32 || input.next === 9) {
+      input.advance()
+    }
     if (!((input.next >= 65 && input.next <= 90) || (input.next >= 97 && input.next <= 122))) {
       return
     }

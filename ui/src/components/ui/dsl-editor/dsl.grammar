@@ -4,11 +4,13 @@
 
 Expr { OrExpr }
 
-OrExpr { AndExpr (OrOp AndExpr)* }
-AndExpr { NotExpr (AndOp NotExpr)* }
+OrExpr { AndExpr (OrOp AndExpr?)* }
+AndExpr { NotExpr (AndOp NotExpr?)* }
 NotExpr { NotOp NotExpr | Primary }
 
-Primary { Url CliArgs? | "(" Expr ")" }
+Primary { CliOnly | Url CliArgs? | "(" Expr ")" }
+
+CliOnly { CliArgs }
 
 Url { Scheme? Host Port? Path? | Path }
 

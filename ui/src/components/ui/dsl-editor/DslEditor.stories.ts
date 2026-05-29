@@ -117,6 +117,38 @@ export const InvalidSyntax: Story = {
   render: args => renderWithAst(args as Record<string, unknown>),
 }
 
+const formatStoryInitialValue = `# filter: api + health exclusion
+( example.com  or  /api/ )   and   not   https://example.com/health
+OR   /public/**`
+
+export const Format: Story = {
+  args: {
+    modelValue: formatStoryInitialValue,
+  },
+  render: args => ({
+    components: { DslEditor },
+    setup() {
+      const value = ref((args as { modelValue: string }).modelValue)
+      return {
+        args,
+        value,
+        shellClass: scrollableStoryShell,
+        editorClass: editorStoryClass,
+      }
+    },
+    template: `
+      <div :class="shellClass">
+        <div class="mx-auto grid w-full max-w-5xl gap-3">
+          <p class="text-sm text-muted-foreground">
+            点击编辑器工具栏的「格式化」按钮，将运算符规范为大写、顶层 OR 换行，并保留 # 注释。
+          </p>
+          <DslEditor v-bind="args" v-model="value" :class="editorClass" />
+        </div>
+      </div>
+    `,
+  }),
+}
+
 export const WithoutLineNumbers: Story = {
   args: {
     showLineNumbers: false,
