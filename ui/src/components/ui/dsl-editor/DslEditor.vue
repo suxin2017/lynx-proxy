@@ -3,7 +3,7 @@ import type { Extension } from '@codemirror/state'
 import type { HTMLAttributes } from 'vue'
 
 import { AlignLeft } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ import EditableCodeMirrorSurface from '../json-editor/EditableCodeMirrorSurface.
 import { dslLanguageExtension } from './dslLanguage'
 import { dslAutocompleteExtension } from './dslCompletion'
 import { dslLintExtension } from './dslLint'
+import { ensureDslWasm, isDslWasmLoaded } from './dslWasm'
 import {
   canFormatDsl,
   isDslFormatted,
@@ -36,15 +37,43 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+const wasmReady = ref(isDslWasmLoaded())
+const wasmError = ref<string | null>(null)
+
+onMounted(async () => {
+  if (wasmReady.value) {
+    return
+  }
+
+  try {
+    await ensureDslWasm()
+    wasmReady.value = true
+  }
+  catch (error) {
+    wasmError.value = error instanceof Error ? error.message : 'Failed to load DSL WASM'
+  }
+})
+
 const extensions = computed<Extension>(() => ([
   dslAutocompleteExtension,
   dslLintExtension,
 ]))
 
-const validation = computed(() => validateDslDocument(props.modelValue))
-const canFormat = computed(() => props.showFormat && !props.readOnly && canFormatDsl(props.modelValue))
+const validation = computed(() => {
+  if (!wasmReady.value) {
+    return { isValid: false, formattedValue: null as string | null }
+  }
+  return validateDslDocument(props.modelValue)
+})
+const canFormat = computed(() => wasmReady.value && props.showFormat && !props.readOnly && canFormatDsl(props.modelValue))
 const isFormatted = computed(() => validation.value.isValid && isDslFormatted(props.modelValue))
 const statusText = computed(() => {
+  if (wasmError.value) {
+    return 'DSL 引擎加载失败'
+  }
+  if (!wasmReady.value) {
+    return 'DSL 引擎加载中…'
+  }
   if (validation.value.isValid) {
     return isFormatted.value ? 'DSL 有效，已格式化' : 'DSL 有效'
   }
@@ -68,7 +97,7 @@ function handleUpdateModelValue(value: string) {
   <section :class="cn('min-w-0 overflow-hidden rounded border border-border/70 bg-transparent', props.class)">
     <header class="flex items-center justify-between gap-2 px-2 py-1">
       <div class="min-w-0 text-[11px]">
-        <span :class="validation.isValid ? 'text-muted-foreground' : 'text-destructive'">{{ statusText }}</span>
+        <span :class="validation.isValid && wasmReady ? 'text-muted-foreground' : 'text-destructive'">{{ statusText }}</span>
         <span v-if="props.readOnly" class="ml-2 text-muted-foreground">只读</span>
       </div>
 
@@ -91,9 +120,10 @@ function handleUpdateModelValue(value: string) {
 
     <div class="relative min-w-0 overflow-x-hidden overflow-y-hidden px-1 pb-1">
       <EditableCodeMirrorSurface
+        :key="wasmReady ? 'dsl-wasm' : 'dsl-loading'"
         :model-value="props.modelValue"
-        :language-extension="dslLanguageExtension"
-        :extensions="extensions"
+        :language-extension="wasmReady ? dslLanguageExtension : []"
+        :extensions="wasmReady ? extensions : []"
         :read-only="props.readOnly"
         :show-line-numbers="props.showLineNumbers"
         @update:model-value="handleUpdateModelValue"

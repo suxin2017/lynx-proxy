@@ -1,14 +1,19 @@
 import { EditorState } from '@codemirror/state'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import { collectDslSyntaxDiagnostics } from './dslLint'
+import { dslWasmAvailable, setupDslWasmForTests } from './dslTestWasm'
 
 function diagnosticsFor(text: string) {
   const state = EditorState.create({ doc: text })
   return collectDslSyntaxDiagnostics(state)
 }
 
-describe('collectDslSyntaxDiagnostics', () => {
+describe.skipIf(!dslWasmAvailable)('collectDslSyntaxDiagnostics', () => {
+  beforeAll(async () => {
+    await setupDslWasmForTests()
+  }, 120_000)
+
   it('returns no diagnostics for valid DSL', () => {
     expect(diagnosticsFor('example.com AND /api')).toEqual([])
   })

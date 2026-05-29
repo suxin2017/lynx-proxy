@@ -1,14 +1,8 @@
-import { HighlightStyle, LRLanguage, syntaxHighlighting } from '@codemirror/language'
-import { styleTags, Tag, tags as t } from '@lezer/highlight'
+import { RangeSetBuilder } from '@codemirror/state'
+import { Decoration, EditorView, ViewPlugin, type ViewUpdate } from '@codemirror/view'
 
-import { parser } from './dslParser'
+import { validateDsl } from './dslWasm'
 
-const urlScheme = Tag.define()
-const urlHost = Tag.define()
-const urlPort = Tag.define()
-const urlPath = Tag.define()
-const cliFlag = Tag.define()
-const cliValue = Tag.define()
 /** Highlight colors for DSL tokens (each URL part uses a distinct chart/destructive token). */
 export const dslHighlightColors = {
   keyword: 'var(--color-chart-2)',
@@ -22,43 +16,93 @@ export const dslHighlightColors = {
   cliValue: 'var(--color-destructive)',
 } as const
 
-const dslHighlighting = styleTags({
-  AndOp: t.keyword,
-  OrOp: t.keyword,
-  NotOp: t.keyword,
-  Scheme: urlScheme,
-  Host: urlHost,
-  Port: urlPort,
-  Path: urlPath,
-  LineComment: t.comment,
-  ShortFlag: cliFlag,
-  LongFlag: cliFlag,
-  CliValue: cliValue,
-  CliValueToken: cliValue,
-  '( )': t.paren,
+const highlightClassByKind: Record<string, string> = {
+  AndOp: 'cm-dsl-keyword',
+  OrOp: 'cm-dsl-keyword',
+  NotOp: 'cm-dsl-keyword',
+  Scheme: 'cm-dsl-scheme',
+  Host: 'cm-dsl-host',
+  Port: 'cm-dsl-port',
+  Path: 'cm-dsl-path',
+  LineComment: 'cm-dsl-comment',
+  ShortFlag: 'cm-dsl-cli-flag',
+  LongFlag: 'cm-dsl-cli-flag',
+  CliValue: 'cm-dsl-cli-value',
+  Paren: 'cm-dsl-paren',
+}
+
+function buildHighlightDecorations(doc: string) {
+  const builder = new RangeSetBuilder<Decoration>()
+  const { highlights } = validateDsl(doc)
+
+  for (const span of highlights) {
+    const className = highlightClassByKind[span.kind]
+    if (!className || span.to <= span.from) {
+      continue
+    }
+    builder.add(
+      span.from,
+      span.to,
+      Decoration.mark({ class: className }),
+    )
+  }
+
+  return builder.finish()
+}
+
+const dslHighlightPlugin = ViewPlugin.fromClass(class {
+  decorations
+
+  constructor(view: EditorView) {
+    this.decorations = buildHighlightDecorations(view.state.doc.toString())
+  }
+
+  update(update: ViewUpdate) {
+    if (update.docChanged || update.viewportChanged) {
+      this.decorations = buildHighlightDecorations(update.state.doc.toString())
+    }
+  }
+}, {
+  decorations: value => value.decorations,
 })
 
-const dslParser = parser.configure({
-  props: [dslHighlighting],
+const dslHighlightTheme = EditorView.baseTheme({
+  '.cm-dsl-keyword': {
+    color: dslHighlightColors.keyword,
+    fontWeight: '700',
+  },
+  '.cm-dsl-scheme': {
+    color: dslHighlightColors.scheme,
+    fontWeight: '700',
+  },
+  '.cm-dsl-host': {
+    color: dslHighlightColors.host,
+    fontWeight: '650',
+  },
+  '.cm-dsl-port': {
+    color: dslHighlightColors.port,
+    fontWeight: '600',
+  },
+  '.cm-dsl-path': {
+    color: dslHighlightColors.path,
+  },
+  '.cm-dsl-comment': {
+    color: dslHighlightColors.comment,
+    fontStyle: 'italic',
+  },
+  '.cm-dsl-cli-flag': {
+    color: dslHighlightColors.cliFlag,
+    fontWeight: '600',
+  },
+  '.cm-dsl-cli-value': {
+    color: dslHighlightColors.cliValue,
+  },
+  '.cm-dsl-paren': {
+    color: dslHighlightColors.paren,
+  },
 })
-
-export const dslLanguage = LRLanguage.define({
-  parser: dslParser,
-})
-
-const dslHighlight = HighlightStyle.define([
-  { tag: t.keyword, color: dslHighlightColors.keyword, fontWeight: '700' },
-  { tag: urlScheme, color: dslHighlightColors.scheme, fontWeight: '700' },
-  { tag: urlHost, color: dslHighlightColors.host, fontWeight: '650' },
-  { tag: urlPort, color: dslHighlightColors.port, fontWeight: '600' },
-  { tag: urlPath, color: dslHighlightColors.path },
-  { tag: t.comment, color: dslHighlightColors.comment, fontStyle: 'italic' },
-  { tag: cliFlag, color: dslHighlightColors.cliFlag, fontWeight: '600' },
-  { tag: cliValue, color: dslHighlightColors.cliValue },
-  { tag: t.paren, color: dslHighlightColors.paren },
-])
 
 export const dslLanguageExtension = [
-  dslLanguage,
-  syntaxHighlighting(dslHighlight),
+  dslHighlightPlugin,
+  dslHighlightTheme,
 ]

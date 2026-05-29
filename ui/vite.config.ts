@@ -14,8 +14,10 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(), vue()],
+  assetsInclude: ['**/*.wasm'],
   optimizeDeps: {
     include: ['qrcode'],
+    exclude: ['@/wasm/lynx-dsl/lynx_dsl.js'],
   },
   server: {
     proxy: {

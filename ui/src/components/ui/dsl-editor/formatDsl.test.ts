@@ -1,12 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
+import { dslWasmAvailable, setupDslWasmForTests } from './dslTestWasm'
 import {
   canFormatDsl,
   formatDsl,
   isDslFormatted,
 } from './formatDsl'
 
-describe('formatDsl', () => {
+describe.skipIf(!dslWasmAvailable)('formatDsl', () => {
+  beforeAll(async () => {
+    await setupDslWasmForTests()
+  }, 120_000)
+
   it('formats AND with normalized spacing and uppercase operators', () => {
     expect(formatDsl('example.com   and   /api')).toBe('example.com AND /api')
   })

@@ -1,4 +1,5 @@
 target
+crates/lynx-dsl/pkg
 sql.db
 crates/lynx-core/assets
 crates/lynx-core/tests/temp/

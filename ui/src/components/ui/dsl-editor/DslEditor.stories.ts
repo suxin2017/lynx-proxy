@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import DslEditor from './DslEditor.vue'
 import { defaultDslStoryExample, dslStoryExamples } from './dslEditorStoryFixtures'
-import { formatDslAst } from './formatDslAst'
+import { formatDslInspect } from './formatDslInspect'
 
 const meta = {
   title: 'Data Entry/DslEditor',
@@ -40,7 +40,7 @@ const editorWithAstAndPickerTemplate = `
       </label>
       <DslEditor v-bind="args" v-model="value" :class="editorClass" />
       <section class="grid gap-2">
-        <div class="text-xs font-medium text-foreground">AST (Lezer)</div>
+        <div class="text-xs font-medium text-foreground">AST</div>
         <pre class="overflow-x-auto rounded border border-border/70 bg-muted/20 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground whitespace-pre"><code>{{ ast }}</code></pre>
       </section>
     </div>
@@ -54,7 +54,7 @@ function renderWithAstAndPicker(args: Record<string, unknown>) {
       const examples = dslStoryExamples
       const selectedIndex = ref(0)
       const value = ref(examples[0]!.value)
-      const ast = computed(() => formatDslAst(value.value))
+      const ast = computed(() => formatDslInspect(value.value))
       const shellClass = scrollableStoryShell
       const editorClass = editorStoryClass
 
@@ -76,7 +76,7 @@ const editorWithAstTemplate = `
     <div class="mx-auto grid w-full max-w-5xl gap-4">
       <DslEditor v-bind="args" v-model="value" :class="editorClass" />
       <section class="grid gap-2">
-        <div class="text-xs font-medium text-foreground">AST (Lezer)</div>
+        <div class="text-xs font-medium text-foreground">AST</div>
         <pre class="overflow-x-auto rounded border border-border/70 bg-muted/20 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground whitespace-pre"><code>{{ ast }}</code></pre>
       </section>
     </div>
@@ -88,7 +88,7 @@ function renderWithAst(args: Record<string, unknown>) {
     components: { DslEditor },
     setup() {
       const value = ref((args as { modelValue: string }).modelValue)
-      const ast = computed(() => formatDslAst(value.value))
+      const ast = computed(() => formatDslInspect(value.value))
       const shellClass = scrollableStoryShell
       const editorClass = editorStoryClass
 

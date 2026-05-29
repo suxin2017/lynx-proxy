@@ -1,6 +1,8 @@
 /**
  * Storybook: one valid DSL expression per entry (Program allows a single Expr?).
  * Uses example.com, example.xxx, localhost, and 127.0.0.1 only.
+ *
+ * Keep in sync with `crates/lynx-dsl/tests/common/editor_story_fixtures.rs`.
  */
 export type DslStoryExample = {
   label: string

@@ -4,30 +4,16 @@ import type { Diagnostic } from '@codemirror/lint'
 import { linter, lintGutter } from '@codemirror/lint'
 import { EditorView } from '@codemirror/view'
 
-import { parseDsl } from './dslParse'
+import { collectDslSyntaxDiagnosticsWasm } from './dslWasm'
 
 export function collectDslSyntaxDiagnostics(state: EditorState): Diagnostic[] {
-  const diagnostics: Diagnostic[] = []
   const doc = state.doc.toString()
-  const tree = parseDsl(doc)
-
-  tree.iterate({
-    enter(node) {
-      if (!node.type.isError) {
-        return
-      }
-
-      const text = doc.slice(node.from, node.to).trim()
-      diagnostics.push({
-        from: node.from,
-        to: Math.max(node.to, node.from + 1),
-        severity: 'error',
-        message: text ? `Syntax error: ${text}` : 'Syntax error',
-      })
-    },
-  })
-
-  return diagnostics
+  return collectDslSyntaxDiagnosticsWasm(doc).map(item => ({
+    from: item.from,
+    to: Math.max(item.to, item.from + 1),
+    severity: item.severity as Diagnostic['severity'],
+    message: item.message,
+  }))
 }
 
 const dslLinter = linter(view => collectDslSyntaxDiagnostics(view.state))

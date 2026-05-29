@@ -1,7 +1,15 @@
 import type { Preview } from '@storybook/vue3-vite'
+
+import { ensureDslWasm } from '../src/components/ui/dsl-editor/dslWasm'
 import '../src/style.css'
 
 const preview: Preview = {
+  loaders: [
+    async () => {
+      await ensureDslWasm().catch(() => {})
+      return {}
+    },
+  ],
   parameters: {
     controls: {
       matchers: {

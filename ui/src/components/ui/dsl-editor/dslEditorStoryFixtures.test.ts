@@ -1,24 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 import { dslStoryExamples } from './dslEditorStoryFixtures'
-import { parseDsl } from './dslParse'
+import { hasDslParseErrors } from './formatDsl'
+import { dslWasmAvailable, setupDslWasmForTests } from './dslTestWasm'
 
-function hasParseError(source: string) {
-  let found = false
-  parseDsl(source).iterate({
-    enter(node) {
-      if (node.type.isError) {
-        found = true
-      }
-    },
-  })
-  return found
-}
+describe.skipIf(!dslWasmAvailable)('dslStoryExamples', () => {
+  beforeAll(async () => {
+    await setupDslWasmForTests()
+  }, 120_000)
 
-describe('dslStoryExamples', () => {
   it('each example is a valid single DSL expression', () => {
     for (const example of dslStoryExamples) {
-      expect(hasParseError(example.value), `expected valid DSL for "${example.label}"`).toBe(false)
+      expect(hasDslParseErrors(example.value), `expected valid DSL for "${example.label}"`).toBe(false)
     }
   })
 })
