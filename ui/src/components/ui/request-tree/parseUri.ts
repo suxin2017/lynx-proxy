@@ -226,6 +226,37 @@ function countRequests(node: RawNode): number {
   return count
 }
 
+export function removeRequest(root: RawNode, requestId: string): boolean {
+  for (const [segment, child] of root.children) {
+    if (removeRequestFromNode(child, requestId)) {
+      if (child.requests.length === 0 && child.children.size === 0) {
+        root.children.delete(segment)
+      }
+      return true
+    }
+  }
+  return false
+}
+
+function removeRequestFromNode(node: RawNode, requestId: string): boolean {
+  const index = node.requests.findIndex(record => record.id === requestId)
+  if (index !== -1) {
+    node.requests.splice(index, 1)
+    return true
+  }
+
+  for (const [segment, child] of node.children) {
+    if (removeRequestFromNode(child, requestId)) {
+      if (child.requests.length === 0 && child.children.size === 0) {
+        node.children.delete(segment)
+      }
+      return true
+    }
+  }
+
+  return false
+}
+
 /**
  * Build a complete flat node list from a root RawNode.
  * The root itself is a virtual sentinel (segment = '') and is not emitted.

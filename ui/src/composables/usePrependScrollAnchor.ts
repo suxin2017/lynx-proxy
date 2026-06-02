@@ -1,6 +1,7 @@
 import { type MaybeRefOrGetter, type Ref, toValue, watch } from 'vue'
 import {
   computeAnchoredScrollTop,
+  hasSameOrderedIds,
   resolvePrependScrollShift,
   resolveShouldAnchorOnPrepend,
 } from '@/lib/list-scroll-anchor'
@@ -22,6 +23,11 @@ export function usePrependScrollAnchor<T>(options: UsePrependScrollAnchorOptions
     (nextItems) => {
       const scrollEl = options.scrollEl.value
       if (!scrollEl) {
+        previousItems = nextItems
+        return
+      }
+
+      if (hasSameOrderedIds(previousItems, nextItems, options.getId)) {
         previousItems = nextItems
         return
       }

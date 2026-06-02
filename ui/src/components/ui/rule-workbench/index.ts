@@ -1,12 +1,10 @@
 export { default as RuleWorkbench } from './RuleWorkbench.vue'
-export { default as MatchConditionBuilder } from './MatchConditionBuilder.vue'
+export { default as MatchDslEditor } from './MatchDslEditor.vue'
 export { default as ActionPipelineBuilder } from './ActionPipelineBuilder.vue'
 export { default as ActionHandlerEditor } from './ActionHandlerEditor.vue'
-export { default as EditorModeTabs } from './EditorModeTabs.vue'
 export { default as ActionConfigRenderer } from './ActionConfigRenderer.vue'
 export * from './action-configs'
 export type {
-  RuleEditorMode,
   RuleMobilePane,
   RuleWorkbenchRuleItem,
 } from './RuleWorkbench.vue'
@@ -20,12 +18,8 @@ export type {
   RuleModifyRequestActionConfig,
   RuleModifyResponseActionConfig,
   RuleProxyForwardActionConfig,
-  RuleCaptureType,
   RuleDraft,
   RuleHandlerType,
-  RuleLogicalOperator,
-  RuleMatchGroup,
-  RuleMatchSimpleCondition,
 } from './types'
 export {
   createAction,
@@ -33,7 +27,7 @@ export {
   getActionSummary,
   getActionValidationErrors,
   createRuleDraft,
-  createSimpleCondition,
 } from './types'
+export { getMatchDslValidationErrors, getRuleValidationErrors } from './match-validation'
 export { getRuleSaveStatusLabel, isRuleSaveDisabled } from './save-status'
 export type { RuleSaveStatusInput } from './save-status'

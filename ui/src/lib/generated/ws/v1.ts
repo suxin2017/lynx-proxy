@@ -28,6 +28,12 @@ export const WsOp = {
   SettingsCaptureFilterGet: 'settings.captureFilter.get',
   SettingsCaptureFilterSet: 'settings.captureFilter.set',
   SettingsCertificatePathGet: 'settings.certificate.path.get',
+  RulesListGet: 'rules.list.get',
+  RulesGet: 'rules.get',
+  RulesSaveSet: 'rules.save.set',
+  RulesEnabledSet: 'rules.enabled.set',
+  RulesDelete: 'rules.delete',
+  RulesTemplatesGet: 'rules.templates.get',
   CaptureStatusChanged: 'capture.status.changed',
   RequestStart: 'request.start',
   RequestBody: 'request.body',
@@ -37,6 +43,7 @@ export const WsOp = {
   ResponseEnd: 'response.end',
   WebsocketMessage: 'websocket.message',
   WebsocketError: 'websocket.error',
+  WebsocketEnd: 'websocket.end',
   SystemError: 'system.error',
 } as const
 
@@ -52,6 +59,12 @@ export type WsRequestOp =
   | 'settings.captureFilter.get'
   | 'settings.captureFilter.set'
   | 'settings.certificate.path.get'
+  | 'rules.list.get'
+  | 'rules.get'
+  | 'rules.save.set'
+  | 'rules.enabled.set'
+  | 'rules.delete'
+  | 'rules.templates.get'
 
 export type WsEventOp =
   | 'capture.status.changed'
@@ -63,6 +76,7 @@ export type WsEventOp =
   | 'response.end'
   | 'websocket.message'
   | 'websocket.error'
+  | 'websocket.end'
   | 'system.error'
 
 export interface WsErrorPayload {

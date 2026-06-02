@@ -1698,6 +1698,7 @@ dependencies = [
  "rustls-pemfile",
  "serde",
  "serde_json",
+ "socket2",
  "tempdir",
  "tempfile",
  "thiserror 1.0.69",
@@ -1720,6 +1721,7 @@ dependencies = [
 name = "lynx-dsl"
 version = "0.4.8"
 dependencies = [
+ "http",
  "pest",
  "pest_derive",
  "pretty_assertions",
@@ -1786,6 +1788,7 @@ dependencies = [
  "glob",
  "http",
  "http-body-util",
+ "lynx-dsl",
  "regex",
  "serde",
  "serde_json",

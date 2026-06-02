@@ -13,6 +13,30 @@ use std::{future::Future, pin::Pin, task::Poll};
 use tower::Service;
 use tracing::instrument;
 
+fn handler_kind_label(handler_type: &HandlerRuleType) -> &'static str {
+    match handler_type {
+        HandlerRuleType::Block(_) => "block",
+        HandlerRuleType::LocalFile(_) => "local_file",
+        HandlerRuleType::ModifyRequest(_) => "modify_request",
+        HandlerRuleType::ModifyResponse(_) => "modify_response",
+        HandlerRuleType::ProxyForward(_) => "proxy_forward",
+        HandlerRuleType::HtmlScriptInjector(_) => "html_script_injector",
+        HandlerRuleType::Delay(_) => "delay",
+        HandlerRuleType::Throttle(_) => "throttle",
+    }
+}
+
+fn handler_rule_error<E>(handler_name: &str, handler_type: &HandlerRuleType, err: CoreError) -> E
+where
+    E: From<anyhow::Error>,
+{
+    E::from(anyhow::Error::from(CoreError::as_request_rule_failed(
+        handler_name,
+        handler_kind_label(handler_type),
+        err,
+    )))
+}
+
 #[derive(Clone)]
 pub struct RequestProcessingService<S> {
     pub service: S,
@@ -181,10 +205,11 @@ where
                     }
                     Err(e) => {
                         tracing::warn!("Handler '{}' failed: {}", handler.name, e);
-                        return Err(S::Error::from(anyhow::Error::from(CoreError::Internal {
-                            operation: "request processing handler execution",
-                            source: anyhow::anyhow!(e),
-                        })));
+                        return Err(handler_rule_error(
+                            &handler.name,
+                            &handler.handler_type,
+                            e,
+                        ));
                     }
                 }
             }
@@ -216,8 +241,13 @@ where
                             response = modify_response_config
                                 .handle_response(response)
                                 .await
-                                .map_err(anyhow::Error::from)
-                                .map_err(S::Error::from)?;
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        &handler.name,
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
                         }
                         HandlerRuleType::HtmlScriptInjector(html_script_injector_config) => {
                             tracing::trace!(
@@ -227,8 +257,13 @@ where
                             response = html_script_injector_config
                                 .handle_response(response)
                                 .await
-                                .map_err(anyhow::Error::from)
-                                .map_err(S::Error::from)?;
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        &handler.name,
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
                         }
                         HandlerRuleType::Delay(delay_config) => {
                             tracing::trace!(
@@ -239,8 +274,13 @@ where
                             response = delay_config
                                 .handle_response(response)
                                 .await
-                                .map_err(anyhow::Error::from)
-                                .map_err(S::Error::from)?;
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        &handler.name,
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
                         }
                         HandlerRuleType::Throttle(throttle_config) => {
                             tracing::trace!(
@@ -251,8 +291,13 @@ where
                             response = throttle_config
                                 .handle_response(response)
                                 .await
-                                .map_err(anyhow::Error::from)
-                                .map_err(S::Error::from)?;
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        &handler.name,
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
                         }
                         _ => {
                             tracing::trace!(

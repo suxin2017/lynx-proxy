@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section :class="cn(
-    'overflow-hidden bg-transparent',
+    'flex min-h-0 flex-col overflow-hidden bg-transparent',
     props.frameless ? '' : 'rounded border border-border/70',
     props.class,
   )">
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
     </header>
 
     <div :class="cn(
-      'relative overflow-hidden',
+      'relative min-h-0 flex-1 overflow-hidden',
       props.frameless ? 'p-0' : 'px-1 pb-1',
     )">
       <PreviewRenderer

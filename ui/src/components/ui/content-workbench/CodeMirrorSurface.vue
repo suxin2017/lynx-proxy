@@ -12,14 +12,21 @@ import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 
+import { base64HighlightExtension } from './base64Highlight'
+import { hexHighlightExtension } from './hexHighlight'
+import { sseHighlightExtension } from './sseHighlight'
+
 const props = withDefaults(defineProps<{
   content: string
   language?: WorkbenchLanguage
   showLineNumbers?: boolean
+  /** Soft-wrap long lines in the viewport without changing document newlines. */
+  softWrap?: boolean
   compact?: boolean
 }>(), {
   language: 'plaintext',
   showLineNumbers: true,
+  softWrap: false,
   compact: false,
 })
 
@@ -27,6 +34,11 @@ const rootEl = ref<HTMLElement | null>(null)
 const editorView = shallowRef<EditorView | null>(null)
 const languageCompartment = new Compartment()
 const lineNumbersCompartment = new Compartment()
+const softWrapCompartment = new Compartment()
+
+function resolveSoftWrapExtension(softWrap: boolean): Extension {
+  return softWrap ? EditorView.lineWrapping : []
+}
 
 function resolveLanguageExtension(language: WorkbenchLanguage): Extension {
   switch (language) {
@@ -42,6 +54,12 @@ function resolveLanguageExtension(language: WorkbenchLanguage): Extension {
       return javascript()
     case 'typescript':
       return javascript({ typescript: true })
+    case 'hex':
+      return hexHighlightExtension
+    case 'base64':
+      return base64HighlightExtension
+    case 'sse':
+      return sseHighlightExtension
     default:
       return []
   }
@@ -68,11 +86,13 @@ function createEditor() {
         '&': {
           backgroundColor: 'transparent',
           fontSize: '0.75rem',
+          height: '100%',
         },
         '.cm-scroller': {
           fontFamily: 'var(--font-mono)',
           lineHeight: '1.35rem',
           overflow: 'auto',
+          minHeight: '100%',
         },
         '.cm-content': {
           padding: props.compact ? '0 0.5rem 0.25rem' : '0.375rem 0.5rem 0.5rem',
@@ -95,6 +115,7 @@ function createEditor() {
       }),
       languageCompartment.of(resolveLanguageExtension(props.language)),
       lineNumbersCompartment.of(resolveLineNumberExtension(props.showLineNumbers)),
+      softWrapCompartment.of(resolveSoftWrapExtension(props.softWrap)),
     ],
   })
 
@@ -150,11 +171,22 @@ watch(() => props.showLineNumbers, (showLineNumbers) => {
   })
 })
 
+watch(() => props.softWrap, (softWrap) => {
+  const view = editorView.value
+  if (!view) {
+    return
+  }
+
+  view.dispatch({
+    effects: softWrapCompartment.reconfigure(resolveSoftWrapExtension(softWrap)),
+  })
+})
+
 onBeforeUnmount(() => {
   editorView.value?.destroy()
 })
 </script>
 
 <template>
-  <div ref="rootEl" class="min-w-0" />
+  <div ref="rootEl" class="h-full min-h-0 min-w-0" />
 </template>

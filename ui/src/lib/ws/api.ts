@@ -1,5 +1,14 @@
 import { WsOp, type WsEventFrame } from '@/lib/generated/ws/v1'
 import type { CaptureFilter, GeneralSetting } from '@/lib/http/settings-types'
+import type {
+  RequestRuleDto,
+  RulesDeletePayload,
+  RulesDeleteResponse,
+  RulesEnabledPayload,
+  RulesGetPayload,
+  RulesListResponse,
+  RuleTemplatesResponse,
+} from '@/lib/ws/rules-types'
 import type { WsClient } from '@/lib/ws/client'
 
 export interface CaptureStatusResponse {
@@ -53,6 +62,12 @@ export interface WsApi {
   getCaptureFilter: () => Promise<CaptureFilter>
   setCaptureFilter: (filter: CaptureFilter) => Promise<unknown>
   getCertificatePath: () => Promise<CertificatePathResponse>
+  listRules: () => Promise<RulesListResponse>
+  getRule: (payload: RulesGetPayload) => Promise<RequestRuleDto>
+  saveRule: (rule: RequestRuleDto) => Promise<RequestRuleDto>
+  setRuleEnabled: (payload: RulesEnabledPayload) => Promise<RequestRuleDto>
+  deleteRule: (payload: RulesDeletePayload) => Promise<RulesDeleteResponse>
+  listRuleTemplates: () => Promise<RuleTemplatesResponse>
   onEvent: (handler: (frame: WsEventFrame<Record<string, unknown>>) => void) => () => void
 }
 
@@ -72,6 +87,15 @@ export const createWsApi = (client: WsClient): WsApi => {
     getCaptureFilter: () => client.call<CaptureFilter>(WsOp.SettingsCaptureFilterGet),
     setCaptureFilter: (filter) => client.call(WsOp.SettingsCaptureFilterSet, filter),
     getCertificatePath: () => client.call<CertificatePathResponse>(WsOp.SettingsCertificatePathGet),
+    listRules: () => client.call<RulesListResponse>(WsOp.RulesListGet),
+    getRule: (payload) => client.call<RequestRuleDto, RulesGetPayload>(WsOp.RulesGet, payload),
+    saveRule: (rule) =>
+      client.call<RequestRuleDto>(WsOp.RulesSaveSet, rule as unknown as Record<string, unknown>),
+    setRuleEnabled: (payload) =>
+      client.call<RequestRuleDto, RulesEnabledPayload>(WsOp.RulesEnabledSet, payload),
+    deleteRule: (payload) =>
+      client.call<RulesDeleteResponse, RulesDeletePayload>(WsOp.RulesDelete, payload),
+    listRuleTemplates: () => client.call<RuleTemplatesResponse>(WsOp.RulesTemplatesGet),
     onEvent: (handler) => client.onEvent(handler),
   }
 }

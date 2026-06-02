@@ -21,7 +21,7 @@ host_with_port = { host ~ port ~ path? }
 host_spaced = { host ~ WHITESPACE+ ~ path }
 
 scheme = { "http://" | "HTTP://" | "https://" | "HTTPS://" | "ws://" | "WS://" | "wss://" | "WSS://" }
-host = { "localhost" | ipv4 | domain }
+host = { "localhost" | ipv4 | domain | host_label }
 ipv4 = @{ ASCII_DIGIT{1,3} ~ "." ~ ASCII_DIGIT{1,3} ~ "." ~ ASCII_DIGIT{1,3} ~ "." ~ ASCII_DIGIT{1,3} }
 domain = @{ host_label ~ ("." ~ host_label)+ }
 host_label = @{ ASCII_ALPHANUMERIC ~ ("-" | ASCII_ALPHANUMERIC)* }

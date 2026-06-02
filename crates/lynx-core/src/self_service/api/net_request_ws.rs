@@ -18,6 +18,8 @@ use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
 use crate::layers::message_package_layer::message_event_store::MessageEvent;
 use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
 use crate::self_service::api::net_request_service;
+use crate::self_service::api::rules_service;
+use lynx_storage::dao::request_processing_dao::RequestRule;
 use crate::self_service::RouteState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,6 +117,15 @@ fn parse_bool_payload(payload: &Option<Value>, key: &str) -> Option<bool> {
         .and_then(|value| value.as_bool())
 }
 
+
+fn parse_i32_payload(payload: &Option<Value>, key: &str) -> Option<i32> {
+    payload
+        .as_ref()
+        .and_then(|value| value.get(key))
+        .and_then(|value| value.as_i64())
+        .and_then(|value| i32::try_from(value).ok())
+}
+
 fn parse_string_payload(payload: &Option<Value>, key: &str) -> Option<String> {
     payload
         .as_ref()
@@ -186,6 +197,12 @@ fn message_event_to_ws_event(event: MessageEvent) -> Option<WsFrame> {
             json!({
                 "traceId": trace_id.to_string(),
                 "error": error_msg,
+            }),
+        )),
+        MessageEvent::OnWebSocketEnd(trace_id) => Some(event_frame(
+            op::WEBSOCKET_END.to_string(),
+            json!({
+                "traceId": trace_id.to_string(),
             }),
         )),
         MessageEvent::OnError(trace_id, error_msg) => Some(event_frame(
@@ -592,6 +609,276 @@ async fn handle_client_request(
                 }
             }
         }
+
+        op::RULES_LIST_GET => {
+            match rules_service::list_rules(state).await {
+                Ok(rules) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            json!({ "rules": rules }),
+                        ),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to list rules",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::RULES_GET => {
+            let Some(rule_id) = parse_i32_payload(&frame.payload, "ruleId") else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.ruleId",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match rules_service::get_rule(state, rule_id).await {
+                Ok(Some(rule)) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Ok(None) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "NOT_FOUND",
+                            "Rule not found",
+                            None,
+                        ),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to get rule",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::RULES_SAVE_SET => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing rule payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match serde_json::from_value::<RequestRule>(payload) {
+                Ok(rule) => match rules_service::save_rule(state, rule).await {
+                    Ok(saved) => {
+                        send_frame(
+                            socket_tx,
+                            response_frame(frame.id, frame.op, serde_json::to_value(saved).unwrap_or_default()),
+                        )
+                        .await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "VALIDATION_ERROR",
+                                "Failed to save rule",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse rule",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::RULES_DELETE => {
+            let Some(rule_id) = parse_i32_payload(&frame.payload, "ruleId") else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.ruleId",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match rules_service::delete_rule(state, rule_id).await {
+                Ok(()) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            json!({ "ruleId": rule_id }),
+                        ),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    let code = if err.to_string().contains("not found") {
+                        "NOT_FOUND"
+                    } else {
+                        "DB_ERROR"
+                    };
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            code,
+                            "Failed to delete rule",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::RULES_ENABLED_SET => {
+            let Some(rule_id) = parse_i32_payload(&frame.payload, "ruleId") else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.ruleId",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            let Some(enabled) = parse_bool_payload(&frame.payload, "enabled") else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.enabled",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match rules_service::set_rule_enabled(state, rule_id, enabled).await {
+                Ok(rule) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    let code = if err.to_string().contains("not found") {
+                        "NOT_FOUND"
+                    } else {
+                        "DB_ERROR"
+                    };
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            code,
+                            "Failed to update rule enabled state",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::RULES_TEMPLATES_GET => {
+            match rules_service::list_templates(state).await {
+                Ok(templates) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            json!({ "templates": templates }),
+                        ),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to list rule templates",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+
         op::SETTINGS_CERTIFICATE_PATH_GET => {
             send_frame(
                 socket_tx,

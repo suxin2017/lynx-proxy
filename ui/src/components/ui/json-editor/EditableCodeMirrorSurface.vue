@@ -21,10 +21,13 @@ const props = withDefaults(defineProps<{
   extensions?: Extension
   showLineNumbers?: boolean
   readOnly?: boolean
+  /** Stretch the editor to fill a resizable parent height. */
+  fillHeight?: boolean
 }>(), {
   language: 'json',
   showLineNumbers: true,
   readOnly: false,
+  fillHeight: false,
 })
 
 const emit = defineEmits<{
@@ -38,6 +41,69 @@ const lineNumbersCompartment = new Compartment()
 const editableCompartment = new Compartment()
 const extraExtensionsCompartment = new Compartment()
 let isApplyingExternalChange = false
+let resizeObserver: ResizeObserver | null = null
+
+function editorShellTheme(): Extension {
+  return EditorView.theme({
+    '&': {
+      backgroundColor: 'transparent',
+      fontSize: '0.75rem',
+      ...(props.fillHeight ? { height: '100%', minHeight: 'inherit' } : {}),
+    },
+    '.cm-scroller': {
+      fontFamily: 'var(--font-mono)',
+      lineHeight: '1.35rem',
+      overflow: 'auto',
+      ...(props.fillHeight ? { minHeight: 'inherit' } : {}),
+    },
+    '.cm-content': {
+      padding: '0.375rem 0.5rem 0.5rem',
+    },
+    '.cm-gutters': {
+      backgroundColor: 'transparent',
+      border: 'none',
+      color: 'var(--color-muted-foreground)',
+      paddingRight: '0.25rem',
+    },
+    '.cm-gutterElement': {
+      padding: '0 0.25rem 0 0',
+    },
+    '.cm-activeLineGutter': {
+      backgroundColor: 'transparent',
+    },
+    '.cm-activeLine': {
+      backgroundColor: 'color-mix(in oklab, var(--color-muted) 30%, transparent)',
+    },
+    '&.cm-focused': {
+      outline: 'none',
+    },
+    '.cm-cursor, .cm-dropCursor': {
+      borderLeftColor: 'var(--color-foreground)',
+    },
+    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
+      backgroundColor: 'color-mix(in oklab, var(--color-muted) 60%, transparent)',
+    },
+  })
+}
+
+function requestEditorMeasure() {
+  editorView.value?.requestMeasure()
+}
+
+function bindResizeObserver() {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+
+  if (!props.fillHeight || !rootEl.value) {
+    return
+  }
+
+  const target = rootEl.value.parentElement ?? rootEl.value
+  resizeObserver = new ResizeObserver(() => {
+    requestEditorMeasure()
+  })
+  resizeObserver.observe(target)
+}
 
 function resolveLanguageExtension(language: WorkbenchLanguage): Extension {
   switch (language) {
@@ -91,44 +157,7 @@ function createEditor() {
 
         emit('update:modelValue', update.state.doc.toString())
       }),
-      EditorView.theme({
-        '&': {
-          backgroundColor: 'transparent',
-          fontSize: '0.75rem',
-        },
-        '.cm-scroller': {
-          fontFamily: 'var(--font-mono)',
-          lineHeight: '1.35rem',
-          overflow: 'auto',
-        },
-        '.cm-content': {
-          padding: '0.375rem 0.5rem 0.5rem',
-        },
-        '.cm-gutters': {
-          backgroundColor: 'transparent',
-          border: 'none',
-          color: 'var(--color-muted-foreground)',
-          paddingRight: '0.25rem',
-        },
-        '.cm-gutterElement': {
-          padding: '0 0.25rem 0 0',
-        },
-        '.cm-activeLineGutter': {
-          backgroundColor: 'transparent',
-        },
-        '.cm-activeLine': {
-          backgroundColor: 'color-mix(in oklab, var(--color-muted) 30%, transparent)',
-        },
-        '&.cm-focused': {
-          outline: 'none',
-        },
-        '.cm-cursor, .cm-dropCursor': {
-          borderLeftColor: 'var(--color-foreground)',
-        },
-        '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-          backgroundColor: 'color-mix(in oklab, var(--color-muted) 60%, transparent)',
-        },
-      }),
+      editorShellTheme(),
       languageCompartment.of(resolveEffectiveLanguageExtension()),
       lineNumbersCompartment.of(resolveLineNumberExtension(props.showLineNumbers)),
       editableCompartment.of(resolveEditableExtension(props.readOnly)),
@@ -140,6 +169,9 @@ function createEditor() {
     state,
     parent: rootEl.value,
   })
+
+  bindResizeObserver()
+  requestEditorMeasure()
 }
 
 onMounted(() => {
@@ -225,11 +257,19 @@ watch(() => props.readOnly, (readOnly) => {
   })
 })
 
+watch(() => props.fillHeight, () => {
+  createEditor()
+})
+
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
   editorView.value?.destroy()
 })
 </script>
 
 <template>
-  <div ref="rootEl" class="min-w-0" />
+  <div
+    ref="rootEl"
+    :class="props.fillHeight ? 'min-h-[inherit] h-full min-w-0' : 'min-w-0'"
+  />
 </template>

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { ArrowLeft, X } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import type { RuleDraft, RuleEditorMode, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
-import { createRuleDraft, isRuleSaveDisabled } from '@/components/ui/rule-workbench'
+import { useRulesStore } from '@/stores/modules/rules.store'
+import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
+import { createRuleDraft, getRuleValidationErrors, isRuleSaveDisabled } from '@/components/ui/rule-workbench'
 import RuleWorkbench from '@/components/ui/rule-workbench/RuleWorkbench.vue'
 import type { ActionAssetTemplate } from './types'
 import DrawerTabs from './DrawerTabs.vue'
@@ -31,8 +33,6 @@ const props = withDefaults(defineProps<{
   selectedAssetId?: string
 
   dirty?: boolean
-  valid?: boolean
-  invalid?: boolean
   loading?: boolean
   saving?: boolean
   class?: HTMLAttributes['class']
@@ -44,8 +44,6 @@ const props = withDefaults(defineProps<{
   selectedAssetId: '',
   ruleDraft: undefined,
   dirty: false,
-  valid: true,
-  invalid: false,
   loading: false,
   saving: false,
 })
@@ -63,6 +61,7 @@ const emit = defineEmits<{
   'rules:edit': [id: string]
   'rules:save': [id: string]
   'rules:toggle-enabled': [id: string, enabled: boolean]
+  'rules:delete': [id: string]
 
   'assets:create': [asset: ActionAssetTemplate]
   'assets:update': [asset: ActionAssetTemplate]
@@ -74,18 +73,30 @@ const tabs = computed(() => ([
   { key: 'assets', label: '动作资产' },
 ]))
 
+const rulesStore = useRulesStore()
+const { rulesPane: storeRulesPane } = storeToRefs(rulesStore)
+
+/** Store is source of truth; props mirror v-model for Storybook. */
+const rulesPaneDisplay = computed(() => storeRulesPane.value ?? props.rulesPane ?? 'list')
+
+function setRulesPane(pane: SecondaryPaneKey) {
+  storeRulesPane.value = pane
+  emit('update:rulesPane', pane)
+}
+
 function close() {
   emit('update:open', false)
 }
 
 function openRulesList() {
   emit('update:activePrimaryTab', 'rules')
-  emit('update:rulesPane', 'list')
+  rulesStore.goToRulesList()
+  setRulesPane('list')
 }
 
 function openRulesEditor() {
   emit('update:activePrimaryTab', 'rules')
-  emit('update:rulesPane', 'editor')
+  setRulesPane('editor')
 }
 
 function openAssetsList() {
@@ -105,17 +116,35 @@ function onCreateRule() {
 }
 
 function onEditRule(id: string) {
-  emit('rules:edit', id)
-  emit('update:selectedRuleId', id)
   openRulesEditor()
+  emit('update:selectedRuleId', id)
+  emit('rules:edit', id)
 }
 
 function onSelectRule(id: string) {
   emit('update:selectedRuleId', id)
 }
 
-function onSaveRule(id: string) {
-  emit('rules:save', id)
+function onDeleteRule(id: string) {
+  const name = props.rules.find(rule => rule.id === id)?.name ?? '该规则'
+  if (!globalThis.confirm(`确定删除规则「${name}」？此操作不可撤销。`)) {
+    return
+  }
+  emit('rules:delete', id)
+}
+
+async function handleToolbarSave() {
+  const id = props.selectedRuleId
+    || props.ruleDraft?.id
+    || rulesStore.selectedRuleId
+    || rulesStore.ruleDraft?.id
+  if (!id) return
+  try {
+    await rulesStore.saveRule(id)
+  } catch {
+    return
+  }
+  openRulesList()
 }
 
 function onCreateAsset() {
@@ -126,17 +155,18 @@ const selectedAsset = computed(() => {
   return props.assets.find(a => a.id === props.selectedAssetId) ?? null
 })
 
-const ruleSaveDisabled = computed(() => isRuleSaveDisabled({
-  loading: props.loading,
-  saving: props.saving,
-  invalid: props.invalid,
-  hasSelection: !!props.selectedRuleId,
-}))
-
-const editorMode = ref<RuleEditorMode>('visual')
+const ruleSaveDisabled = computed(() => {
+  const draft = props.ruleDraft ?? createRuleDraft()
+  return isRuleSaveDisabled({
+    loading: props.loading,
+    saving: props.saving,
+    invalid: getRuleValidationErrors(draft).length > 0,
+    hasSelection: !!props.selectedRuleId,
+  })
+})
 
 const showDrawerBack = computed(() => (
-  (props.activePrimaryTab === 'rules' && props.rulesPane === 'editor')
+  (props.activePrimaryTab === 'rules' && rulesPaneDisplay.value === 'editor')
   || (props.activePrimaryTab === 'assets' && props.assetsPane === 'editor')
 ))
 
@@ -206,7 +236,7 @@ function onRuleDraftUpdate(next: RuleDraft) {
         >
           <!-- Rules -->
           <div v-if="props.activePrimaryTab === 'rules'" class="flex h-full min-h-0 flex-col">
-            <div v-if="props.rulesPane === 'list'" class="min-h-0 flex-1">
+            <div v-if="rulesPaneDisplay === 'list'" class="min-h-0 flex-1">
               <RulesListView
                 :rules="props.rules"
                 :selected-rule-id="props.selectedRuleId"
@@ -215,28 +245,25 @@ function onRuleDraftUpdate(next: RuleDraft) {
                 @edit="onEditRule"
                 @select="onSelectRule"
                 @toggle-enabled="(id, enabled) => emit('rules:toggle-enabled', id, enabled)"
+                @delete="onDeleteRule"
               />
             </div>
 
             <div v-else class="flex h-full min-h-0 flex-col">
               <RuleEditorToolbar
                 :draft="props.ruleDraft"
-                v-model:editor-mode="editorMode"
                 :saving="props.saving"
                 :save-disabled="ruleSaveDisabled"
                 @update:draft="onRuleDraftUpdate"
-                @save="props.selectedRuleId && onSaveRule(props.selectedRuleId)"
+                @save="handleToolbarSave"
               />
 
               <RuleWorkbench
-                v-model:editor-mode="editorMode"
                 :rules="props.rules"
                 :draft="props.ruleDraft"
                 :selected-rule-id="props.selectedRuleId"
                 :action-assets="props.assets"
                 :dirty="props.dirty"
-                :valid="props.valid"
-                :invalid="props.invalid"
                 :loading="props.loading"
                 :saving="props.saving"
                 embedded
@@ -244,7 +271,7 @@ function onRuleDraftUpdate(next: RuleDraft) {
                 class="min-h-0 flex-1"
                 @update:draft="onRuleDraftUpdate"
                 @update:selected-rule-id="emit('update:selectedRuleId', $event)"
-                @save="onSaveRule"
+                @save="handleToolbarSave"
                 @save-action-asset="emit('assets:create', $event)"
               />
             </div>

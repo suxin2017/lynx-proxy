@@ -15,6 +15,9 @@ export type WorkbenchLanguage =
   | 'css'
   | 'javascript'
   | 'typescript'
+  | 'hex'
+  | 'base64'
+  | 'sse'
 
 export interface ResolveWorkbenchSurfaceInput {
   type: WorkbenchType

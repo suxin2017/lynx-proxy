@@ -1,6 +1,8 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Result;
+use socket2::{SockRef, TcpKeepalive};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     net::{TcpStream, ToSocketAddrs},
@@ -8,6 +10,16 @@ use tokio::{
 use tracing::{trace, warn};
 
 use crate::layers::{message_package_layer::MessageEventChannel, trace_id_layer::service::TraceId};
+
+fn configure_tcp_keepalive(stream: &TcpStream) {
+    let sock_ref = SockRef::from(stream);
+    let keepalive = TcpKeepalive::new()
+        .with_time(Duration::from_secs(60))
+        .with_interval(Duration::from_secs(30));
+    if let Err(e) = sock_ref.set_tcp_keepalive(&keepalive) {
+        warn!("failed to set TCP keepalive: {:?}", e);
+    }
+}
 
 pub async fn tunnel_proxy_by_stream<
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
@@ -18,8 +30,8 @@ pub async fn tunnel_proxy_by_stream<
     trace_id: TraceId,
     event_cannel: Arc<MessageEventChannel>,
 ) -> Result<()> {
-    // let mut upgraded = TokioIo::new(stream);
     let mut server = TcpStream::connect(addr).await?;
+    configure_tcp_keepalive(&server);
 
     event_cannel
         .dispatch_on_tunnel_start(trace_id.clone())

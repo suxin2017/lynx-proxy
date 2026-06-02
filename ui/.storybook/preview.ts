@@ -1,7 +1,13 @@
 import type { Preview } from '@storybook/vue3-vite'
+import { setup } from '@storybook/vue3-vite'
+import { createPinia } from 'pinia'
 
 import { ensureDslWasm } from '../src/components/ui/dsl-editor/dslWasm'
 import '../src/style.css'
+
+setup((app) => {
+  app.use(createPinia())
+})
 
 const preview: Preview = {
   loaders: [

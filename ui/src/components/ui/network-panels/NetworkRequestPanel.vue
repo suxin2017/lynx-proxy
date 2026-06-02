@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import type { TrafficRecord } from '@/components/ui/request-tree'
 import { RequestTree } from '@/components/ui/request-tree'
 import { NetworkRequestTable } from '@/components/ui/network-request-table'
+import TrafficContextMenu from './TrafficContextMenu.vue'
 import type { RequestViewMode } from './NetworkPanelHeader.vue'
 import { cn } from '@/lib/utils'
 
@@ -58,6 +59,16 @@ const handleSelect = (request: TrafficRecord) => {
   emit('update:modelValue', request.id)
   emit('select', request)
 }
+
+const menuRecordId = ref<string | undefined>(undefined)
+const menuPoint = ref({ x: 0, y: 0 })
+const menuOpenKey = ref(0)
+
+const openContextMenu = (request: TrafficRecord, ev: MouseEvent) => {
+  menuRecordId.value = request.id
+  menuPoint.value = { x: ev.clientX, y: ev.clientY }
+  menuOpenKey.value += 1
+}
 </script>
 
 <template>
@@ -70,6 +81,7 @@ const handleSelect = (request: TrafficRecord) => {
         :height="listHeight"
         @update:model-value="(id) => emit('update:modelValue', id)"
         @select="handleSelect"
+        @context-menu="openContextMenu"
       />
 
       <RequestTree
@@ -79,7 +91,15 @@ const handleSelect = (request: TrafficRecord) => {
         :height="listHeight"
         @update:model-value="(id) => emit('update:modelValue', id)"
         @select="handleSelect"
+        @context-menu="openContextMenu"
       />
     </div>
+
+    <TrafficContextMenu
+      :record-id="menuRecordId"
+      :x="menuPoint.x"
+      :y="menuPoint.y"
+      :open-key="menuOpenKey"
+    />
   </div>
 </template>

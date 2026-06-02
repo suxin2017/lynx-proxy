@@ -3,8 +3,15 @@ import type {
   DslFormatValidationResult,
   DslValidationResult,
 } from './dslTypes'
+import type { RequestFactsPayload } from '@/lib/http/request-facts'
 
 type WasmModule = typeof import('@/wasm/lynx-dsl/lynx_dsl.js')
+
+export type CompiledMatchProgram = unknown
+
+export type CompileMatchExprResult =
+  | { ok: true, program: CompiledMatchProgram }
+  | { ok: false, error: string }
 
 let wasm: WasmModule | null = null
 let loading: Promise<WasmModule> | null = null
@@ -79,4 +86,25 @@ export function hasDslParseErrors(source: string): boolean {
 
 export function parseDslProgram(source: string) {
   return requireWasm().parse_dsl_program_wasm(source)
+}
+
+export function compileMatchExpr(source: string): CompileMatchExprResult {
+  const result = requireWasm().compile_match_expr_wasm(source) as {
+    ok: boolean
+    program?: CompiledMatchProgram
+    error?: string
+  }
+
+  if (result.ok && result.program !== undefined) {
+    return { ok: true, program: result.program }
+  }
+
+  return {
+    ok: false,
+    error: result.error ?? 'invalid match expression',
+  }
+}
+
+export function evalProgram(program: CompiledMatchProgram, facts: RequestFactsPayload): boolean {
+  return requireWasm().eval_program_wasm(program, facts)
 }

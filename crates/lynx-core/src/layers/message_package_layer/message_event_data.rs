@@ -56,7 +56,7 @@ pub struct MessageEventRequest {
     pub body: MessageEventBody,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub enum WebSocketStatus {
     #[default]
     Start,
@@ -71,7 +71,7 @@ pub struct MessageEventWebSocket {
     pub message: Vec<WebSocketLog>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq)]
 pub enum TunnelStatus {
     #[default]
     Connected,

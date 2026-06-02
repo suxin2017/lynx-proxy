@@ -5,16 +5,14 @@ import { CheckCircle2, CircleDashed, ListFilter, TriangleAlert } from '@lucide/v
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { JsonEditor } from '@/components/ui/json-editor'
-import MatchConditionBuilder from './MatchConditionBuilder.vue'
 import ActionPipelineBuilder from './ActionPipelineBuilder.vue'
-import EditorModeTabs from './EditorModeTabs.vue'
+import MatchDslEditor from './MatchDslEditor.vue'
+import { getRuleValidationErrors } from './match-validation'
 import { createRuleDraft } from './types'
 import type { ActionAssetTemplate } from '@/components/ui/rules-drawer/types'
 import type { RuleDraft } from './types'
 import { getRuleSaveStatusLabel, isRuleSaveDisabled } from './save-status'
 
-export type RuleEditorMode = 'visual' | 'dsl'
 export type RuleMobilePane = 'list' | 'editor'
 
 export interface RuleWorkbenchRuleItem {
@@ -30,12 +28,9 @@ interface RuleWorkbenchProps {
   rules: RuleWorkbenchRuleItem[]
   draft?: RuleDraft
   selectedRuleId?: string
-  editorMode?: RuleEditorMode
   mobilePane?: RuleMobilePane
   loading?: boolean
   dirty?: boolean
-  valid?: boolean
-  invalid?: boolean
   saving?: boolean
   embedded?: boolean
   showList?: boolean
@@ -45,12 +40,9 @@ interface RuleWorkbenchProps {
 
 const props = withDefaults(defineProps<RuleWorkbenchProps>(), {
   selectedRuleId: '',
-  editorMode: 'visual',
   mobilePane: 'editor',
   loading: false,
   dirty: false,
-  valid: true,
-  invalid: false,
   saving: false,
   embedded: false,
   showList: true,
@@ -60,7 +52,6 @@ const props = withDefaults(defineProps<RuleWorkbenchProps>(), {
 const emit = defineEmits<{
   'update:draft': [draft: RuleDraft]
   'update:selectedRuleId': [id: string]
-  'update:editorMode': [mode: RuleEditorMode]
   'update:mobilePane': [pane: RuleMobilePane]
   'save': [id: string]
   'toggle-enabled': [id: string, enabled: boolean]
@@ -70,20 +61,11 @@ const emit = defineEmits<{
 const searchTerm = ref('')
 
 const selectedRuleIdLocal = ref(props.selectedRuleId)
-const editorModeLocal = ref<RuleEditorMode>(props.editorMode)
 const mobilePaneLocal = ref<RuleMobilePane>(props.mobilePane)
 const draftLocal = ref<RuleDraft>(props.draft ?? createRuleDraft())
-const dslText = ref(JSON.stringify(draftLocal.value, null, 2))
-
-let syncingFromDsl = false
-let syncingFromDraft = false
 
 watch(() => props.selectedRuleId, next => {
   selectedRuleIdLocal.value = next
-})
-
-watch(() => props.editorMode, next => {
-  editorModeLocal.value = next
 })
 
 watch(() => props.mobilePane, next => {
@@ -97,36 +79,7 @@ watch(() => props.draft, next => {
 
 watch(draftLocal, (next) => {
   emit('update:draft', next)
-  if (syncingFromDsl) return
-  syncingFromDraft = true
-  dslText.value = JSON.stringify(next, null, 2)
-  syncingFromDraft = false
 }, { deep: true })
-
-watch(dslText, (next) => {
-  if (syncingFromDraft) return
-  try {
-    const parsed = JSON.parse(next) as RuleDraft
-    syncingFromDsl = true
-    draftLocal.value = {
-      ...createRuleDraft(),
-      ...parsed,
-      match: {
-        ...createRuleDraft().match,
-        ...(parsed.match ?? {}),
-      },
-      actions: Array.isArray(parsed.actions) && parsed.actions.length > 0
-        ? parsed.actions
-        : createRuleDraft().actions,
-    }
-  }
-  catch {
-    // Keep existing draft until JSON becomes valid.
-  }
-  finally {
-    syncingFromDsl = false
-  }
-})
 
 const filteredRules = computed(() => {
   const keyword = searchTerm.value.trim().toLowerCase()
@@ -144,18 +97,21 @@ const selectedRule = computed(() => {
   return props.rules.find(rule => rule.id === selectedRuleIdLocal.value) ?? filteredRules.value[0]
 })
 
+const validationErrors = computed(() => getRuleValidationErrors(draftLocal.value))
+const isInvalid = computed(() => validationErrors.value.length > 0)
+
 const isSaveDisabled = computed(() => isRuleSaveDisabled({
   loading: props.loading,
   saving: props.saving,
-  invalid: props.invalid,
+  invalid: isInvalid.value,
   hasSelection: !!selectedRule.value,
 }))
 
 const statusLabel = computed(() => getRuleSaveStatusLabel({
   loading: props.loading,
-  invalid: props.invalid,
+  invalid: isInvalid.value,
   dirty: props.dirty,
-  valid: props.valid,
+  valid: !isInvalid.value,
 }))
 
 function ruleStateLabel(state?: RuleWorkbenchRuleItem['state']) {
@@ -169,11 +125,6 @@ function updateSelectedRule(id: string) {
   emit('update:selectedRuleId', id)
 }
 
-function updateEditorMode(mode: RuleEditorMode) {
-  editorModeLocal.value = mode
-  emit('update:editorMode', mode)
-}
-
 function updateMobilePane(pane: RuleMobilePane) {
   mobilePaneLocal.value = pane
   emit('update:mobilePane', pane)
@@ -184,10 +135,10 @@ function requestSave() {
   emit('save', selectedRule.value.id)
 }
 
-function updateMatch(next: RuleDraft['match']) {
+function updateMatchDsl(next: string) {
   draftLocal.value = {
     ...draftLocal.value,
-    match: next,
+    matchDsl: next,
   }
 }
 
@@ -215,25 +166,20 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
     )"
   >
     <header v-if="!props.embedded" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
-      <EditorModeTabs
-        :model-value="editorModeLocal"
-        @update:model-value="updateEditorMode"
-      />
-
       <div class="flex flex-wrap items-center gap-2">
-      <span
-        class="inline-flex items-center gap-1 rounded-sm border border-border bg-muted/30 px-2 py-1 text-[11px] font-medium"
-        :class="props.invalid ? 'text-destructive' : 'text-foreground'"
-      >
-        <TriangleAlert v-if="props.invalid" class="h-3.5 w-3.5" />
-        <CheckCircle2 v-else-if="!props.dirty" class="h-3.5 w-3.5 text-emerald-600" />
-        <CircleDashed v-else class="h-3.5 w-3.5" />
-        {{ statusLabel }}
-      </span>
+        <span
+          class="inline-flex items-center gap-1 rounded-sm border border-border bg-muted/30 px-2 py-1 text-[11px] font-medium"
+          :class="isInvalid ? 'text-destructive' : 'text-foreground'"
+        >
+          <TriangleAlert v-if="isInvalid" class="h-3.5 w-3.5" />
+          <CheckCircle2 v-else-if="!props.dirty" class="h-3.5 w-3.5 text-emerald-600" />
+          <CircleDashed v-else class="h-3.5 w-3.5" />
+          {{ statusLabel }}
+        </span>
 
-      <Button size="default" class="h-8 px-3 text-xs" :disabled="isSaveDisabled" @click="requestSave">
-        {{ props.saving ? '保存中...' : '保存' }}
-      </Button>
+        <Button size="default" class="h-8 px-3 text-xs" :disabled="isSaveDisabled" @click="requestSave">
+          {{ props.saving ? '保存中...' : '保存' }}
+        </Button>
       </div>
     </header>
 
@@ -355,46 +301,26 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
             </p>
           </div>
 
-          <div
-            id="editor-mode-visual"
-            class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-3"
-            v-if="editorModeLocal === 'visual'"
-          >
+          <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-3">
             <div class="grid min-w-0 gap-3">
-            <slot
-              name="editor"
-              :rule="selectedRule"
-              :mode="editorModeLocal"
-              :draft="draftLocal"
-            >
-              <MatchConditionBuilder
-                :model-value="draftLocal.match"
-                @update:model-value="updateMatch"
-              />
+              <slot
+                name="editor"
+                :rule="selectedRule"
+                :draft="draftLocal"
+              >
+                <MatchDslEditor
+                  :model-value="draftLocal.matchDsl"
+                  @update:model-value="updateMatchDsl"
+                />
 
-              <ActionPipelineBuilder
-                :model-value="draftLocal.actions"
-                :assets="props.actionAssets"
-                @update:model-value="updateActions"
-                @save-as-asset="emit('save-action-asset', $event)"
-              />
-            </slot>
+                <ActionPipelineBuilder
+                  :model-value="draftLocal.actions"
+                  :assets="props.actionAssets"
+                  @update:model-value="updateActions"
+                  @save-as-asset="emit('save-action-asset', $event)"
+                />
+              </slot>
             </div>
-          </div>
-
-          <div id="editor-mode-dsl" class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3" v-else>
-            <slot
-              name="editor"
-              :rule="selectedRule"
-              :mode="editorModeLocal"
-              :draft="draftLocal"
-            >
-              <JsonEditor
-                v-model="dslText"
-                compact
-                class="min-h-[360px]"
-              />
-            </slot>
           </div>
         </div>
       </main>

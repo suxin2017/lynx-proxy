@@ -226,7 +226,7 @@ send_realistic() {
         -X POST
         -H "Content-Type: application/json"
         -H "Accept: application/json"
-        -H "Authorization: Bearer eyJhbG.test.${index}"
+        -H "Authorization: Bearer sample"
         -d "$body"
       )
       ;;

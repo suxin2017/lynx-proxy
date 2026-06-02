@@ -1,22 +1,3 @@
-export type RuleCaptureType = 'glob' | 'regex' | 'exact' | 'contains'
-export type RuleLogicalOperator = 'and' | 'or' | 'not'
-
-export interface RuleMatchSimpleCondition {
-  id: string
-  method: string
-  host: string
-  patternType: RuleCaptureType
-  pattern: string
-  headerName: string
-  headerValue: string
-}
-
-export interface RuleMatchGroup {
-  id: string
-  operator: RuleLogicalOperator
-  conditions: RuleMatchSimpleCondition[]
-}
-
 export type RuleHandlerType =
   | 'block'
   | 'modifyRequest'
@@ -131,21 +112,8 @@ export interface RuleDraft {
   description: string
   enabled: boolean
   priority: number
-  match: RuleMatchGroup
+  matchDsl: string
   actions: RuleActionDraft[]
-}
-
-export function createSimpleCondition(seed?: Partial<RuleMatchSimpleCondition>): RuleMatchSimpleCondition {
-  const id = seed?.id ?? `cond-${Math.random().toString(36).slice(2, 9)}`
-  return {
-    id,
-    method: seed?.method ?? 'GET',
-    host: seed?.host ?? '',
-    patternType: seed?.patternType ?? 'contains',
-    pattern: seed?.pattern ?? '',
-    headerName: seed?.headerName ?? '',
-    headerValue: seed?.headerValue ?? '',
-  }
 }
 
 function createBlockConfig(seed?: Partial<RuleBlockActionConfig>): RuleBlockActionConfig {
@@ -440,13 +408,7 @@ export function createRuleDraft(seed?: Partial<RuleDraft>): RuleDraft {
     description: seed?.description ?? '',
     enabled: seed?.enabled ?? true,
     priority: seed?.priority ?? 50,
-    match: {
-      id: seed?.match?.id ?? `grp-${Math.random().toString(36).slice(2, 9)}`,
-      operator: seed?.match?.operator ?? 'and',
-      conditions: seed?.match?.conditions?.length
-        ? seed.match.conditions
-        : [createSimpleCondition()],
-    },
+    matchDsl: seed?.matchDsl ?? 'example.com',
     actions: seed?.actions?.length
       ? seed.actions
       : [createAction({ order: 1, name: '修改请求', type: 'modifyRequest' })],

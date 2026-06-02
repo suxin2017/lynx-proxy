@@ -4,7 +4,7 @@ mod json_file;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use tokio::fs;
 use tokio::sync::RwLock;
 
@@ -12,12 +12,19 @@ use crate::dao::net_request_dao::CaptureSwitch;
 use crate::dao::request_processing_dao::types::RequestRule;
 use crate::dao::{https_capture_dao::CaptureFilter, general_setting_dao::GeneralSetting};
 use crate::dao::client_proxy_dao::ClientProxyConfig;
+use crate::dao::request_processing_dao::matcher::{CompiledRule, RuleMatcher};
 
 pub use json_file::{read_json, read_json_or_default, write_json_atomic};
 
+#[derive(Clone)]
+pub struct RulesCacheEntry {
+    pub rules: Vec<RequestRule>,
+    pub compiled: Vec<CompiledRule>,
+}
+
 pub struct DataStore {
     root: PathBuf,
-    rules_cache: RwLock<Option<Vec<RequestRule>>>,
+    rules_cache: RwLock<Option<RulesCacheEntry>>,
 }
 
 impl DataStore {
@@ -79,15 +86,29 @@ impl DataStore {
     pub async fn get_rules_cache(&self) -> Result<Vec<RequestRule>> {
         {
             let cache = self.rules_cache.read().await;
-            if let Some(rules) = cache.as_ref() {
-                return Ok(rules.clone());
+            if let Some(entry) = cache.as_ref() {
+                return Ok(entry.rules.clone());
             }
         }
 
-        let rules = self.load_all_rules().await?;
+        let entry = self.load_rules_cache_entry().await?;
+        let rules = entry.rules.clone();
         let mut cache = self.rules_cache.write().await;
-        *cache = Some(rules.clone());
+        *cache = Some(entry);
         Ok(rules)
+    }
+
+    pub async fn get_rules_cache_entry(&self) -> Result<RulesCacheEntry> {
+        {
+            let cache = self.rules_cache.read().await;
+            if let Some(entry) = cache.as_ref() {
+                return Ok(entry.clone());
+            }
+        }
+        let entry = self.load_rules_cache_entry().await?;
+        let mut cache = self.rules_cache.write().await;
+        *cache = Some(entry.clone());
+        Ok(entry)
     }
 
     async fn load_all_rules(&self) -> Result<Vec<RequestRule>> {
@@ -101,7 +122,13 @@ impl DataStore {
             if !name.ends_with(".json") || name == "templates.json" {
                 continue;
             }
-            if let Some(rule) = read_json::<RequestRule>(&path).await? {
+            let rule = read_json::<RequestRule>(&path).await.map_err(|error| {
+                anyhow!(
+                    "Failed to load rule file {}: {error}. If you upgraded to matchExpr, please clear the rules directory and recreate rules.",
+                    path.display()
+                )
+            })?;
+            if let Some(rule) = rule {
                 rules.push(rule);
             }
         }
@@ -111,6 +138,16 @@ impl DataStore {
                 .then_with(|| a.id.unwrap_or(0).cmp(&b.id.unwrap_or(0)))
         });
         Ok(rules)
+    }
+
+    async fn load_rules_cache_entry(&self) -> Result<RulesCacheEntry> {
+        let rules = self.load_all_rules().await?;
+        let compiled = RuleMatcher::compile_rules(&rules).map_err(|error| {
+            anyhow!(
+                "Failed to load rules: {error}. If you upgraded to matchExpr, please clear the rules directory and recreate rules."
+            )
+        })?;
+        Ok(RulesCacheEntry { rules, compiled })
     }
 
     pub async fn next_rule_id(&self) -> Result<i32> {

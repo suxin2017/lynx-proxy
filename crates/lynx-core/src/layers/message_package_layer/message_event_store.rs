@@ -10,7 +10,7 @@ use tokio::sync::RwLock;
 
 use super::message_event_data::{
     MessageEventRequest, MessageEventResponse, MessageEventTunnel, MessageEventWebSocket,
-    WebSocketLog,
+    TunnelStatus, WebSocketLog, WebSocketStatus,
 };
 use crate::layers::trace_id_layer::service::TraceId;
 
@@ -33,6 +33,8 @@ pub enum MessageEvent {
     OnResponseStart(TraceId, MessageEventResponse),
 
     OnWebSocketStart(TraceId),
+
+    OnWebSocketEnd(TraceId),
 
     OnWebSocketError(TraceId, String),
 
@@ -246,7 +248,29 @@ impl MessageEventStoreValue {
     }
 
     pub fn is_need_delteed(&self) -> bool {
+        if self.has_active_long_connection() {
+            return false;
+        }
         self.is_completed() || self.is_error() || self.is_cancelled()
+    }
+
+    fn has_active_long_connection(&self) -> bool {
+        if self
+            .tunnel
+            .as_ref()
+            .is_some_and(|t| t.status == TunnelStatus::Connected)
+        {
+            return true;
+        }
+        if self.messages.as_ref().is_some_and(|ws| {
+            matches!(
+                ws.status,
+                WebSocketStatus::Start | WebSocketStatus::Connected
+            )
+        }) {
+            return true;
+        }
+        false
     }
 }
 

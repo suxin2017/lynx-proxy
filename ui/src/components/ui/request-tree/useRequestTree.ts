@@ -36,9 +36,6 @@ export function useRequestTree(
   // Currently selected request id
   const selectedId = ref<string | undefined>(undefined)
 
-  // Search / filter keyword
-  const searchTerm = ref('')
-
   // ---------------------------------------------------------------------------
   // Debounced incremental update
   // ---------------------------------------------------------------------------
@@ -92,6 +89,10 @@ export function useRequestTree(
 
     // After update, restore expandedSet by matching full paths
     nextTick(() => {
+      if (expandedPaths.size === 0) {
+        return
+      }
+
       // Incrementally expand: start with empty, then expand parent paths to reveal children
       let currentExpanded = new Set<string>()
       let iteration = 0
@@ -143,15 +144,69 @@ export function useRequestTree(
 
   // Track known ids to detect new / removed requests
   const knownIds = new Set<string>()
+  const requestSnapshotById = new Map<string, string>()
+
+  const requestFingerprint = (req: TrafficRecord) => {
+    return `${req.method}|${req.url}|${req.status}|${req.statusCode ?? ''}|${req.requestType ?? ''}`
+  }
+
+  const rebuildTreeFromList = (list: TrafficRecord[]) => {
+    rawRoot.value = { segment: '', children: new Map(), requests: [] }
+    for (const req of list) {
+      insertRequest(rawRoot.value, req)
+    }
+    autoExpand(rawRoot.value, defaultExpandDepth)
+    rawRoot.value = { ...rawRoot.value }
+  }
 
   watch(
     requests,
     (newList) => {
+      const previousKnownIds = new Set(knownIds)
+      const currentIds = new Set<string>()
+      const addedIds: string[] = []
+      let hasRemovals = false
+
       for (const req of newList) {
-        pendingIds.add(req.id)
+        currentIds.add(req.id)
+        if (!previousKnownIds.has(req.id)) {
+          addedIds.push(req.id)
+        }
+
+        const fingerprint = requestFingerprint(req)
+        const previous = requestSnapshotById.get(req.id)
+
+        if (previous !== fingerprint) {
+          requestSnapshotById.set(req.id, fingerprint)
+          pendingIds.add(req.id)
+        }
+
         knownIds.add(req.id)
       }
-      scheduleFlush()
+
+      for (const id of [...knownIds]) {
+        if (!currentIds.has(id)) {
+          hasRemovals = true
+          knownIds.delete(id)
+          requestSnapshotById.delete(id)
+        }
+      }
+
+      const shouldRebuild = hasRemovals || addedIds.length > 1
+
+      if (shouldRebuild) {
+        pendingIds.clear()
+        if (debounceTimer !== null) {
+          clearTimeout(debounceTimer)
+          debounceTimer = null
+        }
+        rebuildTreeFromList(newList)
+        return
+      }
+
+      if (pendingIds.size > 0) {
+        scheduleFlush()
+      }
     },
     { immediate: true, deep: false },
   )
@@ -165,81 +220,6 @@ export function useRequestTree(
     void rawRoot.value
     return buildFlatTree(rawRoot.value, expandedSet.value)
   })
-
-  // ---------------------------------------------------------------------------
-  // Filtered nodes (search)
-  // ---------------------------------------------------------------------------
-
-  const filteredNodes = computed<FlatTreeNode[]>(() => {
-    const term = searchTerm.value.trim().toLowerCase()
-    if (!term) return flatNodes.value
-
-    // Collect ids of matching leaf nodes
-    const matchingLeafIds = new Set<string>()
-    const matchingGroupIds = new Set<string>()
-
-    for (const node of flatNodes.value) {
-      if (node.type === 'leaf' && node.request) {
-        const haystack = node.fullLabel.toLowerCase()
-        if (haystack.includes(term)) {
-          matchingLeafIds.add(node.id)
-        }
-      }
-      if (node.type === 'group') {
-        const haystack = node.fullLabel.toLowerCase()
-        if (haystack.includes(term)) {
-          matchingGroupIds.add(node.id)
-        }
-      }
-    }
-
-    if (matchingLeafIds.size === 0 && matchingGroupIds.size === 0) return []
-
-    // Walk flat list: include a group if any of its descendants matched
-    // We need ancestor tracking: maintain a stack of (node, depth)
-    const result: FlatTreeNode[] = []
-    const groupStack: Array<{ node: FlatTreeNode, hasMatch: boolean }> = []
-
-    for (const node of flatNodes.value) {
-      // Pop groups that are no longer ancestors
-      while (groupStack.length > 0 && groupStack[groupStack.length - 1].node.depth >= node.depth) {
-        const popped = groupStack.pop()!
-        if (popped.hasMatch) {
-          result.push(popped.node)
-        }
-      }
-
-      if (node.type === 'group') {
-        // Defer group; emit only if a descendant matches
-        const selfMatch = matchingGroupIds.has(node.id)
-        groupStack.push({ node, hasMatch: selfMatch })
-      }
-      else {
-        // Leaf
-        if (matchingLeafIds.has(node.id)) {
-          // Mark all ancestor groups as having a match
-          for (const g of groupStack) {
-            g.hasMatch = true
-          }
-          result.push(node)
-        }
-      }
-    }
-
-    // Flush remaining groups
-    for (const g of groupStack) {
-      if (g.hasMatch) result.push(g.node)
-    }
-
-    // Re-sort to restore depth-first order
-    // The above approach emits groups deferred, so we need to rebuild order
-    return rebuildOrder(flatNodes.value, result)
-  })
-
-  function rebuildOrder(original: FlatTreeNode[], kept: FlatTreeNode[]): FlatTreeNode[] {
-    const keptIds = new Set(kept.map(n => n.id))
-    return original.filter(n => keptIds.has(n.id))
-  }
 
   // ---------------------------------------------------------------------------
   // Public actions
@@ -265,6 +245,7 @@ export function useRequestTree(
     expandedSet.value = new Set()
     selectedId.value = undefined
     knownIds.clear()
+    requestSnapshotById.clear()
     pendingIds.clear()
     if (debounceTimer !== null) {
       clearTimeout(debounceTimer)
@@ -274,8 +255,6 @@ export function useRequestTree(
 
   return {
     flatNodes,
-    filteredNodes,
-    searchTerm,
     selectedId,
     expandedSet,
     toggle,

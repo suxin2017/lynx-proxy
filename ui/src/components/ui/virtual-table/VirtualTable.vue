@@ -5,6 +5,7 @@ import { computed, ref } from "vue"
 import { useVirtualizer } from "@tanstack/vue-virtual"
 import { FlexRender, getCoreRowModel, useVueTable } from "@tanstack/vue-table"
 import { usePrependScrollAnchor } from "@/composables/usePrependScrollAnchor"
+import { useTailScrollFollow } from "@/composables/useTailScrollFollow"
 import { cn } from "@/lib/utils"
 
 interface VirtualTableProps<TData extends Record<string, unknown>> {
@@ -23,6 +24,7 @@ interface VirtualTableProps<TData extends Record<string, unknown>> {
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
   rowClassName?: (row: Row<TData>, rowIndex: number) => HTMLAttributes["class"]
   anchorScrollOnPrepend?: boolean | "auto"
+  followScrollOnAppend?: boolean | "auto"
   selectedRowId?: string
 }
 
@@ -38,7 +40,16 @@ const props = withDefaults(defineProps<VirtualTableProps<TData>>(), {
   emptyText: "无数据",
 })
 
+const emit = defineEmits<{
+  rowClick: [row: TData]
+  rowContextMenu: [row: TData, ev: MouseEvent]
+}>()
+
 const scrollContainerRef = ref<HTMLElement | null>(null)
+
+const bodyCellPaddingClass = computed(() =>
+  props.rowHeight < 28 ? "px-2 py-0" : "p-2",
+)
 
 const tableData = computed(() => props.data)
 
@@ -48,6 +59,15 @@ usePrependScrollAnchor({
   rowHeight: () => props.rowHeight,
   getId: (row) => props.getRowId?.(row, 0) ?? String(row.id ?? ""),
   anchorMode: () => props.anchorScrollOnPrepend,
+  selectedRowId: () => props.selectedRowId,
+})
+
+useTailScrollFollow({
+  scrollEl: scrollContainerRef,
+  items: tableData,
+  rowHeight: () => props.rowHeight,
+  getId: (row) => props.getRowId?.(row, 0) ?? String(row.id ?? ""),
+  followMode: () => props.followScrollOnAppend,
   selectedRowId: () => props.selectedRowId,
 })
 
@@ -85,6 +105,14 @@ const rowVirtualizer = useVirtualizer(computed(() => ({
   getScrollElement: () => scrollContainerRef.value,
   estimateSize: () => props.rowHeight,
   overscan: props.overscanRows,
+  getItemKey: (index: number) => {
+    const row = virtualRowsSource.value[index]
+    if (!row) {
+      return index
+    }
+
+    return props.getRowId?.(row.original, index, row) ?? String(row.id ?? index)
+  },
 })))
 
 const columnVirtualizer = useVirtualizer(computed(() => ({
@@ -170,13 +198,29 @@ function isFrozenEdgeColumn(frozenColumnIndex: number) {
 function getRowClassName(row: Row<TData>, rowIndex: number) {
   return props.rowClassName?.(row, rowIndex)
 }
+
+function handleBodyRowClick(row: Row<TData> | undefined) {
+  if (!row) {
+    return
+  }
+
+  emit("rowClick", row.original)
+}
+
+function handleBodyRowContextMenu(ev: MouseEvent, row: Row<TData> | undefined) {
+  if (!row) {
+    return
+  }
+
+  emit("rowContextMenu", row.original, ev)
+}
 </script>
 
 <template>
   <div
     ref="scrollContainerRef"
     data-slot="virtual-table-container"
-    :class="cn('relative w-full overflow-auto rounded-md bg-background', props.class)"
+    :class="cn('relative w-full overflow-auto [overflow-anchor:none] rounded-md bg-background', props.class)"
     :style="{ height: props.height ? `${props.height}px` : '100%' }"
   >
     <div
@@ -186,7 +230,7 @@ function getRowClassName(row: Row<TData>, rowIndex: number) {
     >
       <div
         data-slot="virtual-table-header"
-        class="sticky top-0 z-40 border-b bg-background"
+        class="pointer-events-none sticky top-0 z-40 border-b bg-background"
       >
         <div class="relative flex" :style="{ height: `${props.headerHeight}px` }">
           <template v-for="(column, frozenColumnIndex) in frozenColumns" :key="`header-frozen-${column.id}`">
@@ -258,7 +302,7 @@ function getRowClassName(row: Row<TData>, rowIndex: number) {
         <div
           data-slot="virtual-table-row"
           :class="[
-            'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 z-30 flex transition-colors',
+            'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 z-30 flex',
             isStripedRow(frozenRowIndex) ? 'bg-muted' : 'bg-background',
             getRowClassName(row, frozenRowIndex),
           ]"
@@ -346,7 +390,7 @@ function getRowClassName(row: Row<TData>, rowIndex: number) {
             v-if="getBodyRow(virtualRow.index)"
             data-slot="virtual-table-row"
             :class="[
-              'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 flex transition-colors',
+              'hover:bg-muted/50 data-[state=selected]:bg-muted absolute left-0 right-0 flex cursor-pointer select-none',
               isStripedRow(clampedFrozenTopRows + virtualRow.index) ? 'bg-muted' : 'bg-background',
               getRowClassName(getBodyRow(virtualRow.index), clampedFrozenTopRows + virtualRow.index),
             ]"
@@ -354,6 +398,8 @@ function getRowClassName(row: Row<TData>, rowIndex: number) {
               transform: `translateY(${virtualRow.start}px)`,
               height: `${virtualRow.size}px`,
             }"
+            @click="handleBodyRowClick(getBodyRow(virtualRow.index))"
+            @contextmenu.prevent="handleBodyRowContextMenu($event, getBodyRow(virtualRow.index))"
           >
             <template
               v-for="(column, frozenColumnIndex) in frozenColumns"
@@ -369,7 +415,8 @@ function getRowClassName(row: Row<TData>, rowIndex: number) {
                   height: `${virtualRow.size}px`,
                 }"
                 :class="[
-                  'sticky z-20 border-r border-b border-border p-2 align-middle text-sm whitespace-nowrap overflow-hidden',
+                  'sticky z-20 border-r border-b border-border align-middle text-sm whitespace-nowrap overflow-hidden',
+                  bodyCellPaddingClass,
                   isStripedRow(clampedFrozenTopRows + virtualRow.index) ? 'bg-muted' : 'bg-background',
                   isFrozenEdgeColumn(frozenColumnIndex) ? 'shadow-sm' : '',
                 ]"
@@ -404,7 +451,10 @@ function getRowClassName(row: Row<TData>, rowIndex: number) {
                   maxWidth: `${virtualColumn.size}px`,
                   height: `${virtualRow.size}px`,
                 }"
-                class="border-r border-border p-2 align-middle text-sm whitespace-nowrap overflow-hidden"
+                :class="[
+                  'border-r border-border align-middle text-sm whitespace-nowrap overflow-hidden',
+                  bodyCellPaddingClass,
+                ]"
               >
                 <div class="flex h-full min-w-0 items-center">
                   <div class="w-full min-w-0 truncate">

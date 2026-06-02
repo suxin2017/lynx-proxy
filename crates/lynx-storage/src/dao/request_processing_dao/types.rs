@@ -1,60 +1,13 @@
-use std::collections::HashMap;
-
-use crate::models::CaptureType;
 use serde::{Deserialize, Serialize};
 
 use super::handlers::HandlerRule;
 
-/// 逻辑操作符
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum LogicalOperator {
-    And,
-    Or,
-    Not,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct UrlPattern {
-    pub capture_type: CaptureType,
-    pub pattern: String,
-}
-/// 简单捕获条件
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct SimpleCaptureCondition {
-    pub url_pattern: Option<UrlPattern>,
-    pub method: Option<String>,
-    pub host: Option<String>,
-    pub headers: Option<Vec<HashMap<String, String>>>,
-}
-
-/// 复杂捕获规则（支持嵌套逻辑）
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ComplexCaptureRule {
-    /// 逻辑操作符
-    pub operator: LogicalOperator,
-    /// 子条件列表
-    pub conditions: Vec<CaptureCondition>,
-}
-
-/// 捕获条件（简单或复杂）
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase", tag = "type")]
-pub enum CaptureCondition {
-    Simple(SimpleCaptureCondition),
-    Complex(ComplexCaptureRule),
-}
-
 /// 完整的捕获规则
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-#[derive(Default)]
 pub struct CaptureRule {
     pub id: Option<i32>,
-    pub condition: CaptureCondition,
+    pub match_expr: String,
 }
 
 /// 请求处理规则
@@ -103,179 +56,12 @@ impl Default for RequestRule {
     }
 }
 
-impl Default for SimpleCaptureCondition {
+impl Default for CaptureRule {
     fn default() -> Self {
-        Self {
-            url_pattern: Some(UrlPattern {
-                capture_type: CaptureType::Glob,
-                pattern: "*".to_string(),
-            }),
-            method: None,
-            host: None,
-            headers: None,
-        }
-    }
-}
-
-impl Default for ComplexCaptureRule {
-    fn default() -> Self {
-        Self {
-            operator: LogicalOperator::And,
-            conditions: vec![],
-        }
-    }
-}
-
-impl Default for CaptureCondition {
-    fn default() -> Self {
-        Self::Simple(SimpleCaptureCondition::default())
-    }
-}
-
-impl SimpleCaptureCondition {
-    /// Create a new simple capture condition with glob pattern
-    pub fn new_glob(pattern: &str) -> Self {
-        Self {
-            url_pattern: Some(UrlPattern {
-                capture_type: CaptureType::Glob,
-                pattern: pattern.to_string(),
-            }),
-            method: None,
-            host: None,
-            headers: None,
-        }
-    }
-
-    /// Create a new simple capture condition with specific method
-    pub fn with_method(mut self, method: &str) -> Self {
-        self.method = Some(method.to_string());
-        self
-    }
-
-    /// Create a new simple capture condition with specific host
-    pub fn with_host(mut self, host: &str) -> Self {
-        self.host = Some(host.to_string());
-        self
-    }
-}
-
-impl ComplexCaptureRule {
-    /// Create a new AND rule
-    pub fn and(conditions: Vec<CaptureCondition>) -> Self {
-        Self {
-            operator: LogicalOperator::And,
-            conditions,
-        }
-    }
-
-    /// Create a new OR rule
-    pub fn or(conditions: Vec<CaptureCondition>) -> Self {
-        Self {
-            operator: LogicalOperator::Or,
-            conditions,
-        }
-    }
-
-    /// Create a new NOT rule (should only have one condition)
-    pub fn not(condition: CaptureCondition) -> Self {
-        Self {
-            operator: LogicalOperator::Not,
-            conditions: vec![condition],
-        }
-    }
-
-    /// Add a condition to the complex rule
-    pub fn add_condition(mut self, condition: CaptureCondition) -> Self {
-        self.conditions.push(condition);
-        self
-    }
-}
-
-impl CaptureCondition {
-    /// Create a simple condition from a pattern
-    pub fn simple(pattern: &str) -> Self {
-        Self::Simple(SimpleCaptureCondition::new_glob(pattern))
-    }
-
-    /// Create a complex AND condition
-    pub fn and(conditions: Vec<CaptureCondition>) -> Self {
-        Self::Complex(ComplexCaptureRule::and(conditions))
-    }
-
-    /// Create a complex OR condition
-    pub fn or(conditions: Vec<CaptureCondition>) -> Self {
-        Self::Complex(ComplexCaptureRule::or(conditions))
-    }
-
-    /// Create a complex NOT condition
-    pub fn not_condition(condition: CaptureCondition) -> Self {
-        Self::Complex(ComplexCaptureRule::not(condition))
-    }
-}
-
-impl CaptureRule {
-    /// Create a new capture rule with simple condition
-    pub fn simple(pattern: &str) -> Self {
         Self {
             id: None,
-            condition: CaptureCondition::simple(pattern),
+            // A non-empty DSL expression. `/` matches any path; users can add host/method/etc.
+            match_expr: "/".to_string(),
         }
-    }
-
-    /// Create a new capture rule with complex condition
-    pub fn complex(condition: CaptureCondition) -> Self {
-        Self {
-            id: None,
-            condition,
-        }
-    }
-
-    /// Set the ID
-    pub fn with_id(mut self, id: i32) -> Self {
-        self.id = Some(id);
-        self
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_simple_capture_condition_creation() {
-        let condition = SimpleCaptureCondition::new_glob("/api/*")
-            .with_method("GET")
-            .with_host("example.com");
-
-        assert!(condition.url_pattern.is_some());
-        let url_pattern = condition.url_pattern.as_ref().unwrap();
-        assert_eq!(url_pattern.capture_type, CaptureType::Glob);
-        assert_eq!(url_pattern.pattern, "/api/*");
-        assert_eq!(condition.method, Some("GET".to_string()));
-        assert_eq!(condition.host, Some("example.com".to_string()));
-    }
-
-    #[test]
-    fn test_complex_and_rule() {
-        let rule = ComplexCaptureRule::and(vec![
-            CaptureCondition::simple("/api/*"),
-            CaptureCondition::simple("*.json"),
-        ]);
-
-        matches!(rule.operator, LogicalOperator::And);
-        assert_eq!(rule.conditions.len(), 2);
-    }
-
-    #[test]
-    fn test_json_serialization() {
-        let rule = CaptureRule::complex(CaptureCondition::and(vec![
-            CaptureCondition::simple("/api/*"),
-            CaptureCondition::Simple(SimpleCaptureCondition::new_glob("*").with_method("GET")),
-        ]));
-
-        let json = serde_json::to_string(&rule).expect("Failed to serialize");
-        let deserialized: CaptureRule = serde_json::from_str(&json).expect("Failed to deserialize");
-
-        assert_eq!(rule.id, deserialized.id);
     }
 }

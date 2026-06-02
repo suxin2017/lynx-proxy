@@ -51,7 +51,7 @@
 ### Cli 查询状态
 
 ```bash
-PS C:\Users\xx> lynx-cli status
+PS C:\Users\xx> lynx status
 === Lynx Proxy Service Status ===
 PID: 101744
 Port: 7788
@@ -80,7 +80,7 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-ser
 ### 快速开始
 
 ```bash
-lynx-cli run
+lynx run
 ```
 
 ### 命令行参数
@@ -88,7 +88,7 @@ lynx-cli run
 ```
 Lynx Proxy Server
 
-Usage: lynx-cli.exe <COMMAND>
+Usage: lynx.exe <COMMAND>
 
 Commands:
   start    Start the background proxy service
@@ -107,7 +107,7 @@ Options:
 ```
 Start the background proxy service
 
-Usage: lynx-cli.exe start [OPTIONS]
+Usage: lynx.exe start [OPTIONS]
 
 Options:
   -p, --port <PORT>          proxy server port [default: 7788]
@@ -119,7 +119,7 @@ Options:
 ```
 Start the proxy server in foreground mode
 
-Usage: lynx-cli.exe run [OPTIONS]
+Usage: lynx.exe run [OPTIONS]
 
 Options:
   -p, --port <PORT>            proxy server port [default: 7788]

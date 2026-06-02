@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, markRaw, ref, shallowRef, triggerRef, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { WsEventFrame } from '@/lib/generated/ws/v1'
 import {
@@ -7,6 +7,12 @@ import {
 } from '@/lib/generated/ws/v1'
 import type { NetworkDetailKeyValue, NetworkDetailRecord } from '@/components/ui/network-request-detail'
 import type { TrafficRecord } from '@/components/ui/request-tree'
+import {
+  appendBodyBytes,
+  contentTypeFromHeaders,
+  extractBodyChunk,
+  snapshotBodyToBytes,
+} from '@/lib/http/body-transport'
 import { deriveRequestCookies, deriveResponseCookies } from '@/lib/http/cookies'
 import { parseQueryFromUrl } from '@/lib/http/parse-query'
 import {
@@ -19,6 +25,7 @@ import {
   isRecordListable,
   mergePartialRequestRecord,
   promoteTraceToOrder,
+  patchTouchesTrafficList,
   type PartialRequestRecord,
 } from './request-stream-logic'
 import { useGeneralSettingsStore } from './general-settings.store'
@@ -115,6 +122,29 @@ const inferRequestType = (method: string | undefined, requestType: string | unde
   return method?.toUpperCase() === 'CONNECT' ? 'tunnel' : 'fetch'
 }
 
+const buildTrafficRecord = (
+  traceId: string,
+  item: PartialRequestRecord,
+): TrafficRecord => ({
+  id: traceId,
+  url: displayRequestUrl(item.url, traceId),
+  method: item.method ?? 'GET',
+  requestType: inferRequestType(item.method, item.requestType),
+  status: item.status ?? 'pending',
+  statusCode: item.statusCode,
+})
+
+const trafficRecordEquals = (left: TrafficRecord, right: TrafficRecord): boolean => {
+  return (
+    left.id === right.id
+    && left.url === right.url
+    && left.method === right.method
+    && left.requestType === right.requestType
+    && left.status === right.status
+    && left.statusCode === right.statusCode
+  )
+}
+
 const normalizeBackendStatus = (
   status: string | { Error?: string } | undefined,
 ): string | undefined => {
@@ -156,49 +186,77 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
 
   const selectedId = ref<string | undefined>(undefined)
   const traceOrder = ref<string[]>([])
-  const recordsByTrace = ref<Record<string, PartialRequestRecord>>({})
+  const recordsByTrace = shallowRef<Record<string, PartialRequestRecord>>({})
+  let recordsNotifyBatchDepth = 0
+  let recordsNotifyPending = false
+
+  const notifyRecordsByTrace = () => {
+    if (recordsNotifyBatchDepth > 0) {
+      recordsNotifyPending = true
+      return
+    }
+    triggerRef(recordsByTrace)
+  }
+
+  const runBatchedRecordsUpdate = (update: () => void) => {
+    recordsNotifyBatchDepth += 1
+    try {
+      update()
+    }
+    finally {
+      recordsNotifyBatchDepth -= 1
+      if (recordsNotifyBatchDepth === 0 && recordsNotifyPending) {
+        recordsNotifyPending = false
+        triggerRef(recordsByTrace)
+      }
+    }
+  }
 
   let detachEventListener: (() => void) | null = null
+  const trafficRecordCache = new Map<string, TrafficRecord>()
 
   const trafficRecords = computed<TrafficRecord[]>(() => {
-    return traceOrder.value.reduce<TrafficRecord[]>((acc, traceId) => {
+    const activeIds = new Set<string>()
+    const result: TrafficRecord[] = []
+
+    for (const traceId of traceOrder.value) {
       const item = recordsByTrace.value[traceId]
       if (!item || !isRecordListable(item)) {
-        return acc
+        continue
       }
 
-      acc.push({
-        id: traceId,
-        url: displayRequestUrl(item.url, traceId),
-        method: item.method ?? 'GET',
-        requestType: inferRequestType(item.method, item.requestType),
-        status: item.status ?? 'pending',
-        statusCode: item.statusCode,
-      })
+      activeIds.add(traceId)
+      const nextRow = buildTrafficRecord(traceId, item)
+      const cached = trafficRecordCache.get(traceId)
 
-      return acc
-    }, [])
+      if (cached && trafficRecordEquals(cached, nextRow)) {
+        result.push(cached)
+        continue
+      }
+
+      trafficRecordCache.set(traceId, nextRow)
+      result.push(nextRow)
+    }
+
+    for (const traceId of trafficRecordCache.keys()) {
+      if (!activeIds.has(traceId)) {
+        trafficRecordCache.delete(traceId)
+      }
+    }
+
+    return result
   })
 
-  const selectedRecord = computed<NetworkDetailRecord | null>(() => {
-    if (!selectedId.value) {
-      return null
-    }
-
-    const item = recordsByTrace.value[selectedId.value]
-    if (!item || !isRecordListable(item)) {
-      return null
-    }
-
+  const buildDetailRecord = (traceId: string, item: PartialRequestRecord): NetworkDetailRecord => {
     const durationMs =
       item.startAt && item.endAt ? Math.max(0, item.endAt - item.startAt) : undefined
 
     const resolvedUrl = item.url
 
     return {
-      id: selectedId.value,
+      id: traceId,
       method: item.method ?? 'GET',
-      url: displayRequestUrl(resolvedUrl, selectedId.value),
+      url: displayRequestUrl(resolvedUrl, traceId),
       status: item.status ?? 'pending',
       statusCode: item.statusCode,
       requestType: inferRequestType(item.method, item.requestType),
@@ -210,12 +268,35 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       responseHeaders: item.responseHeaders,
       requestCookies: item.requestCookies,
       responseCookies: item.responseCookies,
-      requestBody: item.requestBody,
-      responseBody: item.responseBody,
+      requestBodyBytes: item.requestBodyBytes,
+      responseBodyBytes: item.responseBodyBytes,
+      requestBodyTruncated: item.requestBodyTruncated,
+      responseBodyTruncated: item.responseBodyTruncated,
       requestContentType: item.requestContentType,
       responseContentType: item.responseContentType,
       startTime: item.startAt ? new Date(item.startAt).toISOString() : undefined,
+      size: {
+        requestBytes: item.requestBodyBytes?.length,
+        responseBytes: item.responseBodyBytes?.length,
+      },
     }
+  }
+
+  const getDetailRecord = (traceId: string): NetworkDetailRecord | null => {
+    const item = recordsByTrace.value[traceId]
+    if (!item || !isRecordListable(item)) {
+      return null
+    }
+
+    return buildDetailRecord(traceId, item)
+  }
+
+  const selectedRecord = computed<NetworkDetailRecord | null>(() => {
+    if (!selectedId.value) {
+      return null
+    }
+
+    return getDetailRecord(selectedId.value)
   })
 
   const trimToMaxLogSize = () => {
@@ -224,18 +305,19 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       return
     }
 
-    const droppedIds = traceOrder.value.slice(limit)
-    traceOrder.value = traceOrder.value.slice(0, limit)
+    const excess = traceOrder.value.length - limit
+    const droppedIds = traceOrder.value.slice(0, excess)
+    traceOrder.value = traceOrder.value.slice(excess)
 
     if (droppedIds.length === 0) {
       return
     }
 
-    const nextRecords = { ...recordsByTrace.value }
+    const nextRecords = recordsByTrace.value
     for (const id of droppedIds) {
       delete nextRecords[id]
     }
-    recordsByTrace.value = nextRecords
+    notifyRecordsByTrace()
 
     if (selectedId.value && droppedIds.includes(selectedId.value)) {
       selectedId.value = undefined
@@ -262,9 +344,10 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
 
   const updateRecord = (traceId: string, patch: PartialRequestRecord) => {
     const current = recordsByTrace.value[traceId] ?? {}
-    recordsByTrace.value = {
-      ...recordsByTrace.value,
-      [traceId]: mergePartialRequestRecord(current, patch),
+    recordsByTrace.value[traceId] = mergePartialRequestRecord(current, patch)
+
+    if (patchTouchesTrafficList(patch) || selectedId.value === traceId) {
+      notifyRecordsByTrace()
     }
   }
 
@@ -274,9 +357,8 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       return
     }
 
-    const nextRecords = { ...recordsByTrace.value }
-    delete nextRecords[traceId]
-    recordsByTrace.value = nextRecords
+    delete recordsByTrace.value[traceId]
+    notifyRecordsByTrace()
     demoteFromList(traceId)
   }
 
@@ -330,7 +412,9 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       requestHeaders: toHeaderRows(payload?.headers),
       requestCookies: deriveRequestCookies(requestHeaders),
       requestContentType:
-        typeof payload?.contentType === 'string' ? payload.contentType : undefined,
+        typeof payload?.contentType === 'string'
+          ? payload.contentType
+          : contentTypeFromHeaders(requestHeaders),
       requestType: inferRequestType(
         typeof payload?.method === 'string' ? payload.method : 'GET',
         typeof payload?.requestType === 'string' ? payload.requestType : undefined,
@@ -343,8 +427,16 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
   }
 
   const applyRequestBody = (traceId: string, payload: Record<string, unknown> | null) => {
+    const chunk = extractBodyChunk(payload)
+    if (chunk === undefined) {
+      return
+    }
+
+    const current = recordsByTrace.value[traceId]?.requestBodyBytes
+    const appended = appendBodyBytes(current, chunk)
     updateRecord(traceId, {
-      requestBody: payload?.body ?? payload?.data,
+      requestBodyBytes: markRaw(appended.bytes),
+      requestBodyTruncated: appended.truncated,
     })
   }
 
@@ -352,7 +444,6 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
     updateRecord(traceId, {
       endAt: frame.timestamp,
     })
-    pruneIfIncomplete(traceId)
   }
 
   const applyResponseStart = (traceId: string, payload: Record<string, unknown> | null) => {
@@ -368,15 +459,25 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       responseHeaders: toHeaderRows(payload?.headers),
       responseCookies: deriveResponseCookies(responseHeaders),
       responseContentType:
-        typeof payload?.contentType === 'string' ? payload.contentType : undefined,
+        typeof payload?.contentType === 'string'
+          ? payload.contentType
+          : contentTypeFromHeaders(responseHeaders),
       remoteAddress:
         typeof payload?.remoteAddress === 'string' ? payload.remoteAddress : undefined,
     })
   }
 
   const applyResponseBody = (traceId: string, payload: Record<string, unknown> | null) => {
+    const chunk = extractBodyChunk(payload)
+    if (chunk === undefined) {
+      return
+    }
+
+    const current = recordsByTrace.value[traceId]?.responseBodyBytes
+    const appended = appendBodyBytes(current, chunk)
     updateRecord(traceId, {
-      responseBody: payload?.body ?? payload?.data,
+      responseBodyBytes: markRaw(appended.bytes),
+      responseBodyTruncated: appended.truncated,
     })
   }
 
@@ -423,6 +524,9 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
             : 'success'
           : 'pending'
 
+    const requestBodyBytes = snapshotBodyToBytes(snapshot.request?.body)
+    const responseBodyBytes = snapshotBodyToBytes(snapshot.response?.body)
+
     updateRecord(traceId, {
       method: snapshot.request?.method,
       url,
@@ -432,8 +536,8 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       responseHeaders: toHeaderRows(snapshot.response?.headers),
       requestCookies: deriveRequestCookies(snapshot.request?.headers),
       responseCookies: deriveResponseCookies(snapshot.response?.headers),
-      requestBody: snapshot.request?.body,
-      responseBody: snapshot.response?.body,
+      requestBodyBytes: requestBodyBytes ? markRaw(requestBodyBytes) : undefined,
+      responseBodyBytes: responseBodyBytes ? markRaw(responseBodyBytes) : undefined,
       protocol: snapshot.request?.version ?? snapshot.response?.version,
     })
 
@@ -480,11 +584,38 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
     }
   }
 
+  const pendingEventFrames: WsEventFrame<Record<string, unknown>>[] = []
+  let flushEventsScheduled = false
+
+  const flushPendingEventFrames = () => {
+    flushEventsScheduled = false
+    if (pendingEventFrames.length === 0) {
+      return
+    }
+
+    const frames = pendingEventFrames.splice(0, pendingEventFrames.length)
+    runBatchedRecordsUpdate(() => {
+      for (const frame of frames) {
+        handleEventFrame(frame)
+      }
+    })
+  }
+
+  const queueEventFrame = (frame: WsEventFrame<Record<string, unknown>>) => {
+    pendingEventFrames.push(frame)
+    if (flushEventsScheduled) {
+      return
+    }
+
+    flushEventsScheduled = true
+    queueMicrotask(flushPendingEventFrames)
+  }
+
   const start = async () => {
     await wsConnectionStore.connect()
     await generalSettingsStore.load()
     if (!detachEventListener) {
-      detachEventListener = wsConnectionStore.onEvent(handleEventFrame)
+      detachEventListener = wsConnectionStore.onEvent(queueEventFrame)
     }
   }
 
@@ -504,8 +635,10 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       WsOp.RequestStreamSubscribe,
     )
 
-    response?.cachedRequests?.forEach((item) => {
-      applyCachedSnapshot(item)
+    runBatchedRecordsUpdate(() => {
+      response?.cachedRequests?.forEach((item) => {
+        applyCachedSnapshot(item)
+      })
     })
 
     trimToMaxLogSize()
@@ -522,13 +655,17 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
   const clear = () => {
     traceOrder.value = []
     recordsByTrace.value = {}
+    trafficRecordCache.clear()
     selectedId.value = undefined
+    triggerRef(recordsByTrace)
   }
 
   return {
     selectedId,
     trafficRecords,
+    recordsByTrace,
     selectedRecord,
+    getDetailRecord,
     start,
     stop,
     subscribe,

@@ -42,6 +42,12 @@ x-lynx-ops:
     - settings.captureFilter.get
     - settings.captureFilter.set
     - settings.certificate.path.get
+    - rules.list.get
+    - rules.get
+    - rules.save.set
+    - rules.enabled.set
+    - rules.delete
+    - rules.templates.get
   event:
     - capture.status.changed
     - request.start
@@ -52,6 +58,7 @@ x-lynx-ops:
     - response.end
     - websocket.message
     - websocket.error
+    - websocket.end
     - system.error
 components:
   messages:

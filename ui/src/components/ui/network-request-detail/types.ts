@@ -40,6 +40,10 @@ export interface NetworkDetailRecord {
   responseCookies?: NetworkDetailKeyValue[]
   requestBody?: unknown
   responseBody?: unknown
+  requestBodyBytes?: Uint8Array
+  responseBodyBytes?: Uint8Array
+  requestBodyTruncated?: boolean
+  responseBodyTruncated?: boolean
   requestContentType?: string
   responseContentType?: string
   timing?: NetworkDetailTiming

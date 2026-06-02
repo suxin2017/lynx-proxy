@@ -19,6 +19,10 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
+function jsonBodyBytes(value: unknown): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify(value, null, 2))
+}
+
 const sampleRecord: NetworkDetailRecord = {
   id: 'req-1203',
   method: 'POST',
@@ -60,7 +64,7 @@ const sampleRecord: NetworkDetailRecord = {
   ],
   requestContentType: 'application/json',
   responseContentType: 'application/json; charset=utf-8',
-  requestBody: {
+  requestBodyBytes: jsonBodyBytes({
     userId: 98234,
     include: ['permissions', 'preferences', 'featureFlags'],
     locale: 'zh-CN',
@@ -69,8 +73,8 @@ const sampleRecord: NetworkDetailRecord = {
       panelId: 'panel-54',
       widgetId: 'container-11',
     },
-  },
-  responseBody: {
+  }),
+  responseBodyBytes: jsonBodyBytes({
     ok: true,
     data: {
       panel: {
@@ -86,7 +90,7 @@ const sampleRecord: NetworkDetailRecord = {
         ioMs: 4,
       },
     },
-  },
+  }),
   timing: {
     blockedMs: 1.5,
     dnsMs: 3.2,
@@ -202,6 +206,29 @@ export const HalfWidthInSplitLayout: Story = {
             <NetworkRequestDetail :record="currentRecord" class="h-full" />
           </section>
         </div>
+      </div>
+    `,
+  }),
+}
+
+/** 直达「内容」→ 请求/响应 body，预览与线上详情一致 */
+export const ContentBodyTab: Story = {
+  name: 'Content · Body tab',
+  render: () => ({
+    components: { NetworkRequestDetail },
+    setup() {
+      const record = ref(sampleRecord)
+      return { record }
+    },
+    template: `
+      <div style="height: 100vh; padding: 16px; background: #f5f6f7;">
+        <NetworkRequestDetail
+          :record="record"
+          class="h-full"
+          initial-tab="content"
+          initial-request-sub-tab="body"
+          initial-response-sub-tab="body"
+        />
       </div>
     `,
   }),

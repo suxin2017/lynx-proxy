@@ -1,4 +1,5 @@
 import type { NetworkDetailRecord } from '@/components/ui/network-request-detail/types'
+import { formatTextBody } from '@/lib/http/body-formatters'
 
 import type { ComposeDraft, KeyValueRow } from '../types'
 import { createEmptyDraft } from './empty-draft'
@@ -51,6 +52,8 @@ export function captureToDraft(record: NetworkDetailRecord, base?: ComposeDraft)
     url: record.url,
     queryParams,
     headers: rowsFromKeyValues(record.requestHeaders),
-    body: stringifyBody(record.requestBody),
+    body: record.requestBodyBytes?.length
+      ? formatTextBody(record.requestBodyBytes, record.requestContentType)
+      : stringifyBody(record.requestBody),
   }
 }

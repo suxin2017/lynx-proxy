@@ -108,7 +108,7 @@ async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
         proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
-            Some("invalid-url".to_string()),
+            Some("invalid host name".to_string()),
             None,
         )],
     )
@@ -121,8 +121,49 @@ async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
         .await
         .expect("send request failed");
 
-    // Should return an internal server error due to invalid URL parsing
-    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = response.text().await?;
+    assert!(
+        body.contains("proxy_forward") || body.contains("authority"),
+        "expected rule/proxy_forward context in body, got: {body}"
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn proxy_forward_handler_unreachable_upstream_test() -> Result<()> {
+    let (proxy_server, _mock_server, client) = setup_proxy_handler_server().await?;
+    let client = client.get_proxy_client();
+
+    mock_test_rule(
+        proxy_server.data_store,
+        vec![HandlerRule::proxy_forward_handler(
+            None,
+            Some("127.0.0.1:31999".to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    let response = client
+        .get("http://not_exist.com/hello".to_string())
+        .send()
+        .await
+        .expect("send request failed");
+
+    assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    let body = response.text().await?;
+    assert!(
+        body.contains("127.0.0.1:31999"),
+        "expected target in error body, got: {body}"
+    );
+    assert!(
+        body.to_lowercase().contains("connection")
+            || body.to_lowercase().contains("refused")
+            || body.to_lowercase().contains("connect"),
+        "expected connection failure hint in body, got: {body}"
+    );
 
     Ok(())
 }

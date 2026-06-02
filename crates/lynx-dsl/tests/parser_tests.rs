@@ -17,6 +17,20 @@ fn parses_host_only_url() {
 }
 
 #[test]
+fn parses_hyphenated_domain() {
+    let input = "api.example-ex.com";
+    assert!(!has_parse_errors(input));
+    assert_eq!(node_kinds(input, "Host"), vec![input]);
+}
+
+#[test]
+fn parses_single_host_label_with_hyphens() {
+    let input = "example-ex";
+    assert!(!has_parse_errors(input));
+    assert_eq!(node_kinds(input, "Host"), vec![input]);
+}
+
+#[test]
 fn parses_host_with_port_and_path() {
     let input = "example.com:5678/a";
     assert!(!has_parse_errors(input));

@@ -1,3 +1,5 @@
 export { default as NetworkPanelHeader } from './NetworkPanelHeader.vue'
 export { default as NetworkRequestPanel } from './NetworkRequestPanel.vue'
+export { default as TrafficContextMenu } from './TrafficContextMenu.vue'
+export { default as TrafficMatchFilterInput } from './TrafficMatchFilterInput.vue'
 export type { RequestViewMode } from './NetworkPanelHeader.vue'

@@ -13,6 +13,10 @@ export type PartialRequestRecord = {
   responseCookies?: NetworkDetailKeyValue[]
   requestBody?: unknown
   responseBody?: unknown
+  requestBodyBytes?: Uint8Array
+  responseBodyBytes?: Uint8Array
+  requestBodyTruncated?: boolean
+  responseBodyTruncated?: boolean
   requestContentType?: string
   responseContentType?: string
   startAt?: number
@@ -23,6 +27,20 @@ export type PartialRequestRecord = {
 
 export function isRecordListable(record: PartialRequestRecord | undefined): boolean {
   return Boolean(record?.url && record.url.length > 0)
+}
+
+const TRAFFIC_LIST_PATCH_KEYS = [
+  'method',
+  'url',
+  'status',
+  'statusCode',
+  'requestType',
+  'requestHeaders',
+] as const satisfies ReadonlyArray<keyof PartialRequestRecord>
+
+/** Body/header detail updates for the selected row still skip list/filter churn when absent from patch. */
+export function patchTouchesTrafficList(patch: PartialRequestRecord): boolean {
+  return TRAFFIC_LIST_PATCH_KEYS.some(key => patch[key] !== undefined)
 }
 
 export function mergePartialRequestRecord(
@@ -67,6 +85,18 @@ export function mergePartialRequestRecord(
   if (patch.responseBody === undefined) {
     next.responseBody = current.responseBody
   }
+  if (patch.requestBodyBytes === undefined) {
+    next.requestBodyBytes = current.requestBodyBytes
+  }
+  if (patch.responseBodyBytes === undefined) {
+    next.responseBodyBytes = current.responseBodyBytes
+  }
+  if (patch.requestBodyTruncated === undefined) {
+    next.requestBodyTruncated = current.requestBodyTruncated
+  }
+  if (patch.responseBodyTruncated === undefined) {
+    next.responseBodyTruncated = current.responseBodyTruncated
+  }
   if (patch.requestContentType === undefined) {
     next.requestContentType = current.requestContentType
   }
@@ -94,7 +124,7 @@ export function promoteTraceToOrder(traceOrder: string[], traceId: string): stri
     return traceOrder
   }
 
-  return [traceId, ...traceOrder]
+  return [...traceOrder, traceId]
 }
 
 export function demoteTraceFromOrder(traceOrder: string[], traceId: string): string[] {

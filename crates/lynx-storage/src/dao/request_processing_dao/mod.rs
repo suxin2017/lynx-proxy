@@ -89,9 +89,8 @@ impl RequestProcessingDao {
         &self,
         request: &Request<T>,
     ) -> Result<Vec<RequestRule>> {
-        let all_rules = self.store.get_rules_cache().await?;
-        let matcher = RuleMatcher::new();
-        matcher.find_matching_rules(&all_rules, request)
+        let entry = self.store.get_rules_cache_entry().await?;
+        RuleMatcher::find_matching_rules(&entry.compiled, request)
     }
 
     pub async fn get_template_handlers(&self) -> Result<Vec<HandlerRule>> {

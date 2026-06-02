@@ -82,7 +82,6 @@ function applyRequestEnd(state: StreamState, traceId: string) {
   updateRecord(state, traceId, {
     endAt: 2,
   })
-  pruneIfIncomplete(state, traceId)
 }
 
 function applyCachedSnapshot(
@@ -106,6 +105,16 @@ function applyCachedSnapshot(
   })
   promoteToList(state, snapshot.traceId)
 }
+
+describe('promoteTraceToOrder', () => {
+  it('appends new trace ids to the tail', () => {
+    expect(promoteTraceToOrder(['a', 'b'], 'c')).toEqual(['a', 'b', 'c'])
+  })
+
+  it('does not duplicate existing trace ids', () => {
+    expect(promoteTraceToOrder(['a', 'b'], 'a')).toEqual(['a', 'b'])
+  })
+})
 
 describe('isRecordListable', () => {
   it('requires a non-empty url', () => {
@@ -152,14 +161,28 @@ describe('request stream visibility', () => {
     expect(state.recordsByTrace['trace-1']).toBeUndefined()
   })
 
-  it('prunes incomplete records on request.end without request.start', () => {
+  it('preserves body when request.end arrives before request.start', () => {
+    const state = createStreamState()
+
+    updateRecord(state, 'trace-1', { requestBody: '{"ok":true}' })
+    applyRequestEnd(state, 'trace-1')
+    applyRequestStart(state, 'trace-1', {
+      method: 'POST',
+      url: 'https://example.com/api',
+    })
+
+    expect(state.recordsByTrace['trace-1']?.requestBody).toBe('{"ok":true}')
+    expect(listableRecords(state)).toEqual(['trace-1'])
+  })
+
+  it('keeps partial records on request.end until a listable snapshot exists', () => {
     const state = createStreamState()
 
     applyResponseStart(state, 'trace-1', 200)
     applyRequestEnd(state, 'trace-1')
 
     expect(listableRecords(state)).toEqual([])
-    expect(state.recordsByTrace['trace-1']).toBeUndefined()
+    expect(state.recordsByTrace['trace-1']?.statusCode).toBe(200)
   })
 
   it('skips cached snapshots without request url', () => {

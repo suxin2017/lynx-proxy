@@ -1,11 +1,9 @@
 use super::{
     error::{RequestProcessingError, Result},
     handlers::HandlerRule,
-    types::{CaptureCondition, CaptureRule, RequestRule, SimpleCaptureCondition},
+    types::{CaptureRule, RequestRule},
 };
-use crate::models::CaptureType;
-use glob::Pattern;
-use regex::Regex;
+use lynx_dsl::compile_match_expr;
 use std::collections::HashSet;
 
 /// Validator for request processing rules
@@ -63,104 +61,16 @@ impl RuleValidator {
 
     /// Validate capture rule
     pub fn validate_capture_rule(capture: &CaptureRule) -> Result<()> {
-        Self::validate_capture_condition(&capture.condition)
-    }
-
-    /// Validate capture condition recursively
-    pub fn validate_capture_condition(condition: &CaptureCondition) -> Result<()> {
-        match condition {
-            CaptureCondition::Simple(simple) => Self::validate_simple_condition(simple),
-            CaptureCondition::Complex(complex) => {
-                if complex.conditions.is_empty() {
-                    return Err(RequestProcessingError::RuleValidation {
-                        reason: "Complex capture rule must have at least one condition".to_string(),
-                    });
-                }
-
-                // Validate all sub-conditions
-                for sub_condition in &complex.conditions {
-                    Self::validate_capture_condition(sub_condition)?;
-                }
-
-                Ok(())
-            }
-        }
-    }
-
-    /// Validate simple capture condition
-    pub fn validate_simple_condition(condition: &SimpleCaptureCondition) -> Result<()> {
-        // Check if at least one field is not empty/None
-        let has_url_pattern = condition.url_pattern.is_some();
-        let has_method = condition
-            .method
-            .as_ref()
-            .is_some_and(|m| !m.trim().is_empty());
-        let has_host = condition
-            .host
-            .as_ref()
-            .is_some_and(|h| !h.trim().is_empty());
-        let has_headers = condition.headers.as_ref().is_some_and(|headers| {
-            !headers.is_empty()
-                && headers.iter().any(|h| {
-                    h.iter()
-                        .any(|(k, v)| !k.trim().is_empty() || !v.trim().is_empty())
-                })
-        });
-
-        if !has_url_pattern && !has_method && !has_host && !has_headers {
+        let expr = capture.match_expr.trim();
+        if expr.is_empty() {
             return Err(RequestProcessingError::RuleValidation {
-                reason: "At least one condition field (url_pattern, method, host, or headers) must be specified".to_string(),
+                reason: "matchExpr cannot be empty".to_string(),
             });
         }
 
-        // Validate url_pattern if provided
-        if let Some(ref url_pattern) = condition.url_pattern {
-            // Validate pattern based on capture type
-            match url_pattern.capture_type {
-                CaptureType::Glob => {
-                    Pattern::new(&url_pattern.pattern).map_err(|e| {
-                        RequestProcessingError::InvalidCapturePattern {
-                            pattern: url_pattern.pattern.clone(),
-                            reason: format!("Invalid glob pattern: {}", e),
-                        }
-                    })?;
-                }
-                CaptureType::Regex => {
-                    Regex::new(&url_pattern.pattern).map_err(|e| {
-                        RequestProcessingError::InvalidCapturePattern {
-                            pattern: url_pattern.pattern.clone(),
-                            reason: format!("Invalid regex pattern: {}", e),
-                        }
-                    })?;
-                }
-                CaptureType::Exact | CaptureType::Contains => {
-                    // No validation needed for exact or contains patterns
-                }
-            }
-
-            // Validate pattern is not empty
-            if url_pattern.pattern.trim().is_empty() {
-                return Err(RequestProcessingError::InvalidCapturePattern {
-                    pattern: url_pattern.pattern.clone(),
-                    reason: "Pattern cannot be empty".to_string(),
-                });
-            }
-        }
-
-        // Validate method if specified
-        if let Some(ref method) = condition.method {
-            if !method.trim().is_empty() {
-                Self::validate_http_method(method)?;
-            }
-        }
-
-        // Validate host if specified
-        if let Some(ref host) = condition.host {
-            if !host.trim().is_empty() {
-                Self::validate_host(host)?;
-            }
-        }
-
+        compile_match_expr(expr).map_err(|error| RequestProcessingError::RuleValidation {
+            reason: format!("Invalid matchExpr: {error}"),
+        })?;
         Ok(())
     }
 

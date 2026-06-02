@@ -22,6 +22,7 @@ const props = withDefaults(defineProps<NetworkRequestTableProps>(), {
 const emit = defineEmits<{
   'update:modelValue': [id: string]
   select: [request: TrafficRecord]
+  contextMenu: [request: TrafficRecord, ev: MouseEvent]
 }>()
 
 const tableData = computed<NetworkTableRow[]>(() => {
@@ -31,6 +32,12 @@ const tableData = computed<NetworkTableRow[]>(() => {
 const selectRequest = (request: TrafficRecord) => {
   emit('update:modelValue', request.id)
   emit('select', request)
+}
+
+const handleRowContextMenu = (request: TrafficRecord, _ev: MouseEvent) => {
+  // Right-click should also select the row (detail panel follows selection).
+  selectRequest(request)
+  // The actual menu open is handled by the parent component that wraps NetworkRequestTable.
 }
 
 const statusClass = (status: TrafficRecord['status']) => {
@@ -66,11 +73,9 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
     size: 86,
     cell: ({ row }) => {
       const request = row.original as TrafficRecord
-      return h('button', {
-        type: 'button',
-        class: cn(cellButtonClass(request), 'uppercase'),
+      return h('span', {
+        class: cn(cellButtonClass(request), 'block uppercase'),
         title: request.method,
-        onClick: () => selectRequest(request),
       }, request.method)
     },
   },
@@ -81,11 +86,9 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
     size: 560,
     cell: ({ row }) => {
       const request = row.original as TrafficRecord
-      return h('button', {
-        type: 'button',
-        class: cellButtonClass(request),
+      return h('span', {
+        class: cn(cellButtonClass(request), 'block'),
         title: request.url,
-        onClick: () => selectRequest(request),
       }, request.url)
     },
   },
@@ -96,15 +99,13 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
     size: 120,
     cell: ({ row }) => {
       const request = row.original as TrafficRecord
-      return h('button', {
-        type: 'button',
+      return h('span', {
         class: cn(
           cellButtonClass(request),
           request.id === props.modelValue ? 'text-primary-foreground' : statusClass(request.status),
-          'capitalize',
+          'block capitalize',
         ),
         title: request.status,
-        onClick: () => selectRequest(request),
       }, request.status)
     },
   },
@@ -116,11 +117,9 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
     cell: ({ row }) => {
       const request = row.original as TrafficRecord
       const value = request.statusCode !== undefined ? String(request.statusCode) : '-'
-      return h('button', {
-        type: 'button',
-        class: cellButtonClass(request),
+      return h('span', {
+        class: cn(cellButtonClass(request), 'block'),
         title: value,
-        onClick: () => selectRequest(request),
       }, value)
     },
   },
@@ -132,11 +131,9 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
     cell: ({ row }) => {
       const request = row.original as TrafficRecord
       const value = request.requestType ?? '-'
-      return h('button', {
-        type: 'button',
-        class: cn(cellButtonClass(request), 'capitalize'),
+      return h('span', {
+        class: cn(cellButtonClass(request), 'block capitalize'),
         title: value,
-        onClick: () => selectRequest(request),
       }, value)
     },
   },
@@ -157,7 +154,9 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
     :empty-text="'暂无请求'"
     :get-row-id="(row) => String(row.id)"
     :row-class-name="(row) => rowClassName(row as unknown as NetworkTableRow)"
-    anchor-scroll-on-prepend="auto"
+    follow-scroll-on-append="auto"
     :selected-row-id="props.modelValue"
+    @row-click="selectRequest"
+    @row-context-menu="(request, ev) => { handleRowContextMenu(request, ev); emit('contextMenu', request, ev) }"
   />
 </template>

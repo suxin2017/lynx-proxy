@@ -1,25 +1,31 @@
 /* tslint:disable */
 /* eslint-disable */
-export function validate_dsl_document_wasm(source: string): any;
+export function eval_program_wasm(program: any, facts: any): boolean;
+export function init(): void;
+export function validate_dsl(source: string): any;
 export function collect_dsl_syntax_diagnostics(source: string): any;
 export function has_dsl_parse_errors(source: string): boolean;
-export function init(): void;
-export function parse_dsl_program_wasm(source: string): any;
-export function validate_dsl(source: string): any;
 export function format_dsl_wasm(source: string): string | undefined;
+export function validate_dsl_document_wasm(source: string): any;
+export function compile_match_expr_wasm(source: string): any;
+export function parse_dsl_program_wasm(source: string): any;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly collect_dsl_syntax_diagnostics: (a: number, b: number) => any;
+  readonly compile_match_expr_wasm: (a: number, b: number) => any;
+  readonly eval_program_wasm: (a: any, b: any) => number;
   readonly format_dsl_wasm: (a: number, b: number) => [number, number];
   readonly has_dsl_parse_errors: (a: number, b: number) => number;
   readonly init: () => void;
   readonly parse_dsl_program_wasm: (a: number, b: number) => any;
   readonly validate_dsl: (a: number, b: number) => any;
   readonly validate_dsl_document_wasm: (a: number, b: number) => any;
-  readonly __wbindgen_export_0: WebAssembly.Table;
+  readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __externref_table_alloc: () => number;
+  readonly __wbindgen_export_2: WebAssembly.Table;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;

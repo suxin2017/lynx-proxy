@@ -104,7 +104,10 @@ export class WsClient {
         }
 
         this.ws.onmessage = (event) => {
-          this.handleIncomingFrame(event.data)
+          const data = event.data
+          queueMicrotask(() => {
+            this.handleIncomingFrame(data)
+          })
         }
 
         this.ws.onerror = () => {

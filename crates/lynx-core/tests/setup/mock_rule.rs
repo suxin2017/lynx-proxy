@@ -3,10 +3,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use lynx_storage::dao::request_processing_dao::{
     CaptureRule, HandlerRule, RequestProcessingDao, RequestRule,
-    types::{CaptureCondition, SimpleCaptureCondition},
 };
 use lynx_storage::DataStore;
-use lynx_storage::models::CaptureType;
 
 #[allow(dead_code)]
 pub async fn create_test_rule(
@@ -29,19 +27,9 @@ pub async fn create_test_rule(
 
 #[allow(dead_code)]
 pub fn create_basic_capture_rule() -> CaptureRule {
-    use lynx_storage::dao::request_processing_dao::types::UrlPattern;
-
     CaptureRule {
         id: None,
-        condition: CaptureCondition::Simple(SimpleCaptureCondition {
-            url_pattern: Some(UrlPattern {
-                capture_type: CaptureType::Glob,
-                pattern: "/api/*".to_string(),
-            }),
-            method: Some("GET".to_string()),
-            host: None,
-            headers: None,
-        }),
+        match_expr: "example.com AND /api/* AND -X GET".to_string(),
     }
 }
 
@@ -60,15 +48,7 @@ pub async fn mock_test_rule(
         priority: 1,
         capture: CaptureRule {
             id: None,
-            condition: CaptureCondition::Simple(SimpleCaptureCondition {
-                url_pattern: Some(lynx_storage::dao::request_processing_dao::types::UrlPattern {
-                    capture_type: CaptureType::Glob,
-                    pattern: "*".to_string(),
-                }),
-                method: None,
-                host: None,
-                headers: None,
-            }),
+            match_expr: "/".to_string(),
         },
         handlers,
     };

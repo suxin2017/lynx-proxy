@@ -24,6 +24,12 @@ pub mod op {
     pub const SETTINGS_CAPTURE_FILTER_GET: &str = "settings.captureFilter.get";
     pub const SETTINGS_CAPTURE_FILTER_SET: &str = "settings.captureFilter.set";
     pub const SETTINGS_CERTIFICATE_PATH_GET: &str = "settings.certificate.path.get";
+    pub const RULES_LIST_GET: &str = "rules.list.get";
+    pub const RULES_GET: &str = "rules.get";
+    pub const RULES_SAVE_SET: &str = "rules.save.set";
+    pub const RULES_ENABLED_SET: &str = "rules.enabled.set";
+    pub const RULES_DELETE: &str = "rules.delete";
+    pub const RULES_TEMPLATES_GET: &str = "rules.templates.get";
     pub const CAPTURE_STATUS_CHANGED: &str = "capture.status.changed";
     pub const REQUEST_START: &str = "request.start";
     pub const REQUEST_BODY: &str = "request.body";
@@ -33,6 +39,7 @@ pub mod op {
     pub const RESPONSE_END: &str = "response.end";
     pub const WEBSOCKET_MESSAGE: &str = "websocket.message";
     pub const WEBSOCKET_ERROR: &str = "websocket.error";
+    pub const WEBSOCKET_END: &str = "websocket.end";
     pub const SYSTEM_ERROR: &str = "system.error";
 
     pub fn is_request_op(op: &str) -> bool {
@@ -48,7 +55,13 @@ pub mod op {
             "settings.general.set" |
             "settings.captureFilter.get" |
             "settings.captureFilter.set" |
-            "settings.certificate.path.get"
+            "settings.certificate.path.get" |
+            "rules.list.get" |
+            "rules.get" |
+            "rules.save.set" |
+            "rules.enabled.set" |
+            "rules.delete" |
+            "rules.templates.get"
         )
     }
 
@@ -64,6 +77,7 @@ pub mod op {
             "response.end" |
             "websocket.message" |
             "websocket.error" |
+            "websocket.end" |
             "system.error"
         )
     }

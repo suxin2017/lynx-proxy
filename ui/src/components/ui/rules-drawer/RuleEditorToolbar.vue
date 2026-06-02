@@ -2,13 +2,11 @@
 import { PencilLine, Save } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import EditorModeTabs from '@/components/ui/rule-workbench/EditorModeTabs.vue'
 import { drawerToolbarInputClass } from './drawer-styles'
-import type { RuleDraft, RuleEditorMode } from '@/components/ui/rule-workbench'
+import type { RuleDraft } from '@/components/ui/rule-workbench'
 
 const props = withDefaults(defineProps<{
   draft?: RuleDraft
-  editorMode: RuleEditorMode
   saving?: boolean
   saveDisabled?: boolean
 }>(), {
@@ -18,7 +16,6 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'update:draft': [draft: RuleDraft]
-  'update:editorMode': [mode: RuleEditorMode]
   save: []
 }>()
 
@@ -57,11 +54,6 @@ function patchDraft(patch: Partial<RuleDraft>) {
     />
 
     <div class="min-w-2 flex-1" aria-hidden="true" />
-
-    <EditorModeTabs
-      :model-value="props.editorMode"
-      @update:model-value="emit('update:editorMode', $event)"
-    />
 
     <Button
       size="default"

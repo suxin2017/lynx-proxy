@@ -22,15 +22,21 @@ import {
 interface Props {
   modelValue: string
   readOnly?: boolean
+  compact?: boolean
+  resizable?: boolean
   showLineNumbers?: boolean
   showFormat?: boolean
+  showStatus?: boolean
   class?: HTMLAttributes['class']
 }
 
 const props = withDefaults(defineProps<Props>(), {
   readOnly: false,
+  compact: false,
+  resizable: undefined,
   showLineNumbers: true,
   showFormat: true,
+  showStatus: true,
 })
 
 const emit = defineEmits<{
@@ -65,6 +71,20 @@ const validation = computed(() => {
   }
   return validateDslDocument(props.modelValue)
 })
+const showLineNumbersLocal = computed(() => (
+  props.compact ? false : props.showLineNumbers
+))
+const showStatusLocal = computed(() => (
+  props.compact ? false : props.showStatus
+))
+const showToolbar = computed(() => (
+  showStatusLocal.value
+  || (props.showFormat && !props.readOnly && !props.compact)
+  || wasmError.value
+  || !wasmReady.value
+))
+const isResizable = computed(() => props.resizable ?? props.compact)
+
 const canFormat = computed(() => wasmReady.value && props.showFormat && !props.readOnly && canFormatDsl(props.modelValue))
 const isFormatted = computed(() => validation.value.isValid && isDslFormatted(props.modelValue))
 const statusText = computed(() => {
@@ -94,16 +114,26 @@ function handleUpdateModelValue(value: string) {
 </script>
 
 <template>
-  <section :class="cn('min-w-0 overflow-hidden rounded border border-border/70 bg-transparent', props.class)">
-    <header class="flex items-center justify-between gap-2 px-2 py-1">
-      <div class="min-w-0 text-[11px]">
+  <section
+    :class="cn(
+      'min-w-0 bg-transparent',
+      props.compact ? 'rounded-md' : 'overflow-hidden rounded border border-border/70',
+      props.class,
+    )"
+  >
+    <header
+      v-if="showToolbar"
+      class="flex items-center justify-between gap-2 px-2 py-1"
+    >
+      <div v-if="showStatusLocal || wasmError || !wasmReady" class="min-w-0 text-[11px]">
         <span :class="validation.isValid && wasmReady ? 'text-muted-foreground' : 'text-destructive'">{{ statusText }}</span>
         <span v-if="props.readOnly" class="ml-2 text-muted-foreground">只读</span>
       </div>
+      <div v-else aria-hidden="true" class="min-w-0 flex-1" />
 
       <div class="flex shrink-0 items-center gap-0.5">
         <Button
-          v-if="props.showFormat"
+          v-if="props.showFormat && !props.readOnly && !props.compact"
           type="button"
           variant="ghost"
           size="icon-sm"
@@ -118,14 +148,23 @@ function handleUpdateModelValue(value: string) {
       </div>
     </header>
 
-    <div class="relative min-w-0 overflow-x-hidden overflow-y-hidden px-1 pb-1">
+    <div
+      :class="cn(
+        'relative min-w-0',
+        isResizable
+          ? 'h-[120px] min-h-[120px] max-h-[min(60vh,28rem)] resize-y overflow-auto'
+          : 'overflow-x-hidden overflow-y-hidden',
+        props.compact ? 'px-0 pb-0' : 'px-1 pb-1',
+      )"
+    >
       <EditableCodeMirrorSurface
         :key="wasmReady ? 'dsl-wasm' : 'dsl-loading'"
         :model-value="props.modelValue"
         :language-extension="wasmReady ? dslLanguageExtension : []"
         :extensions="wasmReady ? extensions : []"
         :read-only="props.readOnly"
-        :show-line-numbers="props.showLineNumbers"
+        :show-line-numbers="showLineNumbersLocal"
+        :fill-height="isResizable"
         @update:model-value="handleUpdateModelValue"
       />
     </div>

@@ -11,7 +11,7 @@ repository.workspace = true
 include = ["src", "Cargo.toml", "README.md", "assets"]
 
 [[bin]]
-name = "lynx-cli"
+name = "lynx"
 path = "src/main.rs"
 
 [lib]

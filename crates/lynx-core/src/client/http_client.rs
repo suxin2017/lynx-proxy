@@ -23,35 +23,57 @@ use rcgen::Certificate;
 use super::ProxyType;
 use crate::common::{HyperRes, Req};
 
+const DEFAULT_HEADERS_TIMEOUT: Duration = Duration::from_secs(30);
+
 pub enum HttpClient {
-    Direct(Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>),
-    Proxy(Client<ProxyConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>),
+    Direct {
+        client: Client<HttpsConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
+        headers_timeout: Duration,
+    },
+    Proxy {
+        client: Client<ProxyConnector<HttpConnector>, BoxBody<Bytes, anyhow::Error>>,
+        headers_timeout: Duration,
+    },
 }
 
 #[derive(Default)]
 pub struct HttpClientBuilder {
     custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
     proxy_config: ProxyType,
+    headers_timeout: Option<Duration>,
 }
 
 impl HttpClient {
+    fn headers_timeout(&self) -> Duration {
+        match self {
+            HttpClient::Direct { headers_timeout, .. } => *headers_timeout,
+            HttpClient::Proxy { headers_timeout, .. } => *headers_timeout,
+        }
+    }
+
     pub async fn request(&self, req: Req) -> Result<HyperRes> {
+        let headers_timeout = self.headers_timeout();
+        let target = req.uri().to_string();
         let request_future = match self {
-            HttpClient::Direct(client) => {
+            HttpClient::Direct { client, .. } => {
                 trace!("HTTP Client: Making direct request to {}", req.uri());
                 client.request(req)
             }
-            HttpClient::Proxy(client) => {
+            HttpClient::Proxy { client, .. } => {
                 trace!("HTTP Client: Making proxied request to {}", req.uri());
                 client.request(req)
             }
         };
 
-        // 添加超时包装
-        timeout(Duration::from_secs(5), request_future)
+        timeout(headers_timeout, request_future)
             .await
-            .map_err(|_| anyhow!("Request timeout after 5s"))?
-            .map_err(|e| anyhow!(e).context("http request client error"))
+            .map_err(|_| {
+                anyhow!(
+                    "Request headers timeout after {}s",
+                    headers_timeout.as_secs()
+                )
+            })?
+            .map_err(|e| anyhow!(e).context(format!("upstream HTTP request to {target}")))
     }
 }
 
@@ -66,9 +88,17 @@ impl HttpClientBuilder {
         self
     }
 
+    pub fn headers_timeout(mut self, headers_timeout: Duration) -> Self {
+        self.headers_timeout = Some(headers_timeout);
+        self
+    }
+
     pub fn build(&self) -> Result<HttpClient> {
         let cert_chain = self.custom_certs.clone();
         let client_config = gen_client_config_by_cert(cert_chain.clone())?;
+        let headers_timeout = self
+            .headers_timeout
+            .unwrap_or(DEFAULT_HEADERS_TIMEOUT);
 
         match &self.proxy_config {
             ProxyType::None => {
@@ -81,7 +111,10 @@ impl HttpClientBuilder {
                     .build();
 
                 let client = Client::builder(TokioExecutor::new()).build(connector);
-                Ok(HttpClient::Direct(client))
+                Ok(HttpClient::Direct {
+                    client,
+                    headers_timeout,
+                })
             }
             ProxyType::System => {
                 trace!("HTTP Client: Checking for system proxy configuration");
@@ -103,7 +136,10 @@ impl HttpClientBuilder {
                     proxy_connector.set_tls(Some(TlsConnector::from(Arc::new(client_config))));
 
                     let client = Client::builder(TokioExecutor::new()).build(proxy_connector);
-                    Ok(HttpClient::Proxy(client))
+                    Ok(HttpClient::Proxy {
+                        client,
+                        headers_timeout,
+                    })
                 } else {
                     trace!("HTTP Client: No system proxy found, using direct connection");
                     let connector = HttpsConnectorBuilder::new()
@@ -113,7 +149,10 @@ impl HttpClientBuilder {
                         .build();
 
                     let client = Client::builder(TokioExecutor::new()).build(connector);
-                    Ok(HttpClient::Direct(client))
+                    Ok(HttpClient::Direct {
+                        client,
+                        headers_timeout,
+                    })
                 }
             }
             ProxyType::Custom(proxy_url) => {
@@ -130,7 +169,10 @@ impl HttpClientBuilder {
                 proxy_connector.set_tls(Some(TlsConnector::from(Arc::new(client_config))));
 
                 let client = Client::builder(TokioExecutor::new()).build(proxy_connector);
-                Ok(HttpClient::Proxy(client))
+                Ok(HttpClient::Proxy {
+                    client,
+                    headers_timeout,
+                })
             }
         }
     }
@@ -178,8 +220,10 @@ mod tests {
             .build()?;
 
         match client {
-            HttpClient::Direct(_) => println!("✓ ProxyType::None correctly creates Direct client"),
-            HttpClient::Proxy(_) => panic!("Expected Direct client for ProxyType::None"),
+            HttpClient::Direct { .. } => {
+                println!("✓ ProxyType::None correctly creates Direct client")
+            }
+            HttpClient::Proxy { .. } => panic!("Expected Direct client for ProxyType::None"),
         }
 
         // 测试系统代理配置
@@ -188,10 +232,12 @@ mod tests {
             .build()?;
 
         match client {
-            HttpClient::Direct(_) => {
+            HttpClient::Direct { .. } => {
                 println!("ⓘ ProxyType::System falls back to Direct (no system proxy found)")
             }
-            HttpClient::Proxy(_) => println!("✓ ProxyType::System correctly creates Proxy client"),
+            HttpClient::Proxy { .. } => {
+                println!("✓ ProxyType::System correctly creates Proxy client")
+            }
         }
 
         // 测试自定义代理配置
@@ -200,8 +246,10 @@ mod tests {
             .build()?;
 
         match client {
-            HttpClient::Proxy(_) => println!("✓ ProxyType::Custom correctly creates Proxy client"),
-            HttpClient::Direct(_) => panic!("Expected Proxy client for ProxyType::Custom"),
+            HttpClient::Proxy { .. } => {
+                println!("✓ ProxyType::Custom correctly creates Proxy client")
+            }
+            HttpClient::Direct { .. } => panic!("Expected Proxy client for ProxyType::Custom"),
         }
 
         // 测试无效的自定义代理 URL (使用明显无效的格式)
@@ -226,10 +274,10 @@ mod tests {
                 .build()?;
 
             match client {
-                HttpClient::Proxy(_) => {
+                HttpClient::Proxy { .. } => {
                     println!("✓ Valid proxy URL '{}' creates Proxy client", proxy_url)
                 }
-                HttpClient::Direct(_) => {
+                HttpClient::Direct { .. } => {
                     panic!("Expected Proxy client for valid proxy URL '{}'", proxy_url)
                 }
             }

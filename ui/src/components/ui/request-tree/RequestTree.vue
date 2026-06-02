@@ -6,7 +6,7 @@ import { useVirtualizer } from '@tanstack/vue-virtual'
 import type { FlatTreeNode, TrafficRecord } from './types'
 import { useRequestTree } from './useRequestTree'
 import RequestTreeNode from './RequestTreeNode.vue'
-import { usePrependScrollAnchor } from '@/composables/usePrependScrollAnchor'
+import { useTailScrollFollow } from '@/composables/useTailScrollFollow'
 import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -17,8 +17,6 @@ interface RequestTreeProps {
   requests: TrafficRecord[]
   /** Controlled selected request id */
   modelValue?: string
-  /** External search term – overrides internal search box when provided */
-  filter?: string
   /** How many depth levels to auto-expand on mount (default: 1) */
   defaultExpandDepth?: number
   /** Container height in px (default: 400) */
@@ -34,6 +32,7 @@ const props = withDefaults(defineProps<RequestTreeProps>(), {
 const emit = defineEmits<{
   'update:modelValue': [id: string]
   select: [request: TrafficRecord]
+  contextMenu: [request: TrafficRecord, ev: MouseEvent]
 }>()
 
 // ---------------------------------------------------------------------------
@@ -43,8 +42,7 @@ const emit = defineEmits<{
 const requestsRef = computed(() => props.requests)
 
 const {
-  filteredNodes,
-  searchTerm,
+  flatNodes,
   selectedId,
   toggle,
 } = useRequestTree(requestsRef, { defaultExpandDepth: props.defaultExpandDepth })
@@ -52,11 +50,6 @@ const {
 // Sync controlled modelValue → internal selectedId
 watch(() => props.modelValue, (v) => {
   selectedId.value = v
-}, { immediate: true })
-
-// Sync external filter prop → internal searchTerm
-watch(() => props.filter, (v) => {
-  if (v !== undefined) searchTerm.value = v
 }, { immediate: true })
 
 // ---------------------------------------------------------------------------
@@ -68,7 +61,7 @@ const ROW_HEIGHT = 28
 const scrollContainerRef = ref<HTMLElement | null>(null)
 
 const virtualizer = useVirtualizer(computed(() => ({
-  count: filteredNodes.value.length,
+  count: flatNodes.value.length,
   getScrollElement: () => scrollContainerRef.value,
   estimateSize: () => ROW_HEIGHT,
   overscan: 10,
@@ -76,14 +69,13 @@ const virtualizer = useVirtualizer(computed(() => ({
 
 const virtualItems = computed(() => virtualizer.value.getVirtualItems())
 const totalSize = computed(() => virtualizer.value.getTotalSize())
-const highlightTerm = computed(() => searchTerm.value.trim())
 
-usePrependScrollAnchor({
+useTailScrollFollow({
   scrollEl: scrollContainerRef,
-  items: filteredNodes,
+  items: flatNodes,
   rowHeight: ROW_HEIGHT,
   getId: (node) => node.request?.id ?? node.id,
-  anchorMode: 'auto',
+  followMode: 'auto',
   selectedRowId: () => props.modelValue,
 })
 
@@ -101,37 +93,28 @@ function handleSelect(node: FlatTreeNode) {
   emit('update:modelValue', node.request.id)
   emit('select', node.request)
 }
+
+function handleContextMenu(node: FlatTreeNode, _ev: MouseEvent) {
+  // Right-click should also select the leaf node (detail panel follows selection).
+  handleSelect(node)
+  // The actual menu open is handled by the parent component that wraps RequestTree.
+}
 </script>
 
 <template>
-  <div :class="cn('flex flex-col gap-1', props.class)">
-    <!-- Search slot: consumer can replace with own input -->
-    <slot name="search">
-      <div class="px-1">
-        <input
-          v-model="searchTerm"
-          type="text"
-          placeholder="筛选请求…"
-          class="h-8 w-full rounded-sm border border-input bg-background px-2 text-xs transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-      </div>
-    </slot>
-
-    <!-- Virtual scroll container -->
+  <div :class="cn('min-h-0', props.class)">
     <div
       ref="scrollContainerRef"
       class="overflow-y-auto"
       :style="{ height: `${props.height}px` }"
     >
-      <!-- Empty state -->
       <div
-        v-if="filteredNodes.length === 0"
+        v-if="flatNodes.length === 0"
         class="flex h-full items-center justify-center text-xs text-muted-foreground"
       >
-        {{ searchTerm ? '无匹配请求' : '暂无请求' }}
+        暂无请求
       </div>
 
-      <!-- Total height spacer -->
       <div v-else :style="{ height: `${totalSize}px`, position: 'relative' }">
         <div
           v-for="virtualRow in virtualItems"
@@ -146,11 +129,11 @@ function handleSelect(node: FlatTreeNode) {
           }"
         >
           <RequestTreeNode
-            :node="filteredNodes[virtualRow.index]"
-            :selected="filteredNodes[virtualRow.index].id === selectedId"
-            :highlight-term="highlightTerm"
+            :node="flatNodes[virtualRow.index]"
+            :selected="flatNodes[virtualRow.index].id === selectedId"
             @toggle="handleToggle"
             @select="handleSelect"
+            @context-menu="(node, ev) => { handleContextMenu(node, ev); if (node.request) emit('contextMenu', node.request, ev) }"
           />
         </div>
       </div>

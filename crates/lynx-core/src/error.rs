@@ -5,6 +5,12 @@ use serde::Serialize;
 
 pub type CoreResult<T> = Result<T, CoreError>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RequestRuleFailurePhase {
+    Config,
+    Execution,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum CoreError {
     #[error("validation error: {message}")]
@@ -49,6 +55,13 @@ pub enum CoreError {
     },
     #[error("missing extension: {name}")]
     MissingExtension { name: &'static str },
+    #[error("request rule '{handler_name}' ({handler_kind}) failed: {message}")]
+    RequestRuleFailed {
+        handler_name: String,
+        handler_kind: &'static str,
+        message: String,
+        failure_phase: RequestRuleFailurePhase,
+    },
     #[error("internal error: {operation}")]
     Internal {
         operation: &'static str,
@@ -65,6 +78,15 @@ pub struct ErrorResponse {
     pub message: String,
 }
 
+/// Returns the innermost cause in an error chain (for client-facing messages).
+pub fn root_cause_message(source: &AnyError) -> String {
+    source
+        .chain()
+        .last()
+        .map(|cause| cause.to_string())
+        .unwrap_or_else(|| source.to_string())
+}
+
 impl CoreError {
     pub fn status_code(&self) -> StatusCode {
         match self {
@@ -76,6 +98,14 @@ impl CoreError {
             CoreError::Timeout { .. } => StatusCode::REQUEST_TIMEOUT,
             CoreError::Network { .. } | CoreError::Tls { .. } => StatusCode::BAD_GATEWAY,
             CoreError::Db { .. } => StatusCode::SERVICE_UNAVAILABLE,
+            CoreError::RequestRuleFailed {
+                failure_phase: RequestRuleFailurePhase::Config,
+                ..
+            } => StatusCode::BAD_REQUEST,
+            CoreError::RequestRuleFailed {
+                failure_phase: RequestRuleFailurePhase::Execution,
+                ..
+            } => StatusCode::BAD_GATEWAY,
             CoreError::Io { .. }
             | CoreError::MissingExtension { .. }
             | CoreError::Internal { .. } => StatusCode::INTERNAL_SERVER_ERROR,
@@ -95,6 +125,14 @@ impl CoreError {
             CoreError::Db { .. } => "database",
             CoreError::Io { .. } => "io",
             CoreError::MissingExtension { .. } => "missing_extension",
+            CoreError::RequestRuleFailed {
+                failure_phase: RequestRuleFailurePhase::Config,
+                ..
+            } => "validation",
+            CoreError::RequestRuleFailed {
+                failure_phase: RequestRuleFailurePhase::Execution,
+                ..
+            } => "rule_handler",
             CoreError::Internal { .. } => "internal",
         }
     }
@@ -109,12 +147,54 @@ impl CoreError {
             CoreError::MissingExtension { name } => {
                 format!("required request extension is missing: {name}")
             }
-            CoreError::Timeout { .. }
-            | CoreError::Network { .. }
-            | CoreError::Tls { .. }
-            | CoreError::Db { .. }
-            | CoreError::Io { .. }
-            | CoreError::Internal { .. } => "internal server error".to_string(),
+            CoreError::Timeout { operation, source } => {
+                format!("{operation} failed: {}", root_cause_message(source))
+            }
+            CoreError::Network { operation, source } => {
+                format!("{operation} failed: {}", root_cause_message(source))
+            }
+            CoreError::Tls { operation, source } => {
+                format!("{operation} failed: {}", root_cause_message(source))
+            }
+            CoreError::Db { operation, source } => {
+                format!("{operation} failed: {}", root_cause_message(source))
+            }
+            CoreError::Io { operation, source } => {
+                format!("{operation} failed: {}", root_cause_message(source))
+            }
+            CoreError::Internal { operation, source } => {
+                format!("{operation}: {}", root_cause_message(source))
+            }
+            CoreError::RequestRuleFailed {
+                handler_name,
+                handler_kind,
+                message,
+                ..
+            } => format!("Rule \"{handler_name}\" ({handler_kind}): {message}"),
+        }
+    }
+
+    /// Wraps a handler error with rule metadata for client responses.
+    pub fn as_request_rule_failed(
+        handler_name: impl Into<String>,
+        handler_kind: &'static str,
+        err: CoreError,
+    ) -> Self {
+        let handler_name = handler_name.into();
+        let (failure_phase, message) = match &err {
+            CoreError::Validation { message } => {
+                (RequestRuleFailurePhase::Config, message.clone())
+            }
+            _ => (
+                RequestRuleFailurePhase::Execution,
+                err.public_message(),
+            ),
+        };
+        CoreError::RequestRuleFailed {
+            handler_name,
+            handler_kind,
+            message,
+            failure_phase,
         }
     }
 
@@ -192,5 +272,51 @@ impl IntoResponse for CoreError {
         let status = StatusCode::from_u16(error_response.code)
             .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
         (status, Json(error_response)).into_response()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn network_public_message_includes_root_cause() {
+        let err = CoreError::Network {
+            operation: "upstream request",
+            source: anyhow::anyhow!("connection refused"),
+        };
+        assert_eq!(
+            err.public_message(),
+            "upstream request failed: connection refused"
+        );
+        assert_eq!(err.status_code(), StatusCode::BAD_GATEWAY);
+    }
+
+    #[test]
+    fn request_rule_failed_config_phase() {
+        let err = CoreError::as_request_rule_failed(
+            "dev-forward",
+            "proxy_forward",
+            CoreError::Validation {
+                message: "Invalid proxy forward target: bad host".to_string(),
+            },
+        );
+        assert_eq!(err.status_code(), StatusCode::BAD_REQUEST);
+        assert_eq!(err.category(), "validation");
+        assert!(err.public_message().contains("dev-forward"));
+        assert!(err.public_message().contains("proxy_forward"));
+        assert!(err.public_message().contains("Invalid proxy forward target"));
+    }
+
+    #[test]
+    fn internal_public_message_uses_root_cause() {
+        let err = CoreError::Internal {
+            operation: "request handling",
+            source: anyhow::anyhow!("connection refused").context("upstream HTTP request"),
+        };
+        assert_eq!(
+            err.public_message(),
+            "request handling: connection refused"
+        );
     }
 }

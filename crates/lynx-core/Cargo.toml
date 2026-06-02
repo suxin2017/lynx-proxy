@@ -85,6 +85,7 @@ axum = { version="0.8.4",features=["macros", "ws"]}
 tower-http = { version = "0.6.4", features = ["cors", "fs"] }
 dashmap = "6.1.0"
 lynx-log = {path = "../lynx-log"}
+socket2 = "0.5"
 
 
 [dev-dependencies]

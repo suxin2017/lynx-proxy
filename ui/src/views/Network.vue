@@ -4,21 +4,46 @@ import { storeToRefs } from 'pinia'
 import { Button, NetworkRequestDetail } from '@/components'
 import { type TrafficRecord } from '@/components/ui/request-tree'
 import { HorizontalSplitPanel, VerticalSplitPanel } from '@/components/ui/split-panels'
-import { NetworkRequestPanel, type RequestViewMode } from '@/components/ui/network-panels'
-import { useCaptureStore, useRequestStreamStore, useSettingsStore } from '@/stores'
-import { Disc2, ListTree, PlugZap, BrushCleaning, Sheet } from '@lucide/vue'
+import { NetworkRequestPanel, TrafficMatchFilterInput, type RequestViewMode } from '@/components/ui/network-panels'
+import { RulesAssetsDrawer } from '@/components/ui/rules-drawer'
+import { useTrafficMatchFilter } from '@/composables/useTrafficMatchFilter'
+import { useCaptureStore, useRequestStreamStore, useRulesStore, useSettingsStore } from '@/stores'
+import { Disc2, ListTree, PlugZap, BrushCleaning, Sheet, Scale } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 
 const captureStore = useCaptureStore()
 const requestStreamStore = useRequestStreamStore()
 const settingsStore = useSettingsStore()
+const rulesStore = useRulesStore()
+const {
+  open: rulesDrawerOpen,
+  activePrimaryTab: rulesActiveTab,
+  rulesPane,
+  assetsPane,
+  selectedRuleId,
+  ruleDraft,
+  selectedAssetId,
+} = storeToRefs(rulesStore)
 
 const {
   viewMode: requestViewMode,
   splitRatio,
   tableSplitRatio,
   streamEnabled,
+  trafficFilterDsl,
+  trafficFilterHistory,
 } = storeToRefs(settingsStore)
+
+const {
+  filteredRecords,
+  filterState,
+  filterError,
+  applyFilter,
+} = useTrafficMatchFilter({
+  filterDsl: trafficFilterDsl,
+  trafficRecords: computed(() => requestStreamStore.trafficRecords),
+  recordsByTrace: computed(() => requestStreamStore.recordsByTrace),
+})
 
 const isDesktop = ref(false)
 
@@ -82,6 +107,17 @@ const handleViewModeChange = (mode: RequestViewMode) => {
   requestViewMode.value = mode
 }
 
+const handleFilterSubmit = async (value: string) => {
+  await applyFilter(value)
+  if (filterState.value === 'valid') {
+    settingsStore.pushTrafficFilterHistory(value)
+  }
+}
+
+const handleClearFilterHistory = () => {
+  settingsStore.clearTrafficFilterHistory()
+}
+
 watch(streamEnabled, async (enabled, previous) => {
   if (previous === undefined) {
     return
@@ -96,6 +132,9 @@ watch(streamEnabled, async (enabled, previous) => {
 
 onMounted(async () => {
   settingsStore.hydrate()
+  if (trafficFilterDsl.value.trim()) {
+    await applyFilter()
+  }
   bindDesktopMediaQuery()
   captureStore.handleServerEvent()
   await captureStore.refreshStatus()
@@ -118,7 +157,7 @@ onBeforeUnmount(async () => {
 <template>
   <div class="flex h-full min-h-0 flex-col  overflow-hidden">
     <div class="flex items-center justify-between px-1">
-      <div class="inline-flex items-center gap-1">
+      <div class="inline-flex min-w-0 flex-1 items-center gap-1">
         <Button
           size="icon-sm"
           variant="ghost"
@@ -137,6 +176,16 @@ onBeforeUnmount(async () => {
         >
           <ListTree :class="cn('h-4 w-4', requestViewMode === 'tree' ? 'text-primary' : 'text-muted-foreground/60')" />
         </Button>
+
+        <TrafficMatchFilterInput
+          v-model="trafficFilterDsl"
+          :filter-state="filterState"
+          :filter-error="filterError"
+          :history="trafficFilterHistory"
+          class="relative ml-1 max-w-[360px] flex-1"
+          @submit="handleFilterSubmit"
+          @clear-history="handleClearFilterHistory"
+        />
       </div>
 
       <div class="flex items-center gap-3">
@@ -164,6 +213,16 @@ onBeforeUnmount(async () => {
         <Button size="icon-sm" variant="ghost" title="Clear Requests" @click="requestStreamStore.clear">
           <BrushCleaning class="h-4 w-4 text-muted-foreground/70" />
         </Button>
+
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          title="Rules"
+          :aria-pressed="rulesStore.open"
+          @click="rulesStore.openDrawer()"
+        >
+          <Scale :class="cn('h-4 w-4', rulesStore.open ? 'text-primary' : 'text-muted-foreground/60')" />
+        </Button>
       </div>
     </div>
 
@@ -178,7 +237,7 @@ onBeforeUnmount(async () => {
         <section class="h-full rounded-md bg-card/60">
           <NetworkRequestPanel
             v-model="selectedTraceId"
-            :requests="requestStreamStore.trafficRecords"
+            :requests="filteredRecords"
             :view-mode="requestViewMode"
             @select="handleRequestSelect"
           />
@@ -204,7 +263,7 @@ onBeforeUnmount(async () => {
         <section class="h-full rounded-md bg-card/60">
           <NetworkRequestPanel
             v-model="selectedTraceId"
-            :requests="requestStreamStore.trafficRecords"
+            :requests="filteredRecords"
             :view-mode="requestViewMode"
             @select="handleRequestSelect"
           />
@@ -217,5 +276,28 @@ onBeforeUnmount(async () => {
         </section>
       </template>
     </HorizontalSplitPanel>
+
+    <RulesAssetsDrawer
+      v-model:open="rulesDrawerOpen"
+      v-model:active-primary-tab="rulesActiveTab"
+      v-model:rules-pane="rulesPane"
+      v-model:assets-pane="assetsPane"
+      v-model:selected-rule-id="selectedRuleId"
+      v-model:rule-draft="ruleDraft"
+      v-model:selected-asset-id="selectedAssetId"
+      :rules="rulesStore.rules"
+      :assets="rulesStore.assets"
+      :dirty="rulesStore.isDirty"
+      :loading="rulesStore.loading"
+      :saving="rulesStore.saving"
+      @rules:create="rulesStore.createRule"
+      @rules:edit="rulesStore.editRule"
+      @rules:toggle-enabled="rulesStore.toggleRuleEnabled"
+      @rules:delete="id => rulesStore.deleteRule(id)"
+      @update:rule-draft="rulesStore.updateRuleDraft"
+      @assets:create="rulesStore.createAsset"
+      @assets:update="rulesStore.updateAsset"
+      @assets:remove="rulesStore.removeAsset"
+    />
   </div>
 </template>

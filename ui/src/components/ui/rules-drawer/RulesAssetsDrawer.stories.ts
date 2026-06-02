@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRulesStore } from '@/stores/modules/rules.store'
 import { Button } from '@/components/ui/button'
 import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
-import { createRuleDraft } from '@/components/ui/rule-workbench'
+import { createRuleDraft, getRuleValidationErrors } from '@/components/ui/rule-workbench'
 import RulesAssetsDrawer from './RulesAssetsDrawer.vue'
 import type { ActionAssetTemplate } from './types'
 
@@ -80,7 +81,12 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-function createHarness(defaultPrimary: 'rules' | 'assets', defaultRulesPane: 'list' | 'editor', defaultAssetsPane: 'list' | 'editor') {
+function createHarness(
+  defaultPrimary: 'rules' | 'assets',
+  defaultRulesPane: 'list' | 'editor',
+  defaultAssetsPane: 'list' | 'editor',
+  seedDraft?: Partial<RuleDraft>,
+) {
   return () => ({
     components: { RulesAssetsDrawer, Button },
     setup() {
@@ -88,26 +94,37 @@ function createHarness(defaultPrimary: 'rules' | 'assets', defaultRulesPane: 'li
       const activePrimaryTab = ref<'rules' | 'assets'>(defaultPrimary)
       const rulesPane = ref<'list' | 'editor'>(defaultRulesPane)
       const assetsPane = ref<'list' | 'editor'>(defaultAssetsPane)
+      const rulesStore = useRulesStore()
+
+      watch(rulesPane, (pane) => {
+        rulesStore.rulesPane = pane
+      }, { immediate: true })
 
       const rules = ref<RuleWorkbenchRuleItem[]>([...SAMPLE_RULES])
       const selectedRuleId = ref('rule-001')
-      const ruleDraft = ref<RuleDraft>(createRuleDraft({ name: 'Auth Header Rewrite', priority: 90 }))
+      const ruleDraft = ref<RuleDraft>(createRuleDraft({
+        name: 'Auth Header Rewrite',
+        priority: 90,
+        matchDsl: 'api.example.com AND -X POST',
+        ...seedDraft,
+      }))
 
       const assets = ref<ActionAssetTemplate[]>([...SAMPLE_ASSETS])
       const selectedAssetId = ref(assets.value[0]?.id ?? '')
 
       const dirty = ref(false)
-      const valid = ref(true)
-      const invalid = ref(false)
       const loading = ref(false)
       const saving = ref(false)
 
-      function onRulesSave() {
+      const validationErrors = computed(() => getRuleValidationErrors(ruleDraft.value))
+
+      async function onRulesSave(_id: string) {
         saving.value = true
-        window.setTimeout(() => {
-          saving.value = false
-          dirty.value = false
-        }, 600)
+        await new Promise<void>(resolve => {
+          window.setTimeout(resolve, 600)
+        })
+        saving.value = false
+        dirty.value = false
       }
 
       function onRuleDraftUpdate(next: RuleDraft) {
@@ -151,10 +168,9 @@ function createHarness(defaultPrimary: 'rules' | 'assets', defaultRulesPane: 'li
         assets,
         selectedAssetId,
         dirty,
-        valid,
-        invalid,
         loading,
         saving,
+        validationErrors,
         onRulesSave,
         onRuleDraftUpdate,
         onToggleRuleEnabled,
@@ -169,6 +185,7 @@ function createHarness(defaultPrimary: 'rules' | 'assets', defaultRulesPane: 'li
           <Button variant="outline" @click="open = true">打开抽屉</Button>
           <span class="text-xs text-muted-foreground">
             Tab={{ activePrimaryTab }} rulesPane={{ rulesPane }} assetsPane={{ assetsPane }}
+            validationErrors={{ validationErrors.length }}
           </span>
         </div>
 
@@ -183,11 +200,8 @@ function createHarness(defaultPrimary: 'rules' | 'assets', defaultRulesPane: 'li
           :rules="rules"
           :assets="assets"
           :dirty="dirty"
-          :valid="valid"
-          :invalid="invalid"
           :loading="loading"
           :saving="saving"
-          @rules:save="onRulesSave"
           @rules:toggle-enabled="onToggleRuleEnabled"
           @rules:update:draft="onRuleDraftUpdate"
           @assets:create="createAsset"
@@ -209,6 +223,11 @@ export const Rules_Editor: Story = {
   render: createHarness('rules', 'editor', 'list'),
 }
 
+export const Rules_Editor_InvalidMatchDsl: Story = {
+  args: {},
+  render: createHarness('rules', 'editor', 'list', { matchDsl: 'example.com AND (' }),
+}
+
 export const Assets_List: Story = {
   args: {},
   render: createHarness('assets', 'list', 'list'),
@@ -223,4 +242,3 @@ export const NoHeavyTitles: Story = {
   args: {},
   render: createHarness('rules', 'editor', 'list'),
 }
-

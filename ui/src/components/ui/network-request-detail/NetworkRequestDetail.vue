@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import type { WorkbenchType } from '@/components/ui/content-workbench/utils'
 import type { NetworkDetailKeyValue, NetworkDetailRecord } from './types'
 
-import { ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
-import { ContentWorkbench } from '@/components/ui/content-workbench'
 import { VerticalSplitPanel } from '@/components/ui/split-panels'
+import BodyPreviewPanel from './BodyPreviewPanel.vue'
 import { cn } from '@/lib/utils'
 import {
   detailLabelClass,
@@ -16,11 +15,6 @@ import {
   detailValueClass,
 } from './detail-styles'
 
-const props = defineProps<{
-  record?: NetworkDetailRecord | null
-  class?: HTMLAttributes['class']
-}>()
-
 const TABS = ['overview', 'content'] as const
 const REQUEST_SUB_TABS = ['query', 'headers', 'cookies', 'body'] as const
 const RESPONSE_SUB_TABS = ['headers', 'cookies', 'body'] as const
@@ -29,21 +23,31 @@ type DetailTab = typeof TABS[number]
 type RequestSubTab = typeof REQUEST_SUB_TABS[number]
 type ResponseSubTab = typeof RESPONSE_SUB_TABS[number]
 
+const props = withDefaults(
+  defineProps<{
+    record?: NetworkDetailRecord | null
+    class?: HTMLAttributes['class']
+    /** Storybook / 调试：打开详情时默认选中的主 Tab */
+    initialTab?: DetailTab
+    initialRequestSubTab?: RequestSubTab
+    initialResponseSubTab?: ResponseSubTab
+  }>(),
+  {
+    initialTab: 'overview',
+    initialRequestSubTab: 'headers',
+    initialResponseSubTab: 'headers',
+  },
+)
+
 const TAB_LABELS: Record<DetailTab, string> = {
   overview: '概览',
   content: '内容',
 }
 
-const activeTab = ref<DetailTab>('overview')
-const requestSubTab = ref<RequestSubTab>('headers')
-const responseSubTab = ref<ResponseSubTab>('headers')
+const activeTab = ref<DetailTab>(props.initialTab)
+const requestSubTab = ref<RequestSubTab>(props.initialRequestSubTab)
+const responseSubTab = ref<ResponseSubTab>(props.initialResponseSubTab)
 const contentSplitRatio = ref(44)
-
-watch(() => props.record?.id, () => {
-  activeTab.value = 'overview'
-  requestSubTab.value = 'headers'
-  responseSubTab.value = 'headers'
-})
 
 function duration(value?: number): string {
   if (value == null) return '-'
@@ -64,20 +68,11 @@ function nonEmptyRows(rows?: NetworkDetailKeyValue[]): NetworkDetailKeyValue[] {
   return (rows ?? []).filter(row => row.key || row.value)
 }
 
-function bodyType(contentType?: string, body?: unknown): WorkbenchType {
-  if (body == null || body === '') return 'text'
-  if (typeof body === 'object') return 'json'
-
-  const normalized = contentType?.toLowerCase() ?? ''
-
-  if (normalized.includes('application/json')) return 'json'
-  if (normalized.includes('text/html')) return 'html-source'
-  if (normalized.includes('application/xml') || normalized.includes('text/xml')) return 'xml-source'
-  if (normalized.includes('text/css')) return 'css-source'
-  if (normalized.includes('javascript') || normalized.includes('ecmascript')) return 'javascript-source'
-
-  return 'text'
-}
+const isWebSocketRequest = computed(() => {
+  const type = props.record?.requestType?.toLowerCase() ?? ''
+  const contentType = props.record?.requestContentType?.toLowerCase() ?? ''
+  return type.includes('websocket') || contentType.includes('websocket')
+})
 </script>
 
 <template>
@@ -111,8 +106,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
         </button>
       </nav>
 
-      <div class="flex min-h-0 flex-1 px-2 py-2 text-xs">
-        <div v-if="activeTab === 'overview'" class="min-h-0 flex-1 space-y-3 overflow-auto px-0.5">
+      <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-2 py-2 text-xs">
+        <div v-if="activeTab === 'overview'" class="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-0.5">
 
           <section class="space-y-1.5">
             <h3 :class="detailSectionTitleClass">常规</h3>
@@ -155,8 +150,8 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
           </section>
         </div>
 
-        <div v-else class="min-h-0 flex-1">
-          <VerticalSplitPanel v-model="contentSplitRatio" class="h-full min-h-0" :min-top-px="180" :min-bottom-px="180">
+        <div v-else class="min-h-0 flex-1 overflow-hidden">
+          <VerticalSplitPanel v-model="contentSplitRatio" class="h-full min-h-0" :min-top-px="96" :min-bottom-px="96">
             <template #top>
               <div class="flex h-full min-h-0 flex-col">
                 <nav class="flex flex-wrap items-center gap-1 px-1 py-0.5">
@@ -172,10 +167,13 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
                   </button>
                 </nav>
 
-                <div class="min-h-0 flex-1 overflow-auto">
+                <div
+                  class="flex min-h-0 flex-1 flex-col"
+                  :class="requestSubTab === 'body' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'"
+                >
                   <section v-if="requestSubTab === 'query'" class="space-y-1">
                     <div v-if="nonEmptyRows(props.record.query).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无查询参数</div>
-                    <div v-else class="max-h-56 overflow-auto">
+                    <div v-else>
                       <table class="w-full text-xs">
                         <tbody>
                           <tr v-for="row in nonEmptyRows(props.record.query)" :key="`qp-${row.key}-${row.value}`" class="align-top">
@@ -189,7 +187,7 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
 
                   <section v-else-if="requestSubTab === 'headers'" class="space-y-1">
                     <div v-if="nonEmptyRows(props.record.requestHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Headers</div>
-                    <div v-else class="max-h-56 overflow-auto">
+                    <div v-else>
                       <table class="w-full text-xs">
                         <tbody>
                           <tr v-for="row in nonEmptyRows(props.record.requestHeaders)" :key="`rh-${row.key}-${row.value}`" class="align-top">
@@ -203,7 +201,7 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
 
                   <section v-else-if="requestSubTab === 'cookies'" class="space-y-1">
                     <div v-if="nonEmptyRows(props.record.requestCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Cookies</div>
-                    <div v-else class="max-h-56 overflow-auto">
+                    <div v-else>
                       <table class="w-full text-xs">
                         <tbody>
                           <tr v-for="row in nonEmptyRows(props.record.requestCookies)" :key="`rc-${row.key}-${row.value}`" class="align-top">
@@ -215,16 +213,14 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
                     </div>
                   </section>
 
-                  <section v-else>
-                    <div v-if="props.record.requestBody == null || props.record.requestBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无请求 Body</div>
-                    <ContentWorkbench
-                      v-else
-                      :type="bodyType(props.record.requestContentType, props.record.requestBody)"
-                      :content="props.record.requestBody"
-                      :show-line-numbers="true"
-                      :frameless="bodyType(props.record.requestContentType, props.record.requestBody) === 'json'"
-                    />
-                  </section>
+                  <BodyPreviewPanel
+                    v-else
+                    empty-label="无请求 Body"
+                    :bytes="props.record.requestBodyBytes"
+                    :content-type="props.record.requestContentType"
+                    :truncated="props.record.requestBodyTruncated"
+                    :is-web-socket="isWebSocketRequest"
+                  />
                 </div>
               </div>
             </template>
@@ -244,10 +240,13 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
                   </button>
                 </nav>
 
-                <div class="min-h-0 flex-1 overflow-auto">
+                <div
+                  class="flex min-h-0 flex-1 flex-col"
+                  :class="responseSubTab === 'body' ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'"
+                >
                   <section v-if="responseSubTab === 'headers'" class="space-y-1">
                     <div v-if="nonEmptyRows(props.record.responseHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Headers</div>
-                    <div v-else class="max-h-56 overflow-auto">
+                    <div v-else>
                       <table class="w-full text-xs">
                         <tbody>
                           <tr v-for="row in nonEmptyRows(props.record.responseHeaders)" :key="`sh-${row.key}-${row.value}`" class="align-top">
@@ -261,7 +260,7 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
 
                   <section v-else-if="responseSubTab === 'cookies'" class="space-y-1">
                     <div v-if="nonEmptyRows(props.record.responseCookies).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无响应 Cookies</div>
-                    <div v-else class="max-h-56 overflow-auto">
+                    <div v-else>
                       <table class="w-full text-xs">
                         <tbody>
                           <tr v-for="row in nonEmptyRows(props.record.responseCookies)" :key="`sc-${row.key}-${row.value}`" class="align-top">
@@ -273,16 +272,13 @@ function bodyType(contentType?: string, body?: unknown): WorkbenchType {
                     </div>
                   </section>
 
-                  <section v-else>
-                    <div v-if="props.record.responseBody == null || props.record.responseBody === ''" class="px-5 py-1 text-xs text-muted-foreground">无响应 Body</div>
-                    <ContentWorkbench
-                      v-else
-                      :type="bodyType(props.record.responseContentType, props.record.responseBody)"
-                      :content="props.record.responseBody"
-                      :show-line-numbers="true"
-                      :frameless="bodyType(props.record.responseContentType, props.record.responseBody) === 'json'"
-                    />
-                  </section>
+                  <BodyPreviewPanel
+                    v-else
+                    empty-label="无响应 Body"
+                    :bytes="props.record.responseBodyBytes"
+                    :content-type="props.record.responseContentType"
+                    :truncated="props.record.responseBodyTruncated"
+                  />
                 </div>
               </div>
             </template>

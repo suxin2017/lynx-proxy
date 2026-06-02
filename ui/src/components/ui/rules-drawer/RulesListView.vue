@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
-import { ListFilter, Plus } from '@lucide/vue'
+import { ListFilter, Plus, Trash2 } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   create: []
   edit: [id: string]
+  delete: [id: string]
   select: [id: string]
   'toggle-enabled': [id: string, enabled: boolean]
 }>()
@@ -104,9 +105,19 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
             </button>
           </div>
 
-          <div class="mt-2 flex justify-end">
+          <div class="mt-2 flex justify-end gap-1">
             <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="emit('edit', rule.id)">
               编辑
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="h-7 px-2 text-xs text-destructive hover:text-destructive"
+              :aria-label="`删除 ${rule.name}`"
+              @click="emit('delete', rule.id)"
+            >
+              <Trash2 class="h-3.5 w-3.5" />
+              删除
             </Button>
           </div>
         </div>

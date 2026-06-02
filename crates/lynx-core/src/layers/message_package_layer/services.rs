@@ -18,6 +18,7 @@ use tracing::{Instrument, instrument, trace_span};
 use crate::{
     common::{Req, Res},
     error::{CoreError, CoreResult},
+    proxy::{proxy_connect_request::is_connect_req, proxy_ws_request::is_websocket_req},
     self_service::is_self_service,
 };
 
@@ -89,6 +90,8 @@ where
 
         let request = Request::from_parts(part, old_body);
 
+        let defer_request_end = is_connect_req(&request) || is_websocket_req(&request);
+
         let mut inner = self.service.clone();
 
         Box::pin(async move {
@@ -117,9 +120,11 @@ where
                 .await;
             let future = inner.call(request);
             let result = future.await;
-            message_event_channel_clone
-                .dispatch_on_request_end(trace_id_clone)
-                .await;
+            if !defer_request_end {
+                message_event_channel_clone
+                    .dispatch_on_request_end(trace_id_clone)
+                    .await;
+            }
             guard.completed = true;
             result
         })
