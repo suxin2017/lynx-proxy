@@ -99,6 +99,29 @@ const toHeaderRecord = (headers: unknown): Record<string, string> | undefined =>
   )
 }
 
+const toMatchedRules = (value: unknown): Array<{ ruleId: string, name: string, priority?: number }> => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value
+    .map((item) => {
+      const obj = toObject(item)
+      if (!obj) return null
+      const ruleId = obj.ruleId ?? obj.rule_id ?? obj.id
+      const name = obj.name
+      if (ruleId == null || typeof name !== 'string' || !name.trim()) {
+        return null
+      }
+      const priority = valueToNumber(obj.priority)
+      return {
+        ruleId: String(ruleId),
+        name,
+        ...(priority === undefined ? {} : { priority }),
+      }
+    })
+    .filter(Boolean) as Array<{ ruleId: string, name: string, priority?: number }>
+}
+
 const valueToNumber = (value: unknown): number | undefined => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value
@@ -263,6 +286,11 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       protocol: item.protocol,
       remoteAddress: item.remoteAddress,
       durationMs,
+      matchedRules: (item.matchedRules ?? []).map(rule => ({
+        ruleId: rule.ruleId,
+        name: rule.name,
+        ...(typeof rule.priority === 'number' ? { reason: `priority=${rule.priority}` } : {}),
+      })),
       query: parseQueryFromUrl(resolvedUrl),
       requestHeaders: item.requestHeaders,
       responseHeaders: item.responseHeaders,
@@ -409,6 +437,7 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       method,
       ...(url ? { url } : {}),
       status: 'pending',
+      matchedRules: toMatchedRules(payload?.matchedRules),
       requestHeaders: toHeaderRows(payload?.headers),
       requestCookies: deriveRequestCookies(requestHeaders),
       requestContentType:

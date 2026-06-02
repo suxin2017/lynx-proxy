@@ -1681,6 +1681,7 @@ dependencies = [
  "include_dir",
  "local-ip-address",
  "lynx-cert",
+ "lynx-dsl",
  "lynx-log",
  "lynx-mock",
  "lynx-storage",

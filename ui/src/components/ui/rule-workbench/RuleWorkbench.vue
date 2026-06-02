@@ -9,7 +9,6 @@ import ActionPipelineBuilder from './ActionPipelineBuilder.vue'
 import MatchDslEditor from './MatchDslEditor.vue'
 import { getRuleValidationErrors } from './match-validation'
 import { createRuleDraft } from './types'
-import type { ActionAssetTemplate } from '@/components/ui/rules-drawer/types'
 import type { RuleDraft } from './types'
 import { getRuleSaveStatusLabel, isRuleSaveDisabled } from './save-status'
 
@@ -34,7 +33,6 @@ interface RuleWorkbenchProps {
   saving?: boolean
   embedded?: boolean
   showList?: boolean
-  actionAssets?: ActionAssetTemplate[]
   class?: HTMLAttributes['class']
 }
 
@@ -46,7 +44,6 @@ const props = withDefaults(defineProps<RuleWorkbenchProps>(), {
   saving: false,
   embedded: false,
   showList: true,
-  actionAssets: () => [],
 })
 
 const emit = defineEmits<{
@@ -55,7 +52,6 @@ const emit = defineEmits<{
   'update:mobilePane': [pane: RuleMobilePane]
   'save': [id: string]
   'toggle-enabled': [id: string, enabled: boolean]
-  'save-action-asset': [asset: ActionAssetTemplate]
 }>()
 
 const searchTerm = ref('')
@@ -315,9 +311,7 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
 
                 <ActionPipelineBuilder
                   :model-value="draftLocal.actions"
-                  :assets="props.actionAssets"
                   @update:model-value="updateActions"
-                  @save-as-asset="emit('save-action-asset', $event)"
                 />
               </slot>
             </div>

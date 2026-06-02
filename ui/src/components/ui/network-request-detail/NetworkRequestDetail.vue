@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import type { NetworkDetailKeyValue, NetworkDetailRecord } from './types'
+import type { NetworkDetailKeyValue, NetworkDetailMatchedRule, NetworkDetailRecord } from './types'
 
 import { computed, ref } from 'vue'
 
@@ -39,6 +39,10 @@ const props = withDefaults(
   },
 )
 
+const emit = defineEmits<{
+  'rule:open': [rule: NetworkDetailMatchedRule]
+}>()
+
 const TAB_LABELS: Record<DetailTab, string> = {
   overview: '概览',
   content: '内容',
@@ -66,6 +70,10 @@ function formatStartTime(iso?: string): string {
 
 function nonEmptyRows(rows?: NetworkDetailKeyValue[]): NetworkDetailKeyValue[] {
   return (rows ?? []).filter(row => row.key || row.value)
+}
+
+function nonEmptyMatchedRules(rules?: NetworkDetailMatchedRule[]): NetworkDetailMatchedRule[] {
+  return (rules ?? []).filter(r => r && typeof r.ruleId === 'string' && r.ruleId.trim().length > 0 && r.name.trim().length > 0)
 }
 
 const isWebSocketRequest = computed(() => {
@@ -131,6 +139,23 @@ const isWebSocketRequest = computed(() => {
               <div :class="detailRowGridClass">
                 <dt :class="detailLabelClass">协议</dt>
                 <dd :class="detailValueClass">{{ props.record.protocol || '-' }}</dd>
+              </div>
+              <div :class="detailRowGridClass">
+                <dt :class="detailLabelClass">命中规则</dt>
+                <dd :class="detailValueClass">
+                  <div v-if="nonEmptyMatchedRules(props.record.matchedRules).length === 0">-</div>
+                  <div v-else class="flex flex-col items-start gap-1">
+                    <button
+                      v-for="rule in nonEmptyMatchedRules(props.record.matchedRules)"
+                      :key="rule.ruleId"
+                      type="button"
+                      class="max-w-full text-left font-medium text-primary underline-offset-4 hover:underline"
+                      @click="emit('rule:open', rule)"
+                    >
+                      {{ rule.name }}
+                    </button>
+                  </div>
+                </dd>
               </div>
             </dl>
           </section>

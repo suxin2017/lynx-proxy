@@ -48,6 +48,14 @@ x-lynx-ops:
     - rules.enabled.set
     - rules.delete
     - rules.templates.get
+    - capture.rules.focus.list.get
+    - capture.rules.ignore.list.get
+    - capture.rules.focus.upsert
+    - capture.rules.ignore.upsert
+    - capture.rules.focus.delete
+    - capture.rules.ignore.delete
+    - capture.rules.focus.enabled.set
+    - capture.rules.ignore.enabled.set
   event:
     - capture.status.changed
     - request.start

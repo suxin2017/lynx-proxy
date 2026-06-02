@@ -19,7 +19,9 @@ use crate::layers::message_package_layer::message_event_store::MessageEvent;
 use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
 use crate::self_service::api::net_request_service;
 use crate::self_service::api::rules_service;
+use crate::self_service::api::capture_rules_service;
 use lynx_storage::dao::request_processing_dao::RequestRule;
+use lynx_storage::dao::capture_rules_dao::CaptureRule;
 use crate::self_service::RouteState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -134,6 +136,43 @@ fn parse_string_payload(payload: &Option<Value>, key: &str) -> Option<String> {
         .map(ToOwned::to_owned)
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CaptureRuleUpsertPayload {
+    #[serde(default)]
+    id: Option<i32>,
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    enabled: bool,
+    #[serde(default)]
+    match_expr: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CaptureRuleIdPayload {
+    rule_id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CaptureRuleEnabledPayload {
+    rule_id: i32,
+    enabled: bool,
+}
+
+fn capture_rule_from_payload(payload: CaptureRuleUpsertPayload) -> CaptureRule {
+    CaptureRule {
+        id: payload.id.unwrap_or(0),
+        name: payload.name,
+        enabled: payload.enabled,
+        match_expr: payload.match_expr,
+        created_at: 0,
+        updated_at: 0,
+    }
+}
+
 fn encode_optional_bytes(value: Option<bytes::Bytes>) -> Option<String> {
     value.map(|bytes| general_purpose::STANDARD.encode(bytes))
 }
@@ -148,6 +187,7 @@ fn message_event_to_ws_event(event: MessageEvent) -> Option<WsFrame> {
                 "url": req.url,
                 "headers": req.headers,
                 "version": req.version,
+                "matchedRules": req.matched_rules,
             }),
         )),
         MessageEvent::OnRequestBody(trace_id, body_data) => Some(event_frame(
@@ -871,6 +911,351 @@ async fn handle_client_request(
                             frame.op,
                             "DB_ERROR",
                             "Failed to list rule templates",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+
+        op::CAPTURE_RULES_FOCUS_LIST_GET => {
+            match capture_rules_service::list_focus(state).await {
+                Ok(rules) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, json!({ "rules": rules })),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to list focus capture rules",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::CAPTURE_RULES_IGNORE_LIST_GET => {
+            match capture_rules_service::list_ignore(state).await {
+                Ok(rules) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, json!({ "rules": rules })),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to list ignore capture rules",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::CAPTURE_RULES_FOCUS_UPSERT => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing capture rule payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match serde_json::from_value::<CaptureRuleUpsertPayload>(payload) {
+                Ok(rule_payload) => match capture_rules_service::upsert_focus(state, capture_rule_from_payload(rule_payload)).await {
+                    Ok(saved) => {
+                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(saved).unwrap_or_default())).await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "DB_ERROR",
+                                "Failed to upsert focus capture rule",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse capture rule",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::CAPTURE_RULES_IGNORE_UPSERT => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing capture rule payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match serde_json::from_value::<CaptureRuleUpsertPayload>(payload) {
+                Ok(rule_payload) => match capture_rules_service::upsert_ignore(state, capture_rule_from_payload(rule_payload)).await {
+                    Ok(saved) => {
+                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(saved).unwrap_or_default())).await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "DB_ERROR",
+                                "Failed to upsert ignore capture rule",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse capture rule",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::CAPTURE_RULES_FOCUS_DELETE => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.ruleId",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            match serde_json::from_value::<CaptureRuleIdPayload>(payload) {
+                Ok(id_payload) => match capture_rules_service::delete_focus(state, id_payload.rule_id).await {
+                    Ok(()) => {
+                        send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ruleId": id_payload.rule_id }))).await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "DB_ERROR",
+                                "Failed to delete focus capture rule",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse payload.ruleId",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::CAPTURE_RULES_IGNORE_DELETE => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.ruleId",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            match serde_json::from_value::<CaptureRuleIdPayload>(payload) {
+                Ok(id_payload) => match capture_rules_service::delete_ignore(state, id_payload.rule_id).await {
+                    Ok(()) => {
+                        send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ruleId": id_payload.rule_id }))).await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "DB_ERROR",
+                                "Failed to delete ignore capture rule",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse payload.ruleId",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::CAPTURE_RULES_FOCUS_ENABLED_SET => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.ruleId/enabled",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            match serde_json::from_value::<CaptureRuleEnabledPayload>(payload) {
+                Ok(enabled_payload) => match capture_rules_service::set_focus_enabled(state, enabled_payload.rule_id, enabled_payload.enabled).await {
+                    Ok(rule) => {
+                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default())).await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "DB_ERROR",
+                                "Failed to update focus enabled state",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse payload.ruleId/enabled",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::CAPTURE_RULES_IGNORE_ENABLED_SET => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.ruleId/enabled",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            match serde_json::from_value::<CaptureRuleEnabledPayload>(payload) {
+                Ok(enabled_payload) => match capture_rules_service::set_ignore_enabled(state, enabled_payload.rule_id, enabled_payload.enabled).await {
+                    Ok(rule) => {
+                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default())).await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "DB_ERROR",
+                                "Failed to update ignore enabled state",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse payload.ruleId/enabled",
                             Some(json!({ "reason": err.to_string() })),
                         ),
                     )

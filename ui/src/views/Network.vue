@@ -4,11 +4,11 @@ import { storeToRefs } from 'pinia'
 import { Button, NetworkRequestDetail } from '@/components'
 import { type TrafficRecord } from '@/components/ui/request-tree'
 import { HorizontalSplitPanel, VerticalSplitPanel } from '@/components/ui/split-panels'
-import { NetworkRequestPanel, TrafficMatchFilterInput, type RequestViewMode } from '@/components/ui/network-panels'
+import { CaptureRulesPopover, NetworkRequestPanel, TrafficMatchFilterInput, type RequestViewMode } from '@/components/ui/network-panels'
 import { RulesAssetsDrawer } from '@/components/ui/rules-drawer'
 import { useTrafficMatchFilter } from '@/composables/useTrafficMatchFilter'
 import { useCaptureStore, useRequestStreamStore, useRulesStore, useSettingsStore } from '@/stores'
-import { Disc2, ListTree, PlugZap, BrushCleaning, Sheet, Scale } from '@lucide/vue'
+import { Disc2, ListTree, PlugZap, BrushCleaning, Sheet, Scale, Crosshair } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 
 const captureStore = useCaptureStore()
@@ -17,12 +17,9 @@ const settingsStore = useSettingsStore()
 const rulesStore = useRulesStore()
 const {
   open: rulesDrawerOpen,
-  activePrimaryTab: rulesActiveTab,
   rulesPane,
-  assetsPane,
   selectedRuleId,
   ruleDraft,
-  selectedAssetId,
 } = storeToRefs(rulesStore)
 
 const {
@@ -101,6 +98,19 @@ const setRecording = async (enabled: boolean) => {
 
 const handleRequestSelect = (request: TrafficRecord) => {
   requestStreamStore.select(request.id)
+}
+
+const handleMatchedRuleOpen = async (rule: { ruleId: string | number }) => {
+  const id = String(rule?.ruleId ?? '')
+  if (!id) return
+
+  rulesPane.value = 'editor'
+  await rulesStore.openDrawer()
+  try {
+    await rulesStore.editRule(id)
+  } catch {
+    // ignore load failure; drawer仍会打开，方便用户手动查找
+  }
 }
 
 const handleViewModeChange = (mode: RequestViewMode) => {
@@ -214,6 +224,16 @@ onBeforeUnmount(async () => {
           <BrushCleaning class="h-4 w-4 text-muted-foreground/70" />
         </Button>
 
+        <CaptureRulesPopover>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            title="Focus / Ignore"
+          >
+            <Crosshair class="h-4 w-4 text-muted-foreground/70" />
+          </Button>
+        </CaptureRulesPopover>
+
         <Button
           size="icon-sm"
           variant="ghost"
@@ -246,7 +266,11 @@ onBeforeUnmount(async () => {
 
       <template #bottom>
         <section class="h-full rounded-md bg-card/60">
-          <NetworkRequestDetail :record="requestStreamStore.selectedRecord" class="h-full" />
+          <NetworkRequestDetail
+            :record="requestStreamStore.selectedRecord"
+            class="h-full"
+            @rule:open="handleMatchedRuleOpen"
+          />
         </section>
       </template>
     </VerticalSplitPanel>
@@ -272,21 +296,21 @@ onBeforeUnmount(async () => {
 
       <template #right>
         <section class="h-full rounded-md bg-card/60">
-          <NetworkRequestDetail :record="requestStreamStore.selectedRecord" class="h-full" />
+          <NetworkRequestDetail
+            :record="requestStreamStore.selectedRecord"
+            class="h-full"
+            @rule:open="handleMatchedRuleOpen"
+          />
         </section>
       </template>
     </HorizontalSplitPanel>
 
     <RulesAssetsDrawer
       v-model:open="rulesDrawerOpen"
-      v-model:active-primary-tab="rulesActiveTab"
       v-model:rules-pane="rulesPane"
-      v-model:assets-pane="assetsPane"
       v-model:selected-rule-id="selectedRuleId"
       v-model:rule-draft="ruleDraft"
-      v-model:selected-asset-id="selectedAssetId"
       :rules="rulesStore.rules"
-      :assets="rulesStore.assets"
       :dirty="rulesStore.isDirty"
       :loading="rulesStore.loading"
       :saving="rulesStore.saving"
@@ -295,9 +319,6 @@ onBeforeUnmount(async () => {
       @rules:toggle-enabled="rulesStore.toggleRuleEnabled"
       @rules:delete="id => rulesStore.deleteRule(id)"
       @update:rule-draft="rulesStore.updateRuleDraft"
-      @assets:create="rulesStore.createAsset"
-      @assets:update="rulesStore.updateAsset"
-      @assets:remove="rulesStore.removeAsset"
     />
   </div>
 </template>

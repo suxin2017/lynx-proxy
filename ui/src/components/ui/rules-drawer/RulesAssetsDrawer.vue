@@ -9,28 +9,21 @@ import { useRulesStore } from '@/stores/modules/rules.store'
 import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { createRuleDraft, getRuleValidationErrors, isRuleSaveDisabled } from '@/components/ui/rule-workbench'
 import RuleWorkbench from '@/components/ui/rule-workbench/RuleWorkbench.vue'
-import type { ActionAssetTemplate } from './types'
 import DrawerTabs from './DrawerTabs.vue'
 import RulesListView from './RulesListView.vue'
-import AssetsListView from './AssetsListView.vue'
-import AssetEditorView from './AssetEditorView.vue'
 import RuleEditorToolbar from './RuleEditorToolbar.vue'
 
-export type PrimaryTabKey = 'rules' | 'assets'
+export type PrimaryTabKey = 'rules'
 export type SecondaryPaneKey = 'list' | 'editor'
 
 const props = withDefaults(defineProps<{
   open: boolean
   activePrimaryTab?: PrimaryTabKey
   rulesPane?: SecondaryPaneKey
-  assetsPane?: SecondaryPaneKey
 
   rules: RuleWorkbenchRuleItem[]
   selectedRuleId?: string
   ruleDraft?: RuleDraft
-
-  assets: ActionAssetTemplate[]
-  selectedAssetId?: string
 
   dirty?: boolean
   loading?: boolean
@@ -39,9 +32,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   activePrimaryTab: 'rules',
   rulesPane: 'list',
-  assetsPane: 'list',
   selectedRuleId: '',
-  selectedAssetId: '',
   ruleDraft: undefined,
   dirty: false,
   loading: false,
@@ -52,25 +43,18 @@ const emit = defineEmits<{
   'update:open': [open: boolean]
   'update:activePrimaryTab': [tab: PrimaryTabKey]
   'update:rulesPane': [pane: SecondaryPaneKey]
-  'update:assetsPane': [pane: SecondaryPaneKey]
   'update:selectedRuleId': [id: string]
   'update:ruleDraft': [draft: RuleDraft]
-  'update:selectedAssetId': [id: string]
 
   'rules:create': []
   'rules:edit': [id: string]
   'rules:save': [id: string]
   'rules:toggle-enabled': [id: string, enabled: boolean]
   'rules:delete': [id: string]
-
-  'assets:create': [asset: ActionAssetTemplate]
-  'assets:update': [asset: ActionAssetTemplate]
-  'assets:remove': [id: string]
 }>()
 
 const tabs = computed(() => ([
-  { key: 'rules', label: '规则', badge: props.activePrimaryTab === 'rules' && props.dirty ? '●' : undefined },
-  { key: 'assets', label: '动作资产' },
+  { key: 'rules', label: '规则' },
 ]))
 
 const rulesStore = useRulesStore()
@@ -97,16 +81,6 @@ function openRulesList() {
 function openRulesEditor() {
   emit('update:activePrimaryTab', 'rules')
   setRulesPane('editor')
-}
-
-function openAssetsList() {
-  emit('update:activePrimaryTab', 'assets')
-  emit('update:assetsPane', 'list')
-}
-
-function openAssetsEditor() {
-  emit('update:activePrimaryTab', 'assets')
-  emit('update:assetsPane', 'editor')
 }
 
 function onCreateRule() {
@@ -147,14 +121,6 @@ async function handleToolbarSave() {
   openRulesList()
 }
 
-function onCreateAsset() {
-  openAssetsEditor()
-}
-
-const selectedAsset = computed(() => {
-  return props.assets.find(a => a.id === props.selectedAssetId) ?? null
-})
-
 const ruleSaveDisabled = computed(() => {
   const draft = props.ruleDraft ?? createRuleDraft()
   return isRuleSaveDisabled({
@@ -167,17 +133,12 @@ const ruleSaveDisabled = computed(() => {
 
 const showDrawerBack = computed(() => (
   (props.activePrimaryTab === 'rules' && rulesPaneDisplay.value === 'editor')
-  || (props.activePrimaryTab === 'assets' && props.assetsPane === 'editor')
 ))
 
 const isDetailPane = computed(() => showDrawerBack.value)
 
 function onDrawerBack() {
-  if (props.activePrimaryTab === 'rules') {
-    openRulesList()
-    return
-  }
-  openAssetsList()
+  openRulesList()
 }
 
 function onRuleDraftUpdate(next: RuleDraft) {
@@ -235,7 +196,7 @@ function onRuleDraftUpdate(next: RuleDraft) {
           :class="isDetailPane ? 'px-3 pb-3 pt-0' : 'p-3'"
         >
           <!-- Rules -->
-          <div v-if="props.activePrimaryTab === 'rules'" class="flex h-full min-h-0 flex-col">
+          <div class="flex h-full min-h-0 flex-col">
             <div v-if="rulesPaneDisplay === 'list'" class="min-h-0 flex-1">
               <RulesListView
                 :rules="props.rules"
@@ -262,7 +223,6 @@ function onRuleDraftUpdate(next: RuleDraft) {
                 :rules="props.rules"
                 :draft="props.ruleDraft"
                 :selected-rule-id="props.selectedRuleId"
-                :action-assets="props.assets"
                 :dirty="props.dirty"
                 :loading="props.loading"
                 :saving="props.saving"
@@ -272,31 +232,6 @@ function onRuleDraftUpdate(next: RuleDraft) {
                 @update:draft="onRuleDraftUpdate"
                 @update:selected-rule-id="emit('update:selectedRuleId', $event)"
                 @save="handleToolbarSave"
-                @save-action-asset="emit('assets:create', $event)"
-              />
-            </div>
-          </div>
-
-          <!-- Assets -->
-          <div v-else class="flex h-full min-h-0 flex-col">
-            <div v-if="props.assetsPane === 'list'" class="min-h-0 flex-1">
-              <AssetsListView
-                :assets="props.assets"
-                :selected-asset-id="props.selectedAssetId"
-                class="h-full"
-                @create="onCreateAsset"
-                @edit="id => { emit('update:selectedAssetId', id); openAssetsEditor() }"
-                @select="emit('update:selectedAssetId', $event)"
-              />
-            </div>
-
-            <div v-else class="min-h-0 flex-1">
-              <AssetEditorView
-                :asset="selectedAsset"
-                class="h-full"
-                @create="emit('assets:create', $event)"
-                @update="emit('assets:update', $event)"
-                @remove="emit('assets:remove', $event)"
               />
             </div>
           </div>

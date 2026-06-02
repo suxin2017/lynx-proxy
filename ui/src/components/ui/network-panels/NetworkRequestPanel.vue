@@ -7,6 +7,7 @@ import { NetworkRequestTable } from '@/components/ui/network-request-table'
 import TrafficContextMenu from './TrafficContextMenu.vue'
 import type { RequestViewMode } from './NetworkPanelHeader.vue'
 import { cn } from '@/lib/utils'
+import type { FlatTreeNode } from '@/components/ui/request-tree/types'
 
 interface NetworkRequestPanelProps {
   requests: TrafficRecord[]
@@ -61,11 +62,30 @@ const handleSelect = (request: TrafficRecord) => {
 }
 
 const menuRecordId = ref<string | undefined>(undefined)
+const menuMatchExpr = ref<string | undefined>(undefined)
 const menuPoint = ref({ x: 0, y: 0 })
 const menuOpenKey = ref(0)
 
-const openContextMenu = (request: TrafficRecord, ev: MouseEvent) => {
-  menuRecordId.value = request.id
+const isFlatTreeNode = (value: unknown): value is FlatTreeNode => {
+  const v = value as any
+  return v && typeof v === 'object'
+    && (v.type === 'group' || v.type === 'leaf')
+    && typeof v.fullLabel === 'string'
+}
+
+const openContextMenu = (target: TrafficRecord | FlatTreeNode, ev: MouseEvent) => {
+  if (isFlatTreeNode(target)) {
+    menuRecordId.value = target.request?.id
+    menuMatchExpr.value = target.type === 'group' ? target.fullLabel : undefined
+    menuPoint.value = { x: ev.clientX, y: ev.clientY }
+    menuOpenKey.value += 1
+    return
+  }
+
+  menuRecordId.value = target.id
+  // Provide a fallback match expression so focus/ignore can work even if
+  // the detail record is not yet available in the store.
+  menuMatchExpr.value = target.url
   menuPoint.value = { x: ev.clientX, y: ev.clientY }
   menuOpenKey.value += 1
 }
@@ -97,6 +117,7 @@ const openContextMenu = (request: TrafficRecord, ev: MouseEvent) => {
 
     <TrafficContextMenu
       :record-id="menuRecordId"
+      :match-expr="menuMatchExpr"
       :x="menuPoint.x"
       :y="menuPoint.y"
       :open-key="menuOpenKey"

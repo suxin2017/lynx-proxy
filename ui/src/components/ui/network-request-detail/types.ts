@@ -19,6 +19,12 @@ export interface NetworkDetailTiming {
   downloadMs?: number
 }
 
+export interface NetworkDetailMatchedRule {
+  ruleId: string
+  name: string
+  reason?: string
+}
+
 export interface NetworkDetailRecord {
   id: string
   method: string
@@ -47,4 +53,5 @@ export interface NetworkDetailRecord {
   requestContentType?: string
   responseContentType?: string
   timing?: NetworkDetailTiming
+  matchedRules?: NetworkDetailMatchedRule[]
 }

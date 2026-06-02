@@ -34,6 +34,14 @@ export const WsOp = {
   RulesEnabledSet: 'rules.enabled.set',
   RulesDelete: 'rules.delete',
   RulesTemplatesGet: 'rules.templates.get',
+  CaptureRulesFocusListGet: 'capture.rules.focus.list.get',
+  CaptureRulesIgnoreListGet: 'capture.rules.ignore.list.get',
+  CaptureRulesFocusUpsert: 'capture.rules.focus.upsert',
+  CaptureRulesIgnoreUpsert: 'capture.rules.ignore.upsert',
+  CaptureRulesFocusDelete: 'capture.rules.focus.delete',
+  CaptureRulesIgnoreDelete: 'capture.rules.ignore.delete',
+  CaptureRulesFocusEnabledSet: 'capture.rules.focus.enabled.set',
+  CaptureRulesIgnoreEnabledSet: 'capture.rules.ignore.enabled.set',
   CaptureStatusChanged: 'capture.status.changed',
   RequestStart: 'request.start',
   RequestBody: 'request.body',
@@ -65,6 +73,14 @@ export type WsRequestOp =
   | 'rules.enabled.set'
   | 'rules.delete'
   | 'rules.templates.get'
+  | 'capture.rules.focus.list.get'
+  | 'capture.rules.ignore.list.get'
+  | 'capture.rules.focus.upsert'
+  | 'capture.rules.ignore.upsert'
+  | 'capture.rules.focus.delete'
+  | 'capture.rules.ignore.delete'
+  | 'capture.rules.focus.enabled.set'
+  | 'capture.rules.ignore.enabled.set'
 
 export type WsEventOp =
   | 'capture.status.changed'

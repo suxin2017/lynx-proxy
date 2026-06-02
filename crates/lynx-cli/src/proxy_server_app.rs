@@ -122,7 +122,8 @@ mod tests {
     use super::*;
 
     fn create_test_app(data_dir: Option<String>) -> ProxyServerApp {
-        ProxyServerApp::new(7788, data_dir, false, false)
+        // Use an ephemeral port to avoid colliding with local dev servers.
+        ProxyServerApp::new(0, data_dir, false, false)
     }
 
     #[tokio::test]

@@ -15,6 +15,7 @@ import {
   formatUrlEncodedForm,
 } from '@/lib/http/body-formatters'
 import { useRequestStreamStore } from '@/stores'
+import { useCaptureRulesStore } from '@/stores'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -29,17 +30,59 @@ import { cn } from '@/lib/utils'
 
 const props = defineProps<{
   recordId?: string
+  /** For tree group nodes (origin or origin/path) that are not actual requests. */
+  matchExpr?: string
   x: number
   y: number
   openKey: number
 }>()
 
 const requestStreamStore = useRequestStreamStore()
+const captureRulesStore = useCaptureRulesStore()
 
 const record = computed<NetworkDetailRecord | null>(() => {
   if (!props.recordId) return null
   return requestStreamStore.getDetailRecord(props.recordId)
 })
+
+type MatchTarget = {
+  hostExpr: string
+  hostPathExpr: string
+  hostLabel: string
+  hostPathLabel: string
+}
+
+function extractMatchTarget(matchExpr: string): MatchTarget | null {
+  const raw = matchExpr.trim()
+  if (!raw) return null
+  try {
+    const parsed = new URL(raw)
+    const isHttpLike = /^(https?|wss?):$/i.test(parsed.protocol)
+    if (isHttpLike && parsed.host) {
+      const path = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : ''
+      const hostLabel = parsed.host
+      const hostPathLabel = `${parsed.host}${path || '/'}`
+      return {
+        hostExpr: parsed.host,
+        hostPathExpr: path ? `${parsed.host}${path}` : parsed.host,
+        hostLabel,
+        hostPathLabel,
+      }
+    }
+  } catch {
+    // fallthrough
+  }
+
+  // Fallback: treat the first segment as "host-ish", remaining as path.
+  const parts = raw.split('/').filter(Boolean)
+  const first = parts[0] ?? raw
+  const rest = parts.slice(1).join('/')
+  const hostExpr = first
+  const hostPathExpr = rest ? `${first}/${rest}` : first
+  const hostLabel = first
+  const hostPathLabel = rest ? `${first}/${rest}` : first
+  return { hostExpr, hostPathExpr, hostLabel, hostPathLabel }
+}
 
 function formatHeaderLines(rows: NetworkDetailKeyValue[] | undefined): string {
   if (!rows || rows.length === 0) return ''
@@ -96,6 +139,107 @@ function bodyBytesToCopyText(
     default:
       return formatTextBody(bytes, contentType)
   }
+}
+
+function buildFocusHostExpr(rec: NetworkDetailRecord): { name: string, matchExpr: string } | null {
+  const partialLike = {
+    method: rec.method,
+    url: rec.url,
+    requestHeaders: rec.requestHeaders,
+  }
+  const facts = requestFactsFromPartialRecord(partialLike as any)
+  if (!facts.host) return null
+  const host = facts.port ? `${facts.host}:${facts.port}` : facts.host
+  return { name: `Focus ${host}`, matchExpr: host }
+}
+
+function buildFocusHostPathExpr(rec: NetworkDetailRecord): { name: string, matchExpr: string } | null {
+  const partialLike = {
+    method: rec.method,
+    url: rec.url,
+    requestHeaders: rec.requestHeaders,
+  }
+  const facts = requestFactsFromPartialRecord(partialLike as any)
+  if (!facts.host || !facts.path) return null
+  const host = facts.port ? `${facts.host}:${facts.port}` : facts.host
+  const path = facts.path.startsWith('/') ? facts.path : `/${facts.path}`
+  return { name: `Focus ${host}${path}`, matchExpr: `${host}${path}` }
+}
+
+function buildIgnoreHostExpr(rec: NetworkDetailRecord): { name: string, matchExpr: string } | null {
+  const base = buildFocusHostExpr(rec)
+  if (!base) return null
+  return { name: base.name.replace(/^Focus /, 'Ignore '), matchExpr: base.matchExpr }
+}
+
+function buildIgnoreHostPathExpr(rec: NetworkDetailRecord): { name: string, matchExpr: string } | null {
+  const base = buildFocusHostPathExpr(rec)
+  if (!base) return null
+  return { name: base.name.replace(/^Focus /, 'Ignore '), matchExpr: base.matchExpr }
+}
+
+async function addFocusHost() {
+  const rec = record.value
+  const expr = rec
+    ? buildFocusHostExpr(rec)
+    : props.matchExpr
+      ? (() => {
+        const target = extractMatchTarget(props.matchExpr!)
+        if (!target) return null
+        return { name: `Focus ${target.hostLabel}`, matchExpr: target.hostExpr }
+      })()
+      : null
+  if (!expr) return
+  await captureRulesStore.upsertFocus({ name: expr.name, enabled: true, matchExpr: expr.matchExpr })
+  setHint('已添加 Focus')
+}
+
+async function addFocusHostPath() {
+  const rec = record.value
+  const expr = rec
+    ? buildFocusHostPathExpr(rec)
+    : props.matchExpr
+      ? (() => {
+        const target = extractMatchTarget(props.matchExpr!)
+        if (!target) return null
+        return { name: `Focus ${target.hostPathLabel}`, matchExpr: target.hostPathExpr }
+      })()
+      : null
+  if (!expr) return
+  await captureRulesStore.upsertFocus({ name: expr.name, enabled: true, matchExpr: expr.matchExpr })
+  setHint('已添加 Focus')
+}
+
+async function addIgnoreHost() {
+  const rec = record.value
+  const expr = rec
+    ? buildIgnoreHostExpr(rec)
+    : props.matchExpr
+      ? (() => {
+        const target = extractMatchTarget(props.matchExpr!)
+        if (!target) return null
+        return { name: `Ignore ${target.hostLabel}`, matchExpr: target.hostExpr }
+      })()
+      : null
+  if (!expr) return
+  await captureRulesStore.upsertIgnore({ name: expr.name, enabled: true, matchExpr: expr.matchExpr })
+  setHint('已添加 Ignore')
+}
+
+async function addIgnoreHostPath() {
+  const rec = record.value
+  const expr = rec
+    ? buildIgnoreHostPathExpr(rec)
+    : props.matchExpr
+      ? (() => {
+        const target = extractMatchTarget(props.matchExpr!)
+        if (!target) return null
+        return { name: `Ignore ${target.hostPathLabel}`, matchExpr: target.hostPathExpr }
+      })()
+      : null
+  if (!expr) return
+  await captureRulesStore.upsertIgnore({ name: expr.name, enabled: true, matchExpr: expr.matchExpr })
+  setHint('已添加 Ignore')
 }
 
 
@@ -197,6 +341,32 @@ watch(
       >
         复制 URL
       </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>Focus…</ContextMenuSubTrigger>
+        <ContextMenuSubContent class="w-56">
+          <ContextMenuItem :disabled="!record && !props.matchExpr" @select="addFocusHost">
+            Focus Host
+          </ContextMenuItem>
+          <ContextMenuItem :disabled="!record && !props.matchExpr" @select="addFocusHostPath">
+            Focus Host+Path
+          </ContextMenuItem>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>Ignore…</ContextMenuSubTrigger>
+        <ContextMenuSubContent class="w-56">
+          <ContextMenuItem :disabled="!record && !props.matchExpr" @select="addIgnoreHost">
+            Ignore Host
+          </ContextMenuItem>
+          <ContextMenuItem :disabled="!record && !props.matchExpr" @select="addIgnoreHostPath">
+            Ignore Host+Path
+          </ContextMenuItem>
+        </ContextMenuSubContent>
+      </ContextMenuSub>
 
       <ContextMenuSeparator />
 

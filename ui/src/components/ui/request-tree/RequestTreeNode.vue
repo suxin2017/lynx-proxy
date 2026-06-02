@@ -68,8 +68,6 @@ function handleClick() {
 }
 
 function handleContextMenu(ev: MouseEvent) {
-  if (props.node.type !== 'leaf') return
-  if (!props.node.request) return
   emit('contextMenu', props.node, ev)
 }
 </script>

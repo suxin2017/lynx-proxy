@@ -6,6 +6,10 @@ import type { NetworkDetailRecord } from './types'
 import NetworkRequestDetail from './NetworkRequestDetail.vue'
 import type { TrafficRecord } from '../request-tree/types'
 import RequestTree from '../request-tree/RequestTree.vue'
+import type { RuleDraft, RuleWorkbenchRuleItem } from '../rule-workbench'
+import { createRuleDraft } from '../rule-workbench'
+import type { SecondaryPaneKey } from '../rules-drawer'
+import { RulesAssetsDrawer } from '../rules-drawer'
 
 const meta = {
   title: 'Data Display/NetworkRequestDetail',
@@ -100,6 +104,13 @@ const sampleRecord: NetworkDetailRecord = {
     waitingMs: 71.9,
     downloadMs: 22.5,
   },
+  matchedRules: [
+    {
+      ruleId: '101',
+      name: 'Mock · 注入调试 Header',
+      reason: 'matchDsl 命中',
+    },
+  ],
 }
 
 const sampleRecord2: NetworkDetailRecord = {
@@ -116,6 +127,7 @@ const sampleRecord2: NetworkDetailRecord = {
     { key: 'locale', value: 'en-US' },
     { key: 'viewport', value: 'mobile' },
   ],
+  matchedRules: [],
 }
 
 const sampleRecord3: NetworkDetailRecord = {
@@ -127,6 +139,11 @@ const sampleRecord3: NetworkDetailRecord = {
   requestType: 'fetch',
   durationMs: 233.7,
   url: 'https://gateway.lynx.internal/runtime/hydration/island-8/widgets/container-21/panels/panel-77/fragments/fragment-1002?traceId=trace_1002_9&locale=zh-CN&viewport=desktop',
+  matchedRules: [
+    { ruleId: '201', name: 'Mock · 拦截 404', reason: 'matchDsl 命中' },
+    { ruleId: '202', name: 'Mock · 延迟 800ms', reason: 'matchDsl 命中' },
+    { ruleId: '203', name: 'Mock · 代理转发到 staging', reason: 'matchDsl 命中' },
+  ],
 }
 
 const detailRecords: NetworkDetailRecord[] = [sampleRecord, sampleRecord2, sampleRecord3]
@@ -236,11 +253,34 @@ export const ContentBodyTab: Story = {
 
 export const DrawerPanel: Story = {
   render: () => ({
-    components: { NetworkRequestDetail, RequestTree },
+    components: { NetworkRequestDetail, RequestTree, RulesAssetsDrawer },
     setup() {
       const selected = ref<string>(detailRecords[0].id)
       const currentRecord = ref<NetworkDetailRecord>(detailRecords[0])
       const drawerOpen = ref(false)
+      const rulesDrawerOpen = ref(false)
+      const rulesPane = ref<SecondaryPaneKey>('list')
+      const selectedRuleId = ref<string>('')
+      const ruleDraft = ref<RuleDraft | undefined>(undefined)
+
+      const rules = ref<RuleWorkbenchRuleItem[]>([
+        { id: '101', name: 'Mock · 注入调试 Header', enabled: true, priority: 50, summary: 'modifyRequest: headers' },
+        { id: '201', name: 'Mock · 拦截 404', enabled: true, priority: 10, summary: 'block: 404' },
+        { id: '202', name: 'Mock · 延迟 800ms', enabled: true, priority: 40, summary: 'delay: 800ms' },
+        { id: '203', name: 'Mock · 代理转发到 staging', enabled: false, priority: 60, summary: 'proxyForward: staging' },
+      ])
+
+      function openRuleEditor(ruleId: string) {
+        rulesDrawerOpen.value = true
+        rulesPane.value = 'editor'
+        selectedRuleId.value = ruleId
+        const ruleName = rules.value.find(r => r.id === ruleId)?.name ?? '未命名规则'
+        ruleDraft.value = createRuleDraft({
+          id: ruleId,
+          name: ruleName,
+          matchDsl: 'example.com',
+        })
+      }
 
       function handleSelect(request: TrafficRecord) {
         const found = detailRecords.find(item => item.id === request.id)
@@ -256,6 +296,12 @@ export const DrawerPanel: Story = {
         drawerOpen,
         treeRequests,
         handleSelect,
+        rulesDrawerOpen,
+        rulesPane,
+        selectedRuleId,
+        ruleDraft,
+        rules,
+        openRuleEditor,
       }
     },
     template: `
@@ -285,9 +331,158 @@ export const DrawerPanel: Story = {
           :style="{ transform: drawerOpen ? 'translateX(0)' : 'translateX(105%)' }"
         >
           <div style="height: 100%; padding: 10px;">
-            <NetworkRequestDetail :record="currentRecord" class="h-full" />
+            <NetworkRequestDetail
+              :record="currentRecord"
+              class="h-full"
+              @rule:open="(rule) => openRuleEditor(rule.ruleId)"
+            />
           </div>
         </div>
+
+        <RulesAssetsDrawer
+          v-model:open="rulesDrawerOpen"
+          v-model:rules-pane="rulesPane"
+          v-model:selected-rule-id="selectedRuleId"
+          v-model:rule-draft="ruleDraft"
+          :rules="rules"
+          :dirty="false"
+          :loading="false"
+          :saving="false"
+        />
+      </div>
+    `,
+  }),
+}
+
+export const MatchedRules_None: Story = {
+  name: 'MatchedRules · None',
+  render: () => ({
+    components: { NetworkRequestDetail },
+    setup() {
+      const record = ref<NetworkDetailRecord>({
+        ...sampleRecord2,
+        matchedRules: [],
+      })
+      return { record }
+    },
+    template: `
+      <div style="height: 100vh; padding: 16px; background: #f5f6f7;">
+        <NetworkRequestDetail :record="record" class="h-full" />
+      </div>
+    `,
+  }),
+}
+
+export const MatchedRules_Single_ClickToOpenDrawer: Story = {
+  name: 'MatchedRules · Single (click → open drawer)',
+  render: () => ({
+    components: { NetworkRequestDetail, RulesAssetsDrawer },
+    setup() {
+      const record = ref<NetworkDetailRecord>({ ...sampleRecord })
+
+      const rulesDrawerOpen = ref(false)
+      const rulesPane = ref<SecondaryPaneKey>('list')
+      const selectedRuleId = ref<string>('')
+      const ruleDraft = ref<RuleDraft | undefined>(undefined)
+
+      const rules = ref<RuleWorkbenchRuleItem[]>([
+        { id: '101', name: 'Mock · 注入调试 Header', enabled: true, priority: 50, summary: 'modifyRequest: headers' },
+      ])
+
+      function openRuleEditor(ruleId: string) {
+        rulesDrawerOpen.value = true
+        rulesPane.value = 'editor'
+        selectedRuleId.value = ruleId
+        ruleDraft.value = createRuleDraft({ id: ruleId, name: 'Mock · 注入调试 Header' })
+      }
+
+      return {
+        record,
+        rulesDrawerOpen,
+        rulesPane,
+        selectedRuleId,
+        ruleDraft,
+        rules,
+        openRuleEditor,
+      }
+    },
+    template: `
+      <div style="height: 100vh; padding: 16px; background: #f5f6f7;">
+        <NetworkRequestDetail
+          :record="record"
+          class="h-full"
+          @rule:open="(rule) => openRuleEditor(rule.ruleId)"
+        />
+
+        <RulesAssetsDrawer
+          v-model:open="rulesDrawerOpen"
+          v-model:rules-pane="rulesPane"
+          v-model:selected-rule-id="selectedRuleId"
+          v-model:rule-draft="ruleDraft"
+          :rules="rules"
+          :dirty="false"
+          :loading="false"
+          :saving="false"
+        />
+      </div>
+    `,
+  }),
+}
+
+export const MatchedRules_Multiple_ClickToOpenDrawer: Story = {
+  name: 'MatchedRules · Multiple (click → open drawer)',
+  render: () => ({
+    components: { NetworkRequestDetail, RulesAssetsDrawer },
+    setup() {
+      const record = ref<NetworkDetailRecord>({ ...sampleRecord3 })
+
+      const rulesDrawerOpen = ref(false)
+      const rulesPane = ref<SecondaryPaneKey>('list')
+      const selectedRuleId = ref<string>('')
+      const ruleDraft = ref<RuleDraft | undefined>(undefined)
+
+      const rules = ref<RuleWorkbenchRuleItem[]>([
+        { id: '201', name: 'Mock · 拦截 404', enabled: true, priority: 10, summary: 'block: 404' },
+        { id: '202', name: 'Mock · 延迟 800ms', enabled: true, priority: 40, summary: 'delay: 800ms' },
+        { id: '203', name: 'Mock · 代理转发到 staging', enabled: false, priority: 60, summary: 'proxyForward: staging' },
+      ])
+
+      function openRuleEditor(ruleId: string) {
+        rulesDrawerOpen.value = true
+        rulesPane.value = 'editor'
+        selectedRuleId.value = ruleId
+        const ruleName = rules.value.find(r => r.id === ruleId)?.name ?? '未命名规则'
+        ruleDraft.value = createRuleDraft({ id: ruleId, name: ruleName })
+      }
+
+      return {
+        record,
+        rulesDrawerOpen,
+        rulesPane,
+        selectedRuleId,
+        ruleDraft,
+        rules,
+        openRuleEditor,
+      }
+    },
+    template: `
+      <div style="height: 100vh; padding: 16px; background: #f5f6f7;">
+        <NetworkRequestDetail
+          :record="record"
+          class="h-full"
+          @rule:open="(rule) => openRuleEditor(rule.ruleId)"
+        />
+
+        <RulesAssetsDrawer
+          v-model:open="rulesDrawerOpen"
+          v-model:rules-pane="rulesPane"
+          v-model:selected-rule-id="selectedRuleId"
+          v-model:rule-draft="ruleDraft"
+          :rules="rules"
+          :dirty="false"
+          :loading="false"
+          :saving="false"
+        />
       </div>
     `,
   }),

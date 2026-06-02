@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<RequestTreeProps>(), {
 const emit = defineEmits<{
   'update:modelValue': [id: string]
   select: [request: TrafficRecord]
-  contextMenu: [request: TrafficRecord, ev: MouseEvent]
+  contextMenu: [node: FlatTreeNode, ev: MouseEvent]
 }>()
 
 // ---------------------------------------------------------------------------
@@ -95,9 +95,10 @@ function handleSelect(node: FlatTreeNode) {
 }
 
 function handleContextMenu(node: FlatTreeNode, _ev: MouseEvent) {
-  // Right-click should also select the leaf node (detail panel follows selection).
-  handleSelect(node)
-  // The actual menu open is handled by the parent component that wraps RequestTree.
+  // Right-click should also select leaf nodes (detail panel follows selection).
+  if (node.request) {
+    handleSelect(node)
+  }
 }
 </script>
 
@@ -133,7 +134,7 @@ function handleContextMenu(node: FlatTreeNode, _ev: MouseEvent) {
             :selected="flatNodes[virtualRow.index].id === selectedId"
             @toggle="handleToggle"
             @select="handleSelect"
-            @context-menu="(node, ev) => { handleContextMenu(node, ev); if (node.request) emit('contextMenu', node.request, ev) }"
+            @context-menu="(node, ev) => { handleContextMenu(node, ev); emit('contextMenu', node, ev) }"
           />
         </div>
       </div>

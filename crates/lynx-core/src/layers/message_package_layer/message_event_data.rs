@@ -13,6 +13,17 @@ use url::Url;
 use crate::common::BoxBody;
 use crate::utils::empty;
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MatchedRuleInfo {
+    pub rule_id: i32,
+    pub name: String,
+    pub priority: i32,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
+pub struct MatchedRulesExt(pub Vec<MatchedRuleInfo>);
+
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 pub struct MessageHeaderSize(pub usize);
 
@@ -54,6 +65,8 @@ pub struct MessageEventRequest {
     pub version: String,
     pub header_size: MessageHeaderSize,
     pub body: MessageEventBody,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matched_rules: Option<Vec<MatchedRuleInfo>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
@@ -274,6 +287,10 @@ impl<B: Body> From<&Request<B>> for MessageEventRequest {
         let version = req.version().to_string_version();
         let header_size = MessageHeaderSize::from(req.headers().clone());
         let body = MessageEventBody(Bytes::new());
+        let matched_rules = req
+            .extensions()
+            .get::<MatchedRulesExt>()
+            .map(|ext| ext.0.clone());
 
         MessageEventRequest {
             method,
@@ -282,6 +299,7 @@ impl<B: Body> From<&Request<B>> for MessageEventRequest {
             version,
             header_size,
             body,
+            matched_rules,
         }
     }
 }

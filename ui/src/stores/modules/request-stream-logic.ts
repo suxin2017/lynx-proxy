@@ -7,6 +7,11 @@ export type PartialRequestRecord = {
   status?: TrafficRecord['status']
   statusCode?: number
   requestType?: string
+  matchedRules?: Array<{
+    ruleId: string
+    name: string
+    priority?: number
+  }>
   requestHeaders?: NetworkDetailKeyValue[]
   responseHeaders?: NetworkDetailKeyValue[]
   requestCookies?: NetworkDetailKeyValue[]

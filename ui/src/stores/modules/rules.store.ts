@@ -2,7 +2,6 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { createRuleDraft } from '@/components/ui/rule-workbench'
-import type { ActionAssetTemplate } from '@/components/ui/rules-drawer/types'
 type PrimaryTabKey = 'rules' | 'assets'
 type SecondaryPaneKey = 'list' | 'editor'
 import {
@@ -12,11 +11,10 @@ import {
   requestRuleToDraft,
   requestRuleToListItem,
   ruleIdToString,
-  templateToAsset,
 } from '@/lib/ws/rules-mapper'
 import { useWsConnectionStore } from './ws-connection.store'
 import { WsOp } from '@/lib/generated/ws/v1'
-import type { RequestRuleDto, RulesListResponse, RuleTemplatesResponse } from '@/lib/ws/rules-types'
+import type { RequestRuleDto, RulesListResponse } from '@/lib/ws/rules-types'
 
 export const useRulesStore = defineStore('rules', () => {
   const open = ref(false)
@@ -28,9 +26,6 @@ export const useRulesStore = defineStore('rules', () => {
   const selectedRuleId = ref('')
   const ruleDraft = ref<RuleDraft | undefined>(undefined)
   const savedDraft = ref<RuleDraft | undefined>(undefined)
-
-  const assets = ref<ActionAssetTemplate[]>([])
-  const selectedAssetId = ref('')
 
   const loading = ref(false)
   const saving = ref(false)
@@ -59,26 +54,9 @@ export const useRulesStore = defineStore('rules', () => {
     }
   }
 
-  async function loadTemplates() {
-    try {
-      const result = await wsConnectionStore.call<RuleTemplatesResponse>(WsOp.RulesTemplatesGet)
-      const mapped = (result?.templates ?? [])
-        .map((t, i) => templateToAsset(t, i))
-        .filter((a): a is ActionAssetTemplate => a != null)
-      if (mapped.length > 0) {
-        assets.value = mapped
-        if (!selectedAssetId.value && assets.value[0]) {
-          selectedAssetId.value = assets.value[0].id
-        }
-      }
-    } catch (err) {
-      error.value = String(err)
-    }
-  }
-
   async function openDrawer() {
     open.value = true
-    await Promise.all([refreshRules(), loadTemplates()])
+    await refreshRules()
   }
 
   function closeDrawer() {
@@ -125,7 +103,7 @@ export const useRulesStore = defineStore('rules', () => {
     ruleDraft.value = next
     const id = selectedRuleId.value
     if (!id) return
-    rules.value = rules.value.map(rule => (
+    rules.value = rules.value.map((rule: RuleWorkbenchRuleItem) => (
       rule.id === id
         ? { ...rule, name: next.name, enabled: next.enabled }
         : rule
@@ -148,7 +126,7 @@ export const useRulesStore = defineStore('rules', () => {
     error.value = null
 
     if (ruleId == null) {
-      rules.value = rules.value.filter(rule => rule.id !== id)
+      rules.value = rules.value.filter((rule: RuleWorkbenchRuleItem) => rule.id !== id)
       if (wasSelected) {
         clearRuleEditor()
         goToRulesList()
@@ -205,7 +183,7 @@ export const useRulesStore = defineStore('rules', () => {
   async function toggleRuleEnabled(id: string, enabled: boolean) {
     const ruleId = parseRuleId(id)
     if (ruleId == null) {
-      rules.value = rules.value.map(rule => (
+      rules.value = rules.value.map((rule: RuleWorkbenchRuleItem) => (
         rule.id === id ? { ...rule, enabled } : rule
       ))
       if (ruleDraft.value?.id === id) {
@@ -220,7 +198,7 @@ export const useRulesStore = defineStore('rules', () => {
         ruleId,
         enabled,
       })
-      rules.value = rules.value.map(rule => (
+      rules.value = rules.value.map((rule: RuleWorkbenchRuleItem) => (
         rule.id === id
           ? { ...requestRuleToListItem(updated), id }
           : rule
@@ -237,22 +215,6 @@ export const useRulesStore = defineStore('rules', () => {
     }
   }
 
-  function createAsset(asset: ActionAssetTemplate) {
-    assets.value = [asset, ...assets.value]
-    selectedAssetId.value = asset.id
-  }
-
-  function updateAsset(asset: ActionAssetTemplate) {
-    assets.value = assets.value.map(a => (a.id === asset.id ? asset : a))
-  }
-
-  function removeAsset(id: string) {
-    assets.value = assets.value.filter(a => a.id !== id)
-    if (selectedAssetId.value === id) {
-      selectedAssetId.value = assets.value[0]?.id ?? ''
-    }
-  }
-
   return {
     open,
     activePrimaryTab,
@@ -261,8 +223,6 @@ export const useRulesStore = defineStore('rules', () => {
     rules,
     selectedRuleId,
     ruleDraft,
-    assets,
-    selectedAssetId,
     loading,
     saving,
     error,
@@ -270,7 +230,6 @@ export const useRulesStore = defineStore('rules', () => {
     openDrawer,
     closeDrawer,
     refreshRules,
-    loadTemplates,
     editRule,
     createRule,
     updateRuleDraft,
@@ -278,8 +237,5 @@ export const useRulesStore = defineStore('rules', () => {
     goToRulesList,
     toggleRuleEnabled,
     deleteRule,
-    createAsset,
-    updateAsset,
-    removeAsset,
   }
 })

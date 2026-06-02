@@ -30,6 +30,14 @@ pub mod op {
     pub const RULES_ENABLED_SET: &str = "rules.enabled.set";
     pub const RULES_DELETE: &str = "rules.delete";
     pub const RULES_TEMPLATES_GET: &str = "rules.templates.get";
+    pub const CAPTURE_RULES_FOCUS_LIST_GET: &str = "capture.rules.focus.list.get";
+    pub const CAPTURE_RULES_IGNORE_LIST_GET: &str = "capture.rules.ignore.list.get";
+    pub const CAPTURE_RULES_FOCUS_UPSERT: &str = "capture.rules.focus.upsert";
+    pub const CAPTURE_RULES_IGNORE_UPSERT: &str = "capture.rules.ignore.upsert";
+    pub const CAPTURE_RULES_FOCUS_DELETE: &str = "capture.rules.focus.delete";
+    pub const CAPTURE_RULES_IGNORE_DELETE: &str = "capture.rules.ignore.delete";
+    pub const CAPTURE_RULES_FOCUS_ENABLED_SET: &str = "capture.rules.focus.enabled.set";
+    pub const CAPTURE_RULES_IGNORE_ENABLED_SET: &str = "capture.rules.ignore.enabled.set";
     pub const CAPTURE_STATUS_CHANGED: &str = "capture.status.changed";
     pub const REQUEST_START: &str = "request.start";
     pub const REQUEST_BODY: &str = "request.body";
@@ -61,7 +69,15 @@ pub mod op {
             "rules.save.set" |
             "rules.enabled.set" |
             "rules.delete" |
-            "rules.templates.get"
+            "rules.templates.get" |
+            "capture.rules.focus.list.get" |
+            "capture.rules.ignore.list.get" |
+            "capture.rules.focus.upsert" |
+            "capture.rules.ignore.upsert" |
+            "capture.rules.focus.delete" |
+            "capture.rules.ignore.delete" |
+            "capture.rules.focus.enabled.set" |
+            "capture.rules.ignore.enabled.set"
         )
     }
 

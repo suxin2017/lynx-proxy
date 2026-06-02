@@ -13,6 +13,7 @@ use crate::dao::request_processing_dao::types::RequestRule;
 use crate::dao::{https_capture_dao::CaptureFilter, general_setting_dao::GeneralSetting};
 use crate::dao::client_proxy_dao::ClientProxyConfig;
 use crate::dao::request_processing_dao::matcher::{CompiledRule, RuleMatcher};
+use crate::dao::capture_rules_dao::CaptureRules;
 
 pub use json_file::{read_json, read_json_or_default, write_json_atomic};
 
@@ -180,7 +181,7 @@ impl DataStore {
     }
 
     async fn ensure_setting_defaults(&self) -> Result<()> {
-        let defaults: [(&str, serde_json::Value); 4] = [
+        let defaults: [(&str, serde_json::Value); 5] = [
             (
                 "capture_switch",
                 serde_json::to_value(CaptureSwitch::default())?,
@@ -196,6 +197,10 @@ impl DataStore {
             (
                 "client_proxy",
                 serde_json::to_value(ClientProxyConfig::default())?,
+            ),
+            (
+                "capture_rules",
+                serde_json::to_value(CaptureRules::default())?,
             ),
         ];
 
