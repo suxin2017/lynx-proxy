@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { RuleModifyResponseActionConfig } from '../types'
+import { computed } from 'vue'
+import { indentOnInput } from '@codemirror/language'
+import EditableCodeMirrorSurface from '@/components/ui/json-editor/EditableCodeMirrorSurface.vue'
 
 interface ModifyResponseActionConfigProps {
   config: RuleModifyResponseActionConfig
@@ -29,6 +32,25 @@ function updateHeader(index: number, key: 'key' | 'value', value: string) {
 function removeHeader(index: number) {
   update({ modifyHeaders: props.config.modifyHeaders.filter((_, idx) => idx !== index) })
 }
+
+function isJsonText(value: string): boolean {
+  const trimmed = value.trim()
+  if (!trimmed) return false
+  if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) return false
+  try {
+    JSON.parse(trimmed)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const bodyLanguage = computed(() => (isJsonText(props.config.modifyBody) ? 'json' : 'plaintext'))
+const bodyExtensions = computed(() => {
+  if (bodyLanguage.value !== 'json') return []
+  //一期：仅 JSON 的折叠/缩进输入体验
+  return [indentOnInput()]
+})
 </script>
 
 <template>
@@ -71,12 +93,19 @@ function removeHeader(index: number) {
 
     <label class="grid gap-1 text-[11px] text-muted-foreground sm:col-span-2">
       Body
-      <textarea
-        rows="3"
-        class="rounded-sm border border-input bg-background px-2 py-1.5 text-xs text-foreground outline-none ring-ring placeholder:text-muted-foreground focus:ring-1"
-        :value="props.config.modifyBody"
-        @input="update({ modifyBody: ($event.target as HTMLTextAreaElement).value })"
-      />
+      <div
+        class="rounded-sm border border-input bg-background p-0 text-xs text-foreground outline-none ring-ring focus-within:ring-1"
+        style="resize: vertical; overflow: hidden; min-height: 7.5rem;"
+      >
+        <EditableCodeMirrorSurface
+          :model-value="props.config.modifyBody"
+          :language="bodyLanguage"
+          :extensions="bodyExtensions"
+          :show-line-numbers="bodyLanguage === 'json'"
+          fill-height
+          @update:model-value="update({ modifyBody: $event })"
+        />
+      </div>
     </label>
   </div>
 </template>

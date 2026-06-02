@@ -13,5 +13,6 @@ export const HANDLER_TYPES = [
   'localFile',
   'proxyForward',
   'delay',
+  'throttle',
   'htmlScriptInjector',
 ] as const

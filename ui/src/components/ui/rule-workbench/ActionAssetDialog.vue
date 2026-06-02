@@ -75,14 +75,6 @@ function confirmSave() {
               class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring focus:ring-1"
             >
           </label>
-          <label class="grid gap-1 text-[11px] text-muted-foreground">
-            描述
-            <textarea
-              v-model="form.description"
-              rows="2"
-              class="rounded-sm border border-input bg-background px-2 py-1.5 text-xs text-foreground outline-none ring-ring focus:ring-1"
-            />
-          </label>
           <p class="text-[10px] text-muted-foreground">
             类型：{{ form.type }}
           </p>

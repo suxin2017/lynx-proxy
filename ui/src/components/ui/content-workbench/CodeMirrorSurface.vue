@@ -95,7 +95,7 @@ function createEditor() {
           minHeight: '100%',
         },
         '.cm-content': {
-          padding: props.compact ? '0 0.5rem 0.25rem' : '0.375rem 0.5rem 0.5rem',
+          padding: props.compact ? '0 0.5rem 0.25rem 0' : '0.375rem 0.5rem 0.5rem 0',
         },
         '.cm-gutters': {
           backgroundColor: 'transparent',

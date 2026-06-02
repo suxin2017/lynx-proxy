@@ -4,4 +4,5 @@ export { default as ProxyForwardActionConfig } from './ProxyForwardActionConfig.
 export { default as ModifyRequestActionConfig } from './ModifyRequestActionConfig.vue'
 export { default as ModifyResponseActionConfig } from './ModifyResponseActionConfig.vue'
 export { default as LocalFileActionConfig } from './LocalFileActionConfig.vue'
+export { default as ThrottleActionConfig } from './ThrottleActionConfig.vue'
 export { default as HtmlScriptInjectorActionConfig } from './HtmlScriptInjectorActionConfig.vue'

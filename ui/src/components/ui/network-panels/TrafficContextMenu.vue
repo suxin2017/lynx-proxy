@@ -14,7 +14,7 @@ import {
   formatTextBody,
   formatUrlEncodedForm,
 } from '@/lib/http/body-formatters'
-import { useRequestStreamStore } from '@/stores'
+import { useRequestStreamStore, useRulesStore } from '@/stores'
 import { useCaptureRulesStore } from '@/stores'
 import {
   ContextMenu,
@@ -39,6 +39,7 @@ const props = defineProps<{
 
 const requestStreamStore = useRequestStreamStore()
 const captureRulesStore = useCaptureRulesStore()
+const rulesStore = useRulesStore()
 
 const record = computed<NetworkDetailRecord | null>(() => {
   if (!props.recordId) return null
@@ -166,6 +167,19 @@ function buildFocusHostPathExpr(rec: NetworkDetailRecord): { name: string, match
   return { name: `Focus ${host}${path}`, matchExpr: `${host}${path}` }
 }
 
+function buildHostPathMatchExpr(rec: NetworkDetailRecord): string | null {
+  const partialLike = {
+    method: rec.method,
+    url: rec.url,
+    requestHeaders: rec.requestHeaders,
+  }
+  const facts = requestFactsFromPartialRecord(partialLike as any)
+  if (!facts.host || !facts.path) return null
+  const host = facts.port ? `${facts.host}:${facts.port}` : facts.host
+  const path = facts.path.startsWith('/') ? facts.path : `/${facts.path}`
+  return `${host}${path}`
+}
+
 function buildIgnoreHostExpr(rec: NetworkDetailRecord): { name: string, matchExpr: string } | null {
   const base = buildFocusHostExpr(rec)
   if (!base) return null
@@ -240,6 +254,44 @@ async function addIgnoreHostPath() {
   if (!expr) return
   await captureRulesStore.upsertIgnore({ name: expr.name, enabled: true, matchExpr: expr.matchExpr })
   setHint('已添加 Ignore')
+}
+
+function looksLikeJson(contentType: string | undefined, bodyText: string): boolean {
+  const ct = (contentType ?? '').toLowerCase()
+  if (ct.includes('application/json') || ct.includes('+json')) {
+    return true
+  }
+  const trimmed = bodyText.trim()
+  if (!trimmed) return false
+  if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) return false
+  try {
+    JSON.parse(trimmed)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function quickOverrideResponseBody() {
+  const rec = record.value
+  if (!rec) return
+
+  const matchExpr = buildHostPathMatchExpr(rec)
+  if (!matchExpr) return
+
+  const bodyText = bodyBytesToCopyText(
+    rec.responseBodyBytes,
+    rec.responseContentType,
+    { isWebSocket: rec.requestType === 'websocket' },
+  )
+
+  const isJson = looksLikeJson(rec.responseContentType, bodyText)
+  await rulesStore.openOrCreateQuickOverrideRule({
+    matchExpr,
+    seedBody: bodyText,
+    isJson,
+  })
+  setHint('已打开规则编辑器')
 }
 
 
@@ -367,6 +419,15 @@ watch(
           </ContextMenuItem>
         </ContextMenuSubContent>
       </ContextMenuSub>
+
+      <ContextMenuSeparator />
+
+      <ContextMenuItem
+        :disabled="!record"
+        @select="quickOverrideResponseBody"
+      >
+        快速替换响应体（Host+Path）
+      </ContextMenuItem>
 
       <ContextMenuSeparator />
 

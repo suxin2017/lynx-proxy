@@ -4,6 +4,24 @@ import { getRuleValidationErrors } from '@/components/ui/rule-workbench/match-va
 import type { ActionAssetTemplate } from '@/components/ui/rules-drawer/types'
 import type { HandlerRuleDto, HandlerRuleTypeDto, RequestRuleDto } from './rules-types'
 
+function normalizeThrottlePreset(raw?: string): 'Fast3G' | 'Slow3G' | 'Offline' | 'Custom' {
+  const value = (raw ?? '').trim()
+  if (!value) return 'Slow3G'
+  const lowered = value.toLowerCase()
+  if (lowered === 'fast3g') return 'Fast3G'
+  if (lowered === 'slow3g') return 'Slow3G'
+  if (lowered === 'offline') return 'Offline'
+  if (lowered === 'custom') return 'Custom'
+  return 'Slow3G'
+}
+
+function throttlePresetToDto(preset: 'Fast3G' | 'Slow3G' | 'Offline' | 'Custom'): string {
+  if (preset === 'Fast3G') return 'fast3G'
+  if (preset === 'Slow3G') return 'slow3G'
+  if (preset === 'Offline') return 'offline'
+  return 'custom'
+}
+
 function headersFromRecord(record?: Record<string, string>): RuleHeaderPair[] {
   if (!record) return []
   return Object.entries(record).map(([key, value]) => ({ key, value }))
@@ -19,8 +37,6 @@ function handlerTypeToAction(handler: HandlerRuleDto, index: number): RuleAction
   const t = handler.handlerType as HandlerRuleTypeDto
   const base = {
     id: handler.id != null ? `act-${handler.id}` : `act-${index}`,
-    name: handler.name,
-    description: handler.description ?? '',
     enabled: handler.enabled,
     order: handler.executionOrder,
   }
@@ -100,6 +116,17 @@ function handlerTypeToAction(handler: HandlerRuleDto, index: number): RuleAction
         },
       })
     }
+    case 'throttle':
+      return createAction({
+        ...base,
+        type: 'throttle',
+        config: {
+          preset: normalizeThrottlePreset(t.preset),
+          downloadKbps: t.downloadKbps,
+          uploadKbps: t.uploadKbps,
+          latencyMs: t.latencyMs,
+        },
+      })
     default:
       return null
   }
@@ -155,6 +182,14 @@ function actionToHandlerType(action: RuleActionDraft): HandlerRuleTypeDto {
         content: action.config.content,
         injectionPosition: action.config.injectionPosition,
       }
+    case 'throttle':
+      return {
+        type: 'throttle',
+        preset: throttlePresetToDto(action.config.preset),
+        downloadKbps: action.config.preset === 'Custom' ? action.config.downloadKbps : undefined,
+        uploadKbps: action.config.preset === 'Custom' ? action.config.uploadKbps : undefined,
+        latencyMs: action.config.preset === 'Custom' ? action.config.latencyMs : undefined,
+      }
   }
 }
 
@@ -195,8 +230,6 @@ export function draftToRequestRule(draft: RuleDraft): RequestRuleDto {
       return {
         id: parsedId ? Number.parseInt(parsedId[1]!, 10) : null,
         handlerType: actionToHandlerType(action),
-        name: action.name,
-        description: action.description || null,
         executionOrder: action.order || (index + 1) * 10,
         enabled: action.enabled,
       }
@@ -238,8 +271,7 @@ export function templateToAsset(template: HandlerRuleDto, index: number): Action
   if (!action) return null
   return {
     id: `tpl-${template.id ?? index}`,
-    name: template.name,
-    description: template.description ?? '',
+    name: `模板 #${template.id ?? index}`,
     category: '模板',
     type: action.type,
     seedConfig: action.config,

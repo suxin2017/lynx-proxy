@@ -5,13 +5,12 @@ export type RuleHandlerType =
   | 'localFile'
   | 'proxyForward'
   | 'delay'
+  | 'throttle'
   | 'htmlScriptInjector'
 
 interface RuleActionBase {
   id: string
   type: RuleHandlerType
-  name: string
-  description: string
   enabled: boolean
   order: number
 }
@@ -62,6 +61,15 @@ export interface RuleHtmlScriptInjectorActionConfig {
   injectionPosition: 'head' | 'body-start' | 'body-end'
 }
 
+export type RuleThrottlePreset = 'Fast3G' | 'Slow3G' | 'Offline' | 'Custom'
+
+export interface RuleThrottleActionConfig {
+  preset: RuleThrottlePreset
+  downloadKbps?: number
+  uploadKbps?: number
+  latencyMs?: number
+}
+
 export interface RuleBlockActionDraft extends RuleActionBase {
   type: 'block'
   config: RuleBlockActionConfig
@@ -97,6 +105,11 @@ export interface RuleHtmlScriptInjectorActionDraft extends RuleActionBase {
   config: RuleHtmlScriptInjectorActionConfig
 }
 
+export interface RuleThrottleActionDraft extends RuleActionBase {
+  type: 'throttle'
+  config: RuleThrottleActionConfig
+}
+
 export type RuleActionDraft =
   | RuleBlockActionDraft
   | RuleDelayActionDraft
@@ -104,6 +117,7 @@ export type RuleActionDraft =
   | RuleModifyRequestActionDraft
   | RuleModifyResponseActionDraft
   | RuleLocalFileActionDraft
+  | RuleThrottleActionDraft
   | RuleHtmlScriptInjectorActionDraft
 
 export interface RuleDraft {
@@ -171,6 +185,15 @@ function createHtmlScriptInjectorConfig(seed?: Partial<RuleHtmlScriptInjectorAct
   }
 }
 
+function createThrottleConfig(seed?: Partial<RuleThrottleActionConfig>): RuleThrottleActionConfig {
+  return {
+    preset: seed?.preset ?? 'Slow3G',
+    downloadKbps: seed?.downloadKbps,
+    uploadKbps: seed?.uploadKbps,
+    latencyMs: seed?.latencyMs,
+  }
+}
+
 export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
   const id = seed?.id ?? `act-${Math.random().toString(36).slice(2, 9)}`
   const type = seed?.type ?? 'modifyRequest'
@@ -179,8 +202,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     return {
       id,
       type,
-      name: seed?.name ?? '拦截',
-      description: seed?.description ?? '',
       enabled: seed?.enabled ?? true,
       order: seed?.order ?? 1,
       config: createBlockConfig(
@@ -193,8 +214,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     return {
       id,
       type,
-      name: seed?.name ?? '延迟',
-      description: seed?.description ?? '',
       enabled: seed?.enabled ?? true,
       order: seed?.order ?? 1,
       config: createDelayConfig(
@@ -207,8 +226,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     return {
       id,
       type,
-      name: seed?.name ?? '代理转发',
-      description: seed?.description ?? '',
       enabled: seed?.enabled ?? true,
       order: seed?.order ?? 1,
       config: createProxyForwardConfig(
@@ -221,8 +238,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     return {
       id,
       type,
-      name: seed?.name ?? '修改请求',
-      description: seed?.description ?? '',
       enabled: seed?.enabled ?? true,
       order: seed?.order ?? 1,
       config: createModifyRequestConfig(
@@ -235,8 +250,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     return {
       id,
       type,
-      name: seed?.name ?? '修改响应',
-      description: seed?.description ?? '',
       enabled: seed?.enabled ?? true,
       order: seed?.order ?? 1,
       config: createModifyResponseConfig(
@@ -249,8 +262,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     return {
       id,
       type,
-      name: seed?.name ?? '本地文件',
-      description: seed?.description ?? '',
       enabled: seed?.enabled ?? true,
       order: seed?.order ?? 1,
       config: createLocalFileConfig(
@@ -263,8 +274,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     return {
       id,
       type,
-      name: seed?.name ?? 'HTML 脚本注入',
-      description: seed?.description ?? '',
       enabled: seed?.enabled ?? true,
       order: seed?.order ?? 1,
       config: createHtmlScriptInjectorConfig(
@@ -273,11 +282,21 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
     }
   }
 
+  if (type === 'throttle') {
+    return {
+      id,
+      type,
+      enabled: seed?.enabled ?? true,
+      order: seed?.order ?? 1,
+      config: createThrottleConfig(
+        (seed as Partial<RuleThrottleActionDraft> | undefined)?.config,
+      ),
+    }
+  }
+
   return {
     id,
     type: 'modifyRequest',
-    name: seed?.name ?? '修改请求',
-    description: seed?.description ?? '',
     enabled: seed?.enabled ?? true,
     order: seed?.order ?? 1,
     config: createModifyRequestConfig(),
@@ -287,8 +306,6 @@ export function createAction(seed?: Partial<RuleActionDraft>): RuleActionDraft {
 export function changeActionType(action: RuleActionDraft, type: RuleHandlerType): RuleActionDraft {
   return createAction({
     id: action.id,
-    name: action.name,
-    description: action.description,
     enabled: action.enabled,
     order: action.order,
     type,
@@ -339,6 +356,18 @@ export function getActionSummary(action: RuleActionDraft): string {
     return action.config.content
       ? `在 ${action.config.injectionPosition} 注入脚本`
       : '脚本内容必填'
+  }
+
+  if (action.type === 'throttle') {
+    const preset = action.config.preset
+    if (preset === 'Offline') return '离线（503）'
+    if (preset === 'Fast3G') return 'Fast3G 1600↓/750↑ 150ms'
+    if (preset === 'Slow3G') return 'Slow3G 500↓/400↑ 400ms'
+    const download = action.config.downloadKbps ?? 0
+    const upload = action.config.uploadKbps ?? 0
+    const latency = action.config.latencyMs ?? 0
+    if (download === 0 && upload === 0 && latency === 0) return '自定义（未限速/无延迟）'
+    return `自定义 ${download}↓/${upload}↑ ${latency}ms`
   }
 
   return '暂无摘要'
@@ -397,6 +426,25 @@ export function getActionValidationErrors(action: RuleActionDraft): string[] {
     return action.config.content.trim() ? [] : ['脚本内容必填']
   }
 
+  if (action.type === 'throttle') {
+    const errors: string[] = []
+    if (action.config.preset === 'Custom') {
+      const fields: Array<{ key: keyof RuleThrottleActionConfig, label: string }> = [
+        { key: 'downloadKbps', label: '下载 Kbps' },
+        { key: 'uploadKbps', label: '上传 Kbps' },
+        { key: 'latencyMs', label: '延迟 ms' },
+      ]
+      for (const field of fields) {
+        const value = action.config[field.key] as number | undefined
+        if (value === undefined) continue
+        if (!Number.isFinite(value) || value < 0) {
+          errors.push(`${field.label} 必须是 >= 0 的数字`)
+        }
+      }
+    }
+    return errors
+  }
+
   return []
 }
 
@@ -407,10 +455,10 @@ export function createRuleDraft(seed?: Partial<RuleDraft>): RuleDraft {
     name: seed?.name ?? '未命名规则',
     description: seed?.description ?? '',
     enabled: seed?.enabled ?? true,
-    priority: seed?.priority ?? 50,
+    priority: seed?.priority ?? 10000,
     matchDsl: seed?.matchDsl ?? 'example.com',
     actions: seed?.actions?.length
       ? seed.actions
-      : [createAction({ order: 1, name: '修改请求', type: 'modifyRequest' })],
+      : [createAction({ order: 1, type: 'modifyRequest' })],
   }
 }

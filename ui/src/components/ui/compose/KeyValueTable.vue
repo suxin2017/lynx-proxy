@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { KeyValueRow } from './types'
 
-import { composeFieldClass, composeGhostButtonClass, composeHintTextClass } from './compose-styles'
+import { composeFieldClass, composeGhostButtonSmClass, composeHintTextClass } from './compose-styles'
 
 const props = defineProps<{
   rows: KeyValueRow[]
@@ -21,10 +21,6 @@ function updateRow(index: number, partial: Partial<KeyValueRow>) {
   updateRows(props.rows.map((row, idx) => idx === index ? { ...row, ...partial } : row))
 }
 
-function addRow() {
-  updateRows([...props.rows, { key: '', value: '', enabled: true }])
-}
-
 function removeRow(index: number) {
   updateRows(props.rows.filter((_, idx) => idx !== index))
 }
@@ -32,17 +28,8 @@ function removeRow(index: number) {
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-2">
-    <div class="flex items-center justify-between">
-      <span class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80">
-        <slot name="title">参数</slot>
-      </span>
-      <button type="button" :class="composeGhostButtonClass" @click="addRow">
-        + 添加
-      </button>
-    </div>
-
     <div v-if="props.rows.length === 0" :class="['px-1 py-2', composeHintTextClass]">
-      暂无条目，点击「添加」创建。
+      暂无内容
     </div>
 
     <div v-else class="min-h-0 flex-1 space-y-1.5 overflow-auto">
@@ -69,7 +56,7 @@ function removeRow(index: number) {
           :placeholder="props.valuePlaceholder ?? 'Value'"
           @input="updateRow(index, { value: ($event.target as HTMLInputElement).value })"
         >
-        <button type="button" :class="composeGhostButtonClass" @click="removeRow(index)">
+        <button type="button" :class="composeGhostButtonSmClass" @click="removeRow(index)">
           删除
         </button>
       </div>

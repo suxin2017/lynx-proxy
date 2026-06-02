@@ -11,8 +11,6 @@ import {
   validateDslDocument,
 } from '@/components/ui/dsl-editor/formatDsl'
 
-import { getMatchDslValidationErrors } from './match-validation'
-
 interface MatchDslEditorProps {
   modelValue: string
 }
@@ -38,7 +36,6 @@ onMounted(async () => {
   }
 })
 
-const validationErrors = computed(() => getMatchDslValidationErrors(props.modelValue))
 const canFormat = computed(() => wasmReady.value && canFormatDsl(props.modelValue))
 const isFormatted = computed(() => wasmReady.value && isDslFormatted(props.modelValue))
 const showFormatButton = computed(() => wasmReady.value && canFormatDsl(props.modelValue))

@@ -16,8 +16,6 @@ export type HandlerRuleTypeDto =
 export interface HandlerRuleDto {
   id?: number | null
   handlerType: HandlerRuleTypeDto
-  name: string
-  description?: string | null
   executionOrder: number
   enabled: boolean
 }

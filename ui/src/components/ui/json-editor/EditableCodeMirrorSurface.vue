@@ -57,7 +57,7 @@ function editorShellTheme(): Extension {
       ...(props.fillHeight ? { minHeight: 'inherit' } : {}),
     },
     '.cm-content': {
-      padding: '0.375rem 0.5rem 0.5rem',
+      padding: '0.375rem 0.5rem 0.5rem 0',
     },
     '.cm-gutters': {
       backgroundColor: 'transparent',

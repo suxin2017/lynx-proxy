@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { createRuleDraft, getRuleValidationErrors } from '@/components/ui/rule-workbench'
 import RulesAssetsDrawer from './RulesAssetsDrawer.vue'
-import type { ActionAssetTemplate } from './types'
 
 const SAMPLE_RULES: RuleWorkbenchRuleItem[] = [
   {
@@ -34,33 +33,6 @@ const SAMPLE_RULES: RuleWorkbenchRuleItem[] = [
   },
 ]
 
-const SAMPLE_ASSETS: ActionAssetTemplate[] = [
-  {
-    id: 'asset-block-403',
-    name: '拦截 403',
-    description: '命中后直接返回 403。',
-    category: '拦截',
-    type: 'block',
-    seedConfig: { statusCode: 403, reason: 'Blocked by policy' },
-  },
-  {
-    id: 'asset-delay-before',
-    name: '请求前延迟',
-    description: '在请求前增加延迟，模拟弱网。',
-    category: '弱网',
-    type: 'delay',
-    seedConfig: { delayMs: 1200, varianceMs: 120, delayType: 'beforeRequest' },
-  },
-  {
-    id: 'asset-proxy-forward',
-    name: '转发到测试环境',
-    description: '将命中请求转发到目标域名/路径。',
-    category: '转发',
-    type: 'proxyForward',
-    seedConfig: { targetScheme: 'https', targetAuthority: 'api.example.com', targetPath: '/v1' },
-  },
-]
-
 const meta = {
   title: 'Rules/RulesAssetsDrawer',
   component: RulesAssetsDrawer,
@@ -68,9 +40,8 @@ const meta = {
     open: true,
     activePrimaryTab: 'rules',
     rulesPane: 'list',
-    assetsPane: 'list',
     rules: SAMPLE_RULES,
-    assets: SAMPLE_ASSETS,
+    selectedRuleId: 'rule-001',
   },
   parameters: {
     layout: 'fullscreen',
@@ -82,18 +53,15 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 function createHarness(
-  defaultPrimary: 'rules' | 'assets',
   defaultRulesPane: 'list' | 'editor',
-  defaultAssetsPane: 'list' | 'editor',
   seedDraft?: Partial<RuleDraft>,
 ) {
   return () => ({
     components: { RulesAssetsDrawer, Button },
     setup() {
       const open = ref(true)
-      const activePrimaryTab = ref<'rules' | 'assets'>(defaultPrimary)
+      const activePrimaryTab = ref<'rules'>('rules')
       const rulesPane = ref<'list' | 'editor'>(defaultRulesPane)
-      const assetsPane = ref<'list' | 'editor'>(defaultAssetsPane)
       const rulesStore = useRulesStore()
 
       watch(rulesPane, (pane) => {
@@ -109,14 +77,20 @@ function createHarness(
         ...seedDraft,
       }))
 
-      const assets = ref<ActionAssetTemplate[]>([...SAMPLE_ASSETS])
-      const selectedAssetId = ref(assets.value[0]?.id ?? '')
-
       const dirty = ref(false)
       const loading = ref(false)
       const saving = ref(false)
 
       const validationErrors = computed(() => getRuleValidationErrors(ruleDraft.value))
+
+      watch(ruleDraft, (next) => {
+        dirty.value = true
+        const id = selectedRuleId.value
+        if (!id) return
+        rules.value = rules.value.map((rule: RuleWorkbenchRuleItem) => (
+          rule.id === id ? { ...rule, name: next.name, enabled: next.enabled } : rule
+        ))
+      }, { deep: true })
 
       async function onRulesSave(_id: string) {
         saving.value = true
@@ -127,56 +101,25 @@ function createHarness(
         dirty.value = false
       }
 
-      function onRuleDraftUpdate(next: RuleDraft) {
-        const prev = ruleDraft.value
-        ruleDraft.value = next
-        dirty.value = true
-        const id = selectedRuleId.value
-        if (!id || !prev) return
-        rules.value = rules.value.map(rule => (
-          rule.id === id ? { ...rule, name: next.name, enabled: next.enabled } : rule
-        ))
-      }
-
       function onToggleRuleEnabled(id: string, enabled: boolean) {
-        rules.value = rules.value.map(rule => (
+        rules.value = rules.value.map((rule: RuleWorkbenchRuleItem) => (
           rule.id === id ? { ...rule, enabled } : rule
         ))
-      }
-
-      function createAsset(asset: ActionAssetTemplate) {
-        assets.value = [asset, ...assets.value]
-      }
-      function updateAsset(asset: ActionAssetTemplate) {
-        assets.value = assets.value.map(a => (a.id === asset.id ? asset : a))
-      }
-      function removeAsset(id: string) {
-        assets.value = assets.value.filter(a => a.id !== id)
-        if (selectedAssetId.value === id) {
-          selectedAssetId.value = assets.value[0]?.id ?? ''
-        }
       }
 
       return {
         open,
         activePrimaryTab,
         rulesPane,
-        assetsPane,
         rules,
         selectedRuleId,
         ruleDraft,
-        assets,
-        selectedAssetId,
         dirty,
         loading,
         saving,
         validationErrors,
         onRulesSave,
-        onRuleDraftUpdate,
         onToggleRuleEnabled,
-        createAsset,
-        updateAsset,
-        removeAsset,
       }
     },
     template: `
@@ -184,8 +127,7 @@ function createHarness(
         <div class="flex items-center gap-2">
           <Button variant="outline" @click="open = true">打开抽屉</Button>
           <span class="text-xs text-muted-foreground">
-            Tab={{ activePrimaryTab }} rulesPane={{ rulesPane }} assetsPane={{ assetsPane }}
-            validationErrors={{ validationErrors.length }}
+            rulesPane={{ rulesPane }} validationErrors={{ validationErrors.length }}
           </span>
         </div>
 
@@ -193,20 +135,14 @@ function createHarness(
           v-model:open="open"
           v-model:activePrimaryTab="activePrimaryTab"
           v-model:rulesPane="rulesPane"
-          v-model:assetsPane="assetsPane"
           v-model:selectedRuleId="selectedRuleId"
           v-model:ruleDraft="ruleDraft"
-          v-model:selectedAssetId="selectedAssetId"
           :rules="rules"
-          :assets="assets"
           :dirty="dirty"
           :loading="loading"
           :saving="saving"
           @rules:toggle-enabled="onToggleRuleEnabled"
-          @rules:update:draft="onRuleDraftUpdate"
-          @assets:create="createAsset"
-          @assets:update="updateAsset"
-          @assets:remove="removeAsset"
+          @rules:save="onRulesSave"
         />
       </div>
     `,
@@ -215,30 +151,15 @@ function createHarness(
 
 export const Rules_List: Story = {
   args: {},
-  render: createHarness('rules', 'list', 'list'),
+  render: createHarness('list'),
 }
 
 export const Rules_Editor: Story = {
   args: {},
-  render: createHarness('rules', 'editor', 'list'),
+  render: createHarness('editor'),
 }
 
 export const Rules_Editor_InvalidMatchDsl: Story = {
   args: {},
-  render: createHarness('rules', 'editor', 'list', { matchDsl: 'example.com AND (' }),
-}
-
-export const Assets_List: Story = {
-  args: {},
-  render: createHarness('assets', 'list', 'list'),
-}
-
-export const Assets_Editor: Story = {
-  args: {},
-  render: createHarness('assets', 'list', 'editor'),
-}
-
-export const NoHeavyTitles: Story = {
-  args: {},
-  render: createHarness('rules', 'editor', 'list'),
+  render: createHarness('editor', { matchDsl: 'example.com AND (' }),
 }

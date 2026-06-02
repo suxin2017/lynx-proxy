@@ -35,7 +35,6 @@ watch(() => props.asset, (next) => {
   draft.value = {
     id: `asset-${Math.random().toString(36).slice(2, 9)}`,
     name: '未命名资产',
-    description: '',
     category: '未分类',
     type: 'modifyRequest',
     seedConfig: { modifyHeaders: [], modifyMethod: '', modifyUrl: '', modifyBody: '' },
@@ -55,6 +54,11 @@ function onActionUpdate(next: ReturnType<typeof actionDraftFromAssetTemplate>) {
 function onCategoryUpdate(category: string) {
   if (!draft.value) return
   draft.value = { ...draft.value, category }
+}
+
+function onNameUpdate(name: string) {
+  if (!draft.value) return
+  draft.value = { ...draft.value, name }
 }
 
 function save() {
@@ -91,6 +95,14 @@ function remove() {
 
     <div v-else class="min-h-0 flex-1 overflow-auto p-3">
       <div class="rounded-md bg-background/95 p-2.5 ring-1 ring-border/30">
+      <label class="mb-2 grid gap-1 text-[11px] text-muted-foreground">
+        名称
+        <input
+          :value="draft.name"
+          class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring focus:ring-1"
+          @input="onNameUpdate(($event.target as HTMLInputElement).value)"
+        >
+      </label>
         <ActionHandlerEditor
           :model-value="actionDraft"
           :show-enabled="false"

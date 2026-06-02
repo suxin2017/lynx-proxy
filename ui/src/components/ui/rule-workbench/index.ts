@@ -18,6 +18,8 @@ export type {
   RuleModifyRequestActionConfig,
   RuleModifyResponseActionConfig,
   RuleProxyForwardActionConfig,
+  RuleThrottleActionConfig,
+  RuleThrottlePreset,
   RuleDraft,
   RuleHandlerType,
 } from './types'

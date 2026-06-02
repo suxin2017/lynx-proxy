@@ -15,6 +15,10 @@ export const composeTabActiveClass = 'text-foreground'
 export const composeGhostButtonClass =
   'h-7 rounded-sm px-2 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
 
+/** Smaller, table-like actions (e.g. add/remove row). */
+export const composeGhostButtonSmClass =
+  'h-6 rounded-sm px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
+
 export const composePrimaryButtonClass =
   'inline-flex h-7 items-center justify-center gap-1 rounded-sm bg-primary px-3 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
 

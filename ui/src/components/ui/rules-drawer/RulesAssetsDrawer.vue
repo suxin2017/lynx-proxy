@@ -50,6 +50,7 @@ const emit = defineEmits<{
   'rules:edit': [id: string]
   'rules:save': [id: string]
   'rules:toggle-enabled': [id: string, enabled: boolean]
+  'rules:reorder': [orderedIds: string[]]
   'rules:delete': [id: string]
 }>()
 
@@ -58,7 +59,12 @@ const tabs = computed(() => ([
 ]))
 
 const rulesStore = useRulesStore()
-const { rulesPane: storeRulesPane } = storeToRefs(rulesStore)
+const {
+  rulesPane: storeRulesPane,
+  selectedRuleId: storeSelectedRuleId,
+  ruleDraft: storeRuleDraft,
+  reordering: storeReordering,
+} = storeToRefs(rulesStore)
 
 /** Store is source of truth; props mirror v-model for Storybook. */
 const rulesPaneDisplay = computed(() => storeRulesPane.value ?? props.rulesPane ?? 'list')
@@ -97,6 +103,22 @@ function onEditRule(id: string) {
 
 function onSelectRule(id: string) {
   emit('update:selectedRuleId', id)
+}
+
+async function onDuplicateRule(id: string) {
+  try {
+    await rulesStore.duplicateRule(id)
+  } catch {
+    return
+  }
+
+  if (storeSelectedRuleId.value) {
+    emit('update:selectedRuleId', storeSelectedRuleId.value)
+  }
+  if (storeRuleDraft.value) {
+    emit('update:ruleDraft', storeRuleDraft.value)
+  }
+  openRulesEditor()
 }
 
 function onDeleteRule(id: string) {
@@ -201,11 +223,14 @@ function onRuleDraftUpdate(next: RuleDraft) {
               <RulesListView
                 :rules="props.rules"
                 :selected-rule-id="props.selectedRuleId"
+                :reordering="storeReordering"
                 class="h-full"
                 @create="onCreateRule"
                 @edit="onEditRule"
+                @duplicate="onDuplicateRule"
                 @select="onSelectRule"
                 @toggle-enabled="(id, enabled) => emit('rules:toggle-enabled', id, enabled)"
+                @reorder="ids => emit('rules:reorder', ids)"
                 @delete="onDeleteRule"
               />
             </div>

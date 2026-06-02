@@ -84,7 +84,6 @@ const filteredRules = computed(() => {
     return (
       rule.name.toLowerCase().includes(keyword)
       || (rule.summary ?? '').toLowerCase().includes(keyword)
-      || String(rule.priority).includes(keyword)
     )
   })
 })
@@ -270,9 +269,6 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
                 </div>
                 <p class="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
                   {{ rule.summary || '暂无摘要。' }}
-                </p>
-                <p class="mt-2 text-[10px] text-muted-foreground">
-                  优先级 {{ rule.priority }}
                 </p>
               </button>
             </div>

@@ -42,7 +42,6 @@ const filteredAssets = computed(() => {
     if (!keyword) return true
     return (
       t.name.toLowerCase().includes(keyword)
-      || t.description.toLowerCase().includes(keyword)
       || t.type.toLowerCase().includes(keyword)
     )
   })
@@ -89,9 +88,6 @@ const filteredAssets = computed(() => {
         <div :class="drawerListItemClass(asset.id === props.selectedAssetId)">
           <button type="button" class="w-full text-left" @click="emit('select', asset.id)">
             <p class="truncate text-xs font-semibold text-foreground">{{ asset.name }}</p>
-            <p class="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
-              {{ asset.description || '暂无描述。' }}
-            </p>
             <div class="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
               <span>{{ asset.category }}</span>
               <span class="font-mono">{{ asset.type }}</span>

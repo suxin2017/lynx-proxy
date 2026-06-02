@@ -12,11 +12,32 @@ const sampleRule: RequestRuleDto = {
   handlers: [
     {
       id: 10,
-      name: 'Block',
-      description: null,
       executionOrder: 100,
       enabled: true,
       handlerType: { type: 'block', statusCode: 403, reason: 'blocked' },
+    },
+  ],
+}
+
+const throttleRule: RequestRuleDto = {
+  id: 2,
+  name: 'Throttle Rule',
+  description: 'desc',
+  enabled: true,
+  priority: 50,
+  capture: { id: 2, matchExpr: '/api' },
+  handlers: [
+    {
+      id: 20,
+      executionOrder: 100,
+      enabled: true,
+      handlerType: {
+        type: 'throttle',
+        preset: 'fast3G',
+        downloadKbps: undefined,
+        uploadKbps: undefined,
+        latencyMs: undefined,
+      },
     },
   ],
 }
@@ -30,6 +51,19 @@ describe('rules-mapper', () => {
     const back = draftToRequestRule(draft)
     expect(back.capture.matchExpr).toBe(sampleRule.capture.matchExpr)
     expect(back.handlers[0]?.handlerType.type).toBe('block')
+  })
+
+  it('round-trips throttle handler preset', () => {
+    const draft = requestRuleToDraft(throttleRule)
+    expect(draft.actions[0]?.type).toBe('throttle')
+    if (draft.actions[0]?.type !== 'throttle') {
+      throw new Error('expected throttle action')
+    }
+    expect(draft.actions[0].config.preset).toBe('Fast3G')
+
+    const back = draftToRequestRule(draft)
+    expect(back.handlers[0]?.handlerType.type).toBe('throttle')
+    expect((back.handlers[0]?.handlerType as any).preset).toBe('fast3G')
   })
 
   it('builds list item with validation state', () => {

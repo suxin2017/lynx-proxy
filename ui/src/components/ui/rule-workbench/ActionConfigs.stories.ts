@@ -8,6 +8,7 @@ import {
   ModifyRequestActionConfig,
   ModifyResponseActionConfig,
   ProxyForwardActionConfig,
+  ThrottleActionConfig,
 } from './action-configs'
 import type {
   RuleBlockActionConfig,
@@ -17,6 +18,7 @@ import type {
   RuleModifyRequestActionConfig,
   RuleModifyResponseActionConfig,
   RuleProxyForwardActionConfig,
+  RuleThrottleActionConfig,
 } from './types'
 
 const meta = {
@@ -127,5 +129,21 @@ export const HtmlScriptInjector: Story = {
       return { value }
     },
     template: renderCard('HTML Script Injector', 'HtmlScriptInjectorActionConfig'),
+  }),
+}
+
+export const Throttle: Story = {
+  render: () => ({
+    components: { ThrottleActionConfig },
+    setup() {
+      const value = ref<RuleThrottleActionConfig>({
+        preset: 'Custom',
+        downloadKbps: 500,
+        uploadKbps: 400,
+        latencyMs: 400,
+      })
+      return { value }
+    },
+    template: renderCard('Throttle', 'ThrottleActionConfig'),
   }),
 }

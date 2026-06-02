@@ -107,7 +107,7 @@ const singleLineExtension: Extension = [
       fontFamily: 'var(--font-mono)',
     },
     '.cm-content': {
-      padding: '0 0.25rem',
+      padding: '0 0.25rem 0 0',
       minHeight: '1.75rem',
       caretColor: 'var(--color-foreground)',
     },

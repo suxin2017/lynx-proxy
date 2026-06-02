@@ -8,6 +8,7 @@ import type {
   RuleModifyRequestActionConfig,
   RuleModifyResponseActionConfig,
   RuleProxyForwardActionConfig,
+  RuleThrottleActionConfig,
 } from './types'
 import {
   BlockActionConfig,
@@ -17,6 +18,7 @@ import {
   ModifyRequestActionConfig,
   ModifyResponseActionConfig,
   ProxyForwardActionConfig,
+  ThrottleActionConfig,
 } from './action-configs'
 
 interface ActionConfigRendererProps {
@@ -66,6 +68,11 @@ function updateHtmlScriptInjectorConfig(config: RuleHtmlScriptInjectorActionConf
     config,
   })
 }
+
+function updateThrottleConfig(config: RuleThrottleActionConfig) {
+  if (props.action.type !== 'throttle') return
+  emit('update:action', { ...props.action, config })
+}
 </script>
 
 <template>
@@ -110,6 +117,12 @@ function updateHtmlScriptInjectorConfig(config: RuleHtmlScriptInjectorActionConf
       v-else-if="props.action.type === 'htmlScriptInjector'"
       :config="props.action.config"
       @update:config="updateHtmlScriptInjectorConfig"
+    />
+
+    <ThrottleActionConfig
+      v-else-if="props.action.type === 'throttle'"
+      :config="props.action.config"
+      @update:config="updateThrottleConfig"
     />
 
     <div v-else class="rounded-sm bg-muted/45 px-2 py-1.5 text-[11px] text-muted-foreground ring-1 ring-border/30">

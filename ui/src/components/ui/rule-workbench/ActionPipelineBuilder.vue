@@ -65,10 +65,13 @@ function addAction() {
     ...props.modelValue,
     createAction({
       order: props.modelValue.length + 1,
-      name: `Handler ${props.modelValue.length + 1}`,
       type: 'modifyRequest',
     }),
   ]))
+}
+
+function actionTitle(action: RuleActionDraft, idx: number): string {
+  return `${action.type} #${idx + 1}`
 }
 
 function addFromAsset(asset: ActionAssetTemplate) {
@@ -145,7 +148,7 @@ function validationErrors(action: RuleActionDraft): string[] {
         <div class="mb-2 flex items-center justify-between gap-2">
           <div class="min-w-0">
             <p class="truncate text-xs font-semibold text-foreground">
-              {{ action.name || `Handler ${idx + 1}` }}
+              {{ actionTitle(action, idx) }}
             </p>
             <p v-if="validationErrors(action).length > 0" class="text-[11px] text-destructive">
               {{ validationErrors(action).length }} 个校验问题

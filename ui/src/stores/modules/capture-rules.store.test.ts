@@ -15,7 +15,6 @@ vi.mock('./ws-connection.store', () => {
 
 import { WsOp } from '@/lib/generated/ws/v1'
 import { useCaptureRulesStore } from './capture-rules.store'
-import { useWsConnectionStore } from './ws-connection.store'
 
 describe('capture-rules.store', () => {
   beforeEach(() => {

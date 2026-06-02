@@ -3,7 +3,6 @@ import ActionConfigRenderer from './ActionConfigRenderer.vue'
 import {
   actionEditorFieldClass,
   actionEditorLabelClass,
-  actionEditorTextareaClass,
   HANDLER_TYPES,
 } from './action-editor-styles'
 import { changeActionType } from './types'
@@ -68,25 +67,6 @@ function updateType(type: RuleHandlerType) {
         :value="props.category"
         @input="emit('update:category', ($event.target as HTMLInputElement).value)"
       >
-    </label>
-
-    <label :class="[actionEditorLabelClass, 'sm:col-span-2']">
-      名称
-      <input
-        :class="actionEditorFieldClass"
-        :value="props.modelValue.name"
-        @input="patch({ name: ($event.target as HTMLInputElement).value })"
-      >
-    </label>
-
-    <label :class="[actionEditorLabelClass, 'sm:col-span-2']">
-      描述
-      <textarea
-        rows="2"
-        :class="actionEditorTextareaClass"
-        :value="props.modelValue.description"
-        @input="patch({ description: ($event.target as HTMLTextAreaElement).value })"
-      />
     </label>
 
     <div class="sm:col-span-2">

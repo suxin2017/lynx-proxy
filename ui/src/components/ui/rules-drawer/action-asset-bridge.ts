@@ -8,8 +8,6 @@ export function actionFromAssetTemplate(
 ): RuleActionDraft {
   return createAction({
     type: asset.type,
-    name: asset.name,
-    description: asset.description,
     enabled: true,
     order,
     config: asset.seedConfig,
@@ -20,8 +18,6 @@ export function actionDraftFromAssetTemplate(asset: ActionAssetTemplate): RuleAc
   return createAction({
     id: `asset-edit-${asset.id}`,
     type: asset.type,
-    name: asset.name,
-    description: asset.description,
     enabled: true,
     order: 1,
     config: asset.seedConfig,
@@ -35,8 +31,6 @@ export function applyActionDraftToAssetTemplate(
 ): ActionAssetTemplate {
   return {
     ...asset,
-    name: action.name,
-    description: action.description,
     type: action.type,
     seedConfig: structuredClone(action.config),
     ...(category !== undefined ? { category } : {}),
@@ -49,8 +43,7 @@ export function assetTemplateFromAction(
 ): ActionAssetTemplate {
   return {
     id: overrides?.id ?? `asset-${Math.random().toString(36).slice(2, 9)}`,
-    name: overrides?.name ?? (action.name.trim() || '未命名资产'),
-    description: overrides?.description ?? action.description,
+    name: overrides?.name ?? '未命名资产',
     category: overrides?.category ?? '未分类',
     type: action.type,
     seedConfig: structuredClone(action.config),

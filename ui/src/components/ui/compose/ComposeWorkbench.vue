@@ -12,10 +12,7 @@ import { composeGhostButtonClass, composeSectionTitleClass } from './compose-sty
 import ComposeRequestBar from './ComposeRequestBar.vue'
 import ComposeRequestEditor from './ComposeRequestEditor.vue'
 import ComposeResponsePanel from './ComposeResponsePanel.vue'
-import CurlImportDialog from './CurlImportDialog.vue'
 import { createEmptyDraft } from './lib/empty-draft'
-import { exportDraftToCurl } from './lib/export-curl'
-import { mergeCurlIntoDraft } from './lib/parse-curl'
 import { syncDraftUrlToParams } from './lib/parse-url-params'
 
 const props = withDefaults(defineProps<{
@@ -45,9 +42,6 @@ const emit = defineEmits<{
 }>()
 
 const splitRatio = ref(48)
-const curlDialogOpen = ref(false)
-const curlImportError = ref<string | null>(null)
-const copyHint = ref<string | null>(null)
 
 function updateDraft(draft: ComposeDraft) {
   emit('update:draft', draft)
@@ -59,47 +53,6 @@ function onUrlChange(url: string) {
 
 function onSend() {
   emit('send', props.draft)
-}
-
-function onReset() {
-  curlImportError.value = null
-  emit('update:draft', createEmptyDraft())
-  emit('reset')
-}
-
-async function onExportCurl() {
-  const curl = exportDraftToCurl(props.draft)
-  if (!curl) {
-    copyHint.value = '请先填写 URL'
-    return
-  }
-
-  emit('export-curl', curl)
-
-  try {
-    await navigator.clipboard.writeText(curl)
-    copyHint.value = 'cURL 已复制到剪贴板'
-  }
-  catch {
-    copyHint.value = 'cURL 已生成（复制失败，请手动复制）'
-  }
-
-  window.setTimeout(() => {
-    copyHint.value = null
-  }, 2000)
-}
-
-function onCurlConfirm(curlText: string) {
-  try {
-    const next = mergeCurlIntoDraft(props.draft, curlText)
-    curlImportError.value = null
-    curlDialogOpen.value = false
-    emit('update:draft', next)
-    emit('import-curl', next)
-  }
-  catch (error) {
-    curlImportError.value = error instanceof Error ? error.message : '解析 cURL 失败'
-  }
 }
 
 function toggleLayout() {
@@ -119,21 +72,9 @@ function toggleLayout() {
         <h2 :class="composeSectionTitleClass">
           Compose
         </h2>
-        <p v-if="copyHint" class="truncate text-[10px] text-muted-foreground">
-          {{ copyHint }}
-        </p>
       </div>
 
       <div class="flex shrink-0 items-center gap-0.5">
-        <button type="button" :class="composeGhostButtonClass" @click="curlDialogOpen = true">
-          导入 cURL
-        </button>
-        <button type="button" :class="composeGhostButtonClass" @click="onExportCurl">
-          复制 cURL
-        </button>
-        <button type="button" :class="composeGhostButtonClass" @click="onReset">
-          清空
-        </button>
         <button
           type="button"
           :class="composeGhostButtonClass"
@@ -205,12 +146,5 @@ function toggleLayout() {
         </template>
       </HorizontalSplitPanel>
     </div>
-
-    <CurlImportDialog
-      v-model:open="curlDialogOpen"
-      :error="curlImportError"
-      @confirm="onCurlConfirm"
-      @cancel="curlImportError = null"
-    />
   </section>
 </template>

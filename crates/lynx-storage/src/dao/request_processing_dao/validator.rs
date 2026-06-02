@@ -132,13 +132,6 @@ impl RuleValidator {
 
     /// Validate individual handler
     pub fn validate_handler(handler: &HandlerRule) -> Result<()> {
-        // Validate handler name
-        if handler.name.trim().is_empty() {
-            return Err(RequestProcessingError::RuleValidation {
-                reason: "Handler name cannot be empty".to_string(),
-            });
-        }
-
         // Validate execution order
         if handler.execution_order < 0 {
             return Err(RequestProcessingError::RuleValidation {

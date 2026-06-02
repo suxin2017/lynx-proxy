@@ -26,7 +26,6 @@ const filteredAssets = computed(() => {
   if (!keyword) return list
   return list.filter(asset => (
     asset.name.toLowerCase().includes(keyword)
-    || asset.description.toLowerCase().includes(keyword)
     || asset.category.toLowerCase().includes(keyword)
     || asset.type.toLowerCase().includes(keyword)
   ))
@@ -144,7 +143,7 @@ if (typeof window !== 'undefined') {
               <span class="shrink-0 text-[10px] text-muted-foreground">{{ asset.type }}</span>
             </div>
             <p class="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
-              {{ asset.description || asset.category }}
+              {{ asset.category }}
             </p>
           </button>
         </li>

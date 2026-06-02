@@ -11,7 +11,6 @@ async fn test_html_script_injector_integration() -> Result<()> {
         Some("body-end".to_string()),
     );
 
-    assert_eq!(handler.name, "HTML Content Injector Handler");
     assert_eq!(handler.execution_order, 85);
     assert!(handler.enabled);
 
