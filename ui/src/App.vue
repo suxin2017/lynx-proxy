@@ -2,10 +2,14 @@
 import { computed } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { AppLayout, type AppLayoutMenuItem } from '@/components'
+import LoginDialog from '@/components/ui/auth/LoginDialog.vue'
+import { useAuthStore, useWsConnectionStore } from '@/stores'
 import { Cctv, Settings } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
+const wsConnectionStore = useWsConnectionStore()
 
 const menuItems: AppLayoutMenuItem[] = [
   {
@@ -28,9 +32,21 @@ const activeKey = computed({
   },
 })
 
+async function onLogin(payload: { username: string, password: string }) {
+  await authStore.login(payload.username, payload.password)
+  wsConnectionStore.reconnect()
+}
+
 </script>
 
 <template>
+  <LoginDialog
+    :open="authStore.needsLogin"
+    :loading="authStore.loading"
+    :error="authStore.error"
+    @submit="onLogin"
+  />
+
   <div class="h-svh overflow-hidden bg-muted/20">
     <AppLayout v-model="activeKey" :items="menuItems" class="h-full" panel-class="h-full min-h-0">
       <template #sidebar-footer>

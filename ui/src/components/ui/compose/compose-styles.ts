@@ -3,7 +3,7 @@ export const composeSectionTitleClass =
 
 /** Borderless fields — spacing + subtle fill instead of boxes. */
 export const composeFieldClass =
-  'h-7 rounded-sm bg-muted/35 px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:bg-muted/55 focus:ring-1 focus:ring-ring/40'
+  'h-7 rounded-sm bg-muted/35 px-2 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:bg-muted/55 focus:ring-inset focus:ring-1 focus:ring-ring/40'
 
 export const composeMonoFieldClass = `${composeFieldClass} font-mono`
 

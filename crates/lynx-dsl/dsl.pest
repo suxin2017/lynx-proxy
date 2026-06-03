@@ -13,12 +13,14 @@ primary_fragment = { cli_only | url_primary }
 
 url_primary = { url ~ cli_args? }
 
-url = { scheme_url | host_url | path }
-scheme_url = { scheme ~ host ~ port? ~ path? }
+url = { scheme_url | host_url | path_url | query_only }
+path_url = { path ~ query? }
+scheme_url = { scheme ~ host ~ port? ~ path? ~ query? }
 host_url = { host_spaced | host_with_port | host_only }
-host_only = { host ~ path? }
-host_with_port = { host ~ port ~ path? }
-host_spaced = { host ~ WHITESPACE+ ~ path }
+host_only = { host ~ path? ~ query? }
+host_with_port = { host ~ port ~ path? ~ query? }
+host_spaced = { host ~ WHITESPACE+ ~ path ~ query? }
+query_only = { query }
 
 scheme = { "http://" | "HTTP://" | "https://" | "HTTPS://" | "ws://" | "WS://" | "wss://" | "WSS://" }
 host = { "localhost" | ipv4 | domain | host_label }
@@ -33,6 +35,13 @@ slash_path = @{ "/" ~ (path_segment ~ "/")* ~ path_segment? | "/" }
 glob_path = @{ "**" ~ ("/" ~ path_segment)+ | "*" ~ ("/" ~ path_segment)+ }
 path_segment = { "**" | "*" | path_char+ }
 path_char = @{ (ASCII_ALPHANUMERIC | "_" | "~" | "!" | "$" | "&" | "'" | "*" | "+" | "," | ";" | "=" | ":" | "@" | "%" | "-")+ }
+
+query = { "?" ~ query_body }
+query_body = { query_pair ~ ("&" ~ query_pair)* }
+query_pair = { query_key ~ ("=" ~ query_value)? }
+query_key = @{ query_char+ }
+query_value = @{ query_char* }
+query_char = _{ ASCII_ALPHANUMERIC | "_" | "." | "/" | ":" | "=" | "@" | "%" | "-" | "," | "*" | "+" }
 
 cli_args = { cli_arg+ }
 cli_arg = { short_flag ~ cli_arg_value? | long_flag ~ cli_arg_value? }

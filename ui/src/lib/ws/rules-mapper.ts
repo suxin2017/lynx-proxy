@@ -33,6 +33,15 @@ function headersToRecord(headers: RuleHeaderPair[]): Record<string, string> | un
   return Object.fromEntries(pairs.map(h => [h.key, h.value]))
 }
 
+function optionalProxyForwardField(value: string): string | undefined {
+  const trimmed = value.trim()
+  return trimmed || undefined
+}
+
+function proxyForwardFieldFromDto(value?: string): string {
+  return value?.trim() ?? ''
+}
+
 function handlerTypeToAction(handler: HandlerRuleDto, index: number): RuleActionDraft | null {
   const t = handler.handlerType as HandlerRuleTypeDto
   const base = {
@@ -66,9 +75,9 @@ function handlerTypeToAction(handler: HandlerRuleDto, index: number): RuleAction
         ...base,
         type: 'proxyForward',
         config: {
-          targetScheme: t.targetScheme ?? 'https',
-          targetAuthority: t.targetAuthority ?? '',
-          targetPath: t.targetPath ?? '',
+          targetScheme: proxyForwardFieldFromDto(t.targetScheme),
+          targetAuthority: proxyForwardFieldFromDto(t.targetAuthority),
+          targetPath: proxyForwardFieldFromDto(t.targetPath),
         },
       })
     case 'modifyRequest':
@@ -150,9 +159,9 @@ function actionToHandlerType(action: RuleActionDraft): HandlerRuleTypeDto {
     case 'proxyForward':
       return {
         type: 'proxyForward',
-        targetScheme: action.config.targetScheme,
-        targetAuthority: action.config.targetAuthority,
-        targetPath: action.config.targetPath,
+        targetScheme: optionalProxyForwardField(action.config.targetScheme),
+        targetAuthority: optionalProxyForwardField(action.config.targetAuthority),
+        targetPath: optionalProxyForwardField(action.config.targetPath),
       }
     case 'modifyRequest':
       return {

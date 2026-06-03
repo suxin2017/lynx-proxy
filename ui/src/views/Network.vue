@@ -17,6 +17,7 @@ const settingsStore = useSettingsStore()
 const rulesStore = useRulesStore()
 const {
   open: rulesDrawerOpen,
+  activePrimaryTab: rulesDrawerPrimaryTab,
   rulesPane,
   selectedRuleId,
   ruleDraft,
@@ -307,6 +308,7 @@ onBeforeUnmount(async () => {
 
     <RulesAssetsDrawer
       v-model:open="rulesDrawerOpen"
+      v-model:active-primary-tab="rulesDrawerPrimaryTab"
       v-model:rules-pane="rulesPane"
       v-model:selected-rule-id="selectedRuleId"
       v-model:rule-draft="ruleDraft"

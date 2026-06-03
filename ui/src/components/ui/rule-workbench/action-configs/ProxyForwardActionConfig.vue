@@ -25,7 +25,7 @@ function update(partial: Partial<RuleProxyForwardActionConfig>) {
       <input
         class="h-7 rounded-sm border border-input bg-background px-2 text-xs text-foreground outline-none ring-ring placeholder:text-muted-foreground focus:ring-1"
         :value="props.config.targetScheme"
-        placeholder="https"
+        placeholder="留空继承"
         @input="update({ targetScheme: ($event.target as HTMLInputElement).value })"
       >
     </label>

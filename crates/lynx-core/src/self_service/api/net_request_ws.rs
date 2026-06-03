@@ -2,7 +2,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::extract::State;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
-use axum::response::IntoResponse;
+use axum::http::{HeaderMap, Uri};
+use axum::response::{IntoResponse, Response};
 use base64::{Engine as _, engine::general_purpose};
 use futures_util::{SinkExt, StreamExt};
 use lynx_storage::dao::net_request_dao::RecordingStatus;
@@ -20,8 +21,10 @@ use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
 use crate::self_service::api::net_request_service;
 use crate::self_service::api::rules_service;
 use crate::self_service::api::capture_rules_service;
+use crate::self_service::api::compose_request_service;
 use lynx_storage::dao::request_processing_dao::RequestRule;
 use lynx_storage::dao::capture_rules_dao::CaptureRule;
+use crate::self_service::auth::{authorize_ws, unauthorized_response};
 use crate::self_service::RouteState;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -188,6 +191,7 @@ fn message_event_to_ws_event(event: MessageEvent) -> Option<WsFrame> {
                 "headers": req.headers,
                 "version": req.version,
                 "matchedRules": req.matched_rules,
+                "requestType": req.request_type,
             }),
         )),
         MessageEvent::OnRequestBody(trace_id, body_data) => Some(event_frame(
@@ -333,6 +337,64 @@ async fn handle_client_request(
     match frame.op.as_str() {
         op::SYSTEM_PING => {
             send_frame(socket_tx, pong_frame(frame.id, frame.op)).await;
+        }
+        op::COMPOSE_REQUEST_SEND => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing compose payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match serde_json::from_value::<compose_request_service::ComposeRequestPayload>(payload) {
+                Ok(compose_payload) => match compose_request_service::execute_compose_request(state, compose_payload).await {
+                    Ok(result) => {
+                        send_frame(
+                            socket_tx,
+                            response_frame(
+                                frame.id,
+                                frame.op,
+                                serde_json::to_value(result).unwrap_or_default(),
+                            ),
+                        )
+                        .await;
+                    }
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "REQUEST_ERROR",
+                                "Failed to execute compose request",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse compose payload",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
         }
         op::CAPTURE_STATUS_GET => {
             match net_request_service::get_capture_status(state).await {
@@ -1350,8 +1412,14 @@ async fn message_events_ws_handler(socket: WebSocket, state: RouteState) {
 async fn message_events_ws(
     ws: WebSocketUpgrade,
     State(route_state): State<RouteState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| message_events_ws_handler(socket, route_state))
+    uri: Uri,
+    headers: HeaderMap,
+) -> Response {
+    if !authorize_ws(&route_state.auth, &uri, &headers) {
+        return unauthorized_response();
+    }
+
+    ws.on_upgrade(move |socket| message_events_ws_handler(socket, route_state)).into_response()
 }
 
 pub fn router() -> Router<RouteState> {

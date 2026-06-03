@@ -1,3 +1,4 @@
+import { getAuthToken } from '@/lib/auth/token'
 import {
   WS_PROTOCOL_VERSION,
   WsFrameKind,
@@ -322,10 +323,19 @@ export class WsClient {
   }
 }
 
-export const createDefaultWsClient = () => {
+function buildMessageEventsWsUrl(): string {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  const base = `${protocol}://${window.location.host}/api/net_request/ws/message-events`
+  const token = getAuthToken()
+  if (!token) {
+    return base
+  }
+  const params = new URLSearchParams({ token })
+  return `${base}?${params.toString()}`
+}
 
+export const createDefaultWsClient = () => {
   return new WsClient({
-    url: `${protocol}://${window.location.host}/api/net_request/ws/message-events`,
+    url: buildMessageEventsWsUrl(),
   })
 }

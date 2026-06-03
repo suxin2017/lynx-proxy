@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
 import type { RequestViewMode } from '@/components/ui/network-panels'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useAuthStore, useWsConnectionStore } from '@/stores'
 import NetworkPreferencesPanel from './NetworkPreferencesPanel.vue'
 import ServerSettingsPanel from './ServerSettingsPanel.vue'
 import { settingsPageTitleClass } from './settings-styles'
 import type { SettingsPanelPreview } from './types'
+
+const authStore = useAuthStore()
+const wsConnectionStore = useWsConnectionStore()
+
+function onLogout() {
+  authStore.logout()
+  wsConnectionStore.disconnect()
+}
 
 interface SettingsPanelProps {
   class?: HTMLAttributes['class']
@@ -36,6 +46,15 @@ const emit = defineEmits<{
       <h1 :class="settingsPageTitleClass">
         设置
       </h1>
+      <Button
+        v-if="authStore.enabled && !preview"
+        variant="outline"
+        size="sm"
+        type="button"
+        @click="onLogout"
+      >
+        退出登录
+      </Button>
     </header>
 
     <div class="mt-4 space-y-6">

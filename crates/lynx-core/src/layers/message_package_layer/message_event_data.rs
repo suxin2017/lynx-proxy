@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::warn;
 use url::Url;
+use hyper_tungstenite::is_upgrade_request;
 use crate::common::BoxBody;
 use crate::utils::empty;
 
@@ -67,6 +68,8 @@ pub struct MessageEventRequest {
     pub body: MessageEventBody,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub matched_rules: Option<Vec<MatchedRuleInfo>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
@@ -248,20 +251,37 @@ impl From<HeaderMap> for MessageHeaderSize {
     }
 }
 
+fn websocket_url_scheme(base_scheme: &str, port: Option<u16>) -> &'static str {
+    match base_scheme {
+        "https" | "wss" => "wss",
+        "http" | "ws" => "ws",
+        _ if port == Some(443) => "wss",
+        _ => "ws",
+    }
+}
+
+fn apply_websocket_scheme(url: &str, ws_scheme: &str) -> String {
+    let Ok(mut parsed) = Url::parse(url) else {
+        return url.to_string();
+    };
+    if parsed.set_scheme(ws_scheme).is_ok() {
+        return parsed.to_string();
+    }
+    url.to_string()
+}
+
 fn request_url_from_http<B: Body>(req: &Request<B>) -> String {
     let uri_str = req.uri().to_string();
-    if let Ok(url) = Url::parse(&uri_str) {
-        let scheme = url.scheme();
-        if scheme == "http" || scheme == "https" {
-            return url.to_string();
+    let mut url = if let Ok(parsed) = Url::parse(&uri_str) {
+        let scheme = parsed.scheme();
+        if scheme == "http" || scheme == "https" || scheme == "ws" || scheme == "wss" {
+            parsed.to_string()
+        } else {
+            uri_str.clone()
         }
-    }
-
-    if *req.method() == Method::CONNECT {
-        return format!("https://{}", uri_str);
-    }
-
-    if let Some(host) = req
+    } else if *req.method() == Method::CONNECT {
+        format!("https://{}", uri_str)
+    } else if let Some(host) = req
         .headers()
         .get(http::header::HOST)
         .and_then(|value| value.to_str().ok())
@@ -273,10 +293,22 @@ fn request_url_from_http<B: Body>(req: &Request<B>) -> String {
         } else {
             return format!("http://{}/{}", host, uri_str.trim_start_matches('/'));
         };
-        return format!("http://{}{}", host, path);
+        format!("http://{}{}", host, path)
+    } else {
+        uri_str.clone()
+    };
+
+    if is_upgrade_request(req) {
+        let base_scheme = Url::parse(&url)
+            .ok()
+            .map(|parsed| parsed.scheme().to_string())
+            .unwrap_or_else(|| "http".to_string());
+        let port = Url::parse(&url).ok().and_then(|parsed| parsed.port());
+        let ws_scheme = websocket_url_scheme(&base_scheme, port);
+        url = apply_websocket_scheme(&url, ws_scheme);
     }
 
-    uri_str
+    url
 }
 
 impl<B: Body> From<&Request<B>> for MessageEventRequest {
@@ -292,6 +324,8 @@ impl<B: Body> From<&Request<B>> for MessageEventRequest {
             .get::<MatchedRulesExt>()
             .map(|ext| ext.0.clone());
 
+        let request_type = is_upgrade_request(req).then(|| "websocket".to_string());
+
         MessageEventRequest {
             method,
             url,
@@ -300,6 +334,7 @@ impl<B: Body> From<&Request<B>> for MessageEventRequest {
             header_size,
             body,
             matched_rules,
+            request_type,
         }
     }
 }
@@ -399,6 +434,24 @@ mod tests {
             Some(&"application/json".to_string())
         );
         assert_eq!(message_event_request.body, MessageEventBody(Bytes::new()));
+    }
+
+    #[tokio::test]
+    async fn test_message_event_request_url_for_websocket_upgrade() {
+        let req = Request::builder()
+            .method("GET")
+            .uri("https://i18n-dsp-candidate.test.gifshow.com/socket")
+            .header("Host", "i18n-dsp-candidate.test.gifshow.com")
+            .header("Connection", "Upgrade")
+            .header("Upgrade", "websocket")
+            .header("Sec-WebSocket-Version", "13")
+            .header("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==")
+            .body(full(""))
+            .unwrap();
+
+        let event = MessageEventRequest::from(&req);
+        assert_eq!(event.url, "wss://i18n-dsp-candidate.test.gifshow.com/socket");
+        assert_eq!(event.request_type.as_deref(), Some("websocket"));
     }
 
     #[tokio::test]

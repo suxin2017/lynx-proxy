@@ -24,7 +24,7 @@ pub struct Args {
 #[derive(ClapArgs, Debug, Clone)]
 pub struct ServerArgs {
     /// proxy server port
-    #[arg(short, long, default_value_t = 7788)]
+    #[arg(long, default_value_t = 7788)]
     pub port: u16,
 
     /// data dir
@@ -42,6 +42,14 @@ pub struct ServerArgs {
     /// Enable local only mode (only bind to loopback addresses)
     #[arg(long, default_value_t = false)]
     pub local_only: bool,
+
+    /// Self-service login username (optional; requires --pass)
+    #[arg(long, short = 'u')]
+    pub user: Option<String>,
+
+    /// Self-service login password (optional; requires --user)
+    #[arg(long, short = 'p')]
+    pub pass: Option<String>,
 }
 
 #[derive(Subcommand, Debug, Clone)]

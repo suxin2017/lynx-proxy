@@ -17,6 +17,7 @@ pub enum HighlightKind {
     Host,
     Port,
     Path,
+    Query,
     LineComment,
     ShortFlag,
     LongFlag,
@@ -34,6 +35,7 @@ impl HighlightKind {
             Self::Host => "Host",
             Self::Port => "Port",
             Self::Path => "Path",
+            Self::Query => "Query",
             Self::LineComment => "LineComment",
             Self::ShortFlag => "ShortFlag",
             Self::LongFlag => "LongFlag",
@@ -171,6 +173,9 @@ fn highlight_url(url: &Url, spans: &mut Vec<HighlightSpan>) {
     }
     if let Some(path) = &url.path {
         push_span(spans, path.span, HighlightKind::Path);
+    }
+    if let Some(query) = &url.query {
+        push_span(spans, query.span, HighlightKind::Query);
     }
 }
 

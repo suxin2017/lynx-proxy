@@ -73,6 +73,41 @@ describe('rules-mapper', () => {
     expect(item.summary).toContain('example.com')
   })
 
+  it('omits empty proxyForward fields when saving', () => {
+    const draft = requestRuleToDraft({
+      ...sampleRule,
+      handlers: [
+        {
+          id: 11,
+          executionOrder: 10,
+          enabled: true,
+          handlerType: {
+            type: 'proxyForward',
+            targetScheme: '',
+            targetAuthority: '127.0.0.1:8000',
+            targetPath: '  ',
+          },
+        },
+      ],
+    })
+    expect(draft.actions[0]?.type).toBe('proxyForward')
+    if (draft.actions[0]?.type !== 'proxyForward') {
+      throw new Error('expected proxyForward action')
+    }
+    expect(draft.actions[0].config.targetScheme).toBe('')
+    expect(draft.actions[0].config.targetPath).toBe('')
+
+    const back = draftToRequestRule(draft)
+    const handler = back.handlers[0]?.handlerType
+    expect(handler?.type).toBe('proxyForward')
+    if (handler?.type !== 'proxyForward') {
+      throw new Error('expected proxyForward handler')
+    }
+    expect(handler.targetScheme).toBeUndefined()
+    expect(handler.targetAuthority).toBe('127.0.0.1:8000')
+    expect(handler.targetPath).toBeUndefined()
+  })
+
   it('cloneDraft deep-copies without structuredClone', () => {
     const draft = requestRuleToDraft(sampleRule)
     const copy = cloneDraft(draft)

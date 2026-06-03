@@ -16,6 +16,8 @@ async fn main() -> Result<()> {
                     data_dir,
                     log_level,
                     local_only,
+                    user: _,
+                    pass: _,
                 },
         } => {
             let resolved_data_dir = resolve_data_dir(data_dir)?;
@@ -48,6 +50,8 @@ async fn main() -> Result<()> {
                     data_dir,
                     log_level,
                     local_only,
+                    user,
+                    pass,
                 },
             daemon,
         } => {
@@ -66,6 +70,8 @@ async fn main() -> Result<()> {
                 Some(resolved_data_dir.to_string_lossy().to_string()),
                 daemon,
                 local_only,
+                user,
+                pass,
             );
             app.start_server().await?;
 

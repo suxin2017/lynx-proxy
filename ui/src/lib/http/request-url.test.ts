@@ -15,6 +15,15 @@ describe('normalizeRequestUrl', () => {
       normalizeRequestUrl('/get', 'GET', { Host: 'httpbin.org' }),
     ).toBe('http://httpbin.org/get')
   })
+
+  it('uses wss for websocket upgrade over https', () => {
+    expect(
+      normalizeRequestUrl('https://test.example.com/ws', 'GET', {
+        Upgrade: 'websocket',
+        Connection: 'Upgrade',
+      }),
+    ).toBe('wss://test.example.com/ws')
+  })
 })
 
 describe('resolveRequestUrl', () => {

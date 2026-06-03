@@ -148,6 +148,45 @@ fn parse_primary(
     }
 }
 
+fn parse_query_spanned(
+    pair: pest::iterators::Pair<'_, Rule>,
+    source: &str,
+    base_offset: usize,
+) -> Spanned<String> {
+    let spanned = spanned_text(pair, source, base_offset);
+    let body = spanned
+        .value
+        .strip_prefix('?')
+        .unwrap_or(spanned.value.as_str())
+        .to_string();
+    Spanned::new(body, spanned.span)
+}
+
+fn apply_url_part(
+    part: pest::iterators::Pair<'_, Rule>,
+    source: &str,
+    base_offset: usize,
+    scheme: &mut Option<Spanned<String>>,
+    host: &mut Option<Spanned<String>>,
+    port: &mut Option<Spanned<String>>,
+    path: &mut Option<Spanned<String>>,
+    query: &mut Option<Spanned<String>>,
+) {
+    match part.as_rule() {
+        Rule::scheme => *scheme = Some(spanned_text(part, source, base_offset)),
+        Rule::host => *host = Some(spanned_text(part, source, base_offset)),
+        Rule::port => *port = Some(spanned_text(part, source, base_offset)),
+        Rule::path => *path = Some(spanned_text(part, source, base_offset)),
+        Rule::query => *query = Some(parse_query_spanned(part, source, base_offset)),
+        Rule::host_only | Rule::host_with_port | Rule::host_spaced => {
+            for inner in part.into_inner() {
+                apply_url_part(inner, source, base_offset, scheme, host, port, path, query);
+            }
+        }
+        _ => {}
+    }
+}
+
 fn parse_url(pair: pest::iterators::Pair<'_, Rule>, source: &str, base_offset: usize) -> Result<Url, ParseError> {
     let span = span_from_pair(pair.as_span(), source);
     let child = pair.into_inner().next().ok_or_else(|| ParseError::Syntax {
@@ -158,41 +197,40 @@ fn parse_url(pair: pest::iterators::Pair<'_, Rule>, source: &str, base_offset: u
     let mut host = None;
     let mut port = None;
     let mut path = None;
+    let mut query = None;
 
     match child.as_rule() {
-        Rule::scheme_url => {
+        Rule::scheme_url | Rule::host_url => {
             for part in child.into_inner() {
-                match part.as_rule() {
-                    Rule::scheme => scheme = Some(spanned_text(part, source, base_offset)),
-                    Rule::host => host = Some(spanned_text(part, source, base_offset)),
-                    Rule::port => port = Some(spanned_text(part, source, base_offset)),
-                    Rule::path => path = Some(spanned_text(part, source, base_offset)),
-                    _ => {}
-                }
+                apply_url_part(
+                    part,
+                    source,
+                    base_offset,
+                    &mut scheme,
+                    &mut host,
+                    &mut port,
+                    &mut path,
+                    &mut query,
+                );
             }
         }
-        Rule::host_url => {
+        Rule::path_url => {
             for part in child.into_inner() {
-                match part.as_rule() {
-                    Rule::host => host = Some(spanned_text(part, source, base_offset)),
-                    Rule::port => port = Some(spanned_text(part, source, base_offset)),
-                    Rule::path => path = Some(spanned_text(part, source, base_offset)),
-                    Rule::host_only | Rule::host_with_port | Rule::host_spaced => {
-                        for inner in part.into_inner() {
-                            match inner.as_rule() {
-                                Rule::host => host = Some(spanned_text(inner, source, base_offset)),
-                                Rule::port => port = Some(spanned_text(inner, source, base_offset)),
-                                Rule::path => path = Some(spanned_text(inner, source, base_offset)),
-                                _ => {}
-                            }
-                        }
-                    }
-                    _ => {}
-                }
+                apply_url_part(
+                    part,
+                    source,
+                    base_offset,
+                    &mut scheme,
+                    &mut host,
+                    &mut port,
+                    &mut path,
+                    &mut query,
+                );
             }
         }
-        Rule::path => {
-            path = Some(spanned_text(child, source, base_offset));
+        Rule::query_only => {
+            let query_pair = child.into_inner().find(|p| p.as_rule() == Rule::query).unwrap();
+            query = Some(parse_query_spanned(query_pair, source, base_offset));
         }
         _ => {
             return Err(ParseError::Syntax {
@@ -207,6 +245,7 @@ fn parse_url(pair: pest::iterators::Pair<'_, Rule>, source: &str, base_offset: u
         host,
         port,
         path,
+        query,
         span: Span::new(base_offset + span.start, base_offset + span.end),
     })
 }

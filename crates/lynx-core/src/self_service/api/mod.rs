@@ -1,5 +1,7 @@
+pub mod auth;
 pub mod base_info;
 pub mod certificate;
+pub mod compose_request_service;
 pub mod generated;
 pub mod capture_rules_service;
 pub mod net_request;

@@ -12,6 +12,7 @@ use crate::ir::{
     EvalPlan, MatchProgram, PathMatcher, Predicate, SegmentPattern,
 };
 use crate::parser::parse_program;
+use crate::query::parse_query_pairs;
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum CompileError {
@@ -131,6 +132,16 @@ impl LowerCtx {
             indices.push(self.push_predicate(Predicate::PathGlob(compile_path(
                 &path.value,
             )?)));
+        }
+        if let Some(query) = &url.query {
+            let pairs: Vec<(Arc<str>, Arc<str>)> = parse_query_pairs(&query.value)
+                .into_iter()
+                .map(|(key, value)| (Arc::from(key.as_str()), Arc::from(value.as_str())))
+                .collect();
+            if pairs.is_empty() {
+                return Err(CompileError::Empty);
+            }
+            indices.push(self.push_predicate(Predicate::QueryParamsAll(pairs)));
         }
 
         if indices.is_empty() {

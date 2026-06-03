@@ -6,3 +6,8 @@ declare module '*.vue' {
   export default component
 }
 
+declare module 'vuedraggable' {
+  const component: any
+  export default component
+}
+

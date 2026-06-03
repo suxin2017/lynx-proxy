@@ -106,6 +106,22 @@ pub const DSL_STORY_EXAMPLES: &[EditorStoryExample] = &[
         value: "ws://example.com:8080/status",
     },
     EditorStoryExample {
+        label: "Host + path + query",
+        value: "example.com/v1/graphql?operationName=GetFeed&platform=android",
+    },
+    EditorStoryExample {
+        label: "Path + query",
+        value: "/v2/feed/timeline?page_size=20&region=SG",
+    },
+    EditorStoryExample {
+        label: "Query only",
+        value: "?user_id=123456&fields=id,name,avatar",
+    },
+    EditorStoryExample {
+        label: "HTTPS + path + query",
+        value: "https://example.com/v1/content/recommend?feed_type=for_you&limit=30",
+    },
+    EditorStoryExample {
         label: "AND",
         value: "example.com AND /api",
     },

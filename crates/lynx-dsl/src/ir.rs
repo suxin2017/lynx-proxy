@@ -26,6 +26,7 @@ pub enum Predicate {
     PathGlob(PathMatcher),
     MethodEq(Arc<str>),
     QueryContains(Arc<str>),
+    QueryParamsAll(Vec<(Arc<str>, Arc<str>)>),
     HeaderEq {
         key: Arc<str>,
         value: Arc<str>,

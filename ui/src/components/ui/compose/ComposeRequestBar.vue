@@ -8,10 +8,13 @@ import {
   composePrimaryButtonClass,
 } from './compose-styles'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   draft: ComposeDraft
   loading?: boolean
-}>()
+  compact?: boolean
+}>(), {
+  compact: false,
+})
 
 const emit = defineEmits<{
   'update:method': [method: ComposeDraft['method']]
@@ -28,7 +31,12 @@ function onSend() {
 </script>
 
 <template>
-  <div class="flex min-w-0 items-center gap-1 px-3 pb-2">
+  <div
+    :class="[
+      'flex min-w-0 items-center gap-1 px-3',
+      props.compact ? 'pb-1' : 'pb-2',
+    ]"
+  >
     <select
       :class="[composeFieldClass, 'w-[5.5rem] shrink-0 font-mono text-[11px] font-semibold']"
       :value="props.draft.method"
@@ -54,5 +62,7 @@ function onSend() {
     >
       {{ props.loading ? '发送中…' : '发送' }}
     </button>
+
+    <slot name="trailing" />
   </div>
 </template>

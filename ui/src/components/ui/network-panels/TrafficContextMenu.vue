@@ -27,6 +27,8 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { cn } from '@/lib/utils'
+import { captureToDraft } from '@/components/ui/compose'
+import { useComposeStore } from '@/stores/modules/compose.store'
 
 const props = defineProps<{
   recordId?: string
@@ -40,6 +42,7 @@ const props = defineProps<{
 const requestStreamStore = useRequestStreamStore()
 const captureRulesStore = useCaptureRulesStore()
 const rulesStore = useRulesStore()
+const composeStore = useComposeStore()
 
 const record = computed<NetworkDetailRecord | null>(() => {
   if (!props.recordId) return null
@@ -294,6 +297,16 @@ async function quickOverrideResponseBody() {
   setHint('已打开规则编辑器')
 }
 
+async function replayToCompose() {
+  const rec = record.value
+  if (!rec) return
+  const draft = captureToDraft(rec)
+  composeStore.setDraft(draft)
+  await rulesStore.openDrawer()
+  rulesStore.activePrimaryTab = 'compose'
+  setHint('已填充 Compose')
+}
+
 
 const anchorEl = ref<HTMLElement | null>(null)
 const anchorStyle = computed<CSSProperties>(() => ({
@@ -392,6 +405,15 @@ watch(
         @select="copyText(copyItems?.url ?? '')"
       >
         复制 URL
+      </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
+      <ContextMenuItem
+        :disabled="!record"
+        @select="replayToCompose"
+      >
+        重放到 Compose
       </ContextMenuItem>
 
       <ContextMenuSeparator />

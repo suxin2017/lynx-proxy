@@ -87,6 +87,9 @@ function formatUrl(lines: string[], depth: number, source: string, url: DslUrl) 
   if (url.path) {
     pushSpanned(lines, depth + 1, 'Path', source, url.path)
   }
+  if (url.query) {
+    pushSpanned(lines, depth + 1, 'Query', source, url.query)
+  }
 }
 
 function formatPrimary(lines: string[], depth: number, source: string, primary: DslPrimary) {

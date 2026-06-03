@@ -147,7 +147,7 @@ function createDelayConfig(seed?: Partial<RuleDelayActionConfig>): RuleDelayActi
 
 function createProxyForwardConfig(seed?: Partial<RuleProxyForwardActionConfig>): RuleProxyForwardActionConfig {
   return {
-    targetScheme: seed?.targetScheme ?? 'https',
+    targetScheme: seed?.targetScheme ?? '',
     targetAuthority: seed?.targetAuthority ?? '',
     targetPath: seed?.targetPath ?? '',
   }
@@ -323,9 +323,9 @@ export function getActionSummary(action: RuleActionDraft): string {
   }
 
   if (action.type === 'proxyForward') {
-    const scheme = action.config.targetScheme || 'https'
-    const authority = action.config.targetAuthority || '<authority>'
-    const path = action.config.targetPath || ''
+    const scheme = action.config.targetScheme.trim() || '*'
+    const authority = action.config.targetAuthority.trim() || '<authority>'
+    const path = action.config.targetPath.trim() || ''
     return `${scheme}://${authority}${path}`
   }
 

@@ -52,6 +52,7 @@ export interface DslUrl {
   host: DslSpanned<string> | null
   port: DslSpanned<string> | null
   path: DslSpanned<string> | null
+  query: DslSpanned<string> | null
   span: DslSpan
 }
 

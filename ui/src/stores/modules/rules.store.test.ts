@@ -102,7 +102,7 @@ describe('rules.store', () => {
 
     await store.moveRuleDown('1')
 
-    const calls = wsMock.call.mock.calls
+    const calls = wsMock.call.mock.calls as unknown as any[]
     expect(calls[0]?.[0]).toBe(WsOp.RulesListGet)
     expect(calls[1]?.[0]).toBe(WsOp.RulesSaveSet)
     expect(calls[1]?.[1]).toMatchObject({ id: 2, priority: 10000 })
@@ -157,7 +157,7 @@ describe('rules.store', () => {
     await store.refreshRules()
     await store.reorderRules(['2', '1'])
 
-    const calls = wsMock.call.mock.calls
+    const calls = wsMock.call.mock.calls as unknown as any[]
     expect(calls[0]?.[0]).toBe(WsOp.RulesListGet)
     expect(calls[1]?.[0]).toBe(WsOp.RulesSaveSet)
     expect(calls[1]?.[1]).toMatchObject({ id: 2, priority: 10000 })

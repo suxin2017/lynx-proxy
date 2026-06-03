@@ -7,6 +7,20 @@ const readString = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+const isWebSocketUpgrade = (headers: Record<string, string> | undefined): boolean => {
+  if (!headers) {
+    return false
+  }
+
+  for (const [name, value] of Object.entries(headers)) {
+    if (name.toLowerCase() === 'upgrade' && value.toLowerCase().includes('websocket')) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const readHeaderHost = (headers: Record<string, string> | undefined): string | undefined => {
   if (!headers) {
     return undefined
@@ -31,7 +45,10 @@ export function normalizeRequestUrl(
     return undefined
   }
 
-  if (/^https?:\/\//i.test(trimmed)) {
+  if (/^(https?|wss?):\/\//i.test(trimmed)) {
+    if (/^https:\/\//i.test(trimmed) && isWebSocketUpgrade(headers)) {
+      return trimmed.replace(/^https:\/\//i, 'wss://')
+    }
     return trimmed
   }
 
@@ -43,7 +60,13 @@ export function normalizeRequestUrl(
 
   if (trimmed.startsWith('/')) {
     const host = readHeaderHost(headers)
-    return host ? `http://${host}${trimmed}` : trimmed
+    if (!host) {
+      return trimmed
+    }
+    const scheme = isWebSocketUpgrade(headers) && (host.endsWith(':443') || !host.includes(':'))
+      ? 'wss'
+      : 'http'
+    return `${scheme}://${host}${trimmed}`
   }
 
   if (trimmed.includes('://')) {

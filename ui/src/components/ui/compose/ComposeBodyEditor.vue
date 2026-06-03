@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import type { Extension } from '@codemirror/state'
 import type { KeyValueRow } from './types'
 import type { WorkbenchLanguage } from '@/components/ui/content-workbench/utils'
 
 import { computed } from 'vue'
+import { EditorView } from '@codemirror/view'
 
 import EditableCodeMirrorSurface from '@/components/ui/json-editor/EditableCodeMirrorSurface.vue'
 
@@ -24,14 +26,31 @@ const contentType = computed(() => {
   return row?.value?.toLowerCase() ?? ''
 })
 
-const language = computed<WorkbenchLanguage>(() => {
-  if (contentType.value.includes('application/json')) {
-    return 'json'
+const isValidJsonBody = computed(() => {
+  const trimmed = props.body.trim()
+  if (!trimmed) return false
+  if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) return false
+  try {
+    JSON.parse(trimmed)
+    return true
+  } catch {
+    return false
   }
-  return 'plaintext'
 })
 
-const showFormat = computed(() => language.value === 'json')
+const isJson = computed(() => {
+  const ct = contentType.value
+  return ct.includes('application/json') || ct.includes('+json') || isValidJsonBody.value
+})
+
+const language = computed<WorkbenchLanguage>(() => (isJson.value ? 'json' : 'plaintext'))
+
+const extensions = computed((): Extension[] | undefined => {
+  if (language.value === 'json') {
+    return undefined
+  }
+  return [EditorView.lineWrapping]
+})
 </script>
 
 <template>
@@ -40,7 +59,9 @@ const showFormat = computed(() => language.value === 'json')
       <EditableCodeMirrorSurface
         :model-value="props.body"
         :language="language"
+        :extensions="extensions"
         :show-line-numbers="true"
+        fill-height
         @update:model-value="emit('update:body', $event)"
       />
     </div>

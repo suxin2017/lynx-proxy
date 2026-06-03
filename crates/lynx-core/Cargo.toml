@@ -87,6 +87,9 @@ tower-http = { version = "0.6.4", features = ["cors", "fs"] }
 dashmap = "6.1.0"
 lynx-log = {path = "../lynx-log"}
 socket2 = "0.5"
+jsonwebtoken = "9"
+sha2 = "0.10"
+subtle = "2"
 
 
 [dev-dependencies]
@@ -97,3 +100,4 @@ lynx-mock = { path = "../lynx-mock" }
 async-once-cell = "0.5.4"
 tokio-test = "0.4.4"
 reqwest-websocket = "0.5.0"
+reqwest = { version = "0.12.18", default-features = false, features = ["json", "rustls-tls"] }

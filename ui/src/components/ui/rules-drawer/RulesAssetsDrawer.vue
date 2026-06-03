@@ -6,14 +6,16 @@ import { ArrowLeft, X } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useRulesStore } from '@/stores/modules/rules.store'
+import { useComposeStore } from '@/stores/modules/compose.store'
 import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { createRuleDraft, getRuleValidationErrors, isRuleSaveDisabled } from '@/components/ui/rule-workbench'
 import RuleWorkbench from '@/components/ui/rule-workbench/RuleWorkbench.vue'
+import { ComposeWorkbench } from '@/components/ui/compose'
 import DrawerTabs from './DrawerTabs.vue'
 import RulesListView from './RulesListView.vue'
 import RuleEditorToolbar from './RuleEditorToolbar.vue'
 
-export type PrimaryTabKey = 'rules'
+export type PrimaryTabKey = 'rules' | 'assets' | 'compose'
 export type SecondaryPaneKey = 'list' | 'editor'
 
 const props = withDefaults(defineProps<{
@@ -56,10 +58,13 @@ const emit = defineEmits<{
 
 const tabs = computed(() => ([
   { key: 'rules', label: '规则' },
+  { key: 'compose', label: 'Compose' },
 ]))
 
 const rulesStore = useRulesStore()
+const composeStore = useComposeStore()
 const {
+  activePrimaryTab: storeActivePrimaryTab,
   rulesPane: storeRulesPane,
   selectedRuleId: storeSelectedRuleId,
   ruleDraft: storeRuleDraft,
@@ -68,6 +73,12 @@ const {
 
 /** Store is source of truth; props mirror v-model for Storybook. */
 const rulesPaneDisplay = computed(() => storeRulesPane.value ?? props.rulesPane ?? 'list')
+const activePrimaryTabDisplay = computed(() => storeActivePrimaryTab.value ?? props.activePrimaryTab ?? 'rules')
+
+function setPrimaryTab(tab: PrimaryTabKey) {
+  storeActivePrimaryTab.value = tab
+  emit('update:activePrimaryTab', tab)
+}
 
 function setRulesPane(pane: SecondaryPaneKey) {
   storeRulesPane.value = pane
@@ -79,13 +90,13 @@ function close() {
 }
 
 function openRulesList() {
-  emit('update:activePrimaryTab', 'rules')
+  setPrimaryTab('rules')
   rulesStore.goToRulesList()
   setRulesPane('list')
 }
 
 function openRulesEditor() {
-  emit('update:activePrimaryTab', 'rules')
+  setPrimaryTab('rules')
   setRulesPane('editor')
 }
 
@@ -154,7 +165,7 @@ const ruleSaveDisabled = computed(() => {
 })
 
 const showDrawerBack = computed(() => (
-  (props.activePrimaryTab === 'rules' && rulesPaneDisplay.value === 'editor')
+  (activePrimaryTabDisplay.value === 'rules' && rulesPaneDisplay.value === 'editor')
 ))
 
 const isDetailPane = computed(() => showDrawerBack.value)
@@ -190,10 +201,10 @@ function onRuleDraftUpdate(next: RuleDraft) {
         )"
       >
         <DrawerTabs
-          :model-value="props.activePrimaryTab"
+          :model-value="activePrimaryTabDisplay"
           :tabs="tabs"
           trailing
-          @update:model-value="emit('update:activePrimaryTab', $event as any)"
+          @update:model-value="setPrimaryTab($event as any)"
         >
           <template #trailing>
             <Button
@@ -215,10 +226,23 @@ function onRuleDraftUpdate(next: RuleDraft) {
 
         <div
           class="min-h-0 flex-1 overflow-x-hidden overflow-y-hidden"
-          :class="isDetailPane ? 'px-3 pb-3 pt-0' : 'p-3'"
+          :class="isDetailPane ? 'px-3 pb-3 pt-0' : activePrimaryTabDisplay === 'compose' ? 'px-3 pb-3 pt-2' : 'p-3'"
         >
+          <div v-if="activePrimaryTabDisplay === 'compose'" class="flex h-full min-h-0 flex-col">
+            <ComposeWorkbench
+              v-model:draft="composeStore.draft"
+              :response="composeStore.response"
+              :loading="composeStore.loading"
+              :error="composeStore.error"
+              embedded
+              class="h-full"
+              @send="composeStore.send"
+              @reset="composeStore.reset"
+            />
+          </div>
+
           <!-- Rules -->
-          <div class="flex h-full min-h-0 flex-col">
+          <div v-else class="flex h-full min-h-0 flex-col">
             <div v-if="rulesPaneDisplay === 'list'" class="min-h-0 flex-1">
               <RulesListView
                 :rules="props.rules"

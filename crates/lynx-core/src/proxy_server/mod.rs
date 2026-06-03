@@ -31,6 +31,7 @@ use crate::layers::message_package_layer::message_event_store::MessageEventCache
 use crate::layers::message_package_layer::{MessageEventChannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::service::{TraceIdExt, set_new_trace_id};
+use crate::self_service::AuthConfig;
 
 pub mod server_ca_manage;
 pub mod server_config;
@@ -69,6 +70,15 @@ pub struct ProxyServer {
 
     #[builder(default = "false")]
     pub local_only: bool,
+
+    #[builder(default)]
+    pub auth_user: Option<String>,
+
+    #[builder(default)]
+    pub auth_pass: Option<String>,
+
+    #[builder(setter(skip))]
+    pub auth_config: Arc<AuthConfig>,
 }
 
 impl ProxyServerBuilder {
@@ -111,6 +121,10 @@ impl ProxyServerBuilder {
             .flatten()
             .ok_or_else(|| anyhow!("data_dir is required"))?;
         let data_store = DataStore::new(data_dir).await?;
+        let auth_config = AuthConfig::from_credentials(
+            self.auth_user.clone().flatten(),
+            self.auth_pass.clone().flatten(),
+        )?;
 
         Ok(ProxyServer {
             port: self.port.flatten(),
@@ -126,6 +140,9 @@ impl ProxyServerBuilder {
                 .ok_or_else(|| anyhow!("server_ca_manager is required"))?,
             data_store,
             local_only,
+            auth_user: self.auth_user.clone().flatten(),
+            auth_pass: self.auth_pass.clone().flatten(),
+            auth_config,
         })
     }
 }
@@ -194,6 +211,7 @@ impl ProxyServer {
         let message_event_cannel = MessageEventChannel::new();
         let message_event_cannel = Arc::new(message_event_cannel);
         let static_dir = self.static_dir.clone();
+        let auth_config = self.auth_config.clone();
         let addr_str = listener.local_addr()?.to_string();
         let authority = Authority::from_str(&addr_str)?;
         let self_ca = server_ca_manager.get_server_config(&authority).await?;
@@ -250,6 +268,7 @@ impl ProxyServer {
                 let message_event_store = message_event_store.clone();
                 let access_addr_list = access_addr_list.clone();
                 let static_dir = static_dir.clone();
+                let auth_config = auth_config.clone();
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
                     let svc = ServiceBuilder::new()
@@ -262,6 +281,7 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(message_event_cannel))
                         .layer(RequestExtensionLayer::new(access_addr_list))
                         .layer(RequestExtensionLayer::new(static_dir))
+                        .layer(RequestExtensionLayer::new(auth_config))
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)
                         .layer(ErrorHandlerLayer)

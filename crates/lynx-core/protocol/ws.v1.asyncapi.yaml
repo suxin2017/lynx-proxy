@@ -37,6 +37,7 @@ x-lynx-ops:
     - request.detail.get
     - request.stream.subscribe
     - request.stream.unsubscribe
+    - compose.request.send
     - settings.general.get
     - settings.general.set
     - settings.captureFilter.get

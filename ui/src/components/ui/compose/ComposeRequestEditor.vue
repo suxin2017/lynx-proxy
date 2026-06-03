@@ -10,10 +10,13 @@ import { validateJsonDocument } from '@/components/ui/json-editor/utils'
 import { composeGhostButtonClass } from './compose-styles'
 import { syncDraftParamsToUrl } from './lib/parse-url-params'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   draft: ComposeDraft
   activeTab: ComposeRequestTab
-}>()
+  compact?: boolean
+}>(), {
+  compact: false,
+})
 
 const emit = defineEmits<{
   'update:draft': [draft: ComposeDraft]
@@ -91,7 +94,12 @@ function onAddRow() {
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <nav class="flex items-center justify-between gap-2 px-2 pt-1 pb-1.5">
+    <nav
+      :class="[
+        'flex items-center justify-between gap-2 px-2',
+        props.compact ? 'pt-0.5 pb-1' : 'pt-1 pb-1.5',
+      ]"
+    >
       <div class="flex flex-wrap items-center gap-0.5">
         <button
           v-for="tab in REQUEST_TABS"
@@ -127,7 +135,7 @@ function onAddRow() {
       </div>
     </nav>
 
-    <div class="min-h-0 flex-1 overflow-hidden px-2 pb-2">
+    <div :class="['min-h-0 flex-1 overflow-hidden px-2', props.compact ? 'pb-1.5' : 'pb-2']">
       <KeyValueTable
         v-if="props.activeTab === 'params'"
         :rows="props.draft.queryParams"

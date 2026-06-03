@@ -110,6 +110,22 @@ fn literal_path_prefix_matching_in_real_request() {
 }
 
 #[test]
+fn url_embedded_query_matches_real_request() {
+    let request: Request<()> = Request::builder()
+        .method(Method::GET)
+        .uri("https://example.com/v1/graphql?operationName=GetFeed&platform=android&sign=abc")
+        .body(())
+        .unwrap();
+
+    let facts = facts_from_http_request(&request, &HeaderMap::new());
+    let program = compile_match_expr(
+        "example.com/v1/graphql?operationName=GetFeed&platform=android",
+    )
+    .unwrap();
+    assert!(eval_program(&program, &facts));
+}
+
+#[test]
 fn query_flag_matches_query_string() {
     let request: Request<()> = Request::builder()
         .method(Method::GET)

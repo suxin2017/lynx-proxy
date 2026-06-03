@@ -10,6 +10,7 @@ export const dslHighlightColors = {
   host: 'var(--color-chart-1)',
   port: 'var(--color-chart-5)',
   path: 'var(--color-chart-3)',
+  query: 'var(--color-chart-6)',
   paren: 'var(--color-muted-foreground)',
   comment: 'var(--color-accent-foreground)',
   cliFlag: 'var(--color-primary)',
@@ -24,6 +25,7 @@ const highlightClassByKind: Record<string, string> = {
   Host: 'cm-dsl-host',
   Port: 'cm-dsl-port',
   Path: 'cm-dsl-path',
+  Query: 'cm-dsl-query',
   LineComment: 'cm-dsl-comment',
   ShortFlag: 'cm-dsl-cli-flag',
   LongFlag: 'cm-dsl-cli-flag',
@@ -85,6 +87,9 @@ const dslHighlightTheme = EditorView.baseTheme({
   },
   '.cm-dsl-path': {
     color: dslHighlightColors.path,
+  },
+  '.cm-dsl-query': {
+    color: dslHighlightColors.query,
   },
   '.cm-dsl-comment': {
     color: dslHighlightColors.comment,

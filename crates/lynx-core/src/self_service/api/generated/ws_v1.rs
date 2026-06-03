@@ -19,6 +19,7 @@ pub mod op {
     pub const REQUEST_DETAIL_GET: &str = "request.detail.get";
     pub const REQUEST_STREAM_SUBSCRIBE: &str = "request.stream.subscribe";
     pub const REQUEST_STREAM_UNSUBSCRIBE: &str = "request.stream.unsubscribe";
+    pub const COMPOSE_REQUEST_SEND: &str = "compose.request.send";
     pub const SETTINGS_GENERAL_GET: &str = "settings.general.get";
     pub const SETTINGS_GENERAL_SET: &str = "settings.general.set";
     pub const SETTINGS_CAPTURE_FILTER_GET: &str = "settings.captureFilter.get";
@@ -59,6 +60,7 @@ pub mod op {
             "request.detail.get" |
             "request.stream.subscribe" |
             "request.stream.unsubscribe" |
+            "compose.request.send" |
             "settings.general.get" |
             "settings.general.set" |
             "settings.captureFilter.get" |

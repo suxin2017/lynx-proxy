@@ -48,6 +48,8 @@ pub struct Url {
     pub host: Option<Spanned<String>>,
     pub port: Option<Spanned<String>>,
     pub path: Option<Spanned<String>>,
+    /// Query string without leading `?` (e.g. `a=1&b=2`).
+    pub query: Option<Spanned<String>>,
     pub span: Span,
 }
 

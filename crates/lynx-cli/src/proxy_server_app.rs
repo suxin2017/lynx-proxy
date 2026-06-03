@@ -15,15 +15,26 @@ pub struct ProxyServerApp {
     data_dir: Option<String>,
     daemon: bool,
     local_only: bool,
+    auth_user: Option<String>,
+    auth_pass: Option<String>,
 }
 
 impl ProxyServerApp {
-    pub fn new(port: u16, data_dir: Option<String>, daemon: bool, local_only: bool) -> Self {
+    pub fn new(
+        port: u16,
+        data_dir: Option<String>,
+        daemon: bool,
+        local_only: bool,
+        auth_user: Option<String>,
+        auth_pass: Option<String>,
+    ) -> Self {
         Self {
             port,
             data_dir,
             daemon,
             local_only,
+            auth_user,
+            auth_pass,
         }
     }
 
@@ -63,6 +74,8 @@ impl ProxyServerApp {
             .data_dir(data_dir.clone())
             .static_dir(Arc::new(StaticDir(assets_dir)))
             .local_only(self.local_only)
+            .auth_user(self.auth_user.clone())
+            .auth_pass(self.auth_pass.clone())
             .build()
             .await?;
 
@@ -123,7 +136,7 @@ mod tests {
 
     fn create_test_app(data_dir: Option<String>) -> ProxyServerApp {
         // Use an ephemeral port to avoid colliding with local dev servers.
-        ProxyServerApp::new(0, data_dir, false, false)
+        ProxyServerApp::new(0, data_dir, false, false, None, None)
     }
 
     #[tokio::test]

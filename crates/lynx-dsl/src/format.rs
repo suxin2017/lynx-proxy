@@ -136,6 +136,10 @@ fn format_url(url: &crate::ast::Url) -> String {
         }
         text.push_str(&path.value);
     }
+    if let Some(query) = &url.query {
+        text.push('?');
+        text.push_str(&query.value);
+    }
     text
 }
 

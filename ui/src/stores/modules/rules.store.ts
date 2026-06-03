@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { createAction, createRuleDraft } from '@/components/ui/rule-workbench'
-type PrimaryTabKey = 'rules' | 'assets'
+type PrimaryTabKey = 'rules' | 'assets' | 'compose'
 type SecondaryPaneKey = 'list' | 'editor'
 import {
   cloneDraft,

@@ -8,6 +8,7 @@ pub mod format;
 pub mod highlight;
 pub mod ir;
 pub mod parser;
+pub mod query;
 pub mod span;
 pub mod validate;
 

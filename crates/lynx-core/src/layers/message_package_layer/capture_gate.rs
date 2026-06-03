@@ -2,6 +2,7 @@ use anyhow::Result;
 use axum::extract::Request;
 use http::HeaderMap;
 use http_body::Body as HttpBody;
+use hyper_tungstenite::is_upgrade_request;
 use lynx_dsl::{RequestFacts, compile_match_expr, eval_program};
 use lynx_storage::dao::net_request_dao::{CaptureSwitchDao, RecordingStatus};
 use lynx_storage::dao::capture_rules_dao::{CaptureRulesDao, CaptureRule};
@@ -78,12 +79,14 @@ fn any_rule_matches(rules: &[CaptureRule], facts: &RequestFacts) -> bool {
 
 fn request_facts_from_request<T: HttpBody>(request: &Request<T>) -> RequestFacts {
     let uri = request.uri();
-    let scheme = uri.scheme_str().map(|s| s.to_string());
     let query = uri.query().map(|q| q.to_string());
     let path = uri.path().to_string();
     let method = request.method().as_str().to_string();
 
     let (host, port) = host_and_port(uri.host(), uri.port_u16(), request.headers());
+
+    let scheme = uri.scheme_str().map(|s| s.to_string());
+    let scheme = scheme_for_capture_facts(request, scheme, port);
 
     let mut builder = RequestFacts::builder();
     if let Some(scheme) = scheme {
@@ -102,6 +105,24 @@ fn request_facts_from_request<T: HttpBody>(request: &Request<T>) -> RequestFacts
         builder = builder.header(key, val);
     }
     builder.build()
+}
+
+fn scheme_for_capture_facts<T: HttpBody>(
+    request: &Request<T>,
+    scheme: Option<String>,
+    port: Option<u16>,
+) -> Option<String> {
+    if !is_upgrade_request(request) {
+        return scheme;
+    }
+
+    Some(match scheme.as_deref() {
+        Some("https") | Some("wss") => "wss".to_string(),
+        Some("http") | Some("ws") => "ws".to_string(),
+        None if port == Some(443) => "wss".to_string(),
+        None => "ws".to_string(),
+        Some(other) => other.to_string(),
+    })
 }
 
 fn host_and_port(

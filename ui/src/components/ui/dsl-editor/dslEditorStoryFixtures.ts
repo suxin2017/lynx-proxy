@@ -41,6 +41,11 @@ export const dslStoryExamples: DslStoryExample[] = [
   { label: 'HTTPS + path', value: 'https://example.com/api/v1/events/track' },
   { label: 'WebSocket', value: 'ws://example.com:8080/status' },
 
+  { label: 'Host + path + query', value: 'example.com/v1/graphql?operationName=GetFeed&platform=android' },
+  { label: 'Path + query', value: '/v2/feed/timeline?page_size=20&region=SG' },
+  { label: 'Query only', value: '?user_id=123456&fields=id,name,avatar' },
+  { label: 'HTTPS + path + query', value: 'https://example.com/v1/content/recommend?feed_type=for_you&limit=30' },
+
   { label: 'AND', value: 'example.com AND /api' },
   { label: 'OR', value: 'example.com OR /api' },
   { label: 'NOT', value: 'NOT example.com' },

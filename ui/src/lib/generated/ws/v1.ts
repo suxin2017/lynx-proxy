@@ -23,6 +23,7 @@ export const WsOp = {
   RequestDetailGet: 'request.detail.get',
   RequestStreamSubscribe: 'request.stream.subscribe',
   RequestStreamUnsubscribe: 'request.stream.unsubscribe',
+  ComposeRequestSend: 'compose.request.send',
   SettingsGeneralGet: 'settings.general.get',
   SettingsGeneralSet: 'settings.general.set',
   SettingsCaptureFilterGet: 'settings.captureFilter.get',
@@ -62,6 +63,7 @@ export type WsRequestOp =
   | 'request.detail.get'
   | 'request.stream.subscribe'
   | 'request.stream.unsubscribe'
+  | 'compose.request.send'
   | 'settings.general.get'
   | 'settings.general.set'
   | 'settings.captureFilter.get'

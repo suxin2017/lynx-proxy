@@ -51,10 +51,45 @@ export interface CertificatePathResponse {
   path: string
 }
 
+export interface ComposeKeyValueRow {
+  key: string
+  value: string
+  enabled: boolean
+}
+
+export type ComposeHttpMethod =
+  | 'GET'
+  | 'POST'
+  | 'PUT'
+  | 'PATCH'
+  | 'DELETE'
+  | 'HEAD'
+  | 'OPTIONS'
+
+export interface ComposeRequestPayload {
+  method: ComposeHttpMethod
+  url: string
+  queryParams: ComposeKeyValueRow[]
+  headers: ComposeKeyValueRow[]
+  body: string
+  timeout?: number
+}
+
+export interface ComposeResponse {
+  status: number
+  statusText: string
+  headers: Record<string, string>
+  body: string
+  responseTime: number
+  size: number
+  errorMessage?: string
+}
+
 export interface WsApi {
   getCaptureStatus: () => Promise<CaptureStatusResponse>
   setCaptureControl: (payload: CaptureControlPayload) => Promise<unknown>
   getRequestDetail: (payload: RequestDetailPayload) => Promise<RequestDetailResponse>
+  sendComposeRequest: (payload: ComposeRequestPayload) => Promise<ComposeResponse>
   subscribeRequestStream: () => Promise<unknown>
   unsubscribeRequestStream: () => Promise<unknown>
   getGeneralSetting: () => Promise<GeneralSetting>
@@ -80,6 +115,8 @@ export const createWsApi = (client: WsClient): WsApi => {
         WsOp.RequestDetailGet,
         payload,
       ),
+    sendComposeRequest: (payload) =>
+      client.call<ComposeResponse, ComposeRequestPayload>(WsOp.ComposeRequestSend, payload),
     subscribeRequestStream: () => client.call(WsOp.RequestStreamSubscribe),
     unsubscribeRequestStream: () => client.call(WsOp.RequestStreamUnsubscribe),
     getGeneralSetting: () => client.call<GeneralSetting>(WsOp.SettingsGeneralGet),

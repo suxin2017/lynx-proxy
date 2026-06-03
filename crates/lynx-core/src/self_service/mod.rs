@@ -13,7 +13,8 @@ use crate::proxy_server::StaticDir;
 use crate::proxy_server::server_config::ProxyServerConfig;
 use crate::proxy_server::server_config::ProxyServerConfigExtensionsExt;
 use anyhow::Result;
-use api::{base_info, certificate, net_request};
+use api::{auth as auth_api, base_info, certificate, net_request};
+use auth::{authorize_http, is_public_http_path, unauthorized_response};
 use axum::Router;
 use axum::response::Response;
 use axum::routing::get;
@@ -21,8 +22,13 @@ use file_service::get_file;
 use http::Method;
 use tower::ServiceExt;
 pub mod api;
+pub mod auth;
+pub mod auth_extensions;
 pub mod file_service;
 pub mod utils;
+
+pub use auth::AuthConfig;
+pub use auth_extensions::AuthConfigExtensionsExt;
 use tower_http::cors::{Any, CorsLayer};
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/api";
@@ -69,10 +75,12 @@ pub struct RouteState {
     pub static_dir: Option<Arc<StaticDir>>,
     pub client: Arc<ReqwestClient>,
     pub message_event_channel: Arc<MessageEventChannel>,
+    pub auth: Arc<AuthConfig>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
     let static_dir = req.extensions().get::<Option<Arc<StaticDir>>>();
+    let auth = req.extensions().get_auth_config();
 
     let state = RouteState {
         store: req.extensions().get_data_store(),
@@ -86,13 +94,28 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         static_dir: static_dir.cloned().flatten(),
         client: req.extensions().get_reqwest_client(),
         message_event_channel: req.extensions().get_message_event_cannel(),
+        auth: auth.clone(),
     };
+
+    let method = req.method().clone();
+    let uri = req.uri().clone();
+    let path = uri.path().to_string();
+    let headers = req.headers().clone();
+
+    if auth.enabled && !is_public_http_path(&method, &path) {
+        if !authorize_http(&auth, &method, &path, &uri, &headers) {
+            return Ok(unauthorized_response());
+        }
+    }
+
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::PUT, Method::POST])
-        .allow_origin(Any);
+        .allow_origin(Any)
+        .allow_headers([http::header::AUTHORIZATION, http::header::CONTENT_TYPE]);
 
     let api_router = Router::new()
         .route("/health", get(get_health))
+        .nest("/auth", auth_api::router())
         .nest("/net_request", net_request::router())
         .nest("/certificate", certificate::router())
         .nest("/base_info", base_info::router())

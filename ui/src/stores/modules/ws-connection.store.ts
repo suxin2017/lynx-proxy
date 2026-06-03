@@ -50,11 +50,27 @@ export const useWsConnectionStore = defineStore('wsConnection', () => {
     return wsClient!
   }
 
+  const resetClient = () => {
+    detachStateChange?.()
+    detachEvent?.()
+    detachStateChange = null
+    detachEvent = null
+    wsClient?.disconnect()
+    wsClient = null
+    state.value = WsConnectionState.Disconnected
+  }
+
   const bootstrap = () => {
     ensureClient()
     connect().catch((error) => {
       lastError.value = String(error)
     })
+  }
+
+  const reconnect = async () => {
+    resetClient()
+    bootstrap()
+    await connect()
   }
 
   const connect = async () => {
@@ -97,6 +113,7 @@ export const useWsConnectionStore = defineStore('wsConnection', () => {
     lastError,
     recentEvents,
     bootstrap,
+    reconnect,
     connect,
     disconnect,
     call,

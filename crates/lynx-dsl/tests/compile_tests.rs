@@ -109,6 +109,7 @@ fn predicate_kinds(program: &MatchProgram) -> Vec<&'static str> {
             Predicate::PathGlob(_) => "path",
             Predicate::MethodEq(_) => "method",
             Predicate::QueryContains(_) => "query",
+            Predicate::QueryParamsAll(_) => "query_params",
             Predicate::HeaderEq { .. } => "header",
         })
         .collect()

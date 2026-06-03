@@ -4,6 +4,7 @@
 
 use crate::facts::RequestFacts;
 use crate::ir::{EvalPlan, MatchProgram, PathMatcher, Predicate, SegmentPattern};
+use crate::query::query_params_subset_match;
 
 /// Evaluate a compiled match program against request facts.
 pub fn eval_program(program: &MatchProgram, facts: &RequestFacts) -> bool {
@@ -24,6 +25,9 @@ pub fn eval_predicate(pred: &Predicate, facts: &RequestFacts) -> bool {
             .query
             .as_deref()
             .is_some_and(|query| query.contains(expected.as_ref())),
+        Predicate::QueryParamsAll(expected) => {
+            query_params_subset_match(expected, facts.query.as_deref())
+        }
         Predicate::HeaderEq { key, value } => header_matches(facts, key, value),
     }
 }

@@ -295,6 +295,81 @@ fn cli_only_post_with_glob_path() {
     );
 }
 
+#[test]
+fn url_query_params_subset_match() {
+    assert_matches(
+        "example.com/v1/graphql?operationName=GetFeed&platform=android",
+        RequestFacts::builder()
+            .host("example.com")
+            .path("/v1/graphql")
+            .query("operationName=GetFeed&platform=android&sign=abc"),
+        true,
+    );
+    assert_matches(
+        "example.com/v1/graphql?operationName=GetFeed&platform=android",
+        RequestFacts::builder()
+            .host("example.com")
+            .path("/v1/graphql")
+            .query("operationName=GetFeed"),
+        false,
+    );
+}
+
+#[test]
+fn path_with_query_params() {
+    assert_matches(
+        "/v2/feed/timeline?page_size=20&region=SG",
+        RequestFacts::builder()
+            .path("/v2/feed/timeline")
+            .query("page_size=20&region=SG&cursor=YXJy"),
+        true,
+    );
+    assert_matches(
+        "/v2/feed/timeline?page_size=20&region=SG",
+        RequestFacts::builder()
+            .path("/v2/feed/timeline")
+            .query("page_size=10&region=SG"),
+        false,
+    );
+}
+
+#[test]
+fn query_only_primary() {
+    assert_matches(
+        "?user_id=123456&fields=id,name,avatar",
+        RequestFacts::builder().query("user_id=123456&fields=id,name,avatar&extra=1"),
+        true,
+    );
+    assert_matches(
+        "?user_id=123456",
+        RequestFacts::builder().query("user_id=999"),
+        false,
+    );
+}
+
+#[test]
+fn full_url_with_query_params() {
+    let dsl = "https://example.com/v1/content/recommend?feed_type=for_you&limit=30";
+    assert_matches(
+        dsl,
+        RequestFacts::builder()
+            .scheme("https")
+            .host("example.com")
+            .path("/v1/content/recommend")
+            .query("feed_type=for_you&limit=30&offset=0"),
+        true,
+    );
+    assert_matches(
+        dsl,
+        RequestFacts::builder()
+            .scheme("https")
+            .host("example.com")
+            .path("/v1/content/recommend")
+            .query("feed_type=for_you&limit=30&cold_start=true"),
+        true,
+    );
+}
+
 // eval.rs and ir.rs must not depend on ast — compile is the sole AST entry point.
 #[test]
 fn eval_module_isolated_from_ast() {
