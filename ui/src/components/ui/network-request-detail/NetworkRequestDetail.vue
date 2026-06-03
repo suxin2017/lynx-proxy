@@ -2,10 +2,11 @@
 import type { HTMLAttributes } from 'vue'
 import type { NetworkDetailKeyValue, NetworkDetailMatchedRule, NetworkDetailRecord } from './types'
 
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { VerticalSplitPanel } from '@/components/ui/split-panels'
 import BodyPreviewPanel from './BodyPreviewPanel.vue'
+import WebSocketFramesPanel from './WebSocketFramesPanel.vue'
 import { cn } from '@/lib/utils'
 import {
   detailLabelClass,
@@ -18,10 +19,12 @@ import {
 const TABS = ['overview', 'content'] as const
 const REQUEST_SUB_TABS = ['query', 'headers', 'cookies', 'body'] as const
 const RESPONSE_SUB_TABS = ['headers', 'cookies', 'body'] as const
+const WS_CONTENT_SUB_TABS = ['frames', 'headers'] as const
 
 type DetailTab = typeof TABS[number]
 type RequestSubTab = typeof REQUEST_SUB_TABS[number]
 type ResponseSubTab = typeof RESPONSE_SUB_TABS[number]
+type WsContentSubTab = typeof WS_CONTENT_SUB_TABS[number]
 
 const props = withDefaults(
   defineProps<{
@@ -31,11 +34,13 @@ const props = withDefaults(
     initialTab?: DetailTab
     initialRequestSubTab?: RequestSubTab
     initialResponseSubTab?: ResponseSubTab
+    initialWsContentSubTab?: WsContentSubTab
   }>(),
   {
     initialTab: 'overview',
     initialRequestSubTab: 'headers',
     initialResponseSubTab: 'headers',
+    initialWsContentSubTab: 'frames',
   },
 )
 
@@ -51,7 +56,13 @@ const TAB_LABELS: Record<DetailTab, string> = {
 const activeTab = ref<DetailTab>(props.initialTab)
 const requestSubTab = ref<RequestSubTab>(props.initialRequestSubTab)
 const responseSubTab = ref<ResponseSubTab>(props.initialResponseSubTab)
+const wsContentSubTab = ref<WsContentSubTab>(props.initialWsContentSubTab)
 const contentSplitRatio = ref(44)
+
+const WS_CONTENT_SUB_TAB_LABELS: Record<WsContentSubTab, string> = {
+  frames: 'Frames',
+  headers: 'Headers',
+}
 
 function duration(value?: number): string {
   if (value == null) return '-'
@@ -80,6 +91,31 @@ const isWebSocketRequest = computed(() => {
   const type = props.record?.requestType?.toLowerCase() ?? ''
   const contentType = props.record?.requestContentType?.toLowerCase() ?? ''
   return type.includes('websocket') || contentType.includes('websocket')
+})
+
+const websocketConnectionStartMs = computed(() => {
+  const startTime = props.record?.startTime
+  if (!startTime) {
+    return undefined
+  }
+
+  const parsed = Date.parse(startTime)
+  return Number.isFinite(parsed) ? parsed : undefined
+})
+
+watch(
+  [isWebSocketRequest, () => props.record?.id],
+  ([isWs]) => {
+    if (isWs && activeTab.value === 'content') {
+      wsContentSubTab.value = 'frames'
+    }
+  },
+)
+
+watch(activeTab, (tab) => {
+  if (tab === 'content' && isWebSocketRequest.value) {
+    wsContentSubTab.value = 'frames'
+  }
 })
 </script>
 
@@ -173,6 +209,44 @@ const isWebSocketRequest = computed(() => {
               </div>
             </dl>
           </section>
+        </div>
+
+        <div v-else-if="isWebSocketRequest" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <nav class="flex flex-wrap items-center gap-1 px-1 py-0.5">
+            <button
+              v-for="subTab in WS_CONTENT_SUB_TABS"
+              :key="subTab"
+              type="button"
+              class="h-6 rounded px-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
+              :class="wsContentSubTab === subTab ? 'bg-muted text-foreground' : 'hover:bg-muted/40'"
+              @click="wsContentSubTab = subTab"
+            >
+              {{ WS_CONTENT_SUB_TAB_LABELS[subTab] }}
+            </button>
+          </nav>
+
+          <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <WebSocketFramesPanel
+              v-if="wsContentSubTab === 'frames'"
+              :frames="props.record.websocketFrames ?? []"
+              :connection-start-ms="websocketConnectionStartMs"
+            />
+
+            <section
+              v-else
+              class="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden"
+            >
+              <div v-if="nonEmptyRows(props.record.requestHeaders).length === 0" class="px-5 py-1 text-xs text-muted-foreground">无请求 Headers</div>
+              <table v-else class="w-full text-xs">
+                <tbody>
+                  <tr v-for="row in nonEmptyRows(props.record.requestHeaders)" :key="`ws-rh-${row.key}-${row.value}`" class="align-top">
+                    <td class="w-[34%] px-5 py-1 font-mono text-[11px] text-muted-foreground">{{ row.key }}</td>
+                    <td class="px-2 py-1 font-mono text-[11px] break-all">{{ row.value }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
         </div>
 
         <div v-else class="min-h-0 flex-1 overflow-hidden">

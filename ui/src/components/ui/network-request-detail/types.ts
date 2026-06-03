@@ -25,6 +25,20 @@ export interface NetworkDetailMatchedRule {
   reason?: string
 }
 
+export type WebSocketFrameDirection = 'clientToServer' | 'serverToClient'
+
+export type WebSocketFrameOpcode = 'text' | 'binary' | 'ping' | 'pong' | 'close'
+
+export interface NetworkWebSocketFrame {
+  id: string
+  direction: WebSocketFrameDirection
+  timestamp: number
+  opcode: WebSocketFrameOpcode
+  bytes: Uint8Array
+  closeCode?: number
+  previewLabel: string
+}
+
 export interface NetworkDetailRecord {
   id: string
   method: string
@@ -54,4 +68,6 @@ export interface NetworkDetailRecord {
   responseContentType?: string
   timing?: NetworkDetailTiming
   matchedRules?: NetworkDetailMatchedRule[]
+  websocketFrames?: NetworkWebSocketFrame[]
+  websocketEnded?: boolean
 }

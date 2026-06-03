@@ -104,11 +104,11 @@ impl HandlerRule {
     ) -> Self {
         Self {
             id: None,
-            handler_type: HandlerRuleType::ProxyForward(ProxyForwardConfig {
+            handler_type: HandlerRuleType::ProxyForward(ProxyForwardConfig::new(
                 target_scheme,
                 target_authority,
                 target_path,
-            }),
+            )),
             execution_order: 10,
             enabled: true,
         }

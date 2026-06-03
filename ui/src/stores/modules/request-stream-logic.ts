@@ -1,4 +1,4 @@
-import type { NetworkDetailKeyValue } from '@/components/ui/network-request-detail'
+import type { NetworkDetailKeyValue, NetworkWebSocketFrame } from '@/components/ui/network-request-detail'
 import type { TrafficRecord } from '@/components/ui/request-tree'
 
 export type PartialRequestRecord = {
@@ -28,6 +28,8 @@ export type PartialRequestRecord = {
   endAt?: number
   remoteAddress?: string
   protocol?: string
+  websocketFrames?: NetworkWebSocketFrame[]
+  websocketEnded?: boolean
 }
 
 export function isRecordListable(record: PartialRequestRecord | undefined): boolean {
@@ -119,6 +121,12 @@ export function mergePartialRequestRecord(
   }
   if (patch.protocol === undefined) {
     next.protocol = current.protocol
+  }
+  if (patch.websocketFrames === undefined) {
+    next.websocketFrames = current.websocketFrames
+  }
+  if (patch.websocketEnded === undefined) {
+    next.websocketEnded = current.websocketEnded
   }
 
   return next

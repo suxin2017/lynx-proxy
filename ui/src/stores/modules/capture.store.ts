@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { WsOp } from '@/lib/generated/ws/v1'
 import { useWsConnectionStore } from './ws-connection.store'
@@ -86,6 +86,18 @@ export const useCaptureStore = defineStore('capture', () => {
       }
     })
   }
+
+  watch(
+    () => wsConnectionStore.isConnected,
+    (connected, wasConnected) => {
+      if (!connected || wasConnected) {
+        return
+      }
+
+      handleServerEvent()
+      void refreshStatus()
+    },
+  )
 
   const dispose = () => {
     detachEventListener?.()

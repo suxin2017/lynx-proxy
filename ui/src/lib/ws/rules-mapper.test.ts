@@ -108,6 +108,35 @@ describe('rules-mapper', () => {
     expect(handler.targetPath).toBeUndefined()
   })
 
+  it('normalizes ws/wss scheme values when loading proxyForward', () => {
+    const draft = requestRuleToDraft({
+      ...sampleRule,
+      handlers: [
+        {
+          id: 12,
+          executionOrder: 10,
+          enabled: true,
+          handlerType: {
+            type: 'proxyForward',
+            targetScheme: 'wss',
+            targetAuthority: '127.0.0.1:8000',
+          },
+        },
+      ],
+    })
+    if (draft.actions[0]?.type !== 'proxyForward') {
+      throw new Error('expected proxyForward action')
+    }
+    expect(draft.actions[0].config.targetScheme).toBe('https')
+
+    const back = draftToRequestRule(draft)
+    const handler = back.handlers[0]?.handlerType
+    if (handler?.type !== 'proxyForward') {
+      throw new Error('expected proxyForward handler')
+    }
+    expect(handler.targetScheme).toBe('https')
+  })
+
   it('cloneDraft deep-copies without structuredClone', () => {
     const draft = requestRuleToDraft(sampleRule)
     const copy = cloneDraft(draft)

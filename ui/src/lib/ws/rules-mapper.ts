@@ -1,5 +1,6 @@
 import type { RuleDraft, RuleActionDraft, RuleHeaderPair, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { createAction, createRuleDraft } from '@/components/ui/rule-workbench'
+import { proxyForwardSchemeFromDto } from '@/components/ui/rule-workbench/proxy-forward-scheme'
 import { getRuleValidationErrors } from '@/components/ui/rule-workbench/match-validation'
 import type { ActionAssetTemplate } from '@/components/ui/rules-drawer/types'
 import type { HandlerRuleDto, HandlerRuleTypeDto, RequestRuleDto } from './rules-types'
@@ -75,7 +76,7 @@ function handlerTypeToAction(handler: HandlerRuleDto, index: number): RuleAction
         ...base,
         type: 'proxyForward',
         config: {
-          targetScheme: proxyForwardFieldFromDto(t.targetScheme),
+          targetScheme: proxyForwardSchemeFromDto(t.targetScheme),
           targetAuthority: proxyForwardFieldFromDto(t.targetAuthority),
           targetPath: proxyForwardFieldFromDto(t.targetPath),
         },

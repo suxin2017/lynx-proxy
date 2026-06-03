@@ -6,7 +6,11 @@ use http_body_util::BodyExt;
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use http::{
     Request, Uri,
-    header::{HeaderValue, SEC_WEBSOCKET_EXTENSIONS, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_PROTOCOL},
+    header::{
+        HOST, HeaderValue, ORIGIN, PROXY_AUTHORIZATION,
+        SEC_WEBSOCKET_EXTENSIONS, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_PROTOCOL,
+    },
+    request::Parts,
 };
 use hyper_tungstenite::HyperWebsocket;
 use serde::{Deserialize, Serialize};
@@ -16,7 +20,7 @@ use tokio_tungstenite::{
     tungstenite::{self, client::IntoClientRequest},
 };
 use tower::{ServiceBuilder, ServiceExt, service_fn};
-use tracing::{debug, instrument, warn};
+use tracing::{debug, instrument};
 
 use crate::{
     client::request_client::RequestClientExt,
@@ -64,12 +68,27 @@ fn normalize_websocket_uri(uri: Uri) -> Result<Uri> {
     Uri::from_parts(parts).map_err(|e| anyhow!(e).context("failed to build websocket URI"))
 }
 
-/// Build an upstream handshake request: independent key, no extension/protocol forwarding.
+fn align_upstream_handshake_headers(parts: &mut Parts, uri: &Uri) -> Result<()> {
+    parts.headers.remove(SEC_WEBSOCKET_EXTENSIONS);
+    parts.headers.remove(PROXY_AUTHORIZATION);
+    parts.headers.remove(HOST);
+    parts.headers.remove(ORIGIN);
+
+    if let Some(authority) = uri.authority() {
+        parts.headers.insert(
+            HOST,
+            HeaderValue::from_str(authority.as_str()).map_err(|e| {
+                anyhow!(e).context("invalid Host header for upstream websocket")
+            })?,
+        );
+    }
+
+    Ok(())
+}
+
+/// Build an upstream handshake request: independent key, aligned Host, forwarded subprotocol.
 fn prepare_upstream_websocket_request(req: Req) -> Result<WebSocketReq> {
     let (mut parts, _) = req.into_parts();
-
-    parts.headers.remove(SEC_WEBSOCKET_EXTENSIONS);
-    parts.headers.remove(SEC_WEBSOCKET_PROTOCOL);
 
     let key = tungstenite::handshake::client::generate_key();
     parts.headers.insert(
@@ -79,6 +98,9 @@ fn prepare_upstream_websocket_request(req: Req) -> Result<WebSocketReq> {
     );
 
     parts.uri = normalize_websocket_uri(parts.uri)?;
+    let upstream_uri = parts.uri.clone();
+    align_upstream_handshake_headers(&mut parts, &upstream_uri)?;
+
     Ok(WebSocketReq(Request::from_parts(parts, ())))
 }
 
@@ -100,6 +122,7 @@ async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
     assert!(hyper_tungstenite::is_upgrade_request(&req));
     let message_channel = req.extensions().try_get_message_event_cannel()?;
     let trace_id = req.extensions().get_trace_id();
+
     let (client_res, hyper_ws) = hyper_tungstenite::upgrade(&mut req, None)?;
 
     message_channel
@@ -109,7 +132,8 @@ async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
     let ws_client = req.extensions().try_get_websocket_client()?;
     let ws_req = prepare_upstream_websocket_request(req)?;
 
-    let (client_ws, _upstream_res) = ws_client.request(ws_req).await.inspect_err(|e| {
+    let upstream_result = ws_client.request(ws_req).await;
+    if let Err(e) = &upstream_result {
         let message_channel = message_channel.clone();
         let trace_id = trace_id.clone();
         let reason = format!("WebSocket request error: {}", e);
@@ -118,7 +142,8 @@ async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
                 .dispatch_on_websocket_error(trace_id, reason)
                 .await;
         });
-    })?;
+    }
+    let (client_ws, upstream_res) = upstream_result?;
 
     let mc = message_channel.clone();
     let tid = trace_id.clone();
@@ -135,7 +160,10 @@ async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
         }
     });
 
-    let (parts, body) = client_res.into_parts();
+    let (mut parts, body) = client_res.into_parts();
+    if let Some(protocol) = upstream_res.headers().get(SEC_WEBSOCKET_PROTOCOL) {
+        parts.headers.insert(SEC_WEBSOCKET_PROTOCOL, protocol.clone());
+    }
     let bytes = body.collect().await?.to_bytes();
     let client_res = Response::from_parts(parts, full(bytes));
     Ok(client_res.into_response())
@@ -172,7 +200,7 @@ where
     let upstream_to_client = relay_websocket_direction(
         hyper_sink,
         client_stream,
-        SendType::ClientToServer,
+        SendType::ServerToClient,
         mc1,
         tid1,
         "upstream-to-client",
@@ -183,28 +211,14 @@ where
     let client_to_upstream = relay_websocket_direction(
         client_sink,
         hyper_stream,
-        SendType::ServerToClient,
+        SendType::ClientToServer,
         mc2,
         tid2,
         "client-to-upstream",
     );
 
-    let (res_upstream, res_client) = tokio::join!(upstream_to_client, client_to_upstream);
-
-    if let Err(e) = res_upstream {
-        warn!(
-            direction = "upstream-to-client",
-            "websocket relay ended: {:#}",
-            e
-        );
-    }
-    if let Err(e) = res_client {
-        warn!(
-            direction = "client-to-upstream",
-            "websocket relay ended: {:#}",
-            e
-        );
-    }
+    let (_res_upstream, _res_client) =
+        tokio::join!(upstream_to_client, client_to_upstream);
 
     Ok(())
 }
@@ -284,7 +298,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use http::Uri;
+    use axum::http::Method;
+    use http::{Uri, header::{CONNECTION, SEC_WEBSOCKET_VERSION, UPGRADE}};
+
+    use crate::utils::empty;
 
     #[test]
     fn normalize_websocket_uri_strips_default_ports() {
@@ -302,5 +319,80 @@ mod tests {
         let uri: Uri = "https://example.com:8443/chat".parse().unwrap();
         let normalized = normalize_websocket_uri(uri).unwrap();
         assert_eq!(normalized.to_string(), "wss://example.com:8443/chat");
+    }
+
+    #[test]
+    fn align_upstream_handshake_headers_sets_host_from_uri() {
+        let uri: Uri = "http://127.0.0.1:5173/@vite/client".parse().unwrap();
+        let request = Request::builder()
+            .uri(uri.clone())
+            .header(HOST, "virtual.example.com")
+            .header(ORIGIN, "https://virtual.example.com")
+            .header(
+                SEC_WEBSOCKET_EXTENSIONS,
+                HeaderValue::from_static("permessage-deflate"),
+            )
+            .body(())
+            .unwrap();
+        let (mut parts, _) = request.into_parts();
+
+        align_upstream_handshake_headers(&mut parts, &uri).unwrap();
+
+        assert_eq!(
+            parts.headers.get(HOST).unwrap(),
+            "127.0.0.1:5173"
+        );
+        assert!(!parts.headers.contains_key(ORIGIN));
+        assert!(!parts.headers.contains_key(SEC_WEBSOCKET_EXTENSIONS));
+    }
+
+    #[test]
+    fn align_upstream_handshake_headers_preserves_subprotocol() {
+        let uri: Uri = "http://127.0.0.1:5173/".parse().unwrap();
+        let request = Request::builder()
+            .uri(uri.clone())
+            .header(HOST, "virtual.example.com")
+            .header(SEC_WEBSOCKET_PROTOCOL, "webpack-hmr")
+            .body(())
+            .unwrap();
+        let (mut parts, _) = request.into_parts();
+
+        align_upstream_handshake_headers(&mut parts, &uri).unwrap();
+
+        assert_eq!(
+            parts.headers.get(SEC_WEBSOCKET_PROTOCOL).unwrap(),
+            "webpack-hmr"
+        );
+    }
+
+    #[test]
+    fn prepare_upstream_websocket_request_rewrites_host_after_proxy_forward() {
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("http://127.0.0.1:9090/ws/strict-host")
+            .header(HOST, "not_exist.com")
+            .header(ORIGIN, "https://not_exist.com")
+            .header(UPGRADE, "websocket")
+            .header(CONNECTION, "Upgrade")
+            .header(SEC_WEBSOCKET_KEY, "dGhlIHNhbXBsZSBub25jZQ==")
+            .header(SEC_WEBSOCKET_VERSION, "13")
+            .header(SEC_WEBSOCKET_PROTOCOL, "webpack-hmr")
+            .body(empty())
+            .unwrap();
+
+        let ws_req = prepare_upstream_websocket_request(request)
+            .expect("prepare upstream websocket request");
+
+        let parts = ws_req.0.into_parts().0;
+        assert_eq!(parts.uri.to_string(), "ws://127.0.0.1:9090/ws/strict-host");
+        assert_eq!(
+            parts.headers.get(HOST).unwrap(),
+            "127.0.0.1:9090"
+        );
+        assert_eq!(
+            parts.headers.get(SEC_WEBSOCKET_PROTOCOL).unwrap(),
+            "webpack-hmr"
+        );
+        assert!(!parts.headers.contains_key(ORIGIN));
     }
 }

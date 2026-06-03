@@ -21,6 +21,11 @@ import {
   resolveSnapshotRequestUrl,
 } from '@/lib/http/request-url'
 import {
+  appendWebSocketFrame,
+  parseWebSocketLogPayload,
+  parseWebSocketLogsFromSnapshot,
+} from '@/lib/ws/websocket-log'
+import {
   demoteTraceFromOrder,
   isRecordListable,
   mergePartialRequestRecord,
@@ -40,6 +45,7 @@ type CachedRequestSnapshot = {
     headers?: Record<string, string>
     version?: string
     body?: unknown
+    requestType?: string
   }
   response?: {
     status?: number
@@ -48,6 +54,8 @@ type CachedRequestSnapshot = {
     version?: string
   }
   status?: string | { Error?: string }
+  messages?: unknown
+  requestType?: string
 }
 
 type SubscribeResponse = {
@@ -199,6 +207,8 @@ const eventOps = new Set<WsEventOp>([
   WsOp.ResponseStart,
   WsOp.ResponseBody,
   WsOp.ResponseEnd,
+  WsOp.WebsocketMessage,
+  WsOp.WebsocketEnd,
   WsOp.WebsocketError,
   WsOp.SystemError,
 ])
@@ -307,6 +317,8 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
         requestBytes: item.requestBodyBytes?.length,
         responseBytes: item.responseBodyBytes?.length,
       },
+      websocketFrames: item.websocketFrames,
+      websocketEnded: item.websocketEnded,
     }
   }
 
@@ -528,6 +540,27 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
     })
   }
 
+  const applyWebsocketMessage = (traceId: string, payload: Record<string, unknown> | null) => {
+    const frame = parseWebSocketLogPayload(payload)
+    if (!frame) {
+      return
+    }
+
+    const current = recordsByTrace.value[traceId]?.websocketFrames
+    updateRecord(traceId, {
+      websocketFrames: appendWebSocketFrame(current, {
+        ...frame,
+        bytes: markRaw(frame.bytes),
+      }),
+    })
+  }
+
+  const applyWebsocketEnd = (traceId: string) => {
+    updateRecord(traceId, {
+      websocketEnded: true,
+    })
+  }
+
   const applyCachedSnapshot = (snapshot: CachedRequestSnapshot) => {
     const traceId = snapshot.traceId ?? snapshot.trace_id
     if (!traceId) {
@@ -555,9 +588,16 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
 
     const requestBodyBytes = snapshotBodyToBytes(snapshot.request?.body)
     const responseBodyBytes = snapshotBodyToBytes(snapshot.response?.body)
+    const websocketFrames = parseWebSocketLogsFromSnapshot(snapshot.messages).map(frame => ({
+      ...frame,
+      bytes: markRaw(frame.bytes),
+    }))
+
+    const requestHeaders = toHeaderRecord(snapshot.request?.headers)
+    const requestMethod = snapshot.request?.method
 
     updateRecord(traceId, {
-      method: snapshot.request?.method,
+      method: requestMethod,
       url,
       statusCode,
       status: nextStatus,
@@ -568,6 +608,12 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
       requestBodyBytes: requestBodyBytes ? markRaw(requestBodyBytes) : undefined,
       responseBodyBytes: responseBodyBytes ? markRaw(responseBodyBytes) : undefined,
       protocol: snapshot.request?.version ?? snapshot.response?.version,
+      requestType: inferRequestType(
+        requestMethod,
+        snapshot.requestType ?? snapshot.request?.requestType,
+      ),
+      requestContentType: contentTypeFromHeaders(requestHeaders),
+      ...(websocketFrames.length > 0 ? { websocketFrames } : {}),
     })
 
     promoteToList(traceId)
@@ -603,6 +649,12 @@ export const useRequestStreamStore = defineStore('requestStream', () => {
         break
       case WsOp.ResponseEnd:
         applyResponseEnd(traceId, frame)
+        break
+      case WsOp.WebsocketMessage:
+        applyWebsocketMessage(traceId, payload)
+        break
+      case WsOp.WebsocketEnd:
+        applyWebsocketEnd(traceId)
         break
       case WsOp.WebsocketError:
       case WsOp.SystemError:

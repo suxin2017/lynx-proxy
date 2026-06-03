@@ -9,11 +9,14 @@ const props = withDefaults(defineProps<{
   loading?: boolean
   error?: string
   defaultUsername?: string
+  /** When true, render only the form (for LoginDialog shell). */
+  embedded?: boolean
 }>(), {
   title: '登录',
   loading: false,
   error: undefined,
   defaultUsername: '',
+  embedded: false,
 })
 
 const emit = defineEmits<{
@@ -35,21 +38,40 @@ function onSubmit() {
 }
 
 const inputShellClass = cn(
-  'flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground',
-  'shadow-none outline-none ring-ring transition-colors hover:border-border focus-within:ring-1',
+  'flex items-center gap-2.5 rounded-md border border-input bg-background px-3 py-2.5 text-sm text-foreground',
+  'shadow-none outline-none ring-ring transition-colors',
+  'hover:border-border/80 focus-within:border-ring/60 focus-within:ring-2 focus-within:ring-ring/25',
 )
 const inputClass = 'min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground'
 </script>
 
 <template>
-  <div class="flex min-h-[420px] w-full items-center justify-center bg-muted/15 p-6">
-    <div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-sm">
-      <h1 class="mb-5 text-xl font-semibold text-foreground">{{ title }}</h1>
+  <div :class="embedded ? undefined : 'flex min-h-[420px] w-full items-center justify-center p-6'">
+    <div
+      :class="embedded
+        ? 'w-full'
+        : 'w-full max-w-[380px] overflow-hidden rounded-xl border border-border/80 bg-card shadow-lg ring-1 ring-border/40'"
+    >
+      <header
+        v-if="!embedded"
+        class="border-b border-border/60 px-6 py-5"
+      >
+        <h1 class="text-base font-semibold tracking-tight text-foreground">
+          {{ title }}
+        </h1>
+        <p class="mt-1 text-xs text-muted-foreground">
+          使用代理账号登录以继续
+        </p>
+      </header>
 
-      <form class="space-y-3" @submit.prevent="onSubmit">
+      <form
+        :class="embedded ? 'space-y-4' : 'space-y-4 px-6 py-5'"
+        @submit.prevent="onSubmit"
+      >
         <label class="grid gap-1.5">
+          <span class="sr-only">用户名</span>
           <div :class="inputShellClass">
-            <User class="h-4 w-4 text-muted-foreground" />
+            <User class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <input
               v-model="username"
               autocomplete="username"
@@ -63,8 +85,9 @@ const inputClass = 'min-w-0 flex-1 bg-transparent outline-none placeholder:text-
         </label>
 
         <label class="grid gap-1.5">
+          <span class="sr-only">密码</span>
           <div :class="inputShellClass">
-            <Lock class="h-4 w-4 text-muted-foreground" />
+            <Lock class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <input
               v-model="password"
               autocomplete="current-password"
@@ -79,25 +102,23 @@ const inputClass = 'min-w-0 flex-1 bg-transparent outline-none placeholder:text-
 
         <p
           v-if="error?.trim()"
-          class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          class="rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
+          role="alert"
         >
           {{ error }}
         </p>
 
-        <div class="pt-1">
-          <Button
-            type="submit"
-            size="lg"
-            class="w-full"
-            :disabled="loading || !canSubmit"
-          >
-            <span :class="cn('transition-opacity', loading ? 'opacity-70' : undefined)">
-              {{ loading ? '登录中…' : '登录' }}
-            </span>
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          size="lg"
+          class="w-full"
+          :disabled="loading || !canSubmit"
+        >
+          <span :class="cn('transition-opacity', loading ? 'opacity-70' : undefined)">
+            {{ loading ? '登录中…' : '登录' }}
+          </span>
+        </Button>
       </form>
     </div>
   </div>
 </template>
-

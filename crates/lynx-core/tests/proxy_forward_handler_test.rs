@@ -130,6 +130,69 @@ async fn proxy_forward_handler_with_websocket_http_scheme() -> Result<()> {
 }
 
 #[tokio::test]
+async fn proxy_forward_handler_empty_scheme_inherits_original() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
+
+    mock_test_rule(
+        proxy_server.data_store,
+        vec![HandlerRule::proxy_forward_handler(
+            Some("".to_string()),
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    let response = client
+        .proxy_ws("wss://not_exist.com/ws")
+        .await
+        .expect("websocket upgrade should succeed when empty scheme inherits original");
+
+    let mut ws = response.into_websocket().await?;
+    ws.send(Message::Text("empty-scheme".into())).await?;
+
+    let reply = ws.try_next().await?.expect("stream ended early");
+    match reply {
+        Message::Text(text) => assert_eq!(text, "empty-scheme"),
+        other => panic!("unexpected message: {:?}", other),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn proxy_forward_websocket_aligns_upstream_host() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
+
+    mock_test_rule(
+        proxy_server.data_store,
+        vec![HandlerRule::proxy_forward_handler(
+            Some("http".to_string()),
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    let response = client
+        .proxy_ws("wss://not_exist.com/ws/strict-host")
+        .await
+        .expect("websocket upgrade should succeed when upstream Host is aligned");
+
+    let mut ws = response.into_websocket().await?;
+    let payload = "strict-host-payload";
+    ws.send(Message::Text(payload.into())).await?;
+
+    let reply = ws.try_next().await?.expect("stream ended early");
+    match reply {
+        Message::Text(text) => assert_eq!(text, payload),
+        other => panic!("unexpected message: {:?}", other),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
     let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
     let client = client.get_proxy_client();

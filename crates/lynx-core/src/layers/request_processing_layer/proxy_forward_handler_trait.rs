@@ -29,7 +29,7 @@ impl HandlerTrait for ProxyForwardConfig {
         let mut uri_builder = Uri::builder();
 
         // Use target scheme or fallback to original
-        let scheme = if let Some(target_scheme) = &self.target_scheme {
+        let scheme = if let Some(target_scheme) = ProxyForwardConfig::optional_field(&self.target_scheme) {
             Some(
                 target_scheme
                     .parse::<Scheme>()
@@ -48,7 +48,9 @@ impl HandlerTrait for ProxyForwardConfig {
         }
 
         // Use target authority or fallback to original
-        let authority = if let Some(target_authority) = &self.target_authority {
+        let authority = if let Some(target_authority) =
+            ProxyForwardConfig::optional_field(&self.target_authority)
+        {
             Some(
                 target_authority.parse::<Authority>().map_err(|_| {
                     proxy_forward_validation_message(
@@ -65,7 +67,7 @@ impl HandlerTrait for ProxyForwardConfig {
         }
 
         // Use target path or original path and query
-        let path_and_query = if let Some(target_path) = &self.target_path {
+        let path_and_query = if let Some(target_path) = ProxyForwardConfig::optional_field(&self.target_path) {
             if let Some(current_pq) = current_parts.path_and_query {
                 // Combine target path with original query
                 if target_path != "/" {
@@ -79,7 +81,7 @@ impl HandlerTrait for ProxyForwardConfig {
                     format!("{}?{}", current_pq.path(), current_pq.query().unwrap_or(""))
                 }
             } else {
-                target_path.clone()
+                target_path.to_string()
             }
         } else if let Some(current_pq) = current_parts.path_and_query {
             current_pq.to_string()
@@ -168,6 +170,34 @@ mod tests {
                 assert_eq!(uri.authority().unwrap().as_str(), "example.com:8080");
                 assert_eq!(uri.path(), "/test");
                 assert_eq!(uri.query(), Some("param=value"));
+            }
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_proxy_forward_empty_scheme_falls_back_to_original() {
+        let config = ProxyForwardConfig {
+            target_scheme: Some("".to_string()),
+            target_authority: Some("127.0.0.1:9090".to_string()),
+            target_path: None,
+        };
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("https://virtual.example.com/ws?token=abc")
+            .body(empty())
+            .unwrap();
+
+        let result = config.handle_request(request).await.unwrap();
+
+        match result {
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("https"));
+                assert_eq!(uri.authority().unwrap().as_str(), "127.0.0.1:9090");
+                assert_eq!(uri.path(), "/ws");
+                assert_eq!(uri.query(), Some("token=abc"));
             }
             HandleRequestType::Response(_) => panic!("Expected request, got response"),
         }

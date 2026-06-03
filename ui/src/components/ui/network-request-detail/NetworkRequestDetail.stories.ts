@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import type { NetworkDetailRecord } from './types'
+import type { NetworkDetailRecord, NetworkWebSocketFrame } from './types'
 
 import NetworkRequestDetail from './NetworkRequestDetail.vue'
 import type { TrafficRecord } from '../request-tree/types'
@@ -223,6 +223,97 @@ export const HalfWidthInSplitLayout: Story = {
             <NetworkRequestDetail :record="currentRecord" class="h-full" />
           </section>
         </div>
+      </div>
+    `,
+  }),
+}
+
+const sampleWebSocketFrames: NetworkWebSocketFrame[] = [
+  {
+    id: 'ws-1',
+    direction: 'clientToServer',
+    timestamp: 1_700_000_000_100,
+    opcode: 'text',
+    bytes: new TextEncoder().encode('hello'),
+    previewLabel: 'hello',
+  },
+  {
+    id: 'ws-2',
+    direction: 'serverToClient',
+    timestamp: 1_700_000_000_180,
+    opcode: 'text',
+    bytes: new TextEncoder().encode('hello'),
+    previewLabel: 'hello',
+  },
+  {
+    id: 'ws-3',
+    direction: 'serverToClient',
+    timestamp: 1_700_000_000_250,
+    opcode: 'text',
+    bytes: new TextEncoder().encode('Request served by echo'),
+    previewLabel: 'Request served by echo',
+  },
+  {
+    id: 'ws-4',
+    direction: 'clientToServer',
+    timestamp: 1_700_000_108_000,
+    opcode: 'close',
+    bytes: new Uint8Array(),
+    closeCode: 1000,
+    previewLabel: 'close (1000)',
+  },
+  {
+    id: 'ws-5',
+    direction: 'serverToClient',
+    timestamp: 1_700_000_108_050,
+    opcode: 'close',
+    bytes: new Uint8Array(),
+    closeCode: 1000,
+    previewLabel: 'close (1000)',
+  },
+]
+
+const sampleWebSocketRecord: NetworkDetailRecord = {
+  id: 'ws-echo-1',
+  method: 'GET',
+  url: 'wss://echo.websocket.org/',
+  status: 'success',
+  statusCode: 101,
+  requestType: 'websocket',
+  protocol: 'HTTP/1.1',
+  remoteAddress: '52.0.0.1:443',
+  startTime: '2026-05-21T07:00:00.000Z',
+  durationMs: 108_000,
+  requestHeaders: [
+    { key: 'upgrade', value: 'websocket' },
+    { key: 'connection', value: 'Upgrade' },
+    { key: 'sec-websocket-key', value: 'dGhlIHNhbXBsZSBub25jZQ==' },
+  ],
+  responseHeaders: [
+    { key: 'upgrade', value: 'websocket' },
+    { key: 'connection', value: 'Upgrade' },
+    { key: 'sec-websocket-accept', value: 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=' },
+  ],
+  websocketFrames: sampleWebSocketFrames,
+}
+
+/** WebSocket · 内容 → Frames 消息流（Chrome DevTools 风格） */
+export const ContentWebSocketFrames: Story = {
+  name: 'Content · WebSocket Frames',
+  render: () => ({
+    components: { NetworkRequestDetail },
+    setup() {
+      const record = ref(sampleWebSocketRecord)
+      return { record }
+    },
+    template: `
+      <div style="height: 100vh; padding: 16px; background: #f5f6f7;">
+        <NetworkRequestDetail
+          :record="record"
+          class="h-full"
+          initial-tab="content"
+          initial-ws-content-sub-tab="frames"
+        />
       </div>
     `,
   }),

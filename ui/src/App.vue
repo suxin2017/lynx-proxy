@@ -3,7 +3,13 @@ import { computed } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { AppLayout, type AppLayoutMenuItem } from '@/components'
 import LoginDialog from '@/components/ui/auth/LoginDialog.vue'
-import { useAuthStore, useWsConnectionStore } from '@/stores'
+import {
+  useAuthStore,
+  useCaptureStore,
+  useRequestStreamStore,
+  useSettingsStore,
+  useWsConnectionStore,
+} from '@/stores'
 import { Cctv, Settings } from '@lucide/vue'
 
 const route = useRoute()
@@ -32,9 +38,24 @@ const activeKey = computed({
   },
 })
 
+async function syncSessionAfterConnect() {
+  const captureStore = useCaptureStore()
+  captureStore.handleServerEvent()
+  await captureStore.refreshStatus()
+
+  const settingsStore = useSettingsStore()
+  settingsStore.hydrate()
+  if (settingsStore.streamEnabled) {
+    const requestStreamStore = useRequestStreamStore()
+    await requestStreamStore.start()
+    await requestStreamStore.subscribe()
+  }
+}
+
 async function onLogin(payload: { username: string, password: string }) {
   await authStore.login(payload.username, payload.password)
-  wsConnectionStore.reconnect()
+  await wsConnectionStore.reconnect()
+  await syncSessionAfterConnect()
 }
 
 </script>

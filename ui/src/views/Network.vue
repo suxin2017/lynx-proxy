@@ -7,12 +7,13 @@ import { HorizontalSplitPanel, VerticalSplitPanel } from '@/components/ui/split-
 import { CaptureRulesPopover, NetworkRequestPanel, TrafficMatchFilterInput, type RequestViewMode } from '@/components/ui/network-panels'
 import { RulesAssetsDrawer } from '@/components/ui/rules-drawer'
 import { useTrafficMatchFilter } from '@/composables/useTrafficMatchFilter'
-import { useCaptureStore, useRequestStreamStore, useRulesStore, useSettingsStore } from '@/stores'
+import { useCaptureStore, useRequestStreamStore, useRulesStore, useSettingsStore, useWsConnectionStore } from '@/stores'
 import { Disc2, ListTree, PlugZap, BrushCleaning, Sheet, Scale, Crosshair } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 
 const captureStore = useCaptureStore()
 const requestStreamStore = useRequestStreamStore()
+const wsConnectionStore = useWsConnectionStore()
 const settingsStore = useSettingsStore()
 const rulesStore = useRulesStore()
 const {
@@ -140,6 +141,17 @@ watch(streamEnabled, async (enabled, previous) => {
     await stopStream()
   }
 })
+
+watch(
+  () => wsConnectionStore.isConnected,
+  async (connected, wasConnected) => {
+    if (!connected || wasConnected || !streamEnabled.value) {
+      return
+    }
+
+    await startStream()
+  },
+)
 
 onMounted(async () => {
   settingsStore.hydrate()

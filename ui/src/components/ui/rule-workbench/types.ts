@@ -1,3 +1,5 @@
+import { proxyForwardSchemeSummaryLabel } from './proxy-forward-scheme'
+
 export type RuleHandlerType =
   | 'block'
   | 'modifyRequest'
@@ -27,6 +29,7 @@ export interface RuleDelayActionConfig {
 }
 
 export interface RuleProxyForwardActionConfig {
+  /** Empty = inherit; `http` / `https` (WS uses ws/wss via proxy). */
   targetScheme: string
   targetAuthority: string
   targetPath: string
@@ -323,7 +326,7 @@ export function getActionSummary(action: RuleActionDraft): string {
   }
 
   if (action.type === 'proxyForward') {
-    const scheme = action.config.targetScheme.trim() || '*'
+    const scheme = proxyForwardSchemeSummaryLabel(action.config.targetScheme)
     const authority = action.config.targetAuthority.trim() || '<authority>'
     const path = action.config.targetPath.trim() || ''
     return `${scheme}://${authority}${path}`
