@@ -270,17 +270,28 @@ fn apply_websocket_scheme(url: &str, ws_scheme: &str) -> String {
     url.to_string()
 }
 
+fn connect_tunnel_url(authority: &str) -> String {
+    let default_scheme = if authority.ends_with(":443") {
+        "https"
+    } else if authority.ends_with(":80") {
+        "http"
+    } else {
+        "https"
+    };
+    format!("{default_scheme}://{authority}")
+}
+
 fn request_url_from_http<B: Body>(req: &Request<B>) -> String {
     let uri_str = req.uri().to_string();
-    let mut url = if let Ok(parsed) = Url::parse(&uri_str) {
+    let mut url = if *req.method() == Method::CONNECT {
+        connect_tunnel_url(&uri_str)
+    } else if let Ok(parsed) = Url::parse(&uri_str) {
         let scheme = parsed.scheme();
         if scheme == "http" || scheme == "https" || scheme == "ws" || scheme == "wss" {
             parsed.to_string()
         } else {
             uri_str.clone()
         }
-    } else if *req.method() == Method::CONNECT {
-        format!("https://{}", uri_str)
     } else if let Some(host) = req
         .headers()
         .get(http::header::HOST)

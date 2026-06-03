@@ -1,0 +1,71 @@
+{
+  "rules": [
+    {
+      "name": "注入调试 Header",
+      "description": "README demo — modify request headers",
+      "enabled": true,
+      "priority": 50,
+      "capture": { "matchExpr": "httpbin.org AND -X POST" },
+      "handlers": [
+        {
+          "handlerType": {
+            "type": "modifyRequest",
+            "modifyHeaders": { "X-Lynx-Demo": "readme" }
+          },
+          "executionOrder": 10,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "name": "拦截 404",
+      "description": "README demo — block with 404",
+      "enabled": true,
+      "priority": 10,
+      "capture": { "matchExpr": "httpbin.org AND /status/404" },
+      "handlers": [
+        {
+          "handlerType": { "type": "block", "statusCode": 404, "reason": "demo block" },
+          "executionOrder": 10,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "name": "延迟 800ms",
+      "description": "README demo — delay before request",
+      "enabled": true,
+      "priority": 40,
+      "capture": { "matchExpr": "httpbin.org AND /delay/" },
+      "handlers": [
+        {
+          "handlerType": {
+            "type": "delay",
+            "delayMs": 800,
+            "delayType": "beforeRequest"
+          },
+          "executionOrder": 10,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "name": "代理转发到 staging",
+      "description": "README demo — disabled proxy forward",
+      "enabled": false,
+      "priority": 60,
+      "capture": { "matchExpr": "api.example.com" },
+      "handlers": [
+        {
+          "handlerType": {
+            "type": "proxyForward",
+            "targetScheme": "https",
+            "targetAuthority": "staging.example.com"
+          },
+          "executionOrder": 10,
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}

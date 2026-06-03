@@ -23,6 +23,7 @@ pub struct AndExpr {
     pub span: Span,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NotExpr {
     Not {
@@ -32,6 +33,7 @@ pub enum NotExpr {
     Primary(Primary),
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Primary {
     CliOnly(CliArgs),

@@ -107,3 +107,15 @@ initializeTheme()
 - Prefer semantic token utilities in templates, for example `bg-(--theme-surface)` and `text-(--theme-text)`.
 - Do not hardcode brand colors, spacing, or radius inside components.
 - Keep shadcn semantic tokens (`--primary`, `--background`, etc.) mapped from theme tokens in `src/style.css`.
+
+## README screenshots
+
+Root README images are captured from this UI against a live Lynx proxy.
+
+1. `task dev` — proxy on `:7788` and Vite on `:5173`
+2. `task readme-demo` — httpbin + lynx-mock traffic, WebSocket, demo rules
+3. `task readme-screenshots` or `npm run screenshots:readme` — writes `../images/*.png`
+
+Uses system **Google Chrome** by default (`channel: 'chrome'`). Override with `PLAYWRIGHT_CHANNEL` or `PLAYWRIGHT_EXECUTABLE_PATH` if needed.
+
+Demo rules live in `../scripts/fixtures/demo-rules.json`.

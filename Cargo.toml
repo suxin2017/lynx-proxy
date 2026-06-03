@@ -17,9 +17,9 @@ authors = ["suxin2017"]
 description = "Lynx Proxy Server"
 edition = "2024"
 license = "MIT"
-documentation = "https://github.com/suxin2017/lynx-server"
-homepage = "https://github.com/suxin2017/lynx-server"
-repository = "https://github.com/suxin2017/lynx-server"
+documentation = "https://github.com/suxin2017/lynx-proxy"
+homepage = "https://github.com/suxin2017/lynx-proxy"
+repository = "https://github.com/suxin2017/lynx-proxy"
 
 # Add this config to your root Cargo.toml (virtual manifest)
 [workspace.metadata.release]

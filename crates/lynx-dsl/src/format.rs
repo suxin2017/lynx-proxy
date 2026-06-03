@@ -108,7 +108,7 @@ fn format_primary(primary: &Primary, source: &str, base_indent: &str) -> String 
             let mut text = format_url(url);
             if let Some(cli_args) = cli {
                 text.push(' ');
-                text.push_str(&slice_span(source, cli_args.span).trim_start());
+                text.push_str(slice_span(source, cli_args.span).trim_start());
             }
             text
         }

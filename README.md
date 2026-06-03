@@ -1,174 +1,223 @@
 # Lynx Proxy
 
-[English](README.md) | 简体中文
+English | [简体中文](README.zh-CN.md)
 
 [![Crates.io License](https://img.shields.io/crates/l/lynx-core)](./LICENSE)
 [![Crates](https://img.shields.io/crates/v/lynx-core.svg)](https://crates.io/crates/lynx-core)
 
-**Lynx Proxy** 是一款基于 Rust 语言开发的代理抓包工具，项目采用 hyper、axum、tower 等主流 Rust 网络库，以满足不同在开发阶段的需求，比如移动端开发时候查看接口，脚本注入，web 端开发时候将静态资源指向本地服务
+**Lynx Proxy** is a Rust-based HTTP(S) / WebSocket proxy and traffic inspector for local development. Built on hyper, axum, and tower, it helps you inspect APIs, rewrite traffic with rules, inject scripts, and point static assets to local services — without installing a separate runtime.
 
-## 功能特性
+## Why Lynx
 
-- **常见协议支持**：支持 HTTP(S) 与 WS(S)
-- **Web 客户端**：使用流行的现代 web 技术，支持亮色与暗色两种主题,支持PWA
-- **Rust 生态**：基于 hyper、axum、tower 等主流库开发。
-- **请求面板**：
-  - 列表视图
-  - 树形视图
-- **规则捕获与处理**
-  - 通过添加规则进行请求捕获，同时进行请求处理
-  - 规则
-    - 简单规则 （Glob 匹配，正则匹配，HostName，精确匹配）
-    - 复杂规则 （AND、OR、NOR）
-  - 处理
-    - 请求修改
-    - 请求延迟
-    - 请求拦截
-    - 脚本注入
-- **请求调试**
-  - 支持发送请求
-  - 历史记录
-  - 请求目录
-- **安装与升级脚本支持**
-  - 安装只需要一行脚本，不需要安装任何运行时
-- **跨平台支持**
-  - 支持 Window、Macos、Linux 平台
+- **Single binary** — install with one script; the Web UI ships inside the CLI.
+- **Local-first** — bind to loopback by default; your traffic stays on your machine.
+- **Developer-oriented** — list & tree views, DSL filters, rules, and a built-in Compose panel.
 
-## 功能展示
+## Features
 
-### HTTP/HTTPS 代理
+### Protocols & client
 
-![HTTP 代理示例](./images/newhttp.png)
+- HTTP(S) and WebSocket(S) interception
+- Embedded Web UI (Vue 3 + Vite), light/dark theme, PWA-friendly
+- Real-time request stream over WebSocket
 
-### WebSocket 代理
+### Network panel
 
-![WebSocket 代理示例](./images/newws.png)
+- **Table view** — sortable virtualized list with request/response detail
+- **Tree view** — group by host and path
+- **DSL filter** — filter captured traffic with match expressions
+- **Focus / Ignore** — quick capture filters from the toolbar or context menu
 
-### 树形结构视图
+### Rules
 
-![树形结构视图示例](./images/newtree.png)
+Match traffic with simple patterns (glob, regex, host, path, method) or compound DSL (`AND`, `OR`, `NOR`), then apply actions:
 
-### 规则配置
+| Action | Description |
+|--------|-------------|
+| Modify request / response | Headers, body, method, URL, status |
+| Block | Return a custom status |
+| Delay | Simulate slow upstream |
+| Throttle | Network presets (3G, offline, custom) |
+| Proxy forward | Rewrite upstream target |
+| Local file | Serve a local file instead |
+| HTML script injector | Inject scripts into HTML responses |
 
-![规则配置](./images/rule.png)
+Right-click any request to add Focus/Ignore rules or copy as cURL.
 
-### 发送请求
+### Compose (API debug)
 
-![api debug](./images/api_debug.png)
+Send HTTP requests from the UI, edit params/headers/body, and inspect responses — similar to Postman, integrated with the same proxy session.
 
-### Cli 查询状态
+### CLI
+
+- `start` / `stop` / `restart` — background daemon
+- `run` — foreground server (default port **7788**)
+- `status` — process, port, and data directory
+
+Cross-platform: **Windows**, **macOS**, **Linux**.
+
+## Screenshots
+
+### HTTP / HTTPS
+
+![HTTP proxy — table view with request detail](./images/newhttp.png)
+
+### WebSocket
+
+![WebSocket frames in request detail](./images/newws.png)
+
+### Tree view
+
+![Tree view grouped by host and path](./images/newtree.png)
+
+### Rules
+
+![Rule list and editor](./images/rule.png)
+
+### Context menu
+
+![Quick actions from the traffic list](./images/contextmenu.png)
+
+![Copy and Focus submenus](./images/contextmenu2.png)
+
+### Compose
+
+![Compose — send and debug requests](./images/api_debug.png)
+
+### CLI status
 
 ```bash
-PS C:\Users\xx> lynx status
+$ lynx status
 === Lynx Proxy Service Status ===
 PID: 101744
 Port: 7788
 Status: Running
-Data Directory: Your Data Dir
+Data Directory: ~/.local/share/lynx
 Start Time: 1749816127 seconds since epoch
 Process Running: Yes
 ```
 
+## Usage
 
-## 使用
+### Install
 
-### 安装
+Prebuilt releases are published on [GitHub Releases](https://github.com/suxin2017/lynx-proxy/releases). The install scripts are named **`lynx-cli-installer.*`** (cargo-dist package name), but they install the **`lynx`** command.
 
-#### Bash
+> **Note (v0.4.8 and earlier):** installers built before the repo rename still download binaries from `suxin2017/lynx-server` internally. The script URL can use either `lynx-proxy` or `lynx-server` — both hosts mirror the same release assets today. Future releases (after updating `repository` in `Cargo.toml`) will point entirely at `lynx-proxy`.
+
+**macOS / Linux (recommended)**
+
 ```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
-#### Powershell 
+**Windows (PowerShell)**
 
 ```powershell
 powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.ps1 | iex"
 ```
 
-### 快速开始
+After install:
+
+- Binary: **`lynx`** (not `lynx-cli`)
+- Default location: `~/.cargo/bin/lynx` — add it to your `PATH` if the installer did not
+- Verify: `lynx --version`
+
+**Manual download** (from [Releases](https://github.com/suxin2017/lynx-proxy/releases)):
+
+| Platform | Archive |
+|----------|---------|
+| macOS (Intel) | `lynx-cli-x86_64-apple-darwin.tar.xz` |
+| macOS (Apple Silicon) | `lynx-cli-aarch64-apple-darwin.tar.xz` |
+| Linux (x64) | `lynx-cli-x86_64-unknown-linux-gnu.tar.xz` |
+| Windows (x64) | `lynx-cli-x86_64-pc-windows-msvc.zip` |
+
+ARM Linux is not in the release matrix yet — build from source (see Development).
+
+**Build from source**
 
 ```bash
-lynx run
+git clone https://github.com/suxin2017/lynx-proxy.git
+cd lynx-proxy
+task build-ui && cargo install --path crates/lynx-cli
 ```
 
-### 命令行参数
+### Quick start
 
-```
-Lynx Proxy Server
+1. Start the proxy:
 
-Usage: lynx <COMMAND>
+   ```bash
+   lynx run
+   ```
 
-Commands:
-  start    Start the background proxy service
-  stop     Stop the background proxy service
-  restart  Restart the background proxy service
-  status   Show background proxy service status
-  run      Start the proxy server in foreground mode
-  help     Print this message or the help of the given subcommand(s)
+2. Point your browser or app at `http://127.0.0.1:7788` (or configure the system HTTP proxy).
 
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
-```
+3. Open the Web UI at **http://127.0.0.1:7788** and enable capture.
 
-### Start
-```
-通过守护进程启动后台服务
+4. Install the Lynx CA certificate from **Settings** when you need HTTPS decryption.
 
-Usage: lynx start [OPTIONS]
+### Common commands
 
-Options:
-      --port <PORT>                  proxy server port [default: 7788]
-      --data-dir <DATA_DIR>          data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
-      --log-level <LOG_LEVEL>        Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
-      --connect-type <CONNECT_TYPE>  [default: sse] [possible values: short-poll, sse]
-      --local-only                   Enable local only mode (only bind to loopback addresses)
-  -h, --help                         Print help (see more with '--help')
+```bash
+lynx run          # foreground, default port 7788
+lynx start        # background daemon
+lynx stop
+lynx restart
+lynx status
 ```
 
-### Run
+### Options (`run` / `start`)
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--port` | `7788` | Proxy listen port |
+| `--data-dir` | OS-specific | Rules and persistent data |
+| `--log-level` | `info` | `silent`, `info`, `error`, `debug`, `trace` |
+| `--connect-type` | `sse` | `sse` or `short-poll` |
+| `--local-only` | off | Bind to loopback only |
+
+Default data directories:
+
+- Linux: `~/.local/share/lynx`
+- macOS: `~/Library/Application Support/lynx`
+- Windows: `%APPDATA%\suxin2017\lynx\data`
+
+## Development
+
+Requires [Rust](https://rustup.rs/), [Node.js](https://nodejs.org/) 20+, and [Task](https://taskfile.dev/).
+
+```bash
+task setup-ui    # npm ci in ui/
+task dev         # proxy :7788 + Vite UI :5173
 ```
-直接启动服务
 
-Usage: lynx run [OPTIONS]
+Other useful tasks:
 
-Options:
-      --port <PORT>                  proxy server port [default: 7788]
-      --data-dir <DATA_DIR>          data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
-      --log-level <LOG_LEVEL>        Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
-      --connect-type <CONNECT_TYPE>  [default: sse] [possible values: short-poll, sse]
-      --local-only                   Enable local only mode (only bind to loopback addresses)
-  -h, --help                         Print help (see more with '--help')
-```
-## 贡献指南
+| Task | Purpose |
+|------|---------|
+| `task build-ui` | Production UI build → embedded in CLI |
+| `task traffic-sample` | Send sample HTTP(S) through the proxy |
+| `task readme-demo` | Seed demo traffic & rules for docs |
+| `task readme-screenshots` | Regenerate `images/*.png` (uses system Chrome) |
 
-欢迎社区贡献！请按照以下流程参与开发：
+See [ui/README.md](ui/README.md) for UI architecture and screenshot workflow.
 
-1. Fork 本仓库
-2. 创建新分支：`git checkout -b feature-branch`
-3. 安装依赖
-   - 安装 [taskfile](https://taskfile.dev/)
-   - 安装 UI 相关依赖
-     ```bash
-     task setup-ui
-     ```
-   - 启动开发环境
-     ```bash
-     task dev
-     ```
-4. 提交更改：`git commit -am 'Add new feature'`
-5. 推送分支：`git push origin feature-branch`
-6. 创建 Pull Request
+### Contributing
 
-## 许可证
+1. Fork the repo and create a branch.
+2. `task setup-ui && task dev`
+3. Make changes; run `task test` and `task lint` when touching Rust.
+4. Open a Pull Request.
 
-本项目采用 MIT 许可证，详情请参阅 [LICENSE](LICENSE) 文件。
+## License
 
-## 联系我们
+MIT — see [LICENSE](LICENSE).
 
-如有任何问题或建议，请通过 GitHub Issues 提交反馈。
+## Feedback
 
-## 项目状态
+Questions and ideas: [GitHub Issues](https://github.com/suxin2017/lynx-proxy/issues).
 
-项目已经可以使用，功能迭代仍在积极开发中，欢迎关注和参与！
+## Status
 
+Usable for daily development; features and UI are still evolving — contributions welcome.

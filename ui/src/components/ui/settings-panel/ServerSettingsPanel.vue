@@ -285,9 +285,9 @@ onMounted(() => {
 
         <div
           v-if="downloadLinks.length > 0"
-          :class="settingsRowGridClass"
+          :class="cn(settingsRowGridClass, 'items-start')"
         >
-          <span :class="settingsLabelClass">安装证书</span>
+          <span :class="cn(settingsLabelClass, 'pt-1')">安装证书</span>
           <div class="space-y-2">
             <CertificateDownloadCard
               v-for="item in downloadLinks"

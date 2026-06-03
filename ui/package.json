@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "dsl:build": "node ./scripts/dsl-build.mjs"
+    "dsl:build": "node ./scripts/dsl-build.mjs",
+    "screenshots:readme": "node ../scripts/capture-readme-screenshots.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.19.0",

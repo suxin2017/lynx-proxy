@@ -100,6 +100,22 @@ tasks:
     cmds:
       - bash scripts/traffic-sample.sh --count 100 --delay 0.08
 
+  traffic-mock:
+    desc: Send HTTP(S) traffic through proxy to local lynx-mock server
+    cmds:
+      - bash scripts/traffic-mock.sh {{.CLI_ARGS}}
+
+  readme-demo:
+    desc: Seed proxy with demo traffic, WebSocket, and rules for README screenshots
+    cmds:
+      - bash scripts/readme-demo.sh
+
+  readme-screenshots:
+    desc: Capture README UI screenshots (requires dev + readme-demo)
+    dir: ui
+    cmds:
+      - node ../scripts/capture-readme-screenshots.mjs
+
   release-minor:
     deps: [update-main-branch, build-ui, test]
     desc: Release minor version
