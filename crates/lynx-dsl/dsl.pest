@@ -1,0 +1,60 @@
+WHITESPACE = _{ (" " | "\t" | "\r" | "\n")+ }
+
+fragment = { SOI ~ primary ~ EOI }
+
+primary = { cli_only | url_primary | grouped }
+cli_only = { cli_args }
+grouped = { "(" ~ inner_expr ~ ")" }
+inner_expr = { or_expr }
+or_expr = { and_expr ~ (WHITESPACE+ ~ or_op ~ WHITESPACE+ ~ and_expr)* }
+and_expr = { not_expr ~ (WHITESPACE+ ~ and_op ~ WHITESPACE+ ~ not_expr)* }
+not_expr = { not_op ~ WHITESPACE+ ~ not_expr | primary_fragment }
+primary_fragment = { cli_only | url_primary }
+
+url_primary = { url ~ cli_args? }
+
+url = { scheme_url | host_url | path_url | query_only }
+path_url = { path ~ query? }
+scheme_url = { scheme ~ host ~ port? ~ path? ~ query? }
+host_url = { host_spaced | host_with_port | host_only }
+host_only = { host ~ path? ~ query? }
+host_with_port = { host ~ port ~ path? ~ query? }
+host_spaced = { host ~ WHITESPACE+ ~ path ~ query? }
+query_only = { query }
+
+scheme = { "http://" | "HTTP://" | "https://" | "HTTPS://" | "ws://" | "WS://" | "wss://" | "WSS://" }
+host = { "localhost" | ipv4 | domain | host_label }
+ipv4 = @{ ASCII_DIGIT{1,3} ~ "." ~ ASCII_DIGIT{1,3} ~ "." ~ ASCII_DIGIT{1,3} ~ "." ~ ASCII_DIGIT{1,3} }
+domain = @{ host_label ~ ("." ~ host_label)+ }
+host_label = @{ ASCII_ALPHANUMERIC ~ ("-" | ASCII_ALPHANUMERIC)* }
+
+port = @{ ":" ~ ASCII_DIGIT+ }
+
+path = { slash_path | glob_path }
+slash_path = @{ "/" ~ (path_segment ~ "/")* ~ path_segment? | "/" }
+glob_path = @{ "**" ~ ("/" ~ path_segment)+ | "*" ~ ("/" ~ path_segment)+ }
+path_segment = { "**" | "*" | path_char+ }
+path_char = @{ (ASCII_ALPHANUMERIC | "_" | "~" | "!" | "$" | "&" | "'" | "*" | "+" | "," | ";" | "=" | ":" | "@" | "%" | "-")+ }
+
+query = { "?" ~ query_body }
+query_body = { query_pair ~ ("&" ~ query_pair)* }
+query_pair = { query_key ~ ("=" ~ query_value)? }
+query_key = @{ query_char+ }
+query_value = @{ query_char* }
+query_char = _{ ASCII_ALPHANUMERIC | "_" | "." | "/" | ":" | "=" | "@" | "%" | "-" | "," | "*" | "+" }
+
+cli_args = { cli_arg+ }
+cli_arg = { short_flag ~ cli_arg_value? | long_flag ~ cli_arg_value? }
+cli_arg_value = { eq_cli_value | cli_value }
+eq_cli_value = { eq_sign ~ cli_value }
+eq_sign = @{ "=" }
+cli_value = @{ cli_value_char+ }
+cli_value_char = _{ ASCII_ALPHANUMERIC | "_" | "." | "/" | ":" | "=" | "@" | "%" | "-" }
+
+short_flag = @{ "-" ~ WHITESPACE* ~ ASCII_ALPHA ~ ASCII_ALPHA* }
+long_flag = @{ "--" ~ flag_name_char+ }
+flag_name_char = _{ ASCII_ALPHANUMERIC | "-" }
+
+and_op = @{ "AND" | "and" }
+or_op = @{ "OR" | "or" }
+not_op = @{ "NOT" | "not" }

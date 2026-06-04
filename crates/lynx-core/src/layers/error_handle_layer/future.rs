@@ -5,9 +5,12 @@ use std::{
 
 use anyhow::Result;
 use axum::response::{IntoResponse, Response};
-use http::StatusCode;
+use http::header::CONTENT_TYPE;
 use pin_project_lite::pin_project;
+use serde_json::to_string;
 use tracing::error;
+
+use crate::error::{CoreError, root_cause_message};
 
 pin_project! {
     pub struct ErrorHandleFuture<F> {
@@ -27,22 +30,33 @@ where
         let res = ready!(this.f.poll(cx));
 
         if let Err(err) = &res {
-            error!("Error occurred: {:?}", err);
-            let error_reason =
-                err.chain()
-                    .enumerate()
-                    .fold(String::new(), |mut output, (i, cause)| {
-                        let _ = if i == 0 {
-                            writeln!(output, "Error: {cause}")
-                        } else {
-                            writeln!(output, "Caused by: {cause}")
-                        };
-                        output
-                    });
+            let _error_reason = format_error_chain(err);
+            let error_response = err
+                .downcast_ref::<CoreError>()
+                .map(|core| core.to_response())
+                .unwrap_or_else(|| {
+                    CoreError::Internal {
+                        operation: "request handling",
+                        source: anyhow::anyhow!(root_cause_message(err)),
+                    }
+                    .to_response()
+                });
 
+            error!(
+                category = error_response.category,
+                status = error_response.code,
+                "Error occurred: {:?}",
+                err
+            );
+
+            let body = to_string(&error_response).map_err(|e| anyhow::anyhow!(e))?;
+
+            let status = http::StatusCode::from_u16(error_response.code)
+                .unwrap_or(http::StatusCode::INTERNAL_SERVER_ERROR);
             let res = Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(error_reason)
+                .status(status)
+                .header(CONTENT_TYPE, "application/json")
+                .body(body)
                 .map(|r| r.into_response())
                 .map_err(|e| anyhow::anyhow!(e));
 
@@ -51,3 +65,17 @@ where
         Poll::Ready(res)
     }
 }
+
+fn format_error_chain(err: &anyhow::Error) -> String {
+    err.chain()
+        .enumerate()
+        .fold(String::new(), |mut output, (i, cause)| {
+            let _ = if i == 0 {
+                writeln!(output, "Error: {cause}")
+            } else {
+                writeln!(output, "Caused by: {cause}")
+            };
+            output
+        })
+}
+

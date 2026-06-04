@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures_util::{SinkExt, TryStreamExt};
 use http::StatusCode;
-use lynx_db::dao::request_processing_dao::HandlerRule;
+use lynx_storage::dao::request_processing_dao::HandlerRule;
 use reqwest_websocket::Message;
 use setup::{
     mock_base_url, mock_rule::mock_test_rule,
@@ -17,7 +17,7 @@ async fn proxy_forward_handler_basic_test() -> Result<()> {
 
     // Setup proxy forward handler to redirect to the mock server
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
             Some(mock_server.addr.to_string()),
@@ -46,7 +46,7 @@ async fn proxy_forward_handler_preserves_path_and_query() -> Result<()> {
 
     // Setup proxy forward handler
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
             Some(mock_server.addr.to_string()),
@@ -73,7 +73,7 @@ async fn proxy_forward_handler_with_websocket() -> Result<()> {
 
     // Setup proxy forward handler to redirect to the mock server
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
             Some(mock_server.addr.to_string()),
@@ -98,6 +98,101 @@ async fn proxy_forward_handler_with_websocket() -> Result<()> {
 }
 
 #[tokio::test]
+async fn proxy_forward_handler_with_websocket_http_scheme() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
+
+    mock_test_rule(
+        proxy_server.data_store,
+        vec![HandlerRule::proxy_forward_handler(
+            Some("http".to_string()),
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    let response = client
+        .proxy_ws("wss://not_exist.com/ws")
+        .await
+        .expect("send request failed");
+
+    let mut ws = response.into_websocket().await?;
+    let payload = "hmr-update-payload";
+    ws.send(Message::Text(payload.into())).await?;
+
+    let reply = ws.try_next().await?.expect("stream ended early");
+    match reply {
+        Message::Text(text) => assert_eq!(text, payload),
+        other => panic!("unexpected message: {:?}", other),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn proxy_forward_handler_empty_scheme_inherits_original() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
+
+    mock_test_rule(
+        proxy_server.data_store,
+        vec![HandlerRule::proxy_forward_handler(
+            Some("".to_string()),
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    let response = client
+        .proxy_ws("wss://not_exist.com/ws")
+        .await
+        .expect("websocket upgrade should succeed when empty scheme inherits original");
+
+    let mut ws = response.into_websocket().await?;
+    ws.send(Message::Text("empty-scheme".into())).await?;
+
+    let reply = ws.try_next().await?.expect("stream ended early");
+    match reply {
+        Message::Text(text) => assert_eq!(text, "empty-scheme"),
+        other => panic!("unexpected message: {:?}", other),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn proxy_forward_websocket_aligns_upstream_host() -> Result<()> {
+    let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
+
+    mock_test_rule(
+        proxy_server.data_store,
+        vec![HandlerRule::proxy_forward_handler(
+            Some("http".to_string()),
+            Some(mock_server.addr.to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    let response = client
+        .proxy_ws("wss://not_exist.com/ws/strict-host")
+        .await
+        .expect("websocket upgrade should succeed when upstream Host is aligned");
+
+    let mut ws = response.into_websocket().await?;
+    let payload = "strict-host-payload";
+    ws.send(Message::Text(payload.into())).await?;
+
+    let reply = ws.try_next().await?.expect("stream ended early");
+    match reply {
+        Message::Text(text) => assert_eq!(text, payload),
+        other => panic!("unexpected message: {:?}", other),
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
     let (proxy_server, mock_server, client) = setup_proxy_handler_server().await?;
     let client = client.get_proxy_client();
@@ -105,10 +200,10 @@ async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
 
     // Setup proxy forward handler with invalid URL
     mock_test_rule(
-        proxy_server.db_connect,
+        proxy_server.data_store,
         vec![HandlerRule::proxy_forward_handler(
             None,
-            Some("invalid-url".to_string()),
+            Some("invalid host name".to_string()),
             None,
         )],
     )
@@ -121,8 +216,50 @@ async fn proxy_forward_handler_invalid_target_url() -> Result<()> {
         .await
         .expect("send request failed");
 
-    // Should return an internal server error due to invalid URL parsing
-    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = response.text().await?;
+    assert!(
+        body.contains("proxy_forward") || body.contains("authority"),
+        "expected rule/proxy_forward context in body, got: {body}"
+    );
 
     Ok(())
 }
+
+#[tokio::test]
+async fn proxy_forward_handler_unreachable_upstream_test() -> Result<()> {
+    let (proxy_server, _mock_server, client) = setup_proxy_handler_server().await?;
+    let client = client.get_proxy_client();
+
+    mock_test_rule(
+        proxy_server.data_store,
+        vec![HandlerRule::proxy_forward_handler(
+            None,
+            Some("127.0.0.1:31999".to_string()),
+            None,
+        )],
+    )
+    .await?;
+
+    let response = client
+        .get("http://not_exist.com/hello".to_string())
+        .send()
+        .await
+        .expect("send request failed");
+
+    assert_eq!(response.status(), StatusCode::BAD_GATEWAY);
+    let body = response.text().await?;
+    assert!(
+        body.contains("127.0.0.1:31999"),
+        "expected target in error body, got: {body}"
+    );
+    assert!(
+        body.to_lowercase().contains("connection")
+            || body.to_lowercase().contains("refused")
+            || body.to_lowercase().contains("connect"),
+        "expected connection failure hint in body, got: {body}"
+    );
+
+    Ok(())
+}
+

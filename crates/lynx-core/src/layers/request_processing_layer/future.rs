@@ -4,8 +4,6 @@ use std::{
     task::{Context, Poll},
 };
 
-use anyhow::Result;
-use axum::response::Response;
 use pin_project_lite::pin_project;
 
 pin_project! {
@@ -15,11 +13,11 @@ pin_project! {
     }
 }
 
-impl<F> Future for RequestProcessingFuture<F>
+impl<F, T, E> Future for RequestProcessingFuture<F>
 where
-    F: Future<Output = Result<Response>>,
+    F: Future<Output = Result<T, E>>,
 {
-    type Output = F::Output;
+    type Output = Result<T, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();

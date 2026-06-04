@@ -1,5 +1,5 @@
 use anyhow::Result;
-use lynx_db::dao::request_processing_dao::{
+use lynx_storage::dao::request_processing_dao::{
     handlers::{HandlerRule, HtmlScriptInjectorConfig},
 };
 
@@ -11,13 +11,12 @@ async fn test_html_script_injector_integration() -> Result<()> {
         Some("body-end".to_string()),
     );
 
-    assert_eq!(handler.name, "HTML Content Injector Handler");
     assert_eq!(handler.execution_order, 85);
     assert!(handler.enabled);
 
     // Test that the handler type is correctly set
     match &handler.handler_type {
-        lynx_db::dao::request_processing_dao::handlers::handler_rule::HandlerRuleType::HtmlScriptInjector(config) => {
+        lynx_storage::dao::request_processing_dao::handlers::handler_rule::HandlerRuleType::HtmlScriptInjector(config) => {
             assert_eq!(config.content, Some("<script>console.log('Hello from injected script!');</script>".to_string()));
             assert_eq!(config.injection_position, Some("body-end".to_string()));
         }

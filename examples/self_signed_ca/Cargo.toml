@@ -10,8 +10,4 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-rcgen = { version = "0.13.0", default-features = false, features = [
-    "x509-parser",
-    "pem",
-    "ring",
-] }
+rcgen = { workspace = true }

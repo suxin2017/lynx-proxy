@@ -8,26 +8,33 @@ use include_dir::include_dir;
 use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 use lynx_core::proxy_server::server_config::ProxyServerConfigBuilder;
 use lynx_core::proxy_server::{ProxyServerBuilder, StaticDir};
-use sea_orm::ConnectOptions;
 use tracing::info;
-use lynx_core::{ proxy_server::ConnectType as ProxyConnectType};
 
 pub struct ProxyServerApp {
     port: u16,
     data_dir: Option<String>,
     daemon: bool,
-    connect_type: ProxyConnectType,
     local_only: bool,
+    auth_user: Option<String>,
+    auth_pass: Option<String>,
 }
 
 impl ProxyServerApp {
-    pub fn new(port: u16, data_dir: Option<String>, daemon: bool, connect_type: ProxyConnectType, local_only: bool) -> Self {
+    pub fn new(
+        port: u16,
+        data_dir: Option<String>,
+        daemon: bool,
+        local_only: bool,
+        auth_user: Option<String>,
+        auth_pass: Option<String>,
+    ) -> Self {
         Self {
             port,
             data_dir,
             daemon,
-            connect_type,
             local_only,
+            auth_user,
+            auth_pass,
         }
     }
 
@@ -60,19 +67,15 @@ impl ProxyServerApp {
         )
         .build()?;
 
-        let db_connect = ConnectOptions::new(format!(
-            "sqlite://{}/lynx.db?mode=rwc",
-            data_dir.to_string_lossy()
-        ));
-
         let mut proxy_server = ProxyServerBuilder::default()
             .config(Arc::new(server_config))
             .port(self.port)
             .server_ca_manager(Arc::new(server_ca_manager))
-            .db_config(db_connect)
+            .data_dir(data_dir.clone())
             .static_dir(Arc::new(StaticDir(assets_dir)))
-            .connect_type(self.connect_type.clone())
             .local_only(self.local_only)
+            .auth_user(self.auth_user.clone())
+            .auth_pass(self.auth_pass.clone())
             .build()
             .await?;
 
@@ -132,7 +135,8 @@ mod tests {
     use super::*;
 
     fn create_test_app(data_dir: Option<String>) -> ProxyServerApp {
-        ProxyServerApp::new(7788, data_dir, false, ProxyConnectType::ShortPoll, false)
+        // Use an ephemeral port to avoid colliding with local dev servers.
+        ProxyServerApp::new(0, data_dir, false, false, None, None)
     }
 
     #[tokio::test]

@@ -1,20 +1,19 @@
-use anyhow::Result;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use lynx_db::dao::request_processing_dao::handlers::LocalFileConfig;
+use lynx_storage::dao::request_processing_dao::handlers::LocalFileConfig;
 use mime_guess::from_path;
 use std::path::Path;
 use tokio::fs;
 
-use crate::{common::Req, utils::full};
+use crate::{common::Req, error::CoreResult, utils::full};
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
 
 #[async_trait::async_trait]
 impl HandlerTrait for LocalFileConfig {
-    async fn handle_request(&self, _request: Req) -> Result<HandleRequestType> {
+    async fn handle_request(&self, _request: Req) -> CoreResult<HandleRequestType> {
         let file_path = Path::new(&self.file_path);
 
         // Check if file exists
@@ -74,6 +73,7 @@ impl HandlerTrait for LocalFileConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
     use axum::http::{Method, Request};
     use http_body_util::BodyExt;
     use std::fs;

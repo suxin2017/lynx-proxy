@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::client::ReqwestClient;
 use crate::client::request_client::RequestClientExt;
 use crate::common::Req;
-use crate::layers::extend_extension_layer::DbExtensionsExt;
+use crate::layers::extend_extension_layer::DataStoreExtensionsExt;
 use crate::layers::message_package_layer::MessageEventChannel;
 use crate::layers::message_package_layer::MessageEventLayerExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
@@ -13,23 +13,54 @@ use crate::proxy_server::StaticDir;
 use crate::proxy_server::server_config::ProxyServerConfig;
 use crate::proxy_server::server_config::ProxyServerConfigExtensionsExt;
 use anyhow::Result;
-use api::{base_info, net_request};
+use api::{auth as auth_api, base_info, certificate, net_request};
+use auth::{authorize_http, is_public_http_path, unauthorized_response};
 use axum::Router;
 use axum::response::Response;
+use axum::routing::get;
 use file_service::get_file;
 use http::Method;
+use http::header::HeaderValue;
 use tower::ServiceExt;
-use utoipa::openapi::OpenApi;
-use utoipa::openapi::Server;
-use utoipa_axum::router::OpenApiRouter;
-use utoipa_axum::routes;
-use utoipa_swagger_ui::SwaggerUi;
 pub mod api;
+pub mod auth;
+pub mod auth_extensions;
 pub mod file_service;
 pub mod utils;
-use tower_http::cors::{Any, CorsLayer};
+
+pub use auth::AuthConfig;
+pub use auth_extensions::AuthConfigExtensionsExt;
+use tower_http::cors::{AllowOrigin, CorsLayer};
+#[cfg(debug_assertions)]
+use tower_http::cors::Any;
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/api";
+
+/// Permissive CORS only in debug builds (local dev). Release builds restrict to own origins.
+fn cors_layer(access_addr_list: &[SocketAddr]) -> CorsLayer {
+    let base = CorsLayer::new()
+        .allow_methods([Method::GET, Method::PUT, Method::POST])
+        .allow_headers([http::header::AUTHORIZATION, http::header::CONTENT_TYPE]);
+
+    #[cfg(debug_assertions)]
+    {
+        return base.allow_origin(Any);
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        let origins = access_addr_list
+            .iter()
+            .filter_map(|addr| HeaderValue::from_str(&format!("http://{addr}")).ok())
+            .collect::<Vec<_>>();
+
+        if origins.is_empty() {
+            base.allow_origin(AllowOrigin::predicate(|_, _| false))
+        } else {
+            base.allow_origin(AllowOrigin::list(origins))
+        }
+    }
+}
 
 pub fn is_self_service(req: &Req) -> bool {
     let access_addr_list = req.extensions().get::<Arc<Vec<SocketAddr>>>();
@@ -60,27 +91,28 @@ pub fn is_self_service(req: &Req) -> bool {
         .unwrap_or(false)
 }
 
-#[utoipa::path(get,  path = "/health", responses((status = OK, body = String)))]
 async fn get_health() -> &'static str {
     "ok"
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RouteState {
-    pub db: Arc<sea_orm::DatabaseConnection>,
+    pub store: Arc<lynx_storage::DataStore>,
     pub net_request_cache: Arc<MessageEventCache>,
     pub proxy_config: Arc<ProxyServerConfig>,
     pub access_addr_list: Arc<Vec<SocketAddr>>,
     pub static_dir: Option<Arc<StaticDir>>,
     pub client: Arc<ReqwestClient>,
     pub message_event_channel: Arc<MessageEventChannel>,
+    pub auth: Arc<AuthConfig>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
     let static_dir = req.extensions().get::<Option<Arc<StaticDir>>>();
+    let auth = req.extensions().get_auth_config();
 
     let state = RouteState {
-        db: req.extensions().get_db(),
+        store: req.extensions().get_data_store(),
         net_request_cache: req.extensions().get_message_event_store(),
         proxy_config: req.extensions().get_proxy_server_config(),
         access_addr_list: req
@@ -91,49 +123,35 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         static_dir: static_dir.cloned().flatten(),
         client: req.extensions().get_reqwest_client(),
         message_event_channel: req.extensions().get_message_event_cannel(),
+        auth: auth.clone(),
     };
-    let cors = CorsLayer::new()
-        .allow_methods([Method::GET])
-        .allow_origin(Any);
-    let (router, mut openapi): (axum::Router, OpenApi) = OpenApiRouter::new()
-        .routes(routes!(get_health))
+
+    let method = req.method().clone();
+    let uri = req.uri().clone();
+    let path = uri.path().to_string();
+    let headers = req.headers().clone();
+
+    if auth.enabled && !is_public_http_path(&method, &path) {
+        if !authorize_http(&auth, &method, &path, &uri, &headers) {
+            return Ok(unauthorized_response());
+        }
+    }
+
+    let cors = cors_layer(&state.access_addr_list);
+
+    let api_router = Router::new()
+        .route("/health", get(get_health))
+        .nest("/auth", auth_api::router())
+        .nest("/net_request", net_request::router())
+        .nest("/certificate", certificate::router())
+        .nest("/base_info", base_info::router())
         .layer(cors)
-        .with_state(state.clone())
-        .nest("/net_request", net_request::router(state.clone()))
-        .nest("/certificate", api::certificate::router(state.clone()))
-        .nest("/base_info", base_info::router(state.clone()))
-        .nest("/https_capture", api::https_capture::router(state.clone()))
-        .nest("/client_proxy", api::client_proxy::router(state.clone()))
-        .nest("/api_debug", api::api_debug::router(state.clone()))
-        .nest(
-            "/api_debug_executor",
-            api::api_debug_executor::router(state.clone()),
-        )
-        .nest(
-            "/api_debug_tree",
-            api::api_debug_tree::router(state.clone()),
-        )
-        .nest(
-            "/request_processing",
-            api::request_processing::router(state.clone()),
-        )
-        .nest("/general_setting", api::general_setting::router(state.clone()))
-        .split_for_parts();
-
-    openapi.servers = Some(vec![Server::new(SELF_SERVICE_PATH_PREFIX)]);
-    let swagger_path = format!("{}/swagger-ui", SELF_SERVICE_PATH_PREFIX);
-    let api_docs_path = format!("{}/api-docs/openapi.json", SELF_SERVICE_PATH_PREFIX);
-
-    let swagger_router =
-        Router::new().merge(SwaggerUi::new(swagger_path).url(api_docs_path, openapi));
+        .with_state(state.clone());
 
     let router = Router::new()
         .fallback(get_file)
         .with_state(state.clone())
-        .nest(SELF_SERVICE_PATH_PREFIX, router)
-        .merge(swagger_router);
-
-    let router = router;
+        .nest(SELF_SERVICE_PATH_PREFIX, api_router);
 
     router
         .oneshot(req)

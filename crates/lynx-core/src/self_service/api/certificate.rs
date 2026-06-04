@@ -1,50 +1,20 @@
 use axum::http::StatusCode;
-use axum::{Json, extract::State};
-use utoipa_axum::{router::OpenApiRouter, routes};
-
-use crate::self_service::RouteState;
-use crate::self_service::utils::{ResponseDataWrapper, ok};
-use axum::http::header;
 use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::{Router, extract::State};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
-#[utoipa::path(
-    get,
-    path = "/path",
-    tags = ["Certificate"],
-    responses(
-        (status = 200, description = "Successfully retrieved certificate file path", body = ResponseDataWrapper<String>),
-        (status = 500, description = "Failed to get certificate path")
-    )
-)]
-async fn get_cert_path(
-    State(state): State<RouteState>,
-) -> Result<Json<ResponseDataWrapper<String>>, StatusCode> {
-    Ok(Json(ok(state
-        .proxy_config
-        .root_cert_file_path
-        .to_string_lossy()
-        .to_string())))
-}
+use crate::self_service::RouteState;
 
-#[utoipa::path(
-    get,
-    path = "/download",
-    tags = ["Certificate"],
-    responses(
-        (status = 200, description = "Successfully downloaded root certificate file", content_type = "application/x-x509-ca-cert"),
-        (status = 404, description = "Root certificate file not found"),
-        (status = 500, description = "Failed to read root certificate file")
-    )
-)]
+use axum::http::header;
+
 async fn download_certificate(
     State(state): State<RouteState>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let cert_path = &state.proxy_config.root_cert_file_path;
 
-    // Try to open and read the certificate file
-    let mut file = File::open(&cert_path)
+    let mut file = File::open(cert_path)
         .await
         .map_err(|_| StatusCode::NOT_FOUND)?;
 
@@ -53,7 +23,6 @@ async fn download_certificate(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Create the response with appropriate headers
     let headers = [
         (header::CONTENT_TYPE, "application/x-x509-ca-cert"),
         (
@@ -65,9 +34,6 @@ async fn download_certificate(
     Ok((headers, contents))
 }
 
-pub fn router(state: RouteState) -> OpenApiRouter {
-    OpenApiRouter::new()
-        .routes(routes!(get_cert_path))
-        .routes(routes!(download_certificate))
-        .with_state(state)
+pub fn router() -> Router<RouteState> {
+    Router::new().route("/download", get(download_certificate))
 }

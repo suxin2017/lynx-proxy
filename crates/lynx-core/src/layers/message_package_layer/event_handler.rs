@@ -7,6 +7,8 @@ use super::message_event_data::{
 };
 use super::message_event_store::{MessageEvent, MessageEventStoreValue, MessageEventTimings};
 
+const MAX_WEBSOCKET_LOG_MESSAGES: usize = 1_000;
+
 /// 处理单个消息事件
 pub async fn handle_message_event_single(
     event: MessageEvent,
@@ -132,6 +134,7 @@ pub async fn handle_message_event_single(
             }
             let mut value = value.unwrap();
             value.timings_mut().set_websocket_end();
+            value.status = super::message_event_store::MessageEventStatus::Completed;
             let msg = value.messages_mut();
 
             match msg {
@@ -147,6 +150,18 @@ pub async fn handle_message_event_single(
                 }
             }
         }
+        MessageEvent::OnWebSocketEnd(id) => {
+            let value = cache.get_mut(&id);
+            if value.is_none() {
+                return Ok(());
+            }
+            let mut value = value.unwrap();
+            value.timings_mut().set_websocket_end();
+            value.status = super::message_event_store::MessageEventStatus::Completed;
+            if let Some(msg) = value.messages_mut() {
+                msg.status = WebSocketStatus::Disconnected;
+            }
+        }
         MessageEvent::OnWebSocketMessage(id, log) => {
             let value = cache.get_mut(&id);
             if value.is_none() {
@@ -159,6 +174,10 @@ pub async fn handle_message_event_single(
                 Some(msg) => {
                     msg.status = WebSocketStatus::from(&log.message);
                     msg.message.push(log);
+                    if msg.message.len() > MAX_WEBSOCKET_LOG_MESSAGES {
+                        let drain = msg.message.len() - MAX_WEBSOCKET_LOG_MESSAGES;
+                        msg.message.drain(0..drain);
+                    }
                 }
                 None => {
                     let mut msg = MessageEventWebSocket {
@@ -178,6 +197,8 @@ pub async fn handle_message_event_single(
             let mut value = value.unwrap();
 
             value.timings_mut().set_tunnel_end();
+            value.timings_mut().set_request_end();
+            value.status = super::message_event_store::MessageEventStatus::Completed;
             let msg = &mut value.tunnel;
 
             match msg {

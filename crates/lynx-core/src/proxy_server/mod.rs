@@ -13,20 +13,14 @@ use hyper_util::server::conn::auto;
 use hyper_util::service::TowerToHyperService;
 use include_dir::Dir;
 use local_ip_address::list_afinet_netifas;
-use lynx_db::dao::client_proxy_dao::ClientProxyDao;
-use lynx_db::dao::general_setting_dao::GeneralSettingDao;
-
-// Re-export ConnectType for external use
-pub use lynx_db::dao::general_setting_dao::ConnectType;
-use lynx_db::migration::Migrator;
+use lynx_storage::DataStore;
+use lynx_storage::dao::client_proxy_dao::ClientProxyDao;
 use rcgen::Certificate;
-use sea_orm::{ConnectOptions, Database, DatabaseConnection};
-use sea_orm_migration::MigratorTrait;
 use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 use tower::util::Oneshot;
 use tower::{ServiceBuilder, service_fn};
-use tracing::{Instrument, debug, info, instrument, trace, trace_span, warn};
+use tracing::{Instrument, debug, instrument, trace, trace_span, warn};
 
 use crate::client::request_client::RequestClientBuilder;
 use crate::common::{HyperReq, is_https_tcp_stream};
@@ -37,6 +31,7 @@ use crate::layers::message_package_layer::message_event_store::MessageEventCache
 use crate::layers::message_package_layer::{MessageEventChannel, RequestMessageEventService};
 use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::service::{TraceIdExt, set_new_trace_id};
+use crate::self_service::AuthConfig;
 
 pub mod server_ca_manage;
 pub mod server_config;
@@ -67,15 +62,30 @@ pub struct ProxyServer {
 
     pub server_ca_manager: Arc<ServerCaManager>,
 
-    pub db_config: ConnectOptions,
+    #[builder(setter(strip_option))]
+    pub data_dir: Option<std::path::PathBuf>,
 
     #[builder(setter(skip))]
-    pub db_connect: Arc<DatabaseConnection>,
-
-    pub connect_type: ConnectType,
+    pub data_store: Arc<DataStore>,
 
     #[builder(default = "false")]
     pub local_only: bool,
+
+    #[builder(default)]
+    pub auth_user: Option<String>,
+
+    #[builder(default)]
+    pub auth_pass: Option<String>,
+
+    #[builder(setter(skip))]
+    pub auth_config: Arc<AuthConfig>,
+
+    /// Shared across all listen addresses so UI WebSocket and proxied traffic see the same events.
+    #[builder(setter(skip))]
+    pub message_event_channel: Arc<MessageEventChannel>,
+
+    #[builder(setter(skip))]
+    pub message_event_cache: Arc<MessageEventCache>,
 }
 
 impl ProxyServerBuilder {
@@ -86,7 +96,8 @@ impl ProxyServerBuilder {
 
         let port = self.port.flatten().unwrap_or(0);
         let local_only = self.local_only.unwrap_or(false);
-        let network_interfaces = list_afinet_netifas().expect("get network interfaces error");
+        let network_interfaces = list_afinet_netifas()
+            .map_err(|e| anyhow!("get network interfaces error: {e}"))?;
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
             .filter(|(_, ip)| ip.is_ipv4())
@@ -111,38 +122,39 @@ impl ProxyServerBuilder {
             .collect();
         let custom_certs = self.custom_certs.clone().flatten();
         let api_custom_certs = self.api_custom_certs.clone().flatten();
-        let db_config = self.db_config.clone().expect("db_config is required");
-        let db_con = Database::connect(db_config.clone()).await?;
+        let data_dir = self
+            .data_dir
+            .clone()
+            .flatten()
+            .ok_or_else(|| anyhow!("data_dir is required"))?;
+        let data_store = DataStore::new(data_dir).await?;
+        let auth_config = AuthConfig::from_credentials(
+            self.auth_user.clone().flatten(),
+            self.auth_pass.clone().flatten(),
+        )?;
 
-        Migrator::up(&db_con, None).await?;
-        let db_arc = Arc::new(db_con);
-
-        if let Some(connect_type) = &self.connect_type {
-            let general_setting_dao = GeneralSettingDao::new(db_arc.clone());
-            general_setting_dao
-                .update_connect_type(connect_type.clone())
-                .await?;
-        }
+        let message_event_channel = Arc::new(MessageEventChannel::new());
+        let message_event_cache = Arc::new(MessageEventCache::default());
 
         Ok(ProxyServer {
             port: self.port.flatten(),
             access_addr_list,
             custom_certs,
             api_custom_certs,
-            config: self.config.clone().expect("config is required"),
-            db_config,
+            config: self.config.clone().ok_or_else(|| anyhow!("config is required"))?,
+            data_dir: self.data_dir.clone().flatten(),
             static_dir: self.static_dir.clone().flatten(),
             server_ca_manager: self
                 .server_ca_manager
                 .clone()
-                .expect("server_ca_manager is required"),
-            db_connect: db_arc,
-            connect_type: self
-                .connect_type
-                .as_ref()
-                .unwrap_or(&ConnectType::SSE)
-                .clone(),
+                .ok_or_else(|| anyhow!("server_ca_manager is required"))?,
+            data_store,
             local_only,
+            auth_user: self.auth_user.clone().flatten(),
+            auth_pass: self.auth_pass.clone().flatten(),
+            auth_config,
+            message_event_channel,
+            message_event_cache,
         })
     }
 }
@@ -177,8 +189,18 @@ impl ClientAddrRequestExt for Extensions {
 }
 
 impl ProxyServer {
+    pub fn message_event_channel(&self) -> Arc<MessageEventChannel> {
+        self.message_event_channel.clone()
+    }
+
+    pub fn message_event_cache(&self) -> Arc<MessageEventCache> {
+        self.message_event_cache.clone()
+    }
+
     #[instrument(skip(self))]
     pub async fn run(&mut self) -> Result<()> {
+        self.message_event_channel
+            .setup_short_poll(self.message_event_cache.clone());
         self.bind_tcp_listener_to_hyper().await?;
         Ok(())
     }
@@ -207,32 +229,24 @@ impl ProxyServer {
         let client_custom_certs = self.custom_certs.clone();
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
-        let message_event_store = Arc::new(MessageEventCache::default());
-        let message_event_cannel = MessageEventChannel::new();
-        let message_event_cannel = Arc::new(message_event_cannel);
+        let message_event_store = self.message_event_cache.clone();
+        let message_event_cannel = self.message_event_channel.clone();
         let static_dir = self.static_dir.clone();
+        let auth_config = self.auth_config.clone();
         let addr_str = listener.local_addr()?.to_string();
         let authority = Authority::from_str(&addr_str)?;
         let self_ca = server_ca_manager.get_server_config(&authority).await?;
         let tls_acceptor = TlsAcceptor::from(self_ca);
 
-        let db_connect = self.db_connect.clone();
-
-        let general_setting_dao = GeneralSettingDao::new(db_connect.clone());
-        if let Ok(setting) = general_setting_dao.get_general_setting().await {
-            info!("connect_type: {:?}", setting.connect_type);
-            if matches!(setting.connect_type, ConnectType::ShortPoll) {
-                message_event_cannel.setup_short_poll(message_event_store.clone());
-            }
-        }
+        let data_store = self.data_store.clone();
 
         tokio::spawn(async move {
             loop {
                 let (tcp_stream, client_addr) = listener.accept().await.expect("accept failed");
                 let tls_acceptor = tls_acceptor.clone();
 
-                // 获取客户端代理配置
-                let client_proxy_dao = ClientProxyDao::new(db_connect.clone());
+                // ??????????
+                let client_proxy_dao = ClientProxyDao::new(data_store.clone());
                 let client_proxy_config = client_proxy_dao
                     .get_client_proxy_config()
                     .await
@@ -271,14 +285,15 @@ impl ProxyServer {
                 let server_ca_manager = server_ca_manager.clone();
                 let server_config = server_config.clone();
                 let message_event_cannel = message_event_cannel.clone();
-                let db_connect = db_connect.clone();
+                let data_store = data_store.clone();
                 let message_event_store = message_event_store.clone();
                 let access_addr_list = access_addr_list.clone();
                 let static_dir = static_dir.clone();
+                let auth_config = auth_config.clone();
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
                     let svc = ServiceBuilder::new()
-                        .layer(RequestExtensionLayer::new(db_connect.clone()))
+                        .layer(RequestExtensionLayer::new(data_store.clone()))
                         .layer(RequestExtensionLayer::new(request_client))
                         .layer(RequestExtensionLayer::new(ClientAddr(client_addr)))
                         .layer(RequestExtensionLayer::new(server_ca_manager))
@@ -287,6 +302,7 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(message_event_cannel))
                         .layer(RequestExtensionLayer::new(access_addr_list))
                         .layer(RequestExtensionLayer::new(static_dir))
+                        .layer(RequestExtensionLayer::new(auth_config))
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)
                         .layer(ErrorHandlerLayer)
@@ -304,7 +320,7 @@ impl ProxyServer {
 
                     let svc = TowerToHyperService::new(transform_svc);
 
-                    // TODO： refactor this code let it be more simple
+                    // TODO??refactor this code let it be more simple
                     if is_https_tcp_stream(&tcp_stream).await {
                         let tls_stream = match tls_acceptor.accept(tcp_stream).await {
                             Ok(tls_stream) => tls_stream,
@@ -378,7 +394,7 @@ mod tests {
         let proxy_server = ProxyServerBuilder::default()
             .config(Arc::new(server_config))
             .server_ca_manager(Arc::new(server_ca_manager))
-            .db_config(ConnectOptions::new("sqlite::memory:"))
+            .data_dir(fixed_temp_dir_path.join("db"))
             .build()
             .await?;
         Ok(proxy_server)

@@ -7,11 +7,10 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use utoipa::ToSchema;
 
 use super::message_event_data::{
     MessageEventRequest, MessageEventResponse, MessageEventTunnel, MessageEventWebSocket,
-    WebSocketLog,
+    TunnelStatus, WebSocketLog, WebSocketStatus,
 };
 use crate::layers::trace_id_layer::service::TraceId;
 
@@ -35,6 +34,8 @@ pub enum MessageEvent {
 
     OnWebSocketStart(TraceId),
 
+    OnWebSocketEnd(TraceId),
+
     OnWebSocketError(TraceId, String),
 
     OnWebSocketMessage(TraceId, WebSocketLog),
@@ -45,7 +46,7 @@ pub enum MessageEvent {
     OnError(TraceId, String),
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum MessageEventStatus {
     // Initial state, request just created
     Initial,
@@ -65,7 +66,7 @@ impl Default for MessageEventStatus {
     }
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageEventTimings {
     // The time when the request was received
@@ -172,7 +173,7 @@ impl MessageEventTimings {
     }
 }
 
-#[derive(Debug, Deserialize, ToSchema, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageEventStoreValue {
     pub status: MessageEventStatus,
@@ -247,7 +248,29 @@ impl MessageEventStoreValue {
     }
 
     pub fn is_need_delteed(&self) -> bool {
+        if self.has_active_long_connection() {
+            return false;
+        }
         self.is_completed() || self.is_error() || self.is_cancelled()
+    }
+
+    fn has_active_long_connection(&self) -> bool {
+        if self
+            .tunnel
+            .as_ref()
+            .is_some_and(|t| t.status == TunnelStatus::Connected)
+        {
+            return true;
+        }
+        if self.messages.as_ref().is_some_and(|ws| {
+            matches!(
+                ws.status,
+                WebSocketStatus::Start | WebSocketStatus::Connected
+            )
+        }) {
+            return true;
+        }
+        false
     }
 }
 
@@ -299,7 +322,7 @@ impl MessageEventCache {
         self.map.get(key).map(|v| v.clone())
     }
 
-    pub fn get_mut(&self, key: &TraceId) -> Option<RefMut<TraceId, MessageEventStoreValue>> {
+    pub fn get_mut(&self, key: &TraceId) -> Option<RefMut<'_, TraceId, MessageEventStoreValue>> {
         self.map.get_mut(key)
     }
 

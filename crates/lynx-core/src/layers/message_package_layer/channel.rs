@@ -31,7 +31,7 @@ impl Debug for MessageEventChannel {
 
 impl MessageEventChannel {
     pub fn new() -> Self {
-        let (broadcast_tx, _broadcast_rx) = broadcast::channel::<MessageEvent>(1024);
+        let (broadcast_tx, _broadcast_rx) = broadcast::channel::<MessageEvent>(4096);
 
         Self {
             broadcast_sender: broadcast_tx,
@@ -180,6 +180,36 @@ impl MessageEventChannel {
         let _ = self
             .send_event(MessageEvent::OnWebSocketError(request_id, error_reason))
             .await;
+    }
+
+    #[instrument(skip_all)]
+    pub async fn dispatch_on_websocket_end(&self, request_id: TraceId) {
+        let _ = self
+            .send_event(MessageEvent::OnWebSocketEnd(request_id))
+            .await;
+    }
+
+    #[instrument(skip_all)]
+    pub fn spawn_websocket_message_capture(
+        &self,
+        request_id: TraceId,
+        send_type: SendType,
+        message: tungstenite::Message,
+    ) {
+        let sender = self.broadcast_sender.clone();
+        spawn(async move {
+            let direction = match send_type {
+                SendType::ClientToServer => WebSocketDirection::ClientToServer,
+                SendType::ServerToClient => WebSocketDirection::ServerToClient,
+            };
+
+            let log = WebSocketLog {
+                direction,
+                timestamp: chrono::Utc::now().timestamp_millis() as u64,
+                message: WebSocketMessage::from(&message),
+            };
+            let _ = sender.send(MessageEvent::OnWebSocketMessage(request_id, log));
+        });
     }
 
     #[instrument(skip_all)]

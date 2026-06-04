@@ -4,7 +4,7 @@ use bytes::Bytes;
 use futures_util::{SinkExt, TryStreamExt};
 use http::{
     Method, StatusCode,
-    header::{CONTENT_ENCODING, CONTENT_TYPE},
+    header::{CONTENT_ENCODING, CONTENT_TYPE, HOST},
 };
 use http_body_util::{BodyExt, Full, StreamBody, combinators::BoxBody};
 use hyper::{
@@ -29,6 +29,7 @@ pub const BROTLI_PATH: &str = "/brotli";
 pub const DEFLATE_PATH: &str = "/deflate";
 pub const ECHO_PATH: &str = "/echo";
 pub const WEBSOCKET_PATH: &str = "/ws";
+pub const WEBSOCKET_STRICT_HOST_PATH: &str = "/ws/strict-host";
 pub const PUSH_MSG_PATH: &str = "/push_msg";
 pub const HEADERS_PATH: &str = "/headers";
 pub const SLOW_PATH: &str = "/slow";
@@ -46,6 +47,7 @@ pub enum MockPath {
     Echo,
     PushMsg,
     Websocket,
+    WebsocketStrictHost,
     Headers,
     Slow,
     Status,
@@ -83,6 +85,7 @@ impl From<&str> for MockPath {
             ECHO_PATH => MockPath::Echo,
             PUSH_MSG_PATH => MockPath::PushMsg,
             WEBSOCKET_PATH => MockPath::Websocket,
+            WEBSOCKET_STRICT_HOST_PATH => MockPath::WebsocketStrictHost,
             HEADERS_PATH => MockPath::Headers,
             SLOW_PATH => MockPath::Slow,
             STATUS_PATH => MockPath::Status,
@@ -105,6 +108,7 @@ impl Display for MockPath {
             MockPath::Echo => write!(f, "{}", ECHO_PATH),
             MockPath::PushMsg => write!(f, "{}", PUSH_MSG_PATH),
             MockPath::Websocket => write!(f, "{}", WEBSOCKET_PATH),
+            MockPath::WebsocketStrictHost => write!(f, "{}", WEBSOCKET_STRICT_HOST_PATH),
             MockPath::Headers => write!(f, "{}", HEADERS_PATH),
             MockPath::Slow => write!(f, "{}", SLOW_PATH),
             MockPath::Status => write!(f, "{}", STATUS_PATH),
@@ -117,46 +121,70 @@ impl Display for MockPath {
     }
 }
 
+async fn serve_echo_websocket(
+    req: Request<Incoming>,
+) -> Result<Response<BoxBody<Bytes, anyhow::Error>>> {
+    let (res, ws) = hyper_tungstenite::upgrade(req, None)?;
+
+    tokio::spawn(async move {
+        let mut ws = ws.await.unwrap();
+
+        while let Some(msg) = ws.next().await {
+            trace!("websocket msg: {:?}", msg);
+            match msg {
+                Ok(msg) => match msg {
+                    Message::Binary(data) => {
+                        ws.send(Message::Binary(data)).await.unwrap();
+                    }
+                    Message::Text(data) => {
+                        ws.send(Message::Text(data)).await.unwrap();
+                    }
+                    Message::Ping(data) => {
+                        ws.send(Message::Pong(data)).await.unwrap();
+                    }
+                    Message::Pong(_) => {}
+                    Message::Close(_) => {}
+                    Message::Frame(_) => {}
+                },
+                _ => {
+                    warn!("websocket msg error: {:?}", msg);
+                }
+            }
+        }
+    });
+
+    let (parts, body) = res.into_parts();
+    let bytes = body.collect().await?.to_bytes();
+    let body = Full::new(bytes).map_err(|err| anyhow!("{err}")).boxed();
+    Ok(Response::from_parts(parts, body))
+}
+
 #[instrument(skip(req))]
 pub async fn mock_server_fn(
     req: Request<Incoming>,
 ) -> Result<Response<BoxBody<Bytes, anyhow::Error>>> {
     let res = match (req.method(), MockPath::from(req.uri().path())) {
-        (&Method::GET, MockPath::Websocket) => {
-            let (res, ws) = hyper_tungstenite::upgrade(req, None)?;
-
-            tokio::spawn(async move {
-                let mut ws = ws.await.unwrap();
-
-                while let Some(msg) = ws.next().await {
-                    trace!("websocket msg: {:?}", msg);
-                    match msg {
-                        Ok(msg) => match msg {
-                            Message::Binary(data) => {
-                                ws.send(Message::Binary(data)).await.unwrap();
-                            }
-                            Message::Text(data) => {
-                                ws.send(Message::Text(data)).await.unwrap();
-                            }
-                            Message::Ping(data) => {
-                                ws.send(Message::Pong(data)).await.unwrap();
-                            }
-                            Message::Pong(_) => {}
-                            Message::Close(_) => {}
-                            Message::Frame(_) => {}
-                        },
-                        _ => {
-                            warn!("websocket msg error: {:?}", msg);
-                        }
-                    }
-                }
-            });
-
-            let (parts, body) = res.into_parts();
-            let bytes = body.collect().await?.to_bytes();
-            let body = Full::new(bytes).map_err(|err| anyhow!("{err}")).boxed();
-            let res_result = Response::from_parts(parts, body);
-            Ok(res_result)
+        (&Method::GET, MockPath::Websocket) => serve_echo_websocket(req).await,
+        (&Method::GET, MockPath::WebsocketStrictHost) => {
+            let actual_host = req
+                .headers()
+                .get(HOST)
+                .and_then(|value| value.to_str().ok());
+            let host_ok = actual_host.is_some_and(|host| host.starts_with("127.0.0.1:"));
+            if !host_ok {
+                return Ok(Response::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .body(
+                        Full::new(Bytes::from(format!(
+                            "unexpected host: {:?}, expected 127.0.0.1:<port>",
+                            actual_host
+                        )))
+                        .map_err(|err| anyhow!("{err}"))
+                        .boxed(),
+                    )
+                    .unwrap());
+            }
+            serve_echo_websocket(req).await
         }
         (&Method::GET, MockPath::Hello) => {
             let res = Response::new(

@@ -6,24 +6,23 @@ use axum::{
 };
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
-use utoipa::{PartialSchema, ToSchema, TupleUnit};
 
-#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ResponseCode {
     Ok,
     ValidateError,
 }
 
-#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ResponseDataWrapper<T: PartialSchema> {
+pub struct ResponseDataWrapper<T> {
     pub code: ResponseCode,
     pub message: Option<String>,
     pub data: T,
 }
 
-pub fn ok<T: ToSchema>(data: T) -> ResponseDataWrapper<T> {
+pub fn ok<T: Serialize>(data: T) -> ResponseDataWrapper<T> {
     ResponseDataWrapper {
         code: ResponseCode::Ok,
         message: None,
@@ -31,26 +30,26 @@ pub fn ok<T: ToSchema>(data: T) -> ResponseDataWrapper<T> {
     }
 }
 
-#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
-pub struct EmptyOkResponse(ResponseDataWrapper<utoipa::TupleUnit>);
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmptyOkResponse(ResponseDataWrapper<()>);
 
 pub fn empty_ok() -> EmptyOkResponse {
     EmptyOkResponse(ResponseDataWrapper {
         code: ResponseCode::Ok,
         message: None,
-        data: TupleUnit::default(),
+        data: (),
     })
 }
 
-pub fn validate_error<T: serde::Serialize>(message: String) -> EmptyOkResponse {
+pub fn validate_error(message: String) -> EmptyOkResponse {
     EmptyOkResponse(ResponseDataWrapper {
         code: ResponseCode::ValidateError,
         message: Some(message),
-        data: TupleUnit::default(),
+        data: (),
     })
 }
 
-#[derive(Debug, ToSchema, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum AppError {
     DatabaseError(String),
     ValidationError(String),
@@ -96,7 +95,7 @@ impl IntoResponse for AppError {
     }
 }
 
-#[derive(Debug, ToSchema, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ErrorResponse {
     pub code: u16,

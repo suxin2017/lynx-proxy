@@ -1,15 +1,14 @@
-use anyhow::Result;
-use lynx_db::dao::request_processing_dao::handlers::{DelayHandlerConfig, DelayType};
+use lynx_storage::dao::request_processing_dao::handlers::{DelayHandlerConfig, DelayType};
 use rand::Rng;
 use std::time::Duration;
 use tokio::time::sleep;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::common::Req;
+use crate::{common::Req, error::CoreResult};
 
 #[async_trait::async_trait]
 impl HandlerTrait for DelayHandlerConfig {
-    async fn handle_request(&self, request: Req) -> Result<HandleRequestType> {
+    async fn handle_request(&self, request: Req) -> CoreResult<HandleRequestType> {
         // Calculate actual delay duration
         let actual_delay_ms = if let Some(variance) = self.variance_ms {
             let mut rng = rand::thread_rng();
@@ -50,7 +49,10 @@ impl HandlerTrait for DelayHandlerConfig {
         Ok(HandleRequestType::Request(request))
     }
 
-    async fn handle_response(&self, response: axum::response::Response) -> Result<axum::response::Response> {
+    async fn handle_response(
+        &self,
+        response: axum::response::Response,
+    ) -> CoreResult<axum::response::Response> {
         // Apply delay for AfterRequest and Both types
         match self.delay_type {
             DelayType::AfterRequest => {
@@ -92,6 +94,7 @@ impl HandlerTrait for DelayHandlerConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
     use axum::http::Method;
     use http::Request;
     use std::time::Instant;

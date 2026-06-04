@@ -5,8 +5,8 @@ use lynx_core::proxy_server::{
     ProxyServer, ProxyServerBuilder, server_ca_manage::ServerCaManagerBuilder,
     server_config::ProxyServerConfigBuilder,
 };
+use nanoid::nanoid;
 use rcgen::Certificate;
-use sea_orm::ConnectOptions;
 
 pub async fn setup_proxy_server(
     custom_certs: Option<Arc<Vec<Arc<Certificate>>>>,
@@ -17,9 +17,13 @@ pub async fn setup_proxy_server(
         fs::create_dir_all(&fixed_temp_dir_path)?;
     }
 
+    // Use a unique subdir per test to avoid cross-test races on files.
+    let run_dir = fixed_temp_dir_path.join(nanoid!());
+    fs::create_dir_all(&run_dir)?;
+
     let server_config = ProxyServerConfigBuilder::default()
-        .root_cert_file_path(fixed_temp_dir_path.join("root.pem"))
-        .root_key_file_path(fixed_temp_dir_path.join("key.pem"))
+        .root_cert_file_path(run_dir.join("root.pem"))
+        .root_key_file_path(run_dir.join("key.pem"))
         .build()?;
 
     let server_ca_manager = ServerCaManagerBuilder::new(
@@ -33,7 +37,7 @@ pub async fn setup_proxy_server(
     proxy_server_builder
         .config(Arc::new(server_config))
         .server_ca_manager(Arc::new(server_ca_manager))
-        .db_config(ConnectOptions::new("sqlite::memory:"));
+        .data_dir(run_dir.join("db"));
     if let Some(custom_certs) = custom_certs {
         proxy_server_builder.custom_certs(custom_certs.clone());
         proxy_server_builder.api_custom_certs(custom_certs);
@@ -43,7 +47,6 @@ pub async fn setup_proxy_server(
     proxy_server.run().await?;
     Ok(proxy_server)
 }
-
 
 #[allow(dead_code)]
 pub async fn setup_short_poll_proxy_server(
@@ -55,9 +58,12 @@ pub async fn setup_short_poll_proxy_server(
         fs::create_dir_all(&fixed_temp_dir_path)?;
     }
 
+    let run_dir = fixed_temp_dir_path.join(nanoid!());
+    fs::create_dir_all(&run_dir)?;
+
     let server_config = ProxyServerConfigBuilder::default()
-        .root_cert_file_path(fixed_temp_dir_path.join("root.pem"))
-        .root_key_file_path(fixed_temp_dir_path.join("key.pem"))
+        .root_cert_file_path(run_dir.join("root.pem"))
+        .root_key_file_path(run_dir.join("key.pem"))
         .build()?;
 
     let server_ca_manager = ServerCaManagerBuilder::new(
@@ -71,12 +77,12 @@ pub async fn setup_short_poll_proxy_server(
     proxy_server_builder
         .config(Arc::new(server_config))
         .server_ca_manager(Arc::new(server_ca_manager))
-        .db_config(ConnectOptions::new("sqlite::memory:"));
+        .data_dir(run_dir.join("db"));
     if let Some(custom_certs) = custom_certs {
         proxy_server_builder.custom_certs(custom_certs.clone());
         proxy_server_builder.api_custom_certs(custom_certs);
     }
 
-    let  proxy_server = proxy_server_builder.build().await?;
+    let proxy_server = proxy_server_builder.build().await?;
     Ok(proxy_server)
 }

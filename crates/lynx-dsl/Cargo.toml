@@ -1,0 +1,30 @@
+[package]
+name = "lynx-dsl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Match expression DSL parser and formatter for Lynx proxy"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz"]
+
+[features]
+default = []
+wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen"]
+
+[dependencies]
+pest = "2.8.5"
+pest_derive = "2.8.5"
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = "1.0"
+thiserror = "2.0"
+
+wasm-bindgen = { version = "0.2", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+http = { workspace = true }

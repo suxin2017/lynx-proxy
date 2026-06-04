@@ -1,17 +1,41 @@
 use super::handler_trait::{HandleRequestType, HandlerTrait};
 use crate::{
     common::Req,
-    layers::{extend_extension_layer::DbExtensionsExt, trace_id_layer::service::TraceIdExt},
-    utils::full,
+    error::CoreError,
+    layers::{extend_extension_layer::DataStoreExtensionsExt, trace_id_layer::service::TraceIdExt},
 };
 use anyhow::Result;
-use axum::response::{IntoResponse, Response};
-use lynx_db::dao::request_processing_dao::{
+use axum::response::Response;
+use lynx_storage::dao::request_processing_dao::{
     RequestProcessingDao, handlers::handler_rule::HandlerRuleType,
 };
 use std::{future::Future, pin::Pin, task::Poll};
 use tower::Service;
 use tracing::instrument;
+
+fn handler_kind_label(handler_type: &HandlerRuleType) -> &'static str {
+    match handler_type {
+        HandlerRuleType::Block(_) => "block",
+        HandlerRuleType::LocalFile(_) => "local_file",
+        HandlerRuleType::ModifyRequest(_) => "modify_request",
+        HandlerRuleType::ModifyResponse(_) => "modify_response",
+        HandlerRuleType::ProxyForward(_) => "proxy_forward",
+        HandlerRuleType::HtmlScriptInjector(_) => "html_script_injector",
+        HandlerRuleType::Delay(_) => "delay",
+        HandlerRuleType::Throttle(_) => "throttle",
+    }
+}
+
+fn handler_rule_error<E>(handler_name: &str, handler_type: &HandlerRuleType, err: CoreError) -> E
+where
+    E: From<anyhow::Error>,
+{
+    E::from(anyhow::Error::from(CoreError::as_request_rule_failed(
+        handler_name,
+        handler_kind_label(handler_type),
+        err,
+    )))
+}
 
 #[derive(Clone)]
 pub struct RequestProcessingService<S> {
@@ -26,11 +50,12 @@ impl<S> RequestProcessingService<S> {
 
 impl<S> Service<Req> for RequestProcessingService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response>
         + Clone
         + Send
         + Sync
         + 'static,
+    S::Error: From<anyhow::Error>,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -42,7 +67,7 @@ where
 
     #[instrument(skip_all, name = "request_processing_service")]
     fn call(&mut self, request: Req) -> Self::Future {
-        let db: std::sync::Arc<sea_orm::DatabaseConnection> = request.extensions().get_db();
+        let store = request.extensions().get_data_store();
         let trace_id = request.extensions().get_trace_id();
 
         let mut inner = self.service.clone();
@@ -53,8 +78,7 @@ where
                 request.uri()
             );
 
-            let dao = RequestProcessingDao::new(db.clone());
-            // 查找匹配的规则
+            let dao = RequestProcessingDao::new(store.clone());
             tracing::trace!("Searching for matching rules for request");
             let matching_rules = match dao.find_matching_rules(&request).await {
                 Ok(rules) => {
@@ -64,7 +88,6 @@ where
                 Err(e) => {
                     tracing::warn!("Failed to find matching rules: {}", e);
                     tracing::trace!("Bypassing request processing due to rule lookup failure");
-                    // 如果查找规则失败，直接继续处理请求
                     return inner.call(request).await;
                 }
             };
@@ -85,8 +108,8 @@ where
                 if rule.enabled {
                     for handler in &rule.handlers {
                         tracing::trace!(
-                            "Processing handler: '{}', enabled: {}, execution_order: {}",
-                            handler.name,
+                            "Processing handler: type={}, enabled: {}, execution_order: {}",
+                            handler_kind_label(&handler.handler_type),
                             handler.enabled,
                             handler.execution_order
                         );
@@ -97,100 +120,94 @@ where
                 }
             }
 
-            // 按执行顺序排序
             all_handlers.sort_by_key(|h| h.execution_order);
             tracing::trace!(
                 "Collected {} enabled handlers for execution",
                 all_handlers.len()
             );
 
-            // 执行处理器
             let mut current_request = request;
 
             for (index, handler) in all_handlers.iter().enumerate() {
                 tracing::trace!(
-                    "Executing handler {}/{}: '{}' (type: {:?})",
+                    "Executing handler {}/{}: type={} (raw: {:?})",
                     index + 1,
                     all_handlers.len(),
-                    handler.name,
+                    handler_kind_label(&handler.handler_type),
                     handler.handler_type
                 );
 
                 let handler_result = match &handler.handler_type {
                     HandlerRuleType::Block(block_handler_config) => {
-                        tracing::trace!("Executing block handler for '{}'", handler.name);
+                        tracing::trace!("Executing block handler");
                         block_handler_config.handle_request(current_request).await
                     }
                     HandlerRuleType::LocalFile(local_file_config) => {
-                        tracing::trace!("Executing local file handler for '{}'", handler.name);
+                        tracing::trace!("Executing local file handler");
                         local_file_config.handle_request(current_request).await
                     }
                     HandlerRuleType::ModifyRequest(modify_request_config) => {
-                        tracing::trace!("Executing modify request handler for '{}'", handler.name);
+                        tracing::trace!("Executing modify request handler");
                         modify_request_config.handle_request(current_request).await
                     }
                     HandlerRuleType::ModifyResponse(modify_response_config) => {
-                        tracing::trace!("Executing modify response handler for '{}'", handler.name);
+                        tracing::trace!("Executing modify response handler");
                         modify_response_config.handle_request(current_request).await
                     }
                     HandlerRuleType::ProxyForward(proxy_forward_config) => {
-                        tracing::trace!("Executing proxy forward handler for '{}'", handler.name);
+                        tracing::trace!("Executing proxy forward handler");
                         proxy_forward_config.handle_request(current_request).await
                     }
                     HandlerRuleType::HtmlScriptInjector(html_script_injector_config) => {
-                        tracing::trace!(
-                            "Executing HTML script injector handler for '{}'",
-                            handler.name
-                        );
+                        tracing::trace!("Executing HTML script injector handler");
                         html_script_injector_config
                             .handle_request(current_request)
                             .await
                     }
                     HandlerRuleType::Delay(delay_config) => {
                         tracing::trace!(
-                            "Executing delay handler for '{}' (delay: {}ms, variance: {:?}ms)",
-                            handler.name,
+                            "Executing delay handler (delay: {}ms, variance: {:?}ms)",
                             delay_config.delay_ms,
                             delay_config.variance_ms
                         );
                         delay_config.handle_request(current_request).await
+                    }
+                    HandlerRuleType::Throttle(throttle_config) => {
+                        tracing::trace!(
+                            "Executing throttle handler (preset: {:?})",
+                            throttle_config.preset
+                        );
+                        throttle_config.handle_request(current_request).await
                     }
                 };
 
                 match handler_result {
                     Ok(HandleRequestType::Request(req)) => {
                         tracing::trace!(
-                            "Handler '{}' modified the request, continuing with next handler",
-                            handler.name
+                            "Handler modified request, continuing with next handler"
                         );
                         current_request = req;
                     }
                     Ok(HandleRequestType::Response(mut response)) => {
                         tracing::trace!(
-                            "Handler '{}' returned a response (status: {}), short-circuiting",
-                            handler.name,
+                            "Handler returned a response (status: {}), short-circuiting",
                             response.status()
                         );
                         response.extensions_mut().insert(trace_id.clone());
-                        // 如果处理器返回响应，直接返回该响应
                         return Ok(response);
                     }
                     Err(e) => {
-                        tracing::warn!("Handler '{}' failed: {}", handler.name, e);
-                        tracing::trace!("Creating error response for handler failure");
-                        // 如果处理器失败，我们需要创建一个错误响应
-                        let error_response = Response::builder()
-                            .status(500)
-                            .header("content-type", "text/plain")
-                            .body(full(format!("Handler processing failed: {}", e)))
-                            .unwrap_or_else(|_| Response::new(full("Internal server error")));
-                        return Ok(error_response.into_response());
+                        tracing::warn!("Handler failed (type={}): {}", handler_kind_label(&handler.handler_type), e);
+                        return Err(handler_rule_error(
+                            handler_kind_label(&handler.handler_type),
+                            &handler.handler_type,
+                            e,
+                        ));
                     }
                 }
             }
 
             tracing::trace!("All handlers executed successfully, proceeding with modified request");
-            // 所有处理器执行完毕后，继续处理请求
             let mut response = inner.call(current_request).await?;
 
             if !all_handlers.is_empty() {
@@ -201,42 +218,75 @@ where
 
                 for (index, handler) in all_handlers.iter().enumerate() {
                     tracing::trace!(
-                        "Executing response handler {}/{}: '{}' (type: {:?})",
+                        "Executing response handler {}/{}: type={} (raw: {:?})",
                         index + 1,
                         all_handlers.len(),
-                        handler.name,
+                        handler_kind_label(&handler.handler_type),
                         handler.handler_type
                     );
 
                     match &handler.handler_type {
                         HandlerRuleType::ModifyResponse(modify_response_config) => {
-                            tracing::trace!(
-                                "Executing modify response handler for '{}'",
-                                handler.name
-                            );
-                            response = modify_response_config.handle_response(response).await?;
+                            tracing::trace!("Executing modify response handler");
+                            response = modify_response_config
+                                .handle_response(response)
+                                .await
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        handler_kind_label(&handler.handler_type),
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
                         }
                         HandlerRuleType::HtmlScriptInjector(html_script_injector_config) => {
-                            tracing::trace!(
-                                "Executing HTML script injector response handler for '{}'",
-                                handler.name
-                            );
+                            tracing::trace!("Executing HTML script injector response handler");
                             response = html_script_injector_config
                                 .handle_response(response)
-                                .await?;
+                                .await
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        handler_kind_label(&handler.handler_type),
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
                         }
                         HandlerRuleType::Delay(delay_config) => {
                             tracing::trace!(
-                                "Executing delay response handler for '{}' (type: {:?})",
-                                handler.name,
+                                "Executing delay response handler (type: {:?})",
                                 delay_config.delay_type
                             );
-                            response = delay_config.handle_response(response).await?;
+                            response = delay_config
+                                .handle_response(response)
+                                .await
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        handler_kind_label(&handler.handler_type),
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
+                        }
+                        HandlerRuleType::Throttle(throttle_config) => {
+                            tracing::trace!(
+                                "Executing throttle response handler (preset: {:?})",
+                                throttle_config.preset
+                            );
+                            response = throttle_config
+                                .handle_response(response)
+                                .await
+                                .map_err(|e| {
+                                    handler_rule_error(
+                                        handler_kind_label(&handler.handler_type),
+                                        &handler.handler_type,
+                                        e,
+                                    )
+                                })?;
                         }
                         _ => {
                             tracing::trace!(
-                                "Handler type '{}' does not support response processing",
-                                handler.name
+                                "Handler type does not support response processing"
                             );
                             continue;
                         }
@@ -244,7 +294,6 @@ where
                 }
             }
 
-            // 确保响应包含 trace_id
             response.extensions_mut().insert(trace_id.clone());
 
             Ok(response)
