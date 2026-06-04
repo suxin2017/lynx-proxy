@@ -20,6 +20,7 @@ use axum::response::Response;
 use axum::routing::get;
 use file_service::get_file;
 use http::Method;
+use http::header::HeaderValue;
 use tower::ServiceExt;
 pub mod api;
 pub mod auth;
@@ -29,9 +30,37 @@ pub mod utils;
 
 pub use auth::AuthConfig;
 pub use auth_extensions::AuthConfigExtensionsExt;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
+#[cfg(debug_assertions)]
+use tower_http::cors::Any;
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/api";
+
+/// Permissive CORS only in debug builds (local dev). Release builds restrict to own origins.
+fn cors_layer(access_addr_list: &[SocketAddr]) -> CorsLayer {
+    let base = CorsLayer::new()
+        .allow_methods([Method::GET, Method::PUT, Method::POST])
+        .allow_headers([http::header::AUTHORIZATION, http::header::CONTENT_TYPE]);
+
+    #[cfg(debug_assertions)]
+    {
+        return base.allow_origin(Any);
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        let origins = access_addr_list
+            .iter()
+            .filter_map(|addr| HeaderValue::from_str(&format!("http://{addr}")).ok())
+            .collect::<Vec<_>>();
+
+        if origins.is_empty() {
+            base.allow_origin(AllowOrigin::predicate(|_, _| false))
+        } else {
+            base.allow_origin(AllowOrigin::list(origins))
+        }
+    }
+}
 
 pub fn is_self_service(req: &Req) -> bool {
     let access_addr_list = req.extensions().get::<Arc<Vec<SocketAddr>>>();
@@ -108,10 +137,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         }
     }
 
-    let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::PUT, Method::POST])
-        .allow_origin(Any)
-        .allow_headers([http::header::AUTHORIZATION, http::header::CONTENT_TYPE]);
+    let cors = cors_layer(&state.access_addr_list);
 
     let api_router = Router::new()
         .route("/health", get(get_health))
