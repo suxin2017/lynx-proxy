@@ -30,19 +30,98 @@ English | [简体中文](README.zh-CN.md)
 
 ### Rules
 
-Match traffic with simple patterns (glob, regex, host, path, method) or compound DSL (`AND`, `OR`, `NOR`), then apply actions:
+Each rule has a **match expression** (`matchExpr`), one or more **actions** (handlers), plus `priority` and `enabled`. The network panel **DSL filter** uses the same syntax as `matchExpr`; it only filters the UI list and does not rewrite traffic.
 
-| Action | Description |
-|--------|-------------|
-| Modify request / response | Headers, body, method, URL, status |
-| Block | Return a custom status |
-| Delay | Simulate slow upstream |
-| Throttle | Network presets (3G, offline, custom) |
-| Proxy forward | Rewrite upstream target |
-| Local file | Serve a local file instead |
-| HTML script injector | Inject scripts into HTML responses |
+**How matching runs**
 
-Right-click any request to add Focus/Ignore rules or copy as cURL.
+- Every **enabled** rule whose `matchExpr` matches the request is included (not first-match-only).
+- Handlers from all matching rules are merged and run in **`executionOrder`** ascending (lower runs first).
+- **Block** and **Local file** can return a response during the request phase and skip the upstream call.
+- After the upstream response, **Modify response**, **HTML script injector**, **Delay** (`afterRequest` / `both`), and **Throttle** run again on the response body/stream.
+
+```mermaid
+flowchart LR
+  req[IncomingRequest] --> match[Eval matchExpr on RequestFacts]
+  match --> merge[Merge handlers from all matching rules]
+  merge --> sort[Sort by executionOrder]
+  sort --> reqHandlers[Request-phase handlers]
+  reqHandlers -->|short-circuit| resp[Return synthetic response]
+  reqHandlers -->|continue| upstream[Upstream fetch]
+  upstream --> resHandlers[Response-phase handlers]
+```
+
+**Focus / Ignore** (toolbar or context menu) uses domain capture filters in Settings, not `matchExpr`. You can still right-click a request to copy cURL or create a rule from its URL.
+
+#### matchExpr DSL
+
+Expressions combine URL-like fragments with optional curl-style flags. Logical operators `AND`, `OR`, `NOT` (and `and` / `or` / `not`) and parentheses are supported. Line comments start with `#`.
+
+| Form | Example | Meaning |
+|------|---------|---------|
+| Host | `example.com` | Host match (includes subdomains, e.g. `api.example.com`) |
+| Host + port | `example.com:8080` | Host and port |
+| Path | `/api/v1` | Path prefix (`/api` also matches `/api/foo`) |
+| Glob | `/api/*/v1`, `/api/**/track` | Single-segment `*` or multi-segment `**` |
+| Full URL | `https://example.com/api?a=1` | Scheme, host, port, path, query |
+| Query only | `?user_id=123` | Query parameter **subset** match (extra params allowed) |
+| Logic | `A AND B`, `NOT A`, `(A OR B)` | Combine sub-expressions |
+
+**curl-style flags** (after a URL fragment; combined with AND):
+
+| Flag | Role |
+|------|------|
+| `-X` / `--request` | HTTP method, e.g. `-X POST` |
+| `-H` / `--header` | Header equality, e.g. `-H Authorization=Bearer` (name case-insensitive) |
+| `-q` / `--query` | Query substring, e.g. `-q foo=bar` |
+
+Examples:
+
+```
+example.com AND /api/v1
+https://example.com/health
+httpbin.org AND -X POST
+(example.com OR /api/) AND NOT https://example.com/health
+NOT */rest/* AND -X POST
+?operationName=GetFeed
+```
+
+**Matching notes**
+
+- Path-only expressions do not check host; query-only expressions do not check path.
+- Query embedded in a URL (`?a=1&b=2`) uses subset semantics; the live request may include more parameters.
+- Path matching ignores the query string when the expression has no `?…` clause.
+- For **origin-form** requests (path-only URI), host and port come from the **Host** header.
+
+#### Actions
+
+A rule may attach multiple actions; use `executionOrder` to sequence them. Seed demo rules with `task readme-demo` (see [`scripts/fixtures/demo-rules.json`](scripts/fixtures/demo-rules.json)).
+
+| Action | Use case | Main fields |
+|--------|----------|-------------|
+| Modify request | Change request before forward | `modifyHeaders`, `modifyMethod`, `modifyUrl`, `modifyBody` |
+| Modify response | Change response headers/body/status | `modifyHeaders`, `modifyBody`, `modifyStatusCode` |
+| Block | Return an error without upstream | `statusCode`, `reason` |
+| Delay | Simulate latency | `delayMs`, `varianceMs`, `delayType` (`beforeRequest` / `afterRequest` / `both`) |
+| Throttle | Bandwidth/latency preset | `preset` (`Fast3G` / `Slow3G` / `Offline` / `Custom`), optional `downloadKbps`, `uploadKbps`, `latencyMs` |
+| Proxy forward | Rewrite upstream target | `targetScheme`, `targetAuthority`, `targetPath` |
+| Local file | Respond from disk | `filePath`, `contentType`, `statusCode` |
+| HTML script injector | Inject into HTML responses | `content`, `injectionPosition` (`head` / `body-start` / `body-end`) |
+
+Example rule (modify request headers when POSTing to httpbin):
+
+```json
+{
+  "name": "Inject demo header",
+  "enabled": true,
+  "priority": 50,
+  "capture": { "matchExpr": "httpbin.org AND -X POST" },
+  "handlers": [{
+    "handlerType": { "type": "modifyRequest", "modifyHeaders": { "X-Lynx-Demo": "readme" } },
+    "executionOrder": 10,
+    "enabled": true
+  }]
+}
+```
 
 ### Compose (API debug)
 
