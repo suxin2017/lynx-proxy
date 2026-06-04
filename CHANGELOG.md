@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-06-04
+
+### 🚀 Features
+
+- Migrate to Vue UI, enhance DSL editor, and refine request handling ([#62](https://github.com/suxin2017/lynx-proxy/pull/62))
+
 ## [0.4.8] - 2025-08-03
 
 ### 🚀 Features
