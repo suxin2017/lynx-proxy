@@ -90,6 +90,7 @@ socket2 = "0.5"
 jsonwebtoken = "9"
 sha2 = "0.10"
 subtle = "2"
+zip = "2.2.2"
 
 
 [dev-dependencies]

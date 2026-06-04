@@ -9,7 +9,9 @@ use crate::layers::message_package_layer::MessageEventChannel;
 use crate::layers::message_package_layer::MessageEventLayerExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreExtensionsExt;
+use crate::adb::AdbManager;
 use crate::proxy_server::StaticDir;
+use crate::proxy_server::listen_info::ProxyListenInfoExtensionsExt;
 use crate::proxy_server::server_config::ProxyServerConfig;
 use crate::proxy_server::server_config::ProxyServerConfigExtensionsExt;
 use anyhow::Result;
@@ -105,14 +107,22 @@ pub struct RouteState {
     pub client: Arc<ReqwestClient>,
     pub message_event_channel: Arc<MessageEventChannel>,
     pub auth: Arc<AuthConfig>,
+    pub adb: Arc<AdbManager>,
 }
 
 pub async fn self_service_router(req: Req) -> Result<Response> {
     let static_dir = req.extensions().get::<Option<Arc<StaticDir>>>();
     let auth = req.extensions().get_auth_config();
 
+    let store = req.extensions().get_data_store();
+    let listen_info = req.extensions().get_proxy_listen_info();
+    let adb = Arc::new(AdbManager::new(
+        store.root().to_path_buf(),
+        listen_info.local_only,
+    ));
+
     let state = RouteState {
-        store: req.extensions().get_data_store(),
+        store,
         net_request_cache: req.extensions().get_message_event_store(),
         proxy_config: req.extensions().get_proxy_server_config(),
         access_addr_list: req
@@ -124,6 +134,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         client: req.extensions().get_reqwest_client(),
         message_event_channel: req.extensions().get_message_event_cannel(),
         auth: auth.clone(),
+        adb,
     };
 
     let method = req.method().clone();

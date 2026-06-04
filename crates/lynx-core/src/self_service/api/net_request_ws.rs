@@ -21,7 +21,9 @@ use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
 use crate::self_service::api::net_request_service;
 use crate::self_service::api::rules_service;
 use crate::self_service::api::capture_rules_service;
+use crate::self_service::api::adb_service;
 use crate::self_service::api::compose_request_service;
+use crate::adb::EnableProxyPayload;
 use lynx_storage::dao::request_processing_dao::RequestRule;
 use lynx_storage::dao::capture_rules_dao::CaptureRule;
 use crate::self_service::auth::{authorize_ws, unauthorized_response};
@@ -1338,6 +1340,209 @@ async fn handle_client_request(
                 ),
             )
             .await;
+        }
+        op::DEVICE_ADB_STATUS_GET => {
+            let payload = adb_service::status(state).await;
+            send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
+        }
+        op::DEVICE_ADB_INSTALL => {
+            match adb_service::install(state).await {
+                Ok(payload) => {
+                    send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
+                }
+                Err(message) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "ADB_INSTALL_FAILED",
+                            &message,
+                            None,
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::DEVICE_ADB_INSTALL_PROGRESS_GET => {
+            let payload = adb_service::install_progress(state).await;
+            send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
+        }
+        op::DEVICE_ADB_DEVICES_LIST => {
+            match adb_service::list_devices(state).await {
+                Ok(payload) => {
+                    send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
+                }
+                Err(message) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "ADB_ERROR",
+                            &message,
+                            None,
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::DEVICE_ADB_PROXY_STATE_GET => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing serial",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            let serial = payload
+                .get("serial")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            if serial.is_empty() {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "serial is required",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            }
+            match adb_service::proxy_state(state, &serial).await {
+                Ok(payload) => {
+                    send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
+                }
+                Err(message) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "ADB_ERROR",
+                            &message,
+                            None,
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::DEVICE_ADB_PROXY_ENABLE => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing proxy enable payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            match serde_json::from_value::<EnableProxyPayload>(payload) {
+                Ok(enable_payload) => match adb_service::enable_proxy(state, enable_payload).await {
+                    Ok(result) => {
+                        send_frame(socket_tx, response_frame(frame.id, frame.op, result)).await;
+                    }
+                    Err(message) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "ADB_ERROR",
+                                &message,
+                                None,
+                            ),
+                        )
+                        .await;
+                    }
+                },
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "INVALID_PAYLOAD",
+                            "Failed to parse proxy enable payload",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::DEVICE_ADB_PROXY_DISABLE => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing serial",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            let serial = payload
+                .get("serial")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            if serial.is_empty() {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "serial is required",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            }
+            match adb_service::disable_proxy(state, &serial).await {
+                Ok(result) => {
+                    send_frame(socket_tx, response_frame(frame.id, frame.op, result)).await;
+                }
+                Err(message) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "ADB_ERROR",
+                            &message,
+                            None,
+                        ),
+                    )
+                    .await;
+                }
+            }
         }
         _ => {
             // covered by pre-validation above

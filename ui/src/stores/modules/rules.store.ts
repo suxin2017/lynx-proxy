@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { RuleDraft, RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { createAction, createRuleDraft } from '@/components/ui/rule-workbench'
-type PrimaryTabKey = 'rules' | 'assets' | 'compose'
+type PrimaryTabKey = 'rules' | 'assets' | 'compose' | 'device'
 type SecondaryPaneKey = 'list' | 'editor'
 import {
   cloneDraft,
@@ -71,6 +71,12 @@ export const useRulesStore = defineStore('rules', () => {
   }
 
   async function openDrawer() {
+    open.value = true
+    await refreshRules()
+  }
+
+  async function openAndroidDrawer() {
+    activePrimaryTab.value = 'device'
     open.value = true
     await refreshRules()
   }
@@ -444,6 +450,7 @@ export const useRulesStore = defineStore('rules', () => {
     error,
     isDirty,
     openDrawer,
+    openAndroidDrawer,
     closeDrawer,
     refreshRules,
     editRule,

@@ -39,6 +39,13 @@ pub mod op {
     pub const CAPTURE_RULES_IGNORE_DELETE: &str = "capture.rules.ignore.delete";
     pub const CAPTURE_RULES_FOCUS_ENABLED_SET: &str = "capture.rules.focus.enabled.set";
     pub const CAPTURE_RULES_IGNORE_ENABLED_SET: &str = "capture.rules.ignore.enabled.set";
+    pub const DEVICE_ADB_STATUS_GET: &str = "device.adb.status.get";
+    pub const DEVICE_ADB_INSTALL: &str = "device.adb.install";
+    pub const DEVICE_ADB_INSTALL_PROGRESS_GET: &str = "device.adb.install.progress.get";
+    pub const DEVICE_ADB_DEVICES_LIST: &str = "device.adb.devices.list";
+    pub const DEVICE_ADB_PROXY_STATE_GET: &str = "device.adb.proxy.state.get";
+    pub const DEVICE_ADB_PROXY_ENABLE: &str = "device.adb.proxy.enable";
+    pub const DEVICE_ADB_PROXY_DISABLE: &str = "device.adb.proxy.disable";
     pub const CAPTURE_STATUS_CHANGED: &str = "capture.status.changed";
     pub const REQUEST_START: &str = "request.start";
     pub const REQUEST_BODY: &str = "request.body";
@@ -79,7 +86,14 @@ pub mod op {
             "capture.rules.focus.delete" |
             "capture.rules.ignore.delete" |
             "capture.rules.focus.enabled.set" |
-            "capture.rules.ignore.enabled.set"
+            "capture.rules.ignore.enabled.set" |
+            "device.adb.status.get" |
+            "device.adb.install" |
+            "device.adb.install.progress.get" |
+            "device.adb.devices.list" |
+            "device.adb.proxy.state.get" |
+            "device.adb.proxy.enable" |
+            "device.adb.proxy.disable"
         )
     }
 

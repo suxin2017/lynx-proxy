@@ -57,6 +57,13 @@ x-lynx-ops:
     - capture.rules.ignore.delete
     - capture.rules.focus.enabled.set
     - capture.rules.ignore.enabled.set
+    - device.adb.status.get
+    - device.adb.install
+    - device.adb.install.progress.get
+    - device.adb.devices.list
+    - device.adb.proxy.state.get
+    - device.adb.proxy.enable
+    - device.adb.proxy.disable
   event:
     - capture.status.changed
     - request.start

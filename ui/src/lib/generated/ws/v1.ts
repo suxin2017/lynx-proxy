@@ -43,6 +43,13 @@ export const WsOp = {
   CaptureRulesIgnoreDelete: 'capture.rules.ignore.delete',
   CaptureRulesFocusEnabledSet: 'capture.rules.focus.enabled.set',
   CaptureRulesIgnoreEnabledSet: 'capture.rules.ignore.enabled.set',
+  DeviceAdbStatusGet: 'device.adb.status.get',
+  DeviceAdbInstall: 'device.adb.install',
+  DeviceAdbInstallProgressGet: 'device.adb.install.progress.get',
+  DeviceAdbDevicesList: 'device.adb.devices.list',
+  DeviceAdbProxyStateGet: 'device.adb.proxy.state.get',
+  DeviceAdbProxyEnable: 'device.adb.proxy.enable',
+  DeviceAdbProxyDisable: 'device.adb.proxy.disable',
   CaptureStatusChanged: 'capture.status.changed',
   RequestStart: 'request.start',
   RequestBody: 'request.body',
@@ -83,6 +90,13 @@ export type WsRequestOp =
   | 'capture.rules.ignore.delete'
   | 'capture.rules.focus.enabled.set'
   | 'capture.rules.ignore.enabled.set'
+  | 'device.adb.status.get'
+  | 'device.adb.install'
+  | 'device.adb.install.progress.get'
+  | 'device.adb.devices.list'
+  | 'device.adb.proxy.state.get'
+  | 'device.adb.proxy.enable'
+  | 'device.adb.proxy.disable'
 
 export type WsEventOp =
   | 'capture.status.changed'

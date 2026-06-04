@@ -1,3 +1,4 @@
+pub mod adb;
 pub mod client;
 pub mod common;
 pub mod config;

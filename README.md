@@ -235,6 +235,15 @@ task build-ui && cargo install --path crates/lynx-cli
 
 4. Install the Lynx CA certificate from **Settings** when you need HTTPS decryption. For mobile Wi‑Fi proxy, use your computer's LAN IP (not `127.0.0.1`).
 
+### Android one-click proxy (ADB)
+
+In the web UI, open **Rules drawer → Android** to lazily install platform-tools (or use `adb` from `PATH`), list devices, and enable/disable the system HTTP proxy via ADB:
+
+- **Same WiFi (LAN)** — proxy host is your computer's LAN IP and Lynx port (not available with `--local-only`).
+- **USB (`adb reverse`)** — sets `127.0.0.1:<port>` on the device after port forwarding.
+
+HTTPS still requires installing the Lynx root CA from **Settings**. Disabling Lynx does not clear the phone proxy — use **Disable proxy** in the Android panel before exit.
+
 ### Common commands
 
 ```bash

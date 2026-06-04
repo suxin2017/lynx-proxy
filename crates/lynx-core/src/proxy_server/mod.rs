@@ -33,8 +33,11 @@ use crate::layers::req_extension_layer::RequestExtensionLayer;
 use crate::layers::trace_id_layer::service::{TraceIdExt, set_new_trace_id};
 use crate::self_service::AuthConfig;
 
+pub mod listen_info;
 pub mod server_ca_manage;
 pub mod server_config;
+
+pub use listen_info::ProxyListenInfo;
 
 use server_ca_manage::ServerCaManager;
 use server_config::ProxyServerConfig;
@@ -239,6 +242,12 @@ impl ProxyServer {
         let tls_acceptor = TlsAcceptor::from(self_ca);
 
         let data_store = self.data_store.clone();
+        let local_only = self.local_only;
+        let listen_port = listener.local_addr().map(|a| a.port()).unwrap_or(7788);
+        let listen_info = Arc::new(ProxyListenInfo {
+            port: listen_port,
+            local_only,
+        });
 
         tokio::spawn(async move {
             loop {
@@ -290,6 +299,7 @@ impl ProxyServer {
                 let access_addr_list = access_addr_list.clone();
                 let static_dir = static_dir.clone();
                 let auth_config = auth_config.clone();
+                let listen_info = listen_info.clone();
                 tokio::task::spawn(async move {
                     let svc = service_fn(gateway_service_fn);
                     let svc = ServiceBuilder::new()
@@ -303,6 +313,7 @@ impl ProxyServer {
                         .layer(RequestExtensionLayer::new(access_addr_list))
                         .layer(RequestExtensionLayer::new(static_dir))
                         .layer(RequestExtensionLayer::new(auth_config))
+                        .layer(RequestExtensionLayer::new(listen_info))
                         .layer_fn(|inner| RequestMessageEventService { service: inner })
                         .layer(LogLayer)
                         .layer(ErrorHandlerLayer)

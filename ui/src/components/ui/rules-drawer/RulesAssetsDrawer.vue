@@ -14,8 +14,11 @@ import { ComposeWorkbench } from '@/components/ui/compose'
 import DrawerTabs from './DrawerTabs.vue'
 import RulesListView from './RulesListView.vue'
 import RuleEditorToolbar from './RuleEditorToolbar.vue'
+import { AndroidDevicePanel, createWsAdbController } from '@/components/ui/android-device'
+import type { AndroidDevicePreview } from '@/components/ui/android-device'
+import { useWsConnectionStore } from '@/stores/modules/ws-connection.store'
 
-export type PrimaryTabKey = 'rules' | 'assets' | 'compose'
+export type PrimaryTabKey = 'rules' | 'assets' | 'compose' | 'device'
 export type SecondaryPaneKey = 'list' | 'editor'
 
 const props = withDefaults(defineProps<{
@@ -30,6 +33,8 @@ const props = withDefaults(defineProps<{
   dirty?: boolean
   loading?: boolean
   saving?: boolean
+  /** Storybook: static Android panel without WebSocket */
+  androidPreview?: AndroidDevicePreview
   class?: HTMLAttributes['class']
 }>(), {
   activePrimaryTab: 'rules',
@@ -59,7 +64,13 @@ const emit = defineEmits<{
 const tabs = computed(() => ([
   { key: 'rules', label: '规则' },
   { key: 'compose', label: 'Compose' },
+  { key: 'device', label: 'Android' },
 ]))
+
+const wsConnection = useWsConnectionStore()
+const adbController = computed(() => (
+  props.androidPreview ? undefined : createWsAdbController(wsConnection)
+))
 
 const rulesStore = useRulesStore()
 const composeStore = useComposeStore()
@@ -226,9 +237,20 @@ function onRuleDraftUpdate(next: RuleDraft) {
 
         <div
           class="min-h-0 flex-1 overflow-x-hidden overflow-y-hidden"
-          :class="isDetailPane ? 'px-3 pb-3 pt-0' : activePrimaryTabDisplay === 'compose' ? 'px-3 pb-3 pt-2' : 'p-3'"
+          :class="isDetailPane ? 'px-3 pb-3 pt-0' : (activePrimaryTabDisplay === 'compose' || activePrimaryTabDisplay === 'device') ? 'px-3 pb-3 pt-2' : 'p-3'"
         >
-          <div v-if="activePrimaryTabDisplay === 'compose'" class="flex h-full min-h-0 flex-col">
+          <div
+            v-if="activePrimaryTabDisplay === 'device'"
+            class="flex h-full min-h-0 flex-col overflow-hidden"
+          >
+            <AndroidDevicePanel
+              :preview="props.androidPreview"
+              :controller="adbController"
+              class="h-full"
+            />
+          </div>
+
+          <div v-else-if="activePrimaryTabDisplay === 'compose'" class="flex h-full min-h-0 flex-col">
             <ComposeWorkbench
               v-model:draft="composeStore.draft"
               :response="composeStore.response"
@@ -242,7 +264,7 @@ function onRuleDraftUpdate(next: RuleDraft) {
           </div>
 
           <!-- Rules -->
-          <div v-else class="flex h-full min-h-0 flex-col">
+          <div v-else-if="activePrimaryTabDisplay === 'rules'" class="flex h-full min-h-0 flex-col">
             <div v-if="rulesPaneDisplay === 'list'" class="min-h-0 flex-1">
               <RulesListView
                 :rules="props.rules"

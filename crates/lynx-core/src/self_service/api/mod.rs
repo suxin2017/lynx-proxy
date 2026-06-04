@@ -1,3 +1,4 @@
+pub mod adb_service;
 pub mod auth;
 pub mod base_info;
 pub mod certificate;

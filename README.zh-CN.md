@@ -235,6 +235,19 @@ task build-ui && cargo install --path crates/lynx-cli
 
 4. 需要解密 HTTPS 时，在 **设置** 中安装 Lynx 根证书（手机 Wi‑Fi 代理请填电脑的局域网 IP，勿填 `127.0.0.1`）。
 
+### Android 一键代理（ADB）
+
+在 Web 界面打开 **规则抽屉 → Android** 标签页，可：
+
+1. **首次使用**：懒下载 Google platform-tools（存入 Lynx 数据目录）；若系统 `PATH` 中已有 `adb` 则直接使用。
+2. **列出设备**：USB 调试或已配对的无线调试；在列表中选择设备。
+3. **开启/关闭代理**（通过 `settings put global http_proxy`，无需 root）：
+   - **同一 WiFi**：手机与电脑同网段，代理指向电脑的局域网 IP 与 Lynx 端口（默认 7788）。Lynx 若以 `--local-only` 启动则不可用，请改用 USB 模式或去掉该参数。
+   - **USB（adb reverse）**：执行 `adb reverse` 后，手机代理填 `127.0.0.1:7788`，不依赖同一 WiFi。
+4. **HTTPS**：仍需在 **设置** 中下载并安装 Lynx 根证书到手机。
+
+关闭 Lynx **不会**自动清除手机代理；离开前请在 Android 面板点击「关闭代理」。
+
 ### 常用命令
 
 ```bash
