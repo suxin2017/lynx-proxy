@@ -31,7 +31,7 @@ impl Debug for MessageEventChannel {
 
 impl MessageEventChannel {
     pub fn new() -> Self {
-        let (broadcast_tx, _broadcast_rx) = broadcast::channel::<MessageEvent>(1024);
+        let (broadcast_tx, _broadcast_rx) = broadcast::channel::<MessageEvent>(4096);
 
         Self {
             broadcast_sender: broadcast_tx,

@@ -155,7 +155,7 @@ task build-ui && cargo install --path crates/lynx-cli
 
 3. Open the Web UI at **http://127.0.0.1:7788** and enable capture.
 
-4. Install the Lynx CA certificate from **Settings** when you need HTTPS decryption.
+4. Install the Lynx CA certificate from **Settings** when you need HTTPS decryption. For mobile Wi‑Fi proxy, use your computer's LAN IP (not `127.0.0.1`).
 
 ### Common commands
 

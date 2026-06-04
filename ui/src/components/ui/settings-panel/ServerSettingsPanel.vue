@@ -301,7 +301,8 @@ onMounted(() => {
         <p
           :class="cn(settingsValueIndentClass, 'text-muted-foreground leading-relaxed')"
         >
-          安装为受信任根证书后即可解密 HTTPS。
+          安装为受信任根证书后即可解密 HTTPS。移动端需在 Wi‑Fi 代理中填写上方局域网地址（勿填
+          127.0.0.1），并在本机安装用户 CA；若终端出现 CertificateUnknown，说明手机尚未信任该证书。
         </p>
       </section>
     </div>

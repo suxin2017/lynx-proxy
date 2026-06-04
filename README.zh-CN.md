@@ -155,7 +155,7 @@ task build-ui && cargo install --path crates/lynx-cli
 
 3. 浏览器打开 **http://127.0.0.1:7788**，进入 Web 界面并开启录制。
 
-4. 需要解密 HTTPS 时，在 **设置** 中安装 Lynx 根证书。
+4. 需要解密 HTTPS 时，在 **设置** 中安装 Lynx 根证书（手机 Wi‑Fi 代理请填电脑的局域网 IP，勿填 `127.0.0.1`）。
 
 ### 常用命令
 

@@ -79,6 +79,13 @@ pub struct ProxyServer {
 
     #[builder(setter(skip))]
     pub auth_config: Arc<AuthConfig>,
+
+    /// Shared across all listen addresses so UI WebSocket and proxied traffic see the same events.
+    #[builder(setter(skip))]
+    pub message_event_channel: Arc<MessageEventChannel>,
+
+    #[builder(setter(skip))]
+    pub message_event_cache: Arc<MessageEventCache>,
 }
 
 impl ProxyServerBuilder {
@@ -126,6 +133,9 @@ impl ProxyServerBuilder {
             self.auth_pass.clone().flatten(),
         )?;
 
+        let message_event_channel = Arc::new(MessageEventChannel::new());
+        let message_event_cache = Arc::new(MessageEventCache::default());
+
         Ok(ProxyServer {
             port: self.port.flatten(),
             access_addr_list,
@@ -143,6 +153,8 @@ impl ProxyServerBuilder {
             auth_user: self.auth_user.clone().flatten(),
             auth_pass: self.auth_pass.clone().flatten(),
             auth_config,
+            message_event_channel,
+            message_event_cache,
         })
     }
 }
@@ -177,8 +189,18 @@ impl ClientAddrRequestExt for Extensions {
 }
 
 impl ProxyServer {
+    pub fn message_event_channel(&self) -> Arc<MessageEventChannel> {
+        self.message_event_channel.clone()
+    }
+
+    pub fn message_event_cache(&self) -> Arc<MessageEventCache> {
+        self.message_event_cache.clone()
+    }
+
     #[instrument(skip(self))]
     pub async fn run(&mut self) -> Result<()> {
+        self.message_event_channel
+            .setup_short_poll(self.message_event_cache.clone());
         self.bind_tcp_listener_to_hyper().await?;
         Ok(())
     }
@@ -207,9 +229,8 @@ impl ProxyServer {
         let client_custom_certs = self.custom_certs.clone();
         let server_ca_manager = self.server_ca_manager.clone();
         let server_config = self.config.clone();
-        let message_event_store = Arc::new(MessageEventCache::default());
-        let message_event_cannel = MessageEventChannel::new();
-        let message_event_cannel = Arc::new(message_event_cannel);
+        let message_event_store = self.message_event_cache.clone();
+        let message_event_cannel = self.message_event_channel.clone();
         let static_dir = self.static_dir.clone();
         let auth_config = self.auth_config.clone();
         let addr_str = listener.local_addr()?.to_string();
