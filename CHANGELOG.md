@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-06-04
+
+### 🐛 Bug Fixes
+
+- Use Vue hash routing so refreshing the Web UI (e.g. `#/network`) no longer hits server `not found`
+
 ## [0.5.0] - 2026-06-04
 
 ### 🚀 Features
