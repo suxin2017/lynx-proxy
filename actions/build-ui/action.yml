@@ -16,9 +16,7 @@ runs:
     - name: Cache npm store
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.npm
-          ui/node_modules
+        path: ~/.npm
         key: ${{ runner.os }}-npm-${{ hashFiles('ui/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-npm-
@@ -26,7 +24,7 @@ runs:
     - name: Install Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: 22
         cache: "npm"
         cache-dependency-path: ui/package-lock.json
 
