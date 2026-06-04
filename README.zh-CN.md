@@ -207,12 +207,11 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-pro
 
 | 平台 | 压缩包 |
 |------|--------|
-| macOS（Intel） | `lynx-cli-x86_64-apple-darwin.tar.xz` |
 | macOS（Apple Silicon） | `lynx-cli-aarch64-apple-darwin.tar.xz` |
 | Linux（x64） | `lynx-cli-x86_64-unknown-linux-gnu.tar.xz` |
 | Windows（x64） | `lynx-cli-x86_64-pc-windows-msvc.zip` |
 
-ARM Linux 暂无官方预编译包 — 请从源码构建（见「开发」）。
+不再构建 Intel macOS 包（避免 CI 在 `macos-13` 上长时间排队）；Intel Mac 可用 Rosetta 运行 Apple Silicon 包，或从源码构建。ARM Linux 暂无官方预编译包 — 请从源码构建（见「开发」）。
 
 **从源码构建**
 
