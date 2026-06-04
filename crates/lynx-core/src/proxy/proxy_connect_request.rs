@@ -8,7 +8,7 @@ use hyper_util::{
     rt::{TokioExecutor, TokioIo},
     service::TowerToHyperService,
 };
-use lynx_db::dao::https_capture_dao::HttpsCaptureDao;
+use lynx_storage::dao::https_capture_dao::HttpsCaptureDao;
 use tokio::spawn;
 use tokio_rustls::TlsAcceptor;
 use tower::{ServiceBuilder, service_fn, util::Oneshot};
@@ -20,7 +20,7 @@ use crate::{
     layers::{
         connect_req_patch_layer::service::ConnectReqPatchLayer,
         error_handle_layer::ErrorHandlerLayer,
-        extend_extension_layer::{DbExtensionsExt, ExtendExtensionsLayer, clone_extensions},
+        extend_extension_layer::{DataStoreExtensionsExt, ExtendExtensionsLayer, clone_extensions},
         log_layer::LogLayer,
         message_package_layer::{MessageEventLayerExt, RequestMessageEventService},
         request_processing_layer::RequestProcessingService,
@@ -41,7 +41,7 @@ pub fn is_connect_req<Body>(req: &Request<Body>) -> bool {
 
 #[instrument(skip_all)]
 async fn proxy_connect_request_future(req: Req) -> Result<()> {
-    let db = req.extensions().get_db();
+    let store = req.extensions().get_data_store();
     let event_cannel = req.extensions().get_message_event_cannel();
     let trace_id = req.extensions().get_trace_id();
 
@@ -99,7 +99,7 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
                 "Handling HTTPS connect request for authority: {}",
                 authority
             );
-            if !should_capture_https(db, &authority)
+            if !should_capture_https(store, &authority)
                 .await
                 .map_err(|e| anyhow!(e).context("Failed to check if should capture https"))?
             {
@@ -162,13 +162,13 @@ async fn proxy_connect_request_future(req: Req) -> Result<()> {
 /// * `Ok(false)` - If HTTPS capture is disabled or authority is excluded/not included
 /// * `Err(_)` - If there is an error retrieving filter configuration
 pub async fn should_capture_https(
-    db: Arc<sea_orm::DatabaseConnection>,
+    store: Arc<lynx_storage::DataStore>,
     authority: &http::uri::Authority,
 ) -> Result<bool> {
     use glob_match::glob_match;
     let host = authority.host();
     let port = authority.port_u16().unwrap_or(443);
-    let filter = HttpsCaptureDao::new(db)
+    let filter = HttpsCaptureDao::new(store)
         .get_capture_filter()
         .await
         .map_err(|e| anyhow!(e).context("Failed to get capture filter"))?;
@@ -212,3 +212,4 @@ pub async fn proxy_connect_request(req: Req) -> Result<Response> {
 
     Ok(Response::new(Body::empty()))
 }
+

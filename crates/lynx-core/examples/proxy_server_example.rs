@@ -6,7 +6,6 @@ use lynx_core::proxy_server::{
     server_config::ProxyServerConfigBuilder,
 };
 use lynx_log::{FileAppenderConfig, LynxLogBuilder};
-use sea_orm::ConnectOptions;
 use tokio::signal;
 
 #[tokio::main]
@@ -24,7 +23,6 @@ async fn main() -> Result<()> {
             file_path: fixed_temp_dir_path.join("lynx-server.log"),
             dir_path: fixed_temp_dir_path.clone(),
         }))
-        // .with_otel(true)
         .build()?
         .init()
         .await?;
@@ -44,11 +42,7 @@ async fn main() -> Result<()> {
         .config(Arc::new(server_config))
         .port(7788)
         .server_ca_manager(Arc::new(server_ca_manager))
-        .db_config(ConnectOptions::new(format!(
-            "sqlite://{}/lynx.db?mode=rwc",
-            fixed_temp_dir_path.to_string_lossy()
-        )))
-        // .local_only(false)
+        .data_dir(fixed_temp_dir_path.join("db"))
         .build()
         .await?;
     proxy_server.run().await?;

@@ -26,12 +26,13 @@ pub struct BuildProxyRequestService<S> {
 
 impl<S> Service<Req> for BuildProxyRequestService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response>
         + Clone
         + Send
         + Sync
         + 'static,
     S::Future: Send,
+    S::Error: From<anyhow::Error>,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -45,14 +46,18 @@ where
         let mut s = self.service.clone();
         Box::pin(async move {
             let trace_id = req.extensions().get_trace_id();
-            let mut extensions = clone_extensions(req.extensions())?;
+            let mut extensions = clone_extensions(req.extensions()).map_err(S::Error::from)?;
 
             extensions.insert(trace_id);
             let (parts, body) = req.into_parts();
 
             let uri = {
-                let url = Url::from_str(parts.uri.to_string().as_str())?;
-                Uri::from_str(url.as_str())?
+                let url = Url::from_str(parts.uri.to_string().as_str()).map_err(|e| {
+                    S::Error::from(anyhow::anyhow!("failed to parse request url: {}", e))
+                })?;
+                Uri::from_str(url.as_str()).map_err(|e| {
+                    S::Error::from(anyhow::anyhow!("failed to build proxy uri: {}", e))
+                })?
             };
 
             let mut req_builder = Request::builder().method(parts.method).uri(uri);
@@ -63,7 +68,9 @@ where
                 }
                 req_builder = req_builder.header(key.clone(), value.clone());
             }
-            let mut proxy_req = req_builder.body(body)?;
+            let mut proxy_req = req_builder
+                .body(body)
+                .map_err(|e| S::Error::from(anyhow::anyhow!(e)))?;
 
             proxy_req.extensions_mut().extend(extensions);
             s.call(proxy_req).await

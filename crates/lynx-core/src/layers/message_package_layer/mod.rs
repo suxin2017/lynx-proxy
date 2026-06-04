@@ -1,4 +1,5 @@
 pub mod channel;
+pub mod capture_gate;
 pub mod compression;
 pub mod event_handler;
 pub mod message_event_data;

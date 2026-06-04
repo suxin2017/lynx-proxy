@@ -1,0 +1,135 @@
+asyncapi: 3.0.0
+info:
+  title: Lynx WebSocket Protocol
+  version: 1.0.0
+  description: WS-only protocol contract owned by backend and consumed by clients.
+defaultContentType: application/json
+servers:
+  local:
+    host: localhost:7788
+    protocol: ws
+channels:
+  net:
+    address: /api/net_request/ws/message-events
+    messages:
+      ClientFrame:
+        $ref: '#/components/messages/ClientFrame'
+      ServerFrame:
+        $ref: '#/components/messages/ServerFrame'
+operations:
+  clientRequest:
+    action: send
+    channel:
+      $ref: '#/channels/net'
+    messages:
+      - $ref: '#/channels/net/messages/ClientFrame'
+  serverPush:
+    action: receive
+    channel:
+      $ref: '#/channels/net'
+    messages:
+      - $ref: '#/channels/net/messages/ServerFrame'
+x-lynx-ops:
+  request:
+    - system.ping
+    - capture.status.get
+    - capture.control.set
+    - request.detail.get
+    - request.stream.subscribe
+    - request.stream.unsubscribe
+    - compose.request.send
+    - settings.general.get
+    - settings.general.set
+    - settings.captureFilter.get
+    - settings.captureFilter.set
+    - settings.certificate.path.get
+    - rules.list.get
+    - rules.get
+    - rules.save.set
+    - rules.enabled.set
+    - rules.delete
+    - rules.templates.get
+    - capture.rules.focus.list.get
+    - capture.rules.ignore.list.get
+    - capture.rules.focus.upsert
+    - capture.rules.ignore.upsert
+    - capture.rules.focus.delete
+    - capture.rules.ignore.delete
+    - capture.rules.focus.enabled.set
+    - capture.rules.ignore.enabled.set
+  event:
+    - capture.status.changed
+    - request.start
+    - request.body
+    - request.end
+    - response.start
+    - response.body
+    - response.end
+    - websocket.message
+    - websocket.error
+    - websocket.end
+    - system.error
+components:
+  messages:
+    ClientFrame:
+      payload:
+        $ref: '#/components/schemas/ClientFrame'
+    ServerFrame:
+      payload:
+        $ref: '#/components/schemas/ServerFrame'
+  schemas:
+    Version:
+      type: string
+      enum: [v1]
+    FrameKind:
+      type: string
+      enum: [request, response, event, error, ping, pong]
+    ErrorPayload:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    ClientFrame:
+      type: object
+      required: [version, kind, id, op, timestamp]
+      properties:
+        version:
+          $ref: '#/components/schemas/Version'
+        kind:
+          $ref: '#/components/schemas/FrameKind'
+        id:
+          type: string
+        op:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        payload:
+          type: object
+          additionalProperties: true
+    ServerFrame:
+      type: object
+      required: [version, kind, id, op, timestamp]
+      properties:
+        version:
+          $ref: '#/components/schemas/Version'
+        kind:
+          $ref: '#/components/schemas/FrameKind'
+        id:
+          type: string
+        op:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+        payload:
+          type: object
+          additionalProperties: true
+        error:
+          $ref: '#/components/schemas/ErrorPayload'

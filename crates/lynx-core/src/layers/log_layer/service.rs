@@ -16,7 +16,7 @@ pub struct LogService<S> {
 
 impl<S> Service<Req> for LogService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response>
         + Clone
         + Send
         + Sync

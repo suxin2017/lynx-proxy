@@ -1,24 +1,45 @@
-use anyhow::Result;
+use http::uri::{Authority, PathAndQuery, Scheme};
 use http::Uri;
-use lynx_db::dao::request_processing_dao::handlers::proxy_forward_handler::ProxyForwardConfig;
+use lynx_storage::dao::request_processing_dao::handlers::proxy_forward_handler::ProxyForwardConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::common::Req;
+use crate::{common::Req, error::{CoreError, CoreResult}};
+
+fn proxy_forward_validation_message(
+    config: &ProxyForwardConfig,
+    detail: impl std::fmt::Display,
+) -> CoreError {
+    CoreError::Validation {
+        message: format!(
+            "Invalid proxy forward target (scheme={:?}, authority={:?}, path={:?}): {detail}",
+            config.target_scheme, config.target_authority, config.target_path
+        ),
+    }
+}
 
 #[async_trait::async_trait]
 impl HandlerTrait for ProxyForwardConfig {
-    async fn handle_request(&self, mut request: Req) -> Result<HandleRequestType> {
+    async fn handle_request(&self, mut request: Req) -> CoreResult<HandleRequestType> {
         // Get the current request URI
         let current_uri = request.uri().clone();
-        let original_uri_str = current_uri.to_string(); // 保存原始URI字符串用于日志
+        let original_uri_str = current_uri.to_string();
         let current_parts = current_uri.into_parts();
 
         // Build new URI with target configuration, keeping original components as fallback
         let mut uri_builder = Uri::builder();
 
         // Use target scheme or fallback to original
-        let scheme = if let Some(target_scheme) = &self.target_scheme {
-            target_scheme.parse().ok()
+        let scheme = if let Some(target_scheme) = ProxyForwardConfig::optional_field(&self.target_scheme) {
+            Some(
+                target_scheme
+                    .parse::<Scheme>()
+                    .map_err(|_| {
+                        proxy_forward_validation_message(
+                            self,
+                            format!("scheme '{target_scheme}' is not valid"),
+                        )
+                    })?,
+            )
         } else {
             current_parts.scheme
         };
@@ -27,8 +48,17 @@ impl HandlerTrait for ProxyForwardConfig {
         }
 
         // Use target authority or fallback to original
-        let authority = if let Some(target_authority) = &self.target_authority {
-            target_authority.parse().ok()
+        let authority = if let Some(target_authority) =
+            ProxyForwardConfig::optional_field(&self.target_authority)
+        {
+            Some(
+                target_authority.parse::<Authority>().map_err(|_| {
+                    proxy_forward_validation_message(
+                        self,
+                        format!("authority '{target_authority}' is not valid"),
+                    )
+                })?,
+            )
         } else {
             current_parts.authority
         };
@@ -37,7 +67,7 @@ impl HandlerTrait for ProxyForwardConfig {
         }
 
         // Use target path or original path and query
-        let path_and_query = if let Some(target_path) = &self.target_path {
+        let path_and_query = if let Some(target_path) = ProxyForwardConfig::optional_field(&self.target_path) {
             if let Some(current_pq) = current_parts.path_and_query {
                 // Combine target path with original query
                 if target_path != "/" {
@@ -51,7 +81,7 @@ impl HandlerTrait for ProxyForwardConfig {
                     format!("{}?{}", current_pq.path(), current_pq.query().unwrap_or(""))
                 }
             } else {
-                target_path.clone()
+                target_path.to_string()
             }
         } else if let Some(current_pq) = current_parts.path_and_query {
             current_pq.to_string()
@@ -59,10 +89,20 @@ impl HandlerTrait for ProxyForwardConfig {
             "/".to_string()
         };
 
+        let path_and_query = path_and_query
+            .parse::<PathAndQuery>()
+            .map_err(|e| {
+                proxy_forward_validation_message(
+                    self,
+                    format!("path and query '{path_and_query}' is not valid: {e}"),
+                )
+            })?;
         uri_builder = uri_builder.path_and_query(path_and_query);
 
         // Build the new URI and update the request
-        let new_uri = uri_builder.build()?;
+        let new_uri = uri_builder
+            .build()
+            .map_err(|e| proxy_forward_validation_message(self, e))?;
         *request.uri_mut() = new_uri;
 
         tracing::trace!(
@@ -77,12 +117,35 @@ impl HandlerTrait for ProxyForwardConfig {
 
 #[cfg(test)]
 mod tests {
-
     use crate::utils::empty;
 
     use super::*;
     use axum::http::Method;
     use http::Request;
+
+    #[tokio::test]
+    async fn test_proxy_forward_invalid_authority() {
+        let config = ProxyForwardConfig {
+            target_scheme: Some("http".to_string()),
+            target_authority: Some("invalid url host".to_string()),
+            target_path: None,
+        };
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("http://localhost/test")
+            .body(empty())
+            .unwrap();
+
+        let result = config.handle_request(request).await;
+        let err = match result {
+            Err(e) => e,
+            Ok(_) => panic!("expected invalid authority to fail"),
+        };
+        let message = err.public_message();
+        assert!(message.contains("Invalid proxy forward target"));
+        assert!(message.contains("authority"));
+    }
 
     #[tokio::test]
     async fn test_proxy_forward_basic() {
@@ -107,6 +170,34 @@ mod tests {
                 assert_eq!(uri.authority().unwrap().as_str(), "example.com:8080");
                 assert_eq!(uri.path(), "/test");
                 assert_eq!(uri.query(), Some("param=value"));
+            }
+            HandleRequestType::Response(_) => panic!("Expected request, got response"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_proxy_forward_empty_scheme_falls_back_to_original() {
+        let config = ProxyForwardConfig {
+            target_scheme: Some("".to_string()),
+            target_authority: Some("127.0.0.1:9090".to_string()),
+            target_path: None,
+        };
+
+        let request = Request::builder()
+            .method(Method::GET)
+            .uri("https://virtual.example.com/ws?token=abc")
+            .body(empty())
+            .unwrap();
+
+        let result = config.handle_request(request).await.unwrap();
+
+        match result {
+            HandleRequestType::Request(modified_request) => {
+                let uri = modified_request.uri();
+                assert_eq!(uri.scheme_str(), Some("https"));
+                assert_eq!(uri.authority().unwrap().as_str(), "127.0.0.1:9090");
+                assert_eq!(uri.path(), "/ws");
+                assert_eq!(uri.query(), Some("token=abc"));
             }
             HandleRequestType::Response(_) => panic!("Expected request, got response"),
         }

@@ -163,7 +163,8 @@ mod tests {
 
     #[tokio::test]
     async fn start_server() {
-        let mut server = MockServer::new(Some(7788));
+        // Use an ephemeral port to avoid collisions in local dev.
+        let mut server = MockServer::new(Some(0));
         let res = server.start_server().await;
 
         assert!(res.is_ok());

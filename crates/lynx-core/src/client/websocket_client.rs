@@ -7,6 +7,7 @@ use tokio_tungstenite::{
     Connector, WebSocketStream, connect_async_tls_with_config,
     tungstenite::client::IntoClientRequest,
 };
+use tracing::trace;
 
 pub struct WebsocketClient {
     connector: Connector,
@@ -28,7 +29,7 @@ impl WebsocketClient {
     where
         R: IntoClientRequest + Unpin + Debug,
     {
-        println!("WebsocketClient request: {:?}", req);
+        trace!(?req, "websocket upstream handshake");
         let websocket_stream =
             connect_async_tls_with_config(req, None, false, Some(self.connector.clone())).await?;
 

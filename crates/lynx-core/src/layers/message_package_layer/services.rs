@@ -11,23 +11,28 @@ use axum::extract::Request;
 use axum::response::{IntoResponse, Response};
 use http::Extensions;
 use http_body_util::BodyExt;
-use lynx_db::dao::net_request_dao::{CaptureSwitchDao, RecordingStatus};
 use tower::Service;
 use tracing::{Instrument, instrument, trace_span};
 
 use crate::{
     common::{Req, Res},
+    error::{CoreError, CoreResult},
+    proxy::{proxy_connect_request::is_connect_req, proxy_ws_request::is_websocket_req},
     self_service::is_self_service,
 };
 
 use super::channel::MessageEventChannel;
+use super::capture_gate::{CaptureDecision, CaptureGate};
 use super::message_event_data::copy_body_stream;
+use super::message_event_data::{MatchedRuleInfo, MatchedRulesExt};
 use super::message_event_store::MessageEvent;
-use super::super::extend_extension_layer::DbExtensionsExt;
 use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
+use crate::layers::extend_extension_layer::DataStoreExtensionsExt;
+use lynx_storage::dao::request_processing_dao::RequestProcessingDao;
 
 pub trait MessageEventLayerExt {
     fn get_message_event_cannel(&self) -> Arc<MessageEventChannel>;
+    fn try_get_message_event_cannel(&self) -> CoreResult<Arc<MessageEventChannel>>;
 }
 
 impl MessageEventLayerExt for Extensions {
@@ -35,6 +40,12 @@ impl MessageEventLayerExt for Extensions {
         self.get::<Arc<MessageEventChannel>>()
             .expect("MessageEventChannel not found in Extensions")
             .clone()
+    }
+
+    fn try_get_message_event_cannel(&self) -> CoreResult<Arc<MessageEventChannel>> {
+        self.get::<Arc<MessageEventChannel>>()
+            .cloned()
+            .ok_or(CoreError::MissingExtension { name: "MessageEventChannel" })
     }
 }
 
@@ -72,33 +83,51 @@ where
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();
         let trace_id_clone = trace_id.clone();
-        let db = request.extensions().get_db();
 
         let (part, old_body) = request.into_parts();
         let old_body = old_body.map_err(|e| anyhow!(e)).boxed();
 
         let (copy_stream, old_body) = copy_body_stream(AxumBody::new(old_body));
 
-        let request = Request::from_parts(part, old_body);
+        let mut request = Request::from_parts(part, old_body);
+
+        let defer_request_end = is_connect_req(&request) || is_websocket_req(&request);
 
         let mut inner = self.service.clone();
 
         Box::pin(async move {
-            let capture_dao = CaptureSwitchDao::new(db.clone());
-            let capture_switch = capture_dao.get_capture_switch().await;
-            let need_capture = if let Ok(capture_switch) = capture_switch {
-                matches!(
-                    capture_switch.recording_status,
-                    RecordingStatus::PauseRecording
-                )
-            } else {
-                false
-            };
-
-            if !need_capture {
-                let future = inner.call(request);
-                return future.await;
+            let decision = CaptureGate::decide(&request).await;
+            match decision {
+                Ok(CaptureDecision::Bypass { .. }) | Err(_) => {
+                    let future = inner.call(request);
+                    return future.await;
+                }
+                Ok(CaptureDecision::Capture) => {}
             }
+
+            // Attach matched rules (request processing rules) for UI display.
+            // This is computed before dispatch_on_request_start so WS `request.start`
+            // can carry the field.
+            let store = request.extensions().get_data_store();
+            let dao = RequestProcessingDao::new(store.clone());
+            if let Ok(matching_rules) = dao.find_matching_rules(&request).await {
+                let matched: Vec<MatchedRuleInfo> = matching_rules
+                    .into_iter()
+                    .filter(|r| r.enabled)
+                    .filter_map(|r| {
+                        let id = r.id?;
+                        Some(MatchedRuleInfo {
+                            rule_id: id,
+                            name: r.name,
+                            priority: r.priority,
+                        })
+                    })
+                    .collect();
+                if !matched.is_empty() {
+                    request.extensions_mut().insert(MatchedRulesExt(matched));
+                }
+            }
+
             let mut guard = RequestAbortGuard {
                 message_event_channel: message_event_channel.clone(),
                 completed: false,
@@ -109,9 +138,11 @@ where
                 .await;
             let future = inner.call(request);
             let result = future.await;
-            message_event_channel_clone
-                .dispatch_on_request_end(trace_id_clone)
-                .await;
+            if !defer_request_end {
+                message_event_channel_clone
+                    .dispatch_on_request_end(trace_id_clone)
+                    .await;
+            }
             guard.completed = true;
             result
         })
@@ -145,12 +176,13 @@ impl Drop for RequestAbortGuard {
 
 impl<S> Service<Req> for ProxyMessageEventService<S>
 where
-    S: Service<Req, Future: Future + Send + 'static, Response = Response, Error = anyhow::Error>
+    S: Service<Req, Future: Future + Send + 'static, Response = Response>
         + Clone
         + Send
         + Sync
         + 'static,
     S::Future: Send,
+    S::Error: Send + std::fmt::Debug,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -165,33 +197,25 @@ where
         let message_event_channel = request.extensions().get_message_event_cannel();
         let trace_id = request.extensions().get_trace_id();
         let message_event_channel_clone = message_event_channel.clone();
-        let db = request.extensions().get_db();
 
         let mut inner = self.service.clone();
 
         Box::pin(
             async move {
+                let decision = CaptureGate::decide(&request).await;
+                match decision {
+                    Ok(CaptureDecision::Bypass { .. }) | Err(_) => {
+                        let future = inner.call(request);
+                        return future.await;
+                    }
+                    Ok(CaptureDecision::Capture) => {}
+                }
+
                 let mut guard = RequestAbortGuard {
                     message_event_channel: message_event_channel.clone(),
                     completed: false,
                     trace_id: trace_id.clone(),
                 };
-                let capture_dao = CaptureSwitchDao::new(db.clone());
-                let capture_switch = capture_dao.get_capture_switch().await;
-                let need_capture = if let Ok(capture_switch) = capture_switch {
-                    matches!(
-                        capture_switch.recording_status,
-                        RecordingStatus::PauseRecording
-                    )
-                } else {
-                    false
-                };
-
-                if !need_capture {
-                    let future = inner.call(request);
-                    return future.await;
-                }
-
                 message_event_channel_clone
                     .dispatch_on_before_proxy(trace_id.clone())
                     .await;

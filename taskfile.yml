@@ -1,6 +1,12 @@
 version: "3"
 
 tasks:
+  generate-ws-protocol:
+    desc: Generate WS protocol artifacts for backend and ui
+    cmds:
+      - node scripts/ws-generate-rust.mjs
+      - cd ui && npm run ws:generate
+
   dev:
     desc: Run development server
     deps: [dev-lynx-server, dev-ui]
@@ -35,28 +41,22 @@ tasks:
 
   setup-ui:
     desc: Setup UI dependencies
-    dir: crates/lynx-proxy
+    dir: ui
     cmds:
-      - pnpm install
+      - npm ci
 
   dev-ui:
     desc: Run UI in development mode
-    dir: crates/lynx-proxy
+    dir: ui
     cmds:
-      - pnpm dev
-
-  dev-mock-ui:
-    desc: Run UI in mock development mode
-    dir: crates/lynx-proxy
-    cmds:
-      - pnpm dev:mock
+      - npm run dev
 
   build-ui:
     desc: Build UI
     cmds:
-      - cd crates/lynx-proxy && pnpm build
+      - cd ui && npm ci && npm run build
       - rm -rf crates/lynx-cli/assets
-      - cp -r crates/lynx-proxy/dist/ crates/lynx-cli/assets
+      - cp -r ui/dist/ crates/lynx-cli/assets
 
   build-server:
     desc: Build server
@@ -74,6 +74,47 @@ tasks:
     dir: crates/lynx-core
     cmds:
       - cargo run --package lynx-core --example proxy_server_example
+
+  traffic-sample:
+    desc: Send realistic mixed HTTP(S) traffic through the local proxy (for Network UI)
+    cmds:
+      - bash scripts/traffic-sample.sh {{.CLI_ARGS}}
+
+  traffic-sample:simple:
+    desc: Send simple GET-only traffic through the proxy
+    cmds:
+      - bash scripts/traffic-sample.sh --simple {{.CLI_ARGS}}
+
+  traffic-sample:realistic:
+    desc: Send 40 varied requests (methods, headers, errors, cookies, redirects)
+    cmds:
+      - bash scripts/traffic-sample.sh --realistic --count 40 --delay 0.15
+
+  traffic-sample:https:
+    desc: Send realistic traffic over HTTPS only (-k)
+    cmds:
+      - bash scripts/traffic-sample.sh --https {{.CLI_ARGS}}
+
+  traffic-sample:burst:
+    desc: Send 100 realistic requests through the proxy
+    cmds:
+      - bash scripts/traffic-sample.sh --count 100 --delay 0.08
+
+  traffic-mock:
+    desc: Send HTTP(S) traffic through proxy to local lynx-mock server
+    cmds:
+      - bash scripts/traffic-mock.sh {{.CLI_ARGS}}
+
+  readme-demo:
+    desc: Seed proxy with demo traffic, WebSocket, and rules for README screenshots
+    cmds:
+      - bash scripts/readme-demo.sh
+
+  readme-screenshots:
+    desc: Capture README UI screenshots (requires dev + readme-demo)
+    dir: ui
+    cmds:
+      - node ../scripts/capture-readme-screenshots.mjs
 
   release-minor:
     deps: [update-main-branch, build-ui, test]
