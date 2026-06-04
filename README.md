@@ -207,12 +207,11 @@ After install:
 
 | Platform | Archive |
 |----------|---------|
-| macOS (Intel) | `lynx-cli-x86_64-apple-darwin.tar.xz` |
 | macOS (Apple Silicon) | `lynx-cli-aarch64-apple-darwin.tar.xz` |
 | Linux (x64) | `lynx-cli-x86_64-unknown-linux-gnu.tar.xz` |
 | Windows (x64) | `lynx-cli-x86_64-pc-windows-msvc.zip` |
 
-ARM Linux is not in the release matrix yet — build from source (see Development).
+Intel Macs are not in the release matrix (avoids long `macos-13` CI queues); use the Apple Silicon build under Rosetta or build from source. ARM Linux is not in the release matrix yet — build from source (see Development).
 
 **Build from source**
 
