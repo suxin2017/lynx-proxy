@@ -68,11 +68,11 @@ function onTabDragStart(tab: ApiStudioOpenTab, ev: DragEvent) {
         aria-label="已打开的请求"
         class="scrollbar-none flex h-9 items-stretch gap-0.5 overflow-x-auto overflow-y-hidden"
       >
-        <button
+        <div
           v-for="tab in props.tabs"
           :key="tab.id"
-          type="button"
           role="tab"
+          tabindex="0"
           draggable="true"
           :aria-selected="props.activeTabId === tab.id"
           :class="cn(
@@ -83,6 +83,8 @@ function onTabDragStart(tab: ApiStudioOpenTab, ev: DragEvent) {
           )"
           :title="`${tab.title} — 拖到左侧文件夹可保存到集合`"
           @click="selectTab(tab.id)"
+          @keydown.enter="selectTab(tab.id)"
+          @keydown.space.prevent="selectTab(tab.id)"
           @dragstart="onTabDragStart(tab, $event)"
         >
           <span
@@ -99,17 +101,16 @@ function onTabDragStart(tab: ApiStudioOpenTab, ev: DragEvent) {
             class="size-1.5 shrink-0 rounded-full bg-primary"
             title="未保存"
           />
-          <span
-            role="button"
-            tabindex="-1"
+          <button
+            type="button"
             class="ml-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover:opacity-100"
             :class="props.activeTabId === tab.id ? 'opacity-60' : ''"
             aria-label="关闭标签"
             @click="closeTab($event, tab.id)"
           >
             <X class="size-3" />
-          </span>
-        </button>
+          </button>
+        </div>
       </div>
     </div>
   </div>
