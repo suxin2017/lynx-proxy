@@ -74,6 +74,13 @@ fn normalize_and_apply_query(mut url: Url, query_params: &[KeyValueRow]) -> Url 
         return url;
     }
 
+    // Address bar already carries the query (signed URLs, cURL import). Params are UI-only.
+    if url.query().is_some() {
+        return url;
+    }
+
+    url.set_query(None);
+
     {
         let mut pairs = url.query_pairs_mut();
         for row in query_params {
@@ -91,6 +98,35 @@ fn normalize_and_apply_query(mut url: Url, query_params: &[KeyValueRow]) -> Url 
     url
 }
 
+fn has_enabled_query_params(query_params: &[KeyValueRow]) -> bool {
+    query_params
+        .iter()
+        .any(|row| row.enabled && !row.key.trim().is_empty())
+}
+
+/// Keep signed/pre-encoded query strings verbatim; only merge Params when the bar has no `?`.
+fn compose_request_url(payload: &ComposeRequestPayload) -> Result<String> {
+    let raw = payload.url.trim();
+    if raw.is_empty() {
+        return Err(anyhow!("url is empty"));
+    }
+
+    if has_enabled_query_params(&payload.query_params) && !raw.contains('?') {
+        let parsed = Url::parse(raw).map_err(|e| anyhow!("invalid url '{raw}': {e}"))?;
+        return Ok(normalize_and_apply_query(parsed, &payload.query_params).to_string());
+    }
+
+    Ok(raw.to_string())
+}
+
+const SKIP_COMPOSE_HEADERS: &[&str] = &[
+    "host",
+    "connection",
+    "content-length",
+    "transfer-encoding",
+    "accept-encoding",
+];
+
 fn apply_headers(
     mut builder: reqwest::RequestBuilder,
     headers: &[KeyValueRow],
@@ -103,6 +139,12 @@ fn apply_headers(
         if key.is_empty() {
             continue;
         }
+        if SKIP_COMPOSE_HEADERS
+            .iter()
+            .any(|skip| skip.eq_ignore_ascii_case(key))
+        {
+            continue;
+        }
         let name = HeaderName::from_bytes(key.as_bytes())
             .map_err(|e| anyhow!("invalid header name '{key}': {e}"))?;
         let value = HeaderValue::from_str(row.value.as_str())
@@ -110,18 +152,6 @@ fn apply_headers(
         builder = builder.header(name, value);
     }
     Ok(builder)
-}
-
-fn request_content_type(headers: &[KeyValueRow]) -> Option<String> {
-    headers
-        .iter()
-        .find(|row| row.enabled && row.key.trim().eq_ignore_ascii_case("content-type"))
-        .map(|row| row.value.trim().to_lowercase())
-        .filter(|v| !v.is_empty())
-}
-
-fn looks_like_json_content_type(content_type: &str) -> bool {
-    content_type.contains("application/json") || content_type.contains("+json")
 }
 
 fn map_headers(headers: &reqwest::header::HeaderMap) -> std::collections::BTreeMap<String, String> {
@@ -147,9 +177,7 @@ pub async fn execute_compose_request(
 ) -> Result<ComposeResponsePayload> {
     let start = Instant::now();
 
-    let base_url = Url::parse(payload.url.trim())
-        .map_err(|e| anyhow!("invalid url '{}': {}", payload.url, e))?;
-    let url = normalize_and_apply_query(base_url, &payload.query_params);
+    let url = compose_request_url(&payload)?;
 
     let mut builder = state
         .client
@@ -167,23 +195,8 @@ pub async fn execute_compose_request(
     if !payload.body.is_empty()
         && !matches!(payload.method, ComposeHttpMethod::Get | ComposeHttpMethod::Head)
     {
-        let content_type = request_content_type(&payload.headers);
-        if content_type
-            .as_deref()
-            .is_some_and(looks_like_json_content_type)
-        {
-            match serde_json::from_str::<serde_json::Value>(&payload.body) {
-                Ok(value) => {
-                    builder = builder.json(&value);
-                }
-                Err(_) => {
-                    // If body isn't valid JSON, fall back to raw text body.
-                    builder = builder.body(payload.body);
-                }
-            }
-        } else {
-            builder = builder.body(payload.body);
-        }
+        // Send the body exactly as edited (cURL / Postman parity); do not re-serialize JSON.
+        builder = builder.body(payload.body);
     }
 
     let response = builder.send().await;
@@ -221,3 +234,63 @@ pub async fn execute_compose_request(
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn query_params_apply_when_url_has_no_query() {
+        let url = Url::parse("https://example.com/path").expect("url");
+        let rows = vec![
+            KeyValueRow {
+                key: "sig".into(),
+                value: "only".into(),
+                enabled: true,
+            },
+            KeyValueRow {
+                key: "token".into(),
+                value: "1".into(),
+                enabled: true,
+            },
+        ];
+        let out = normalize_and_apply_query(url, &rows);
+        let pairs: Vec<(String, String)> = out.query_pairs().into_owned().collect();
+        assert_eq!(
+            pairs,
+            vec![
+                ("sig".to_string(), "only".to_string()),
+                ("token".to_string(), "1".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn compose_request_url_keeps_encoded_query_verbatim() {
+        let raw = "https://example.com/path?adExtInfo=%7B%22a%22%3A1%7D&sig=x+y";
+        let payload = ComposeRequestPayload {
+            method: ComposeHttpMethod::Post,
+            url: raw.into(),
+            query_params: vec![KeyValueRow {
+                key: "sig".into(),
+                value: "other".into(),
+                enabled: true,
+            }],
+            headers: vec![],
+            body: String::new(),
+            timeout: None,
+        };
+        assert_eq!(compose_request_url(&payload).expect("url"), raw);
+    }
+
+    #[test]
+    fn query_params_skipped_when_url_already_has_query() {
+        let url = Url::parse("https://example.com/path?sig=signed").expect("url");
+        let rows = vec![KeyValueRow {
+            key: "sig".into(),
+            value: "rebuilt".into(),
+            enabled: true,
+        }];
+        let out = normalize_and_apply_query(url, &rows);
+        assert_eq!(out.query(), Some("sig=signed"));
+    }
+}

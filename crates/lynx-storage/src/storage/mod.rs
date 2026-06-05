@@ -51,12 +51,28 @@ impl DataStore {
         self.root.join("rules")
     }
 
-    pub fn api_debug_dir(&self) -> PathBuf {
-        self.root.join("api_debug")
+    pub fn api_studio_dir(&self) -> PathBuf {
+        self.root.join("api_studio")
     }
 
-    pub fn api_debug_requests_dir(&self) -> PathBuf {
-        self.api_debug_dir().join("requests")
+    pub fn api_studio_drafts_dir(&self) -> PathBuf {
+        self.api_studio_dir().join("drafts")
+    }
+
+    pub fn api_studio_history_dir(&self) -> PathBuf {
+        self.api_studio_dir().join("history")
+    }
+
+    pub fn api_studio_collection_path(&self) -> PathBuf {
+        self.api_studio_dir().join("collection.json")
+    }
+
+    pub fn api_studio_draft_path(&self, id: &str) -> PathBuf {
+        self.api_studio_drafts_dir().join(format!("{id}.json"))
+    }
+
+    pub fn api_studio_history_path(&self, id: &str) -> PathBuf {
+        self.api_studio_history_dir().join(format!("{id}.json"))
     }
 
     pub fn setting_path(&self, name: &str) -> PathBuf {
@@ -71,13 +87,6 @@ impl DataStore {
         self.rules_dir().join("templates.json")
     }
 
-    pub fn tree_path(&self) -> PathBuf {
-        self.api_debug_dir().join("tree.json")
-    }
-
-    pub fn api_debug_request_path(&self, id: i32) -> PathBuf {
-        self.api_debug_requests_dir().join(format!("{id}.json"))
-    }
 
     pub async fn invalidate_rules_cache(&self) {
         let mut cache = self.rules_cache.write().await;
@@ -155,28 +164,14 @@ impl DataStore {
         id::next_id_in_dir(&self.rules_dir()).await
     }
 
-    pub async fn next_api_debug_id(&self) -> Result<i32> {
-        id::next_id_in_dir(&self.api_debug_requests_dir()).await
-    }
-
-    pub async fn next_tree_node_id(&self) -> Result<i32> {
-        let tree = read_json_or_default::<TreeFile>(&self.tree_path()).await?;
-        Ok(tree
-            .nodes
-            .iter()
-            .map(|n| n.id)
-            .max()
-            .unwrap_or(0)
-            + 1)
-    }
-
     async fn ensure_layout(&self) -> Result<()> {
         fs::create_dir_all(self.settings_dir()).await?;
         fs::create_dir_all(self.rules_dir()).await?;
-        fs::create_dir_all(self.api_debug_requests_dir()).await?;
+        fs::create_dir_all(self.api_studio_drafts_dir()).await?;
+        fs::create_dir_all(self.api_studio_history_dir()).await?;
 
         self.ensure_setting_defaults().await?;
-        self.ensure_tree_default().await?;
+        self.ensure_collection_default().await?;
         Ok(())
     }
 
@@ -213,30 +208,12 @@ impl DataStore {
         Ok(())
     }
 
-    async fn ensure_tree_default(&self) -> Result<()> {
-        let path = self.tree_path();
+    async fn ensure_collection_default(&self) -> Result<()> {
+        let path = self.api_studio_collection_path();
         if !path.exists() {
-            write_json_atomic(&path, &TreeFile::default()).await?;
+            use crate::dao::api_studio::CollectionFile;
+            write_json_atomic(&path, &CollectionFile::default()).await?;
         }
         Ok(())
     }
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeFile {
-    pub nodes: Vec<TreeNodeRecord>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TreeNodeRecord {
-    pub id: i32,
-    pub name: String,
-    pub node_type: crate::models::api_debug_tree::NodeType,
-    pub parent_id: Option<i32>,
-    pub api_debug_id: Option<i32>,
-    pub sort_order: i32,
-    pub created_at: i64,
-    pub updated_at: i64,
 }

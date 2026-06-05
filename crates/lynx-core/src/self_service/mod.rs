@@ -15,7 +15,7 @@ use crate::proxy_server::listen_info::ProxyListenInfoExtensionsExt;
 use crate::proxy_server::server_config::ProxyServerConfig;
 use crate::proxy_server::server_config::ProxyServerConfigExtensionsExt;
 use anyhow::Result;
-use api::{auth as auth_api, base_info, certificate, net_request};
+use api::{api_studio, auth as auth_api, base_info, certificate, net_request};
 use auth::{authorize_http, is_public_http_path, unauthorized_response};
 use axum::Router;
 use axum::response::Response;
@@ -41,7 +41,13 @@ pub const SELF_SERVICE_PATH_PREFIX: &str = "/api";
 /// Permissive CORS only in debug builds (local dev). Release builds restrict to own origins.
 fn cors_layer(access_addr_list: &[SocketAddr]) -> CorsLayer {
     let base = CorsLayer::new()
-        .allow_methods([Method::GET, Method::PUT, Method::POST])
+        .allow_methods([
+            Method::GET,
+            Method::PUT,
+            Method::POST,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers([http::header::AUTHORIZATION, http::header::CONTENT_TYPE]);
 
     #[cfg(debug_assertions)]
@@ -156,13 +162,14 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
         .nest("/net_request", net_request::router())
         .nest("/certificate", certificate::router())
         .nest("/base_info", base_info::router())
+        .nest("/api_studio", api_studio::router())
         .layer(cors)
         .with_state(state.clone());
 
     let router = Router::new()
+        .nest(SELF_SERVICE_PATH_PREFIX, api_router)
         .fallback(get_file)
-        .with_state(state.clone())
-        .nest(SELF_SERVICE_PATH_PREFIX, api_router);
+        .with_state(state);
 
     router
         .oneshot(req)

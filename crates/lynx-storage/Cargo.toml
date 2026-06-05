@@ -25,6 +25,7 @@ http-body-util = { workspace = true }
 thiserror = "1.0"
 bytes = { workspace = true }
 lynx-dsl = { path = "../lynx-dsl" }
+uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 tempfile = "3.12.0"

@@ -1,12 +1,14 @@
 import type { ComposeDraft, ComposeHttpMethod, KeyValueRow } from '../types'
 import { createEmptyDraft } from './empty-draft'
-import { parseUrlParams } from './parse-url-params'
+import { syncDraftUrlToParams } from './parse-url-params'
 
 export interface ParsedCurl {
   method: ComposeHttpMethod
   url: string
   headers: Record<string, string>
   body: string
+  /** Set when cURL includes -L / --location */
+  followRedirects?: boolean
 }
 
 function tokenizeCurl(cmd: string): string[] {
@@ -130,6 +132,9 @@ export function parseCurlCommand(curlCommand: string): ParsedCurl {
         i++
       }
     }
+    else if (token === '-L' || token === '--location') {
+      result.followRedirects = true
+    }
     else if (
       token === '-d'
       || token === '--data'
@@ -210,14 +215,15 @@ export function parsedCurlToDraft(parsed: ParsedCurl, base?: ComposeDraft): Comp
     }
   }
 
-  return {
-    ...(base ?? createEmptyDraft()),
-    method: parsed.method,
-    url: parsed.url,
-    queryParams: parseUrlParams(parsed.url),
-    headers: headersToRows(parsed.headers),
-    body,
-  }
+  return syncDraftUrlToParams(
+    {
+      ...(base ?? createEmptyDraft()),
+      method: parsed.method,
+      headers: headersToRows(parsed.headers),
+      body,
+    },
+    parsed.url,
+  )
 }
 
 export function mergeCurlIntoDraft(draft: ComposeDraft, curlText: string): ComposeDraft {

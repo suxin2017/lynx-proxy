@@ -93,7 +93,7 @@ function onAddRow() {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col">
+  <div class="flex h-full min-h-0 flex-col overflow-hidden">
     <nav
       :class="[
         'flex items-center justify-between gap-2 px-2',
@@ -135,9 +135,10 @@ function onAddRow() {
       </div>
     </nav>
 
-    <div :class="['min-h-0 flex-1 overflow-hidden px-2', props.compact ? 'pb-1.5' : 'pb-2']">
+    <div :class="['flex min-h-0 flex-1 flex-col overflow-hidden px-2', props.compact ? 'pb-1.5' : 'pb-2']">
       <KeyValueTable
         v-if="props.activeTab === 'params'"
+        class="h-full min-h-0"
         :rows="props.draft.queryParams"
         key-placeholder="Query key"
         value-placeholder="Query value"
@@ -146,6 +147,7 @@ function onAddRow() {
 
       <KeyValueTable
         v-else-if="props.activeTab === 'headers'"
+        class="h-full min-h-0"
         :rows="props.draft.headers"
         key-placeholder="Header name"
         value-placeholder="Header value"
@@ -154,6 +156,7 @@ function onAddRow() {
 
       <ComposeBodyEditor
         v-else
+        class="h-full min-h-0"
         :body="props.draft.body"
         :headers="props.draft.headers"
         @update:body="updateDraft({ body: $event })"

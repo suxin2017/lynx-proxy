@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ComposeDraft } from './types'
 
+import { Loader2, Play } from '@lucide/vue'
 import { COMPOSE_HTTP_METHODS } from './types'
 import {
   composeFieldClass,
@@ -56,10 +57,21 @@ function onSend() {
 
     <button
       type="button"
-      :class="composePrimaryButtonClass"
+      :class="[composePrimaryButtonClass, 'inline-flex items-center justify-center gap-1.5']"
       :disabled="!props.draft.url.trim() || props.loading"
+      :aria-busy="props.loading"
       @click="onSend"
     >
+      <Loader2
+        v-if="props.loading"
+        class="size-3.5 shrink-0 animate-spin"
+        aria-hidden="true"
+      />
+      <Play
+        v-else
+        class="size-3.5 shrink-0 fill-current"
+        aria-hidden="true"
+      />
       {{ props.loading ? '发送中…' : '发送' }}
     </button>
 
