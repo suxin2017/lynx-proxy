@@ -1,5 +1,4 @@
-pub mod api_debug_dao;
-pub mod api_debug_tree_dao;
+pub mod api_studio;
 pub mod capture_rules_dao;
 pub mod client_proxy_dao;
 pub mod general_setting_dao;

@@ -42,6 +42,19 @@ export interface NormalizedWorkbenchContent {
 
 const DEFAULT_DEGRADE_THRESHOLD = 10_000
 
+/** Always rendered in CodeMirror (never degraded to plain-text preview). */
+const READONLY_CODE_TYPES = new Set<WorkbenchType>([
+  'json',
+  'html-source',
+  'xml-source',
+  'css-source',
+  'javascript-source',
+])
+
+export function workbenchTypeUsesSoftWrap(type: WorkbenchType): boolean {
+  return READONLY_CODE_TYPES.has(type) || type === 'text' || type === 'code'
+}
+
 function toDisplayString(content: unknown) {
   if (typeof content === 'string') {
     return content
@@ -57,6 +70,10 @@ function toDisplayString(content: unknown) {
 export function resolveWorkbenchSurface(
   input: ResolveWorkbenchSurfaceInput,
 ): WorkbenchSurface {
+  if (READONLY_CODE_TYPES.has(input.type)) {
+    return 'readonly-code'
+  }
+
   const content = toDisplayString(input.content)
   const threshold = input.degradeThreshold ?? DEFAULT_DEGRADE_THRESHOLD
 

@@ -11,6 +11,8 @@ export { exportDraftToCurl } from './lib/export-curl'
 export { mergeCurlIntoDraft, parseCurlCommand } from './lib/parse-curl'
 export {
   buildUrlWithParams,
+  composeRequestUrl,
+  normalizeDraftUrlParams,
   parseUrlParams,
   syncDraftParamsToUrl,
   syncDraftUrlToParams,

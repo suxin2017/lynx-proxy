@@ -14,6 +14,7 @@ import {
   normalizeWorkbenchContent,
   resolveWorkbenchLanguage,
   resolveWorkbenchSurface,
+  workbenchTypeUsesSoftWrap,
 } from './utils'
 
 interface Props {
@@ -147,6 +148,7 @@ onBeforeUnmount(() => {
         :content="normalized.displayValue"
         :language="language"
         :show-line-numbers="props.showLineNumbers ?? true"
+        :soft-wrap="workbenchTypeUsesSoftWrap(props.type)"
         :compact="props.frameless"
       />
     </div>

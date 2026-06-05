@@ -96,6 +96,9 @@ impl ReqwestClientBuilder {
         }
 
         let client = client_builder
+            .gzip(false)
+            .brotli(false)
+            .deflate(false)
             .build()
             .map_err(|e| anyhow!(e).context("failed to build reqwest client"))?;
 

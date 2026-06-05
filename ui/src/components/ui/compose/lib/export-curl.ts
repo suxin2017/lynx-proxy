@@ -1,4 +1,5 @@
 import type { ComposeDraft } from '../types'
+import { composeRequestUrl } from './parse-url-params'
 
 const SKIP_HEADERS = new Set(['connection', 'content-length', 'accept-encoding'])
 
@@ -20,7 +21,7 @@ function enabledHeaders(draft: ComposeDraft): Record<string, string> {
 }
 
 export function exportDraftToCurl(draft: ComposeDraft): string {
-  const url = draft.url.trim()
+  const url = composeRequestUrl(draft.url, draft.queryParams)
   if (!url) {
     return ''
   }

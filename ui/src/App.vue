@@ -10,7 +10,7 @@ import {
   useSettingsStore,
   useWsConnectionStore,
 } from '@/stores'
-import { Cctv, Settings } from '@lucide/vue'
+import { Braces, Cctv, Settings } from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,6 +23,11 @@ const menuItems: AppLayoutMenuItem[] = [
     label: 'Network',
     icon: Cctv,
   },
+  {
+    key: 'api-studio',
+    label: 'API Studio',
+    icon: Braces,
+  },
 ]
 
 const isSettingsRoute = computed(() => route.name === 'Settings')
@@ -32,9 +37,15 @@ function goToSettings() {
 }
 
 const activeKey = computed({
-  get: () => (route.name === 'Settings' ? 'settings' : 'network'),
+  get: () => {
+    if (route.name === 'Settings') return 'settings'
+    if (route.name === 'ApiStudio') return 'api-studio'
+    return 'network'
+  },
   set: (key: string) => {
-    void router.push(key === 'settings' ? '/settings' : '/network')
+    if (key === 'settings') void router.push('/settings')
+    else if (key === 'api-studio') void router.push('/api-studio')
+    else void router.push('/network')
   },
 })
 

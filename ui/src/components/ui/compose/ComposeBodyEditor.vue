@@ -45,17 +45,13 @@ const isJson = computed(() => {
 
 const language = computed<WorkbenchLanguage>(() => (isJson.value ? 'json' : 'plaintext'))
 
-const extensions = computed((): Extension[] | undefined => {
-  if (language.value === 'json') {
-    return undefined
-  }
-  return [EditorView.lineWrapping]
-})
+/** Soft-wrap long lines (JSON, plain text) — avoid horizontal scroll in request body. */
+const extensions = computed((): Extension[] => [EditorView.lineWrapping])
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col">
-    <div class="h-full min-h-[12rem] overflow-hidden rounded-sm" :class="composePanelInsetClass">
+  <div class="flex h-full min-h-0 flex-1 flex-col">
+    <div class="min-h-0 flex-1 overflow-hidden rounded-sm" :class="composePanelInsetClass">
       <EditableCodeMirrorSurface
         :model-value="props.body"
         :language="language"

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { KeyValueRow } from './types'
 
-import { composeFieldClass, composeGhostButtonSmClass, composeHintTextClass } from './compose-styles'
+import { FluidField } from '@/components/ui/fluid-field'
+import { composeGhostButtonSmClass, composeHintTextClass } from './compose-styles'
 
 const props = defineProps<{
   rows: KeyValueRow[]
@@ -27,12 +28,12 @@ function removeRow(index: number) {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-2">
+  <div class="flex h-full min-h-0 flex-1 flex-col gap-2">
     <div v-if="props.rows.length === 0" :class="['px-1 py-2', composeHintTextClass]">
       暂无内容
     </div>
 
-    <div v-else class="min-h-0 flex-1 space-y-1.5 overflow-auto">
+    <div v-else class="relative min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain">
       <div
         v-for="(row, index) in props.rows"
         :key="`kv-${index}`"
@@ -44,18 +45,20 @@ function removeRow(index: number) {
           :checked="row.enabled"
           @change="updateRow(index, { enabled: ($event.target as HTMLInputElement).checked })"
         >
-        <input
-          :class="composeFieldClass"
-          :value="row.key"
+        <FluidField
+          :model-value="row.key"
+          :min-expanded-px="64"
+          :max-expanded-px="160"
           :placeholder="props.keyPlaceholder ?? 'Key'"
-          @input="updateRow(index, { key: ($event.target as HTMLInputElement).value })"
-        >
-        <input
-          :class="composeFieldClass"
-          :value="row.value"
+          @update:model-value="updateRow(index, { key: $event })"
+        />
+        <FluidField
+          :model-value="row.value"
+          :min-expanded-px="64"
+          :max-expanded-px="160"
           :placeholder="props.valuePlaceholder ?? 'Value'"
-          @input="updateRow(index, { value: ($event.target as HTMLInputElement).value })"
-        >
+          @update:model-value="updateRow(index, { value: $event })"
+        />
         <button type="button" :class="composeGhostButtonSmClass" @click="removeRow(index)">
           删除
         </button>

@@ -26,10 +26,14 @@ pub async fn get_file(
             let content_type = mime_type.to_string();
             let mut header = HeaderMap::new();
             header.insert(CONTENT_TYPE, content_type.parse().unwrap());
-            return (http::StatusCode::OK, header, res.contents());
+            return (http::StatusCode::OK, header, res.contents()).into_response();
         }
     }
-    let mut header = HeaderMap::new();
-    header.insert(CONTENT_TYPE, "text/plain".parse().unwrap());
-    (http::StatusCode::OK, header, "not found".as_bytes())
+
+    let path = file_path.path();
+    if path.starts_with("/api/") || path == "/api" {
+        return http::StatusCode::NOT_FOUND.into_response();
+    }
+
+    http::StatusCode::NOT_FOUND.into_response()
 }

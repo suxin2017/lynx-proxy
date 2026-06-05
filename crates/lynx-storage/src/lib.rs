@@ -2,5 +2,9 @@ pub mod dao;
 pub mod models;
 pub mod storage;
 
-pub use models::{CaptureType, HttpMethod, NodeType, RequestStatus};
+pub use dao::api_studio::ApiStudioStore;
+pub use models::{
+    ApiStudioDraft, CaptureType, CollectionKind, CollectionNode, HistoryDraftSnapshot,
+    HistoryEntry, HttpMethod, KeyValueRow, RequestSettings,
+};
 pub use storage::DataStore;

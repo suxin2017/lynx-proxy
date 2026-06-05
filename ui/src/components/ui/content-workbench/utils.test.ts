@@ -4,6 +4,7 @@ import {
   resolveWorkbenchLanguage,
   normalizeWorkbenchContent,
   resolveWorkbenchSurface,
+  workbenchTypeUsesSoftWrap,
 } from './utils'
 
 describe('resolveWorkbenchSurface', () => {
@@ -21,6 +22,16 @@ describe('resolveWorkbenchSurface', () => {
 
   it('degrades oversized code content to preview surface', () => {
     expect(resolveWorkbenchSurface({ type: 'code', content: 'x'.repeat(12_000) })).toBe('preview')
+  })
+
+  it('keeps html-source on codemirror even when oversized', () => {
+    expect(resolveWorkbenchSurface({ type: 'html-source', content: 'x'.repeat(12_000) })).toBe('readonly-code')
+  })
+})
+
+describe('workbenchTypeUsesSoftWrap', () => {
+  it('enables soft wrap for html-source', () => {
+    expect(workbenchTypeUsesSoftWrap('html-source')).toBe(true)
   })
 })
 
