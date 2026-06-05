@@ -46,7 +46,7 @@ impl DraftStore {
     }
 
     pub async fn save(&self, id: &str, req: SaveDraftRequest) -> Result<ApiStudioDraft, ApiStudioError> {
-        let now = chrono::Utc::now().timestamp();
+        let now = chrono::Utc::now().timestamp_millis();
         let path = self.store.api_studio_draft_path(id);
         let draft = if path.exists() {
             let mut existing = read_json::<ApiStudioDraft>(&path)

@@ -162,6 +162,7 @@ export const useApiStudioStore = defineStore('apiStudio', () => {
       }
       for (const n of nodes.value) {
         if (n.kind === 'request' && n.draftId && remove.has(n.id)) {
+          cancelScheduledSave(n.draftId)
           delete drafts.value[n.draftId]
         }
       }

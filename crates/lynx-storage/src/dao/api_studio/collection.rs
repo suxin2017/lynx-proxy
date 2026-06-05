@@ -140,7 +140,7 @@ impl CollectionStore {
         from_order: i32,
         delta: i32,
     ) {
-        let now = chrono::Utc::now().timestamp();
+        let now = chrono::Utc::now().timestamp_millis();
         for node in nodes.iter_mut() {
             if &node.parent_id == parent_id {
                 if let Some(order) = node.order {
@@ -164,7 +164,7 @@ impl CollectionStore {
         }
 
         let id = new_id();
-        let now = chrono::Utc::now().timestamp();
+        let now = chrono::Utc::now().timestamp_millis();
         let order = Self::max_order(&file, &req.parent_id) + 1;
 
         let (draft_id, method) = if req.kind == CollectionKind::Request {
@@ -208,7 +208,7 @@ impl CollectionStore {
             return Err(ApiStudioError::NotFound(format!("node {id}")));
         };
         node.name = req.name;
-        node.updated_at = chrono::Utc::now().timestamp();
+        node.updated_at = chrono::Utc::now().timestamp_millis();
         let updated = node.clone();
         self.save(&file).await?;
         Ok(updated)
@@ -284,7 +284,7 @@ impl CollectionStore {
             .expect("node exists");
         node.parent_id = new_parent;
         node.order = Some(new_order);
-        node.updated_at = chrono::Utc::now().timestamp();
+        node.updated_at = chrono::Utc::now().timestamp_millis();
         let updated = node.clone();
         self.save(&file).await?;
         Ok(updated)

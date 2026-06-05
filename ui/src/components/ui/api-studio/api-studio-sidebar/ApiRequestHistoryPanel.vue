@@ -95,15 +95,14 @@ const isEmptySearch = computed(
         <span class="min-w-0 flex-1 truncate font-mono text-[10px] text-foreground">
           {{ entry.url }}
         </span>
-        <span
-          role="button"
-          tabindex="-1"
+        <button
+          type="button"
           :class="[apiStudioIconButtonClass, '!size-5 shrink-0 opacity-0 group-hover:opacity-100']"
           aria-label="删除"
           @click.stop="emit('remove', entry.id)"
         >
           <Trash2 class="size-2.5" />
-        </span>
+        </button>
       </button>
     </div>
   </div>

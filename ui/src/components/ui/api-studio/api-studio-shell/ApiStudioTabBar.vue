@@ -99,16 +99,15 @@ function onTabDragStart(tab: ApiStudioOpenTab, ev: DragEvent) {
             class="size-1.5 shrink-0 rounded-full bg-primary"
             title="未保存"
           />
-          <span
-            role="button"
-            tabindex="-1"
+          <button
+            type="button"
             class="ml-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity hover:bg-muted/60 hover:text-foreground group-hover:opacity-100"
             :class="props.activeTabId === tab.id ? 'opacity-60' : ''"
             aria-label="关闭标签"
             @click="closeTab($event, tab.id)"
           >
             <X class="size-3" />
-          </span>
+          </button>
         </button>
       </div>
     </div>
