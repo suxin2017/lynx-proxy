@@ -35,7 +35,13 @@ const highlightClassByKind: Record<string, string> = {
 
 function buildHighlightDecorations(doc: string) {
   const builder = new RangeSetBuilder<Decoration>()
-  const { highlights } = validateDsl(doc)
+  let highlights: Array<{ from: number, to: number, kind: string }> = []
+  try {
+    highlights = validateDsl(doc).highlights
+  }
+  catch {
+    return builder.finish()
+  }
 
   for (const span of highlights) {
     const className = highlightClassByKind[span.kind]

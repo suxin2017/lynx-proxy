@@ -21,4 +21,3 @@ void authStore.bootstrap().then(() => {
 })
 
 app.mount('#app')
-

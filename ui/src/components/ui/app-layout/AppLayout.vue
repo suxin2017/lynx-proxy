@@ -67,7 +67,7 @@ function activateItem(key: string, disabled?: boolean) {
 <template>
   <section
     :class="cn(
-      'grid min-h-0 w-full grid-cols-[3rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-sidebar-border bg-background shadow-sm md:grid-cols-[3.25rem_minmax(0,1fr)]',
+      'grid h-full min-h-0 w-full grid-rows-[minmax(0,1fr)] grid-cols-[3rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-sidebar-border bg-background shadow-sm md:grid-cols-[3.25rem_minmax(0,1fr)]',
       props.class,
     )"
   >

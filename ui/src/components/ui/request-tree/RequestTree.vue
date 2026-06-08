@@ -26,7 +26,6 @@ interface RequestTreeProps {
 
 const props = withDefaults(defineProps<RequestTreeProps>(), {
   defaultExpandDepth: 1,
-  height: 400,
 })
 
 const emit = defineEmits<{
@@ -103,11 +102,11 @@ function handleContextMenu(node: FlatTreeNode, _ev: MouseEvent) {
 </script>
 
 <template>
-  <div :class="cn('min-h-0', props.class)">
+  <div :class="cn('flex h-full min-h-0 flex-col', props.class)">
     <div
       ref="scrollContainerRef"
-      class="overflow-y-auto"
-      :style="{ height: `${props.height}px` }"
+      class="min-h-0 flex-1 overflow-y-auto"
+      :style="props.height != null ? { height: `${props.height}px` } : undefined"
     >
       <div
         v-if="flatNodes.length === 0"

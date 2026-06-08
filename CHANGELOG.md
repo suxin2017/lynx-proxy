@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-06-05
+
+### 🚀 Features
+
+- Add API Studio (collections, tabs, history) and migrate persistence from api_debug to api_studio
+
+### 🐛 Bug Fixes
+
+- Improve compose request parity with cURL for signed URLs (preserve encoded query string, send raw body, avoid problematic headers)
+
 ## [0.5.1] - 2026-06-04
 
 ### 🐛 Bug Fixes

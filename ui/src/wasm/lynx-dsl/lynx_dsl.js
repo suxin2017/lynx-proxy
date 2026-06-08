@@ -170,17 +170,6 @@ function getStringFromWasm0(ptr, len) {
  * @param {string} source
  * @returns {any}
  */
-export function validate_dsl_document_wasm(source) {
-    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.validate_dsl_document_wasm(ptr0, len0);
-    return ret;
-}
-
-/**
- * @param {string} source
- * @returns {any}
- */
 export function validate_dsl(source) {
     const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
@@ -190,23 +179,12 @@ export function validate_dsl(source) {
 
 /**
  * @param {string} source
- * @returns {boolean}
- */
-export function has_dsl_parse_errors(source) {
-    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.has_dsl_parse_errors(ptr0, len0);
-    return ret !== 0;
-}
-
-/**
- * @param {string} source
  * @returns {any}
  */
-export function collect_dsl_syntax_diagnostics(source) {
+export function validate_dsl_document_wasm(source) {
     const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.collect_dsl_syntax_diagnostics(ptr0, len0);
+    const ret = wasm.validate_dsl_document_wasm(ptr0, len0);
     return ret;
 }
 
@@ -221,19 +199,19 @@ export function parse_dsl_program_wasm(source) {
     return ret;
 }
 
-/**
- * @param {string} source
- * @returns {any}
- */
-export function compile_match_expr_wasm(source) {
-    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.compile_match_expr_wasm(ptr0, len0);
-    return ret;
-}
-
 export function init() {
     wasm.init();
+}
+
+/**
+ * @param {string} source
+ * @returns {boolean}
+ */
+export function has_dsl_parse_errors(source) {
+    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.has_dsl_parse_errors(ptr0, len0);
+    return ret !== 0;
 }
 
 /**
@@ -244,6 +222,17 @@ export function init() {
 export function eval_program_wasm(program, facts) {
     const ret = wasm.eval_program_wasm(program, facts);
     return ret !== 0;
+}
+
+/**
+ * @param {string} source
+ * @returns {any}
+ */
+export function compile_match_expr_wasm(source) {
+    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.compile_match_expr_wasm(ptr0, len0);
+    return ret;
 }
 
 /**
@@ -260,6 +249,17 @@ export function format_dsl_wasm(source) {
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     }
     return v2;
+}
+
+/**
+ * @param {string} source
+ * @returns {any}
+ */
+export function collect_dsl_syntax_diagnostics(source) {
+    const ptr0 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.collect_dsl_syntax_diagnostics(ptr0, len0);
+    return ret;
 }
 
 async function __wbg_load(module, imports) {

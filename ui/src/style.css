@@ -160,14 +160,44 @@
   *::-webkit-scrollbar-corner {
     background: transparent;
   }
-  html,
-  body,
-  #app {
+  html {
     height: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
   }
 
   body {
     @apply bg-background text-foreground;
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
+
+  /* Pin the app to the viewport so inner flex min-heights cannot grow the document. */
+  #app {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-shell {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-layout-root {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
 }

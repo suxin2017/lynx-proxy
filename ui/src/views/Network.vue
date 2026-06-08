@@ -178,9 +178,9 @@ onBeforeUnmount(async () => {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col  overflow-hidden">
-    <div class="flex items-center justify-between px-1">
-      <div class="inline-flex min-w-0 flex-1 items-center gap-1">
+  <div class="flex h-full min-h-0 flex-col overflow-hidden">
+    <div class="flex shrink-0 min-w-0 items-center justify-between gap-1 overflow-hidden px-1">
+      <div class="inline-flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
         <Button
           size="icon-sm"
           variant="ghost"
@@ -211,7 +211,7 @@ onBeforeUnmount(async () => {
         />
       </div>
 
-      <div class="flex items-center gap-3">
+      <div class="flex shrink-0 items-center gap-3">
         <Button
           size="icon-sm"
           variant="ghost"
@@ -262,7 +262,7 @@ onBeforeUnmount(async () => {
     <VerticalSplitPanel
       v-if="requestViewMode === 'table'"
       v-model="tableSplitRatio"
-      class="flex-1"
+      class="min-h-0 flex-1"
       :min-top-px="220"
       :min-bottom-px="220"
     >

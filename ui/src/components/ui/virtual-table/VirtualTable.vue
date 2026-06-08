@@ -29,7 +29,6 @@ interface VirtualTableProps<TData extends Record<string, unknown>> {
 }
 
 const props = withDefaults(defineProps<VirtualTableProps<TData>>(), {
-  height: 520,
   rowHeight: 28,
   headerHeight: 30,
   overscanRows: 8,
@@ -220,8 +219,8 @@ function handleBodyRowContextMenu(ev: MouseEvent, row: Row<TData> | undefined) {
   <div
     ref="scrollContainerRef"
     data-slot="virtual-table-container"
-    :class="cn('relative w-full overflow-auto [overflow-anchor:none] rounded-md bg-background', props.class)"
-    :style="{ height: props.height ? `${props.height}px` : '100%' }"
+    :class="cn('relative h-full min-h-0 w-full overflow-auto [overflow-anchor:none] rounded-md bg-background', props.class)"
+    :style="props.height != null ? { height: `${props.height}px` } : undefined"
   >
     <div
       data-slot="virtual-table"
@@ -480,10 +479,10 @@ function handleBodyRowContextMenu(ev: MouseEvent, row: Row<TData> | undefined) {
       <div
         v-else
         data-slot="virtual-table-empty"
-        class="flex items-center justify-center text-xs text-muted-foreground"
-        :style="{
-          height: `${Math.max(160, props.height - props.headerHeight)}px`,
-        }"
+        class="flex min-h-[160px] items-center justify-center text-xs text-muted-foreground"
+        :style="props.height != null
+          ? { height: `${Math.max(160, props.height - props.headerHeight)}px` }
+          : undefined"
       >
         {{ props.emptyText }}
       </div>

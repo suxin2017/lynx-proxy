@@ -141,14 +141,14 @@ fn highlight_primary(primary: &Primary, source: &str, spans: &mut Vec<HighlightS
         }
         Primary::Grouped(expr) => {
             let span = expr.span;
-            if source[span.start..].starts_with('(') {
+            if span.start < source.len() && source[span.start..].starts_with('(') {
                 push_span(
                     spans,
                     Span::new(span.start, span.start + 1),
                     HighlightKind::Paren,
                 );
             }
-            let close = source[..span.end].rfind(')');
+            let close = source[..span.end.min(source.len())].rfind(')');
             if let Some(index) = close {
                 push_span(
                     spans,
@@ -237,10 +237,10 @@ fn find_not_operator(source: &str, span: Span) -> Option<Span> {
     let slice = &source[span.start..span.end.min(source.len())];
     for mat in slice.match_indices(|c: char| c.is_ascii_alphabetic()) {
         let start = span.start + mat.0;
-        let word_end = source[start..span.end]
+        let word_end = source[start..span.end.min(source.len())]
             .find(|c: char| !c.is_ascii_alphabetic())
             .map(|index| start + index)
-            .unwrap_or(span.end);
+            .unwrap_or(span.end.min(source.len()));
         let word = &source[start..word_end];
         if matches_ignore_case(word, "NOT") {
             return Some(Span::new(start, word_end));

@@ -17,6 +17,7 @@ import type {
   DeviceRowState,
   InstallProgress,
   ProxyMode,
+  ProxyState,
 } from './types'
 
 const props = defineProps<{
@@ -154,6 +155,20 @@ function deviceStateClass(state: string): string {
   return 'text-muted-foreground'
 }
 
+function isProxyActiveOnDevice(state: ProxyState): boolean {
+  if (state.lynxManaged || state.reverseActive) {
+    return true
+  }
+  const current = state.currentHttpProxy?.trim()
+  if (!current || current === 'null' || current === ':0') {
+    return false
+  }
+  const portSuffix = `:${port.value}`
+  return current.includes(portSuffix)
+    || current.startsWith('127.0.0.1')
+    || current.startsWith('localhost')
+}
+
 async function syncDeviceProxyState(serial: string) {
   const ctrl = props.controller
   if (!ctrl || isPreview.value) {
@@ -161,7 +176,7 @@ async function syncDeviceProxyState(serial: string) {
   }
   try {
     const state = await ctrl.getProxyState(serial)
-    setDeviceProxyEnabled(serial, Boolean(state.lynxManaged))
+    setDeviceProxyEnabled(serial, isProxyActiveOnDevice(state))
   } catch {
     setDeviceProxyEnabled(serial, false)
   }

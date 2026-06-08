@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::format::validate_dsl_document;
 use crate::highlight::{collect_highlights, HighlightSpan};
 use crate::parser::parse_program;
+use crate::span::clamp_byte_range;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Diagnostic {
@@ -86,9 +87,11 @@ fn diagnostic_from_parse_error(
 ) -> (usize, usize, String) {
     match error {
         crate::error::ParseError::Syntax { span, message: _ } => {
-            let from = span.start.min(source.len());
-            let to = span.end.max(from + 1).min(source.len());
-            let snippet = source[span.start..span.end].trim();
+            let (from, mut to) = clamp_byte_range(source, span.start, span.end);
+            if to <= from {
+                to = clamp_byte_range(source, from, from.saturating_add(1).min(source.len())).1;
+            }
+            let snippet = source[from..to].trim();
             let message = if snippet.is_empty() {
                 "Syntax error".to_string()
             } else {
@@ -97,8 +100,10 @@ fn diagnostic_from_parse_error(
             (from, to, message)
         }
         crate::error::ParseError::TrailingInput { span } => {
-            let from = span.start.min(source.len());
-            let to = span.end.max(from + 1).min(source.len());
+            let (from, mut to) = clamp_byte_range(source, span.start, span.end);
+            if to <= from {
+                to = clamp_byte_range(source, from, from.saturating_add(1).min(source.len())).1;
+            }
             (from, to, "Syntax error".to_string())
         }
     }

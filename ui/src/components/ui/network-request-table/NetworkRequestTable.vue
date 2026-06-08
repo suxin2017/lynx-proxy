@@ -15,9 +15,7 @@ interface NetworkRequestTableProps {
   class?: HTMLAttributes['class']
 }
 
-const props = withDefaults(defineProps<NetworkRequestTableProps>(), {
-  height: 520,
-})
+const props = defineProps<NetworkRequestTableProps>()
 
 const emit = defineEmits<{
   'update:modelValue': [id: string]
@@ -142,7 +140,7 @@ const columns: ColumnDef<NetworkTableRow, unknown>[] = [
 
 <template>
   <VirtualTable
-    :class="cn('w-full', props.class)"
+    :class="cn('h-full min-h-0 w-full', props.class)"
     :data="tableData"
     :columns="columns"
     :height="props.height"

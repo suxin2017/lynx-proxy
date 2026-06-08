@@ -79,8 +79,13 @@ async function onLogin(payload: { username: string, password: string }) {
     @submit="onLogin"
   />
 
-  <div class="h-svh overflow-hidden bg-muted/20">
-    <AppLayout v-model="activeKey" :items="menuItems" class="h-full" panel-class="h-full min-h-0">
+  <div class="app-shell bg-muted/20">
+    <AppLayout
+      v-model="activeKey"
+      :items="menuItems"
+      class="app-layout-root"
+      panel-class="h-full min-h-0"
+    >
       <template #sidebar-footer>
         <button
           type="button"

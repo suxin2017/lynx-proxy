@@ -25,7 +25,29 @@ const emit = defineEmits<{
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
+const containerHeight = ref(0)
 const isDragging = ref(false)
+
+let resizeObserver: ResizeObserver | null = null
+
+function syncContainerHeight() {
+  containerHeight.value = containerRef.value?.clientHeight ?? 0
+}
+
+function effectiveMinHeights() {
+  const available = Math.max(0, containerHeight.value - props.handleHeight)
+  if (available <= 0) {
+    return { minTop: 0, minBottom: 0 }
+  }
+
+  const totalMin = props.minTopPx + props.minBottomPx
+  if (available >= totalMin) {
+    return { minTop: props.minTopPx, minBottom: props.minBottomPx }
+  }
+
+  const minTop = Math.max(0, Math.floor(available * (props.minTopPx / totalMin)))
+  return { minTop, minBottom: Math.max(0, available - minTop) }
+}
 
 let startY = 0
 let startRatio = 44
@@ -39,10 +61,12 @@ const topStyle = computed(() => {
     return undefined
   }
 
+  const { minTop, minBottom } = effectiveMinHeights()
+
   return {
     flexBasis: `calc(${ratio.value}% - ${props.handleHeight / 2}px)`,
-    minHeight: `${props.minTopPx}px`,
-    maxHeight: `calc(100% - ${props.minBottomPx}px)`,
+    minHeight: `${minTop}px`,
+    maxHeight: `calc(100% - ${minBottom}px - ${props.handleHeight}px)`,
   }
 })
 
@@ -51,10 +75,12 @@ const bottomStyle = computed(() => {
     return undefined
   }
 
+  const { minTop, minBottom } = effectiveMinHeights()
+
   return {
     flexBasis: `calc(${100 - ratio.value}% - ${props.handleHeight / 2}px)`,
-    minHeight: `${props.minBottomPx}px`,
-    maxHeight: `calc(100% - ${props.minTopPx}px)`,
+    minHeight: `${minBottom}px`,
+    maxHeight: `calc(100% - ${minTop}px - ${props.handleHeight}px)`,
   }
 })
 
@@ -187,7 +213,16 @@ const handleKeyboardResize = (event: KeyboardEvent) => {
 }
 
 onMounted(() => {
+  syncContainerHeight()
   emitClampedRatio(ratio.value)
+
+  if (typeof ResizeObserver !== 'undefined' && containerRef.value) {
+    resizeObserver = new ResizeObserver(() => {
+      syncContainerHeight()
+      emitClampedRatio(ratio.value)
+    })
+    resizeObserver.observe(containerRef.value)
+  }
 })
 
 watch(() => props.enabled, (enabled) => {
@@ -205,13 +240,15 @@ watch(() => props.modelValue, (value) => {
 
 onBeforeUnmount(() => {
   finishDrag()
+  resizeObserver?.disconnect()
+  resizeObserver = null
 })
 </script>
 
 <template>
   <div
     ref="containerRef"
-    :class="cn('flex min-h-0 w-full flex-col', props.class)"
+    :class="cn('flex min-h-0 w-full flex-col overflow-hidden', props.class)"
   >
     <section
       class="min-h-0 overflow-hidden"
