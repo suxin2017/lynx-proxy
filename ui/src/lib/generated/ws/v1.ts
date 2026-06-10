@@ -50,6 +50,9 @@ export const WsOp = {
   DeviceAdbProxyStateGet: 'device.adb.proxy.state.get',
   DeviceAdbProxyEnable: 'device.adb.proxy.enable',
   DeviceAdbProxyDisable: 'device.adb.proxy.disable',
+  NetworkTrafficFilterHistoryGet: 'network.trafficFilter.history.get',
+  NetworkTrafficFilterHistoryAppend: 'network.trafficFilter.history.append',
+  NetworkTrafficFilterHistoryClear: 'network.trafficFilter.history.clear',
   CaptureStatusChanged: 'capture.status.changed',
   RequestStart: 'request.start',
   RequestBody: 'request.body',
@@ -97,6 +100,9 @@ export type WsRequestOp =
   | 'device.adb.proxy.state.get'
   | 'device.adb.proxy.enable'
   | 'device.adb.proxy.disable'
+  | 'network.trafficFilter.history.get'
+  | 'network.trafficFilter.history.append'
+  | 'network.trafficFilter.history.clear'
 
 export type WsEventOp =
   | 'capture.status.changed'

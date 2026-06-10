@@ -6,6 +6,7 @@ import { type TrafficRecord } from '@/components/ui/request-tree'
 import { HorizontalSplitPanel, VerticalSplitPanel } from '@/components/ui/split-panels'
 import { CaptureRulesPopover, NetworkRequestPanel, TrafficMatchFilterInput, type RequestViewMode } from '@/components/ui/network-panels'
 import { RulesAssetsDrawer } from '@/components/ui/rules-drawer'
+import { useTrafficFilterHistory } from '@/composables/useTrafficFilterHistory'
 import { useTrafficMatchFilter } from '@/composables/useTrafficMatchFilter'
 import { useCaptureStore, useRequestStreamStore, useRulesStore, useSettingsStore, useWsConnectionStore } from '@/stores'
 import { Disc2, ListTree, PlugZap, BrushCleaning, Sheet, Scale, Crosshair } from '@lucide/vue'
@@ -30,8 +31,13 @@ const {
   tableSplitRatio,
   streamEnabled,
   trafficFilterDsl,
-  trafficFilterHistory,
 } = storeToRefs(settingsStore)
+
+const {
+  entries: trafficFilterHistory,
+  push: pushTrafficFilterHistory,
+  clear: clearTrafficFilterHistory,
+} = useTrafficFilterHistory()
 
 const {
   filteredRecords,
@@ -122,12 +128,12 @@ const handleViewModeChange = (mode: RequestViewMode) => {
 const handleFilterSubmit = async (value: string) => {
   await applyFilter(value)
   if (filterState.value === 'valid') {
-    settingsStore.pushTrafficFilterHistory(value)
+    await pushTrafficFilterHistory(value)
   }
 }
 
-const handleClearFilterHistory = () => {
-  settingsStore.clearTrafficFilterHistory()
+const handleClearFilterHistory = async () => {
+  await clearTrafficFilterHistory()
 }
 
 watch(streamEnabled, async (enabled, previous) => {

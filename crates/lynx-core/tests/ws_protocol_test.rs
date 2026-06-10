@@ -181,3 +181,65 @@ async fn ws_capture_rules_focus_crud() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn ws_traffic_filter_history_crud() -> Result<()> {
+    let (server, _client) = setup_self_service_test_server().await?;
+    let addr = server
+        .access_addr_list
+        .first()
+        .expect("proxy listen address");
+
+    let ws_url = format!("ws://{addr}/api/net_request/ws/message-events");
+    let (mut socket, _) = connect_async(&ws_url).await?;
+
+    let request = json!({
+        "version": "v1",
+        "kind": "request",
+        "id": "traffic-filter-history-get-1",
+        "op": "network.trafficFilter.history.get",
+        "timestamp": 0,
+    });
+    socket.send(Message::Text(request.to_string().into())).await?;
+    let response = socket.next().await.expect("ws response")?.into_text()?;
+    let frame: serde_json::Value = serde_json::from_str(&response)?;
+    assert_eq!(frame["kind"], "response");
+    assert_eq!(frame["op"], "network.trafficFilter.history.get");
+    assert!(frame["payload"]["entries"].is_array());
+
+    let request = json!({
+        "version": "v1",
+        "kind": "request",
+        "id": "traffic-filter-history-append-1",
+        "op": "network.trafficFilter.history.append",
+        "timestamp": 0,
+        "payload": {
+            "expr": "host contains example.com"
+        }
+    });
+    socket.send(Message::Text(request.to_string().into())).await?;
+    let response = socket.next().await.expect("ws response")?.into_text()?;
+    let frame: serde_json::Value = serde_json::from_str(&response)?;
+    assert_eq!(frame["kind"], "response");
+    assert_eq!(frame["op"], "network.trafficFilter.history.append");
+    assert_eq!(
+        frame["payload"]["entries"][0].as_str(),
+        Some("host contains example.com")
+    );
+
+    let request = json!({
+        "version": "v1",
+        "kind": "request",
+        "id": "traffic-filter-history-clear-1",
+        "op": "network.trafficFilter.history.clear",
+        "timestamp": 0,
+    });
+    socket.send(Message::Text(request.to_string().into())).await?;
+    let response = socket.next().await.expect("ws response")?.into_text()?;
+    let frame: serde_json::Value = serde_json::from_str(&response)?;
+    assert_eq!(frame["kind"], "response");
+    assert_eq!(frame["op"], "network.trafficFilter.history.clear");
+    assert_eq!(frame["payload"]["entries"].as_array().map(Vec::len), Some(0));
+
+    Ok(())
+}

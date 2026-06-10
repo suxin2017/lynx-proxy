@@ -15,6 +15,7 @@ use axum::Router;
 use axum::routing::get;
 use lynx_storage::dao::general_setting_dao::{GeneralSetting, GeneralSettingDao};
 use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
+use lynx_storage::dao::traffic_filter_history_dao::TrafficFilterHistoryDao;
 
 use crate::layers::message_package_layer::message_event_store::MessageEvent;
 use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
@@ -1484,6 +1485,96 @@ async fn handle_client_request(
                             frame.op,
                             "INVALID_PAYLOAD",
                             "Failed to parse proxy enable payload",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::NETWORK_TRAFFIC_FILTER_HISTORY_GET => {
+            let dao = TrafficFilterHistoryDao::new(state.store.clone());
+            match dao.get().await {
+                Ok(history) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(history).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to get traffic filter history",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::NETWORK_TRAFFIC_FILTER_HISTORY_APPEND => {
+            let Some(expr) = parse_string_payload(&frame.payload, "expr") else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.expr",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            let dao = TrafficFilterHistoryDao::new(state.store.clone());
+            match dao.append(&expr).await {
+                Ok(history) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(history).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to append traffic filter history",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::NETWORK_TRAFFIC_FILTER_HISTORY_CLEAR => {
+            let dao = TrafficFilterHistoryDao::new(state.store.clone());
+            match dao.clear().await {
+                Ok(history) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(history).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to clear traffic filter history",
                             Some(json!({ "reason": err.to_string() })),
                         ),
                     )
