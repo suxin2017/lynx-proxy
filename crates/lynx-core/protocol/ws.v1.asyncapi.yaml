@@ -64,6 +64,9 @@ x-lynx-ops:
     - device.adb.proxy.state.get
     - device.adb.proxy.enable
     - device.adb.proxy.disable
+    - network.trafficFilter.history.get
+    - network.trafficFilter.history.append
+    - network.trafficFilter.history.clear
   event:
     - capture.status.changed
     - request.start
