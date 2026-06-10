@@ -46,6 +46,9 @@ pub mod op {
     pub const DEVICE_ADB_PROXY_STATE_GET: &str = "device.adb.proxy.state.get";
     pub const DEVICE_ADB_PROXY_ENABLE: &str = "device.adb.proxy.enable";
     pub const DEVICE_ADB_PROXY_DISABLE: &str = "device.adb.proxy.disable";
+    pub const NETWORK_TRAFFIC_FILTER_HISTORY_GET: &str = "network.trafficFilter.history.get";
+    pub const NETWORK_TRAFFIC_FILTER_HISTORY_APPEND: &str = "network.trafficFilter.history.append";
+    pub const NETWORK_TRAFFIC_FILTER_HISTORY_CLEAR: &str = "network.trafficFilter.history.clear";
     pub const CAPTURE_STATUS_CHANGED: &str = "capture.status.changed";
     pub const REQUEST_START: &str = "request.start";
     pub const REQUEST_BODY: &str = "request.body";
@@ -93,7 +96,10 @@ pub mod op {
             "device.adb.devices.list" |
             "device.adb.proxy.state.get" |
             "device.adb.proxy.enable" |
-            "device.adb.proxy.disable"
+            "device.adb.proxy.disable" |
+            "network.trafficFilter.history.get" |
+            "network.trafficFilter.history.append" |
+            "network.trafficFilter.history.clear"
         )
     }
 

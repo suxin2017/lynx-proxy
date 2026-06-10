@@ -7,11 +7,9 @@ const SPLIT_RATIO_STORAGE_KEY = 'lynx.network.splitRatio'
 const TABLE_SPLIT_RATIO_STORAGE_KEY = 'lynx.network.tableSplitRatio'
 const STREAM_ENABLED_STORAGE_KEY = 'lynx.network.streamEnabled'
 const TRAFFIC_FILTER_DSL_STORAGE_KEY = 'lynx.network.trafficFilterDsl'
-const TRAFFIC_FILTER_HISTORY_STORAGE_KEY = 'lynx.network.trafficFilterHistory'
 
 export const DEFAULT_SPLIT_RATIO = 42
 export const DEFAULT_TABLE_SPLIT_RATIO = 44
-export const DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT = 20
 
 const clampSplitRatio = (value: number) => Math.min(80, Math.max(20, value))
 
@@ -21,7 +19,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const tableSplitRatio = ref(DEFAULT_TABLE_SPLIT_RATIO)
   const streamEnabled = ref(true)
   const trafficFilterDsl = ref('')
-  const trafficFilterHistory = ref<string[]>([])
 
   let hydrated = false
 
@@ -65,14 +62,6 @@ export const useSettingsStore = defineStore('settings', () => {
     window.localStorage.setItem(TRAFFIC_FILTER_DSL_STORAGE_KEY, value)
   }
 
-  function persistTrafficFilterHistory(values: string[]) {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    window.localStorage.setItem(TRAFFIC_FILTER_HISTORY_STORAGE_KEY, JSON.stringify(values))
-  }
-
   function hydrate() {
     if (hydrated || typeof window === 'undefined') {
       return
@@ -103,38 +92,7 @@ export const useSettingsStore = defineStore('settings', () => {
       trafficFilterDsl.value = storedTrafficFilterDsl
     }
 
-    const storedTrafficFilterHistory = window.localStorage.getItem(TRAFFIC_FILTER_HISTORY_STORAGE_KEY)
-    if (storedTrafficFilterHistory) {
-      try {
-        const parsed = JSON.parse(storedTrafficFilterHistory)
-        if (Array.isArray(parsed) && parsed.every(v => typeof v === 'string')) {
-          trafficFilterHistory.value = parsed
-            .map(v => v.trim())
-            .filter(Boolean)
-            .slice(0, DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT)
-        }
-      }
-      catch {
-        // Ignore invalid storage payload.
-      }
-    }
-
     hydrated = true
-  }
-
-  function pushTrafficFilterHistory(expr: string) {
-    const trimmed = expr.trim()
-    if (!trimmed) {
-      return
-    }
-
-    const next = trafficFilterHistory.value.filter(v => v !== trimmed)
-    next.unshift(trimmed)
-    trafficFilterHistory.value = next.slice(0, DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT)
-  }
-
-  function clearTrafficFilterHistory() {
-    trafficFilterHistory.value = []
   }
 
   function resetNetworkPreferences() {
@@ -143,14 +101,12 @@ export const useSettingsStore = defineStore('settings', () => {
     tableSplitRatio.value = DEFAULT_TABLE_SPLIT_RATIO
     streamEnabled.value = true
     trafficFilterDsl.value = ''
-    trafficFilterHistory.value = []
 
     persistViewMode(viewMode.value)
     persistSplitRatio(splitRatio.value)
     persistTableSplitRatio(tableSplitRatio.value)
     persistStreamEnabled(streamEnabled.value)
     persistTrafficFilterDsl(trafficFilterDsl.value)
-    persistTrafficFilterHistory(trafficFilterHistory.value)
   }
 
   watch(viewMode, persistViewMode)
@@ -179,18 +135,13 @@ export const useSettingsStore = defineStore('settings', () => {
 
   watch(trafficFilterDsl, persistTrafficFilterDsl)
 
-  watch(trafficFilterHistory, persistTrafficFilterHistory, { deep: true })
-
   return {
     viewMode,
     splitRatio,
     tableSplitRatio,
     streamEnabled,
     trafficFilterDsl,
-    trafficFilterHistory,
     hydrate,
-    pushTrafficFilterHistory,
-    clearTrafficFilterHistory,
     resetNetworkPreferences,
   }
 })
