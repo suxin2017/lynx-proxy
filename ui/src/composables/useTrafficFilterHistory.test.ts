@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { WsOp } from '@/lib/generated/ws/v1'
 
 const wsMock = {
-  call: vi.fn(async () => ({ entries: [] })),
+  call: vi.fn(async (_op?: string, _payload?: Record<string, unknown>) => ({ entries: [] as string[] })),
   isConnected: true,
 }
 

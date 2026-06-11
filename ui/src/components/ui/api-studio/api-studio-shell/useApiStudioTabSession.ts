@@ -14,6 +14,7 @@ import {
   resolveActiveTabId,
   writeApiStudioTabSession,
   type ApiStudioTabSession,
+  type PersistedActiveTabRef,
   type PersistedTabRef,
 } from '../lib/tab-session-storage'
 import type { ComposeResponse } from '../types'
@@ -65,8 +66,8 @@ export function useApiStudioTabSession(options: UseApiStudioTabSessionOptions) {
       }))
 
     const activeTab = options.tabs.value.find(tab => tab.id === options.activeTabId.value)
-    let active = activeTab?.requestNodeId
-      ? { kind: 'request' as const, requestNodeId: activeTab.requestNodeId }
+    let active: PersistedActiveTabRef | undefined = activeTab?.requestNodeId
+      ? { kind: 'request', requestNodeId: activeTab.requestNodeId }
       : undefined
 
     if (options.sidebarView.value === 'history' && options.selectedHistoryId.value) {
@@ -162,9 +163,10 @@ export function useApiStudioTabSession(options: UseApiStudioTabSessionOptions) {
       options.sidebarView.value = session.sidebarView
     }
 
-    if (session.active?.kind === 'history') {
+    const activeRef = session.active
+    if (activeRef?.kind === 'history') {
       const entry = options.historyEntries.value.find(
-        item => item.id === session.active.entryId,
+        item => item.id === activeRef.entryId,
       )
       if (entry) {
         options.selectedHistoryId.value = entry.id
