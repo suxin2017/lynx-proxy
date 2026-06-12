@@ -1,4 +1,5 @@
 import { onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { WsOp } from '@/lib/generated/ws/v1'
 import { useWsConnectionStore } from '@/stores'
 
@@ -10,12 +11,13 @@ interface TrafficFilterHistoryPayload {
 
 export function useTrafficFilterHistory() {
   const wsConnectionStore = useWsConnectionStore()
+  const { isConnected } = storeToRefs(wsConnectionStore)
   const entries = ref<string[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
   async function refresh() {
-    if (!wsConnectionStore.isConnected) {
+    if (!isConnected.value) {
       return
     }
 
@@ -38,7 +40,7 @@ export function useTrafficFilterHistory() {
 
   async function push(expr: string) {
     const trimmed = expr.trim()
-    if (!trimmed || !wsConnectionStore.isConnected) {
+    if (!trimmed || !isConnected.value) {
       return
     }
 
@@ -56,7 +58,7 @@ export function useTrafficFilterHistory() {
   }
 
   async function clear() {
-    if (!wsConnectionStore.isConnected) {
+    if (!isConnected.value) {
       entries.value = []
       return
     }
@@ -74,19 +76,16 @@ export function useTrafficFilterHistory() {
   }
 
   onMounted(() => {
-    if (wsConnectionStore.isConnected) {
+    if (isConnected.value) {
       void refresh()
     }
   })
 
-  watch(
-    () => wsConnectionStore.isConnected,
-    (connected) => {
-      if (connected) {
-        void refresh()
-      }
-    },
-  )
+  watch(isConnected, (connected) => {
+    if (connected) {
+      void refresh()
+    }
+  })
 
   return {
     entries,
