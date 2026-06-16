@@ -2,17 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2026-06-16
+
+### 🚀 Features
+
+- Add Android ADB proxy with drawer UI and lazy platform-tools install
+- Add API Studio workbench and replace api_debug persistence ([#63](https://github.com/suxin2017/lynx-server/issues/63))
+- *(network)* Persist traffic filter history on backend via WebSocket ([#65](https://github.com/suxin2017/lynx-server/issues/65))
+
+### 🐛 Bug Fixes
+
+- *(api-studio)* Address PR review for draft saves, timestamps, and a11y
+- *(ui)* Resolve TypeScript errors blocking release build
+- *(ui)* Read WS connection state via storeToRefs in filter history
+
 ## [0.5.1] - 2026-06-04
 
 ### 🐛 Bug Fixes
 
-- Use Vue hash routing so refreshing the Web UI (e.g. `#/network`) no longer hits server `not found`
+- *(ui)* Use hash routing for refresh-safe Web UI (v0.5.1)
 
 ## [0.5.0] - 2026-06-04
 
-### 🚀 Features
+### 🐛 Bug Fixes
 
-- Migrate to Vue UI, enhance DSL editor, and refine request handling ([#62](https://github.com/suxin2017/lynx-proxy/pull/62))
+- *(ci)* Sync ui package-lock and use Node 22 for release build
+- *(ci)* Use npm install in release UI build
+
+### 📚 Documentation
+
+- Enhance README and README.zh-CN with detailed rule matching and action descriptions
 
 ## [0.4.8] - 2025-08-03
 
