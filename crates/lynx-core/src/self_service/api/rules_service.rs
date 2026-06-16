@@ -15,9 +15,12 @@ fn map_validation(err: RequestProcessingError) -> anyhow::Error {
     }
 }
 
-pub async fn list_rules(state: &RouteState) -> Result<Vec<RequestRule>> {
+pub async fn list_rules(state: &RouteState, project_id: Option<String>) -> Result<Vec<RequestRule>> {
     let dao = RequestProcessingDao::new(state.store.clone());
-    dao.list_rules().await.map_err(Into::into)
+    match project_id {
+        Some(project) => dao.list_rules_by_project(&project).await.map_err(Into::into),
+        None => dao.list_rules().await.map_err(Into::into),
+    }
 }
 
 pub async fn get_rule(state: &RouteState, rule_id: i32) -> Result<Option<RequestRule>> {

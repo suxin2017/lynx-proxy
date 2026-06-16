@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Block handler configuration
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockHandlerConfig {
     pub status_code: Option<u16>,

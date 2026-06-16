@@ -24,9 +24,21 @@ pub struct RulesCacheEntry {
     pub compiled: Vec<CompiledRule>,
 }
 
+#[derive(Clone, PartialEq, Eq)]
+struct RulesDirFingerprint {
+    file_count: usize,
+    max_mtime: std::time::SystemTime,
+}
+
+#[derive(Clone)]
+struct RulesCacheState {
+    entry: RulesCacheEntry,
+    fingerprint: RulesDirFingerprint,
+}
+
 pub struct DataStore {
     root: PathBuf,
-    rules_cache: RwLock<Option<RulesCacheEntry>>,
+    rules_cache: RwLock<Option<RulesCacheState>>,
 }
 
 impl DataStore {
@@ -94,31 +106,51 @@ impl DataStore {
         *cache = None;
     }
 
-    pub async fn get_rules_cache(&self) -> Result<Vec<RequestRule>> {
-        {
-            let cache = self.rules_cache.read().await;
-            if let Some(entry) = cache.as_ref() {
-                return Ok(entry.rules.clone());
+    async fn rules_dir_fingerprint(&self) -> Result<RulesDirFingerprint> {
+        use std::time::UNIX_EPOCH;
+
+        let mut file_count = 0usize;
+        let mut max_mtime = UNIX_EPOCH;
+        let mut entries = fs::read_dir(self.rules_dir()).await?;
+        while let Some(entry) = entries.next_entry().await? {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if !name.ends_with(".json") || name == "templates.json" {
+                continue;
+            }
+            file_count += 1;
+            let meta = entry.metadata().await?;
+            if let Ok(mtime) = meta.modified() {
+                max_mtime = max_mtime.max(mtime);
             }
         }
+        Ok(RulesDirFingerprint {
+            file_count,
+            max_mtime,
+        })
+    }
 
-        let entry = self.load_rules_cache_entry().await?;
-        let rules = entry.rules.clone();
-        let mut cache = self.rules_cache.write().await;
-        *cache = Some(entry);
-        Ok(rules)
+    async fn is_rules_cache_stale(&self, fingerprint: &RulesDirFingerprint) -> Result<bool> {
+        Ok(self.rules_dir_fingerprint().await? != *fingerprint)
+    }
+
+    pub async fn get_rules_cache(&self) -> Result<Vec<RequestRule>> {
+        Ok(self.get_rules_cache_entry().await?.rules)
     }
 
     pub async fn get_rules_cache_entry(&self) -> Result<RulesCacheEntry> {
-        {
-            let cache = self.rules_cache.read().await;
-            if let Some(entry) = cache.as_ref() {
-                return Ok(entry.clone());
+        if let Some(state) = self.rules_cache.read().await.clone() {
+            if !self.is_rules_cache_stale(&state.fingerprint).await? {
+                return Ok(state.entry);
             }
         }
+
+        let fingerprint = self.rules_dir_fingerprint().await?;
         let entry = self.load_rules_cache_entry().await?;
         let mut cache = self.rules_cache.write().await;
-        *cache = Some(entry.clone());
+        *cache = Some(RulesCacheState {
+            entry: entry.clone(),
+            fingerprint,
+        });
         Ok(entry)
     }
 
@@ -219,6 +251,46 @@ impl DataStore {
             use crate::dao::api_studio::CollectionFile;
             write_json_atomic(&path, &CollectionFile::default()).await?;
         }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::dao::request_processing_dao::RequestRule;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn reloads_rules_cache_when_rule_files_change_externally() -> Result<()> {
+        let dir = tempdir()?;
+        let store = DataStore::new(dir.path()).await?;
+
+        let rule_path = store.rule_path(1);
+        let rule = RequestRule {
+            id: Some(1),
+            project: "default".to_string(),
+            name: "v1".to_string(),
+            description: None,
+            enabled: true,
+            priority: 10,
+            capture: crate::dao::request_processing_dao::CaptureRule {
+                id: Some(1),
+                match_expr: "/".to_string(),
+            },
+            handlers: vec![],
+        };
+        write_json_atomic(&rule_path, &rule).await?;
+
+        let first = store.get_rules_cache_entry().await?;
+        assert_eq!(first.rules[0].name, "v1");
+
+        let mut updated = rule.clone();
+        updated.name = "v2".to_string();
+        write_json_atomic(&rule_path, &updated).await?;
+
+        let second = store.get_rules_cache_entry().await?;
+        assert_eq!(second.rules[0].name, "v2");
         Ok(())
     }
 }

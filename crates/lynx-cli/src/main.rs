@@ -1,7 +1,12 @@
 use anyhow::Result;
 use clap::Parser;
+use lynx_cli::cert_cmd::{self, CertOptions};
 use lynx_cli::daemon::DaemonManager;
-use lynx_cli::{Args, Commands, LogConfig, ProxyServerApp, ServerArgs, resolve_data_dir};
+use lynx_cli::rules_cmd::{RulesOptions, run_apply, run_pull, run_push, run_schema_export};
+use lynx_cli::{
+    Args, CertCommands, Commands, LogConfig, ProxyServerApp, RulesCommands, RulesSchemaCommands,
+    ServerArgs, resolve_data_dir,
+};
 use tokio::signal;
 
 #[tokio::main]
@@ -81,6 +86,54 @@ async fn main() -> Result<()> {
                 println!("\nReceived Ctrl+C, shutting down...");
             }
         }
+        Commands::Rules { command } => match command {
+            RulesCommands::Push { args } => {
+                run_push(RulesOptions {
+                    file: args.file,
+                    data_dir: args.data_dir,
+                    project: args.project,
+                })
+                .await?;
+            }
+            RulesCommands::Pull { args } => {
+                run_pull(RulesOptions {
+                    file: args.file,
+                    data_dir: args.data_dir,
+                    project: args.project,
+                })
+                .await?;
+            }
+            RulesCommands::Apply { args } => {
+                run_apply(RulesOptions {
+                    file: args.file,
+                    data_dir: args.data_dir,
+                    project: args.project,
+                })
+                .await?;
+            }
+            RulesCommands::Schema { command } => match command {
+                RulesSchemaCommands::Export { out } => {
+                    run_schema_export(out).await?;
+                }
+            },
+        },
+        Commands::Cert { command } => match command {
+            CertCommands::Install { args } => {
+                cert_cmd::run_install(CertOptions {
+                    data_dir: args.data_dir,
+                })?;
+            }
+            CertCommands::Uninstall { args } => {
+                cert_cmd::run_uninstall(CertOptions {
+                    data_dir: args.data_dir,
+                })?;
+            }
+            CertCommands::Status { args } => {
+                cert_cmd::run_status(CertOptions {
+                    data_dir: args.data_dir,
+                })?;
+            }
+        },
     }
 
     Ok(())

@@ -143,6 +143,13 @@ impl DaemonManager {
         Ok(())
     }
 
+    pub fn is_daemon_running(&self) -> bool {
+        match self.get_status() {
+            Ok(status) => self.is_process_running(status.pid),
+            Err(_) => false,
+        }
+    }
+
     pub fn show_status(&self) -> Result<()> {
         match self.get_status() {
             Ok(status) => {

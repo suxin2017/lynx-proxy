@@ -31,6 +31,11 @@ pub mod op {
     pub const RULES_ENABLED_SET: &str = "rules.enabled.set";
     pub const RULES_DELETE: &str = "rules.delete";
     pub const RULES_TEMPLATES_GET: &str = "rules.templates.get";
+    pub const PROJECTS_LIST_GET: &str = "projects.list.get";
+    pub const PROJECTS_ACTIVE_SET: &str = "projects.active.set";
+    pub const PROJECTS_CREATE: &str = "projects.create";
+    pub const PROJECTS_RENAME: &str = "projects.rename";
+    pub const PROJECTS_DELETE: &str = "projects.delete";
     pub const CAPTURE_RULES_FOCUS_LIST_GET: &str = "capture.rules.focus.list.get";
     pub const CAPTURE_RULES_IGNORE_LIST_GET: &str = "capture.rules.ignore.list.get";
     pub const CAPTURE_RULES_FOCUS_UPSERT: &str = "capture.rules.focus.upsert";
@@ -82,6 +87,11 @@ pub mod op {
             "rules.enabled.set" |
             "rules.delete" |
             "rules.templates.get" |
+            "projects.list.get" |
+            "projects.active.set" |
+            "projects.create" |
+            "projects.rename" |
+            "projects.delete" |
             "capture.rules.focus.list.get" |
             "capture.rules.ignore.list.get" |
             "capture.rules.focus.upsert" |

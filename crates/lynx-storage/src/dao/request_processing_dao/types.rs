@@ -2,8 +2,14 @@ use serde::{Deserialize, Serialize};
 
 use super::handlers::HandlerRule;
 
+pub const DEFAULT_PROJECT_ID: &str = "default";
+
+fn default_project() -> String {
+    DEFAULT_PROJECT_ID.to_string()
+}
+
 /// 完整的捕获规则
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CaptureRule {
     pub id: Option<i32>,
@@ -11,10 +17,12 @@ pub struct CaptureRule {
 }
 
 /// 请求处理规则
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct RequestRule {
     pub id: Option<i32>,
+    #[serde(default = "default_project")]
+    pub project: String,
     pub name: String,
     pub description: Option<String>,
     pub enabled: bool,
@@ -24,7 +32,7 @@ pub struct RequestRule {
 }
 
 /// Modify request handler configuration
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ModifyRequestConfig {
     pub modify_headers: Option<std::collections::HashMap<String, String>>,
@@ -34,7 +42,7 @@ pub struct ModifyRequestConfig {
 }
 
 /// Local file handler configuration
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalFileConfig {
     pub file_path: String,
@@ -46,6 +54,7 @@ impl Default for RequestRule {
     fn default() -> Self {
         Self {
             id: None,
+            project: default_project(),
             name: "New Rule".to_string(),
             description: None,
             enabled: true,

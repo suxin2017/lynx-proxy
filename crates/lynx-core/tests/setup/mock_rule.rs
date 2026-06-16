@@ -14,6 +14,7 @@ pub async fn create_test_rule(
 ) -> Result<i32> {
     let rule = RequestRule {
         id: None,
+        project: "default".to_string(),
         name: name.to_string(),
         description: Some("Test rule description".to_string()),
         enabled,
@@ -42,6 +43,7 @@ pub async fn mock_test_rule(
 
     let rule = RequestRule {
         id: None,
+        project: "default".to_string(),
         name: "Test Rule".to_string(),
         description: Some("Test rule description".to_string()),
         enabled: true,

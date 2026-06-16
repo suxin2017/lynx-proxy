@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// HTML script injection handler configuration
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct HtmlScriptInjectorConfig {
     /// Content to inject into HTML pages

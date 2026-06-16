@@ -125,6 +125,7 @@ export type RuleActionDraft =
 
 export interface RuleDraft {
   id: string
+  project?: string
   name: string
   description: string
   enabled: boolean
@@ -455,6 +456,7 @@ export function createRuleDraft(seed?: Partial<RuleDraft>): RuleDraft {
   const id = seed?.id ?? `rule-${Math.random().toString(36).slice(2, 9)}`
   return {
     id,
+    project: seed?.project,
     name: seed?.name ?? '未命名规则',
     description: seed?.description ?? '',
     enabled: seed?.enabled ?? true,

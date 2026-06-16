@@ -5,8 +5,11 @@ use clap::{Args as ClapArgs, Parser, Subcommand, ValueEnum};
 use directories::ProjectDirs;
 
 pub mod daemon;
+pub mod cert;
+pub mod cert_cmd;
 pub mod log_config;
 pub mod proxy_server_app;
+pub mod rules_cmd;
 
 pub use daemon::DaemonManager;
 pub use log_config::LogConfig;
@@ -73,6 +76,91 @@ pub enum Commands {
         /// Run in daemon mode (hidden)
         #[arg(long, hide = true, default_value_t = false)]
         daemon: bool,
+    },
+    /// Push, pull, and apply project rule config (.lynx.json)
+    Rules {
+        #[command(subcommand)]
+        command: RulesCommands,
+    },
+    /// Install or manage the Lynx root CA in the system trust store (macOS)
+    Cert {
+        #[command(subcommand)]
+        command: CertCommands,
+    },
+}
+
+#[derive(ClapArgs, Debug, Clone)]
+pub struct RulesFileArgs {
+    /// Project config file path (default: ./.lynx.json in current directory)
+    #[arg(long)]
+    pub file: Option<std::path::PathBuf>,
+
+    /// Proxy data directory
+    #[arg(long)]
+    pub data_dir: Option<String>,
+
+    /// Rule project id (default: active project from data_dir/settings/projects.json)
+    #[arg(long)]
+    pub project: Option<String>,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum RulesCommands {
+    /// Push local proxy rules (data-dir) to .lynx.json (creates the file if missing)
+    Push {
+        #[command(flatten)]
+        args: RulesFileArgs,
+    },
+    /// Pull rules from .lynx.json into the local proxy data directory (creates the file if missing)
+    Pull {
+        #[command(flatten)]
+        args: RulesFileArgs,
+    },
+    /// Apply enabled switches from .lynx.json (toggle only, no create/delete)
+    Apply {
+        #[command(flatten)]
+        args: RulesFileArgs,
+    },
+    /// Export JSON Schema for `.lynx.json` project rule config
+    Schema {
+        #[command(subcommand)]
+        command: RulesSchemaCommands,
+    },
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum RulesSchemaCommands {
+    /// Export the JSON Schema to a file
+    Export {
+        /// Output path for the schema JSON (default: ./schemas/rules-export.schema.json)
+        #[arg(long)]
+        out: Option<std::path::PathBuf>,
+    },
+}
+
+#[derive(ClapArgs, Debug, Clone)]
+pub struct CertArgs {
+    /// Proxy data directory
+    #[arg(long)]
+    pub data_dir: Option<String>,
+}
+
+#[derive(Subcommand, Debug, Clone)]
+pub enum CertCommands {
+    /// Trust the Lynx root CA in login Keychain (macOS + Chrome)
+    Install {
+        #[command(flatten)]
+        args: CertArgs,
+    },
+    /// Remove the Lynx root CA from login Keychain
+    Uninstall {
+        #[command(flatten)]
+        args: CertArgs,
+    },
+    /// Show root CA and Keychain trust status
+    Status {
+        #[command(flatten)]
+        args: CertArgs,
     },
 }
 

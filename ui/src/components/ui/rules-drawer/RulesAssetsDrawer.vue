@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ArrowLeft, X } from '@lucide/vue'
 import { cn } from '@/lib/utils'
@@ -12,8 +12,10 @@ import { createRuleDraft, getRuleValidationErrors, isRuleSaveDisabled } from '@/
 import RuleWorkbench from '@/components/ui/rule-workbench/RuleWorkbench.vue'
 import { ComposeWorkbench } from '@/components/ui/compose'
 import DrawerTabs from './DrawerTabs.vue'
+import ProjectSidebar from './ProjectSidebar.vue'
 import RulesListView from './RulesListView.vue'
 import RuleEditorToolbar from './RuleEditorToolbar.vue'
+import { HorizontalSplitPanel } from '@/components/ui/split-panels'
 import { AndroidDevicePanel, createWsAdbController } from '@/components/ui/android-device'
 import type { AndroidDevicePreview } from '@/components/ui/android-device'
 import { useWsConnectionStore } from '@/stores/modules/ws-connection.store'
@@ -61,6 +63,8 @@ const emit = defineEmits<{
   'rules:delete': [id: string]
 }>()
 
+const rulesSplitRatio = ref(26)
+
 const tabs = computed(() => ([
   { key: 'rules', label: '规则' },
   { key: 'compose', label: 'Compose' },
@@ -80,6 +84,10 @@ const {
   selectedRuleId: storeSelectedRuleId,
   ruleDraft: storeRuleDraft,
   reordering: storeReordering,
+  projects: storeProjects,
+  activeProjectId: storeActiveProjectId,
+  creatingProject: storeCreatingProject,
+  createProjectError: storeCreateProjectError,
 } = storeToRefs(rulesStore)
 
 /** Store is source of truth; props mirror v-model for Storybook. */
@@ -113,7 +121,6 @@ function openRulesEditor() {
 
 function onCreateRule() {
   emit('rules:create')
-  emit('update:ruleDraft', createRuleDraft())
   openRulesEditor()
 }
 
@@ -265,46 +272,69 @@ function onRuleDraftUpdate(next: RuleDraft) {
 
           <!-- Rules -->
           <div v-else-if="activePrimaryTabDisplay === 'rules'" class="flex h-full min-h-0 flex-col">
-            <div v-if="rulesPaneDisplay === 'list'" class="min-h-0 flex-1">
-              <RulesListView
-                :rules="props.rules"
-                :selected-rule-id="props.selectedRuleId"
-                :reordering="storeReordering"
-                class="h-full"
-                @create="onCreateRule"
-                @edit="onEditRule"
-                @duplicate="onDuplicateRule"
-                @select="onSelectRule"
-                @toggle-enabled="(id, enabled) => emit('rules:toggle-enabled', id, enabled)"
-                @reorder="ids => emit('rules:reorder', ids)"
-                @delete="onDeleteRule"
-              />
-            </div>
+            <HorizontalSplitPanel
+              v-model="rulesSplitRatio"
+              class="min-h-0 flex-1"
+              :min-left-px="180"
+              :min-right-px="320"
+            >
+              <template #left>
+                <ProjectSidebar
+                  :projects="storeProjects"
+                  :active-project-id="storeActiveProjectId"
+                  :saving="storeCreatingProject"
+                  :error="storeCreateProjectError"
+                  class="h-full"
+                  @select="rulesStore.selectProject"
+                  @create="rulesStore.createProjectWithName"
+                  @rename="rulesStore.renameProject"
+                  @move-rules="rulesStore.moveRulesToProject"
+                />
+              </template>
 
-            <div v-else class="flex h-full min-h-0 flex-col">
-              <RuleEditorToolbar
-                :draft="props.ruleDraft"
-                :saving="props.saving"
-                :save-disabled="ruleSaveDisabled"
-                @update:draft="onRuleDraftUpdate"
-                @save="handleToolbarSave"
-              />
+              <template #right>
+                <div v-if="rulesPaneDisplay === 'list'" class="flex h-full min-h-0 flex-col overflow-hidden">
+                  <RulesListView
+                    :rules="props.rules"
+                    :selected-rule-id="props.selectedRuleId"
+                    :reordering="storeReordering"
+                    class="min-h-0 flex-1"
+                    @create="onCreateRule"
+                    @edit="onEditRule"
+                    @duplicate="onDuplicateRule"
+                    @select="onSelectRule"
+                    @toggle-enabled="(id, enabled) => emit('rules:toggle-enabled', id, enabled)"
+                    @reorder="ids => emit('rules:reorder', ids)"
+                    @delete="onDeleteRule"
+                  />
+                </div>
 
-              <RuleWorkbench
-                :rules="props.rules"
-                :draft="props.ruleDraft"
-                :selected-rule-id="props.selectedRuleId"
-                :dirty="props.dirty"
-                :loading="props.loading"
-                :saving="props.saving"
-                embedded
-                :show-list="false"
-                class="min-h-0 flex-1"
-                @update:draft="onRuleDraftUpdate"
-                @update:selected-rule-id="emit('update:selectedRuleId', $event)"
-                @save="handleToolbarSave"
-              />
-            </div>
+                <div v-else class="flex h-full min-h-0 flex-col overflow-hidden">
+                  <RuleEditorToolbar
+                    :draft="props.ruleDraft"
+                    :saving="props.saving"
+                    :save-disabled="ruleSaveDisabled"
+                    @update:draft="onRuleDraftUpdate"
+                    @save="handleToolbarSave"
+                  />
+
+                  <RuleWorkbench
+                    :rules="props.rules"
+                    :draft="props.ruleDraft"
+                    :selected-rule-id="props.selectedRuleId"
+                    :dirty="props.dirty"
+                    :loading="props.loading"
+                    :saving="props.saving"
+                    embedded
+                    :show-list="false"
+                    class="min-h-0 flex-1"
+                    @update:draft="onRuleDraftUpdate"
+                    @update:selected-rule-id="emit('update:selectedRuleId', $event)"
+                    @save="handleToolbarSave"
+                  />
+                </div>
+              </template>
+            </HorizontalSplitPanel>
           </div>
         </div>
       </section>

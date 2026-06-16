@@ -1,0 +1,461 @@
+{
+  "$id": "https://raw.githubusercontent.com/suxin2017/lynx-proxy/v0.6.0/schemas/rules-export.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CaptureRule": {
+      "description": "完整的捕获规则",
+      "properties": {
+        "id": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "matchExpr": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "matchExpr"
+      ],
+      "type": "object"
+    },
+    "ConfigRule": {
+      "properties": {
+        "capture": {
+          "$ref": "#/definitions/CaptureRule"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "handlers": {
+          "items": {
+            "$ref": "#/definitions/HandlerRule"
+          },
+          "type": "array"
+        },
+        "id": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "priority": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "capture",
+        "enabled",
+        "handlers",
+        "id",
+        "name",
+        "priority"
+      ],
+      "type": "object"
+    },
+    "DelayType": {
+      "description": "Type of delay to apply",
+      "oneOf": [
+        {
+          "description": "Delay before processing the request",
+          "enum": [
+            "beforeRequest"
+          ],
+          "type": "string"
+        },
+        {
+          "description": "Delay after processing the request",
+          "enum": [
+            "afterRequest"
+          ],
+          "type": "string"
+        },
+        {
+          "description": "Delay both before and after processing",
+          "enum": [
+            "both"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "HandlerRule": {
+      "description": "Handler rule configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "executionOrder": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "handlerType": {
+          "$ref": "#/definitions/HandlerRuleType"
+        },
+        "id": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "executionOrder",
+        "handlerType"
+      ],
+      "type": "object"
+    },
+    "HandlerRuleType": {
+      "oneOf": [
+        {
+          "description": "Block handler configuration",
+          "properties": {
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "statusCode": {
+              "format": "uint16",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "type": {
+              "enum": [
+                "block"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Modify request handler configuration",
+          "properties": {
+            "modifyBody": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "modifyHeaders": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "modifyMethod": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "modifyUrl": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "enum": [
+                "modifyRequest"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Local file handler configuration",
+          "properties": {
+            "contentType": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "filePath": {
+              "type": "string"
+            },
+            "statusCode": {
+              "format": "uint16",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "type": {
+              "enum": [
+                "localFile"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "filePath",
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Modify request handler configuration",
+          "properties": {
+            "modifyBody": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "modifyHeaders": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "modifyMethod": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "modifyStatusCode": {
+              "format": "uint16",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "type": {
+              "enum": [
+                "modifyResponse"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "targetAuthority": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "targetPath": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "targetScheme": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "enum": [
+                "proxyForward"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "HTML script injection handler configuration",
+          "properties": {
+            "content": {
+              "description": "Content to inject into HTML pages",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "injectionPosition": {
+              "description": "Position to inject the content (head, body-start, body-end)",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "type": {
+              "enum": [
+                "htmlScriptInjector"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Delay handler configuration for adding request processing delays",
+          "properties": {
+            "delayMs": {
+              "description": "Delay duration in milliseconds",
+              "format": "uint64",
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "delayType": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/DelayType"
+                }
+              ],
+              "description": "Whether to delay before or after processing the request"
+            },
+            "type": {
+              "enum": [
+                "delay"
+              ],
+              "type": "string"
+            },
+            "varianceMs": {
+              "description": "Optional variance in milliseconds for random delay (±variance)",
+              "format": "uint64",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "delayMs",
+            "delayType",
+            "type"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Throttle handler configuration (latency + upload/download bandwidth)",
+          "properties": {
+            "downloadKbps": {
+              "description": "Used when preset is Custom; download speed in Kbps",
+              "format": "uint64",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "latencyMs": {
+              "description": "Used when preset is Custom; round-trip latency in milliseconds",
+              "format": "uint64",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "preset": {
+              "$ref": "#/definitions/ThrottlePreset"
+            },
+            "type": {
+              "enum": [
+                "throttle"
+              ],
+              "type": "string"
+            },
+            "uploadKbps": {
+              "description": "Used when preset is Custom; upload speed in Kbps",
+              "format": "uint64",
+              "minimum": 0.0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "preset",
+            "type"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ThrottlePreset": {
+      "description": "Chrome DevTools-style network throttling preset",
+      "enum": [
+        "fast3G",
+        "slow3G",
+        "offline",
+        "custom"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "$schema": {
+      "description": "Optional JSON Schema URL for editor tooling (VSCode/Cursor).",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "configId": {
+      "type": "string"
+    },
+    "project": {
+      "type": "string"
+    },
+    "rules": {
+      "default": [],
+      "items": {
+        "$ref": "#/definitions/ConfigRule"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "configId",
+    "project"
+  ],
+  "title": "LynxProjectConfig",
+  "type": "object"
+}

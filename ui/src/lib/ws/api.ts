@@ -1,11 +1,17 @@
 import { WsOp, type WsEventFrame } from '@/lib/generated/ws/v1'
 import type { CaptureFilter, GeneralSetting } from '@/lib/http/settings-types'
 import type {
+  ProjectsActiveSetPayload,
+  ProjectsCreatePayload,
+  ProjectsDeletePayload,
+  ProjectsFileDto,
+  ProjectsRenamePayload,
   RequestRuleDto,
   RulesDeletePayload,
   RulesDeleteResponse,
   RulesEnabledPayload,
   RulesGetPayload,
+  RulesListPayload,
   RulesListResponse,
   RuleTemplatesResponse,
 } from '@/lib/ws/rules-types'
@@ -97,12 +103,17 @@ export interface WsApi {
   getCaptureFilter: () => Promise<CaptureFilter>
   setCaptureFilter: (filter: CaptureFilter) => Promise<unknown>
   getCertificatePath: () => Promise<CertificatePathResponse>
-  listRules: () => Promise<RulesListResponse>
+  listRules: (payload?: RulesListPayload) => Promise<RulesListResponse>
   getRule: (payload: RulesGetPayload) => Promise<RequestRuleDto>
   saveRule: (rule: RequestRuleDto) => Promise<RequestRuleDto>
   setRuleEnabled: (payload: RulesEnabledPayload) => Promise<RequestRuleDto>
   deleteRule: (payload: RulesDeletePayload) => Promise<RulesDeleteResponse>
   listRuleTemplates: () => Promise<RuleTemplatesResponse>
+  listProjects: () => Promise<ProjectsFileDto>
+  setActiveProject: (payload: ProjectsActiveSetPayload) => Promise<ProjectsFileDto>
+  createProject: (payload: ProjectsCreatePayload) => Promise<ProjectsFileDto>
+  renameProject: (payload: ProjectsRenamePayload) => Promise<ProjectsFileDto>
+  deleteProject: (payload: ProjectsDeletePayload) => Promise<ProjectsFileDto>
   onEvent: (handler: (frame: WsEventFrame<Record<string, unknown>>) => void) => () => void
 }
 
@@ -124,7 +135,8 @@ export const createWsApi = (client: WsClient): WsApi => {
     getCaptureFilter: () => client.call<CaptureFilter>(WsOp.SettingsCaptureFilterGet),
     setCaptureFilter: (filter) => client.call(WsOp.SettingsCaptureFilterSet, filter),
     getCertificatePath: () => client.call<CertificatePathResponse>(WsOp.SettingsCertificatePathGet),
-    listRules: () => client.call<RulesListResponse>(WsOp.RulesListGet),
+    listRules: (payload) =>
+      client.call<RulesListResponse, RulesListPayload>(WsOp.RulesListGet, payload),
     getRule: (payload) => client.call<RequestRuleDto, RulesGetPayload>(WsOp.RulesGet, payload),
     saveRule: (rule) =>
       client.call<RequestRuleDto>(WsOp.RulesSaveSet, rule as unknown as Record<string, unknown>),
@@ -133,6 +145,15 @@ export const createWsApi = (client: WsClient): WsApi => {
     deleteRule: (payload) =>
       client.call<RulesDeleteResponse, RulesDeletePayload>(WsOp.RulesDelete, payload),
     listRuleTemplates: () => client.call<RuleTemplatesResponse>(WsOp.RulesTemplatesGet),
+    listProjects: () => client.call<ProjectsFileDto>(WsOp.ProjectsListGet),
+    setActiveProject: (payload) =>
+      client.call<ProjectsFileDto, ProjectsActiveSetPayload>(WsOp.ProjectsActiveSet, payload),
+    createProject: (payload) =>
+      client.call<ProjectsFileDto, ProjectsCreatePayload>(WsOp.ProjectsCreate, payload),
+    renameProject: (payload) =>
+      client.call<ProjectsFileDto, ProjectsRenamePayload>(WsOp.ProjectsRename, payload),
+    deleteProject: (payload) =>
+      client.call<ProjectsFileDto, ProjectsDeletePayload>(WsOp.ProjectsDelete, payload),
     onEvent: (handler) => client.onEvent(handler),
   }
 }

@@ -38,12 +38,6 @@ pub fn platform_tools_dir(data_root: &Path) -> PathBuf {
     data_root.join("platform-tools")
 }
 
-pub async fn read_manifest(dir: &Path) -> Option<InstalledManifest> {
-    let path = dir.join("installed.json");
-    let text = fs::read_to_string(path).await.ok()?;
-    serde_json::from_str(&text).ok()
-}
-
 pub async fn write_manifest(dir: &Path) -> Result<()> {
     let manifest = InstalledManifest {
         installed_at_ms: std::time::SystemTime::now()

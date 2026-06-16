@@ -75,6 +75,23 @@ tasks:
     cmds:
       - cargo run --package lynx-core --example proxy_server_example
 
+  install-lynx:
+    desc: Build UI and install lynx CLI (debug) to ~/.cargo/bin
+    deps: [build-ui]
+    cmds:
+      - cargo install --path crates/lynx-cli --force --debug
+
+  lynx:
+    desc: Run local lynx CLI without install (pass args after --, e.g. task lynx -- rules push)
+    cmds:
+      - cargo run -p lynx-cli -- {{.CLI_ARGS}}
+
+  dev-lynx:
+    desc: Run lynx proxy in foreground (rebuilds UI first; optional args after --)
+    deps: [build-ui]
+    cmds:
+      - cargo run -p lynx-cli -- run {{.CLI_ARGS}}
+
   traffic-sample:
     desc: Send realistic mixed HTTP(S) traffic through the local proxy (for Network UI)
     cmds:

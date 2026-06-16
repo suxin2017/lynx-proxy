@@ -22,6 +22,7 @@ export interface HandlerRuleDto {
 
 export interface RequestRuleDto {
   id?: number | null
+  project?: string
   name: string
   description?: string | null
   enabled: boolean
@@ -32,6 +33,38 @@ export interface RequestRuleDto {
 
 export interface RulesListResponse {
   rules: RequestRuleDto[]
+}
+
+export interface RuleProjectDto {
+  id: string
+  name: string
+}
+
+export interface ProjectsFileDto {
+  activeProjectId: string
+  projects: RuleProjectDto[]
+}
+
+export interface ProjectsCreatePayload {
+  id: string
+  name: string
+}
+
+export interface ProjectsRenamePayload {
+  projectId: string
+  name: string
+}
+
+export interface ProjectsDeletePayload {
+  projectId: string
+}
+
+export interface ProjectsActiveSetPayload {
+  projectId: string
+}
+
+export interface RulesListPayload {
+  projectId?: string
 }
 
 export interface RuleTemplatesResponse {

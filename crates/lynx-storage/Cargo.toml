@@ -16,6 +16,7 @@ anyhow = { workspace = true }
 tokio = { workspace = true }
 serde_json = "1.0.135"
 serde = { version = "1.0.217", features = ["derive"] }
+schemars = "0.8"
 glob = "0.3"
 regex = "1.10"
 chrono = { version = "0.4", features = ["serde"] }

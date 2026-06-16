@@ -222,6 +222,7 @@ export function requestRuleToDraft(rule: RequestRuleDto): RuleDraft {
 
   return createRuleDraft({
     id: ruleIdToString(rule.id),
+    project: rule.project ?? 'default',
     name: rule.name,
     description: rule.description ?? '',
     enabled: rule.enabled,
@@ -231,7 +232,7 @@ export function requestRuleToDraft(rule: RequestRuleDto): RuleDraft {
   })
 }
 
-export function draftToRequestRule(draft: RuleDraft): RequestRuleDto {
+export function draftToRequestRule(draft: RuleDraft, fallbackProject = 'default'): RequestRuleDto {
   const numericId = parseRuleId(draft.id)
   const handlers: HandlerRuleDto[] = [...draft.actions]
     .sort((a, b) => a.order - b.order)
@@ -247,6 +248,7 @@ export function draftToRequestRule(draft: RuleDraft): RequestRuleDto {
 
   return {
     id: numericId,
+    project: draft.project ?? fallbackProject,
     name: draft.name,
     description: draft.description || null,
     enabled: draft.enabled,

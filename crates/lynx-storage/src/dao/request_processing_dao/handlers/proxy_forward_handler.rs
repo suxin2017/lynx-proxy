@@ -28,7 +28,7 @@ where
     }))
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ProxyForwardConfig {
     #[serde(default, deserialize_with = "deserialize_optional_non_empty_string")]

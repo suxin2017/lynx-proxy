@@ -2,12 +2,26 @@
 import type { HTMLAttributes } from 'vue'
 import { computed, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
+import Sortable from 'sortablejs'
 import { GripVertical, ListFilter, Plus } from '@lucide/vue'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import type { RuleWorkbenchRuleItem } from '@/components/ui/rule-workbench'
 import { drawerEmptyStateClass, drawerListItemClass, drawerSearchInputClass } from './drawer-styles'
+import {
+  clearDraggingRuleIds,
+  draggingRuleIds,
+  externalRuleDropHandled,
+  setRuleDragData,
+} from './rule-drag'
+import { useRuleListSelection } from './useRuleListSelection'
+
+interface SortableItemEvent {
+  oldIndex?: number
+  from?: HTMLElement
+  item?: HTMLElement
+}
 
 const props = withDefaults(defineProps<{
   rules: RuleWorkbenchRuleItem[]
@@ -31,6 +45,19 @@ const emit = defineEmits<{
 
 const searchTerm = ref('')
 const localRules = ref<RuleWorkbenchRuleItem[]>([])
+const listRootRef = ref<HTMLElement | null>(null)
+
+const {
+  selectedCount,
+  isSelected,
+  clearSelection,
+  pruneSelection,
+  toggleSelected,
+  setSelected,
+  isAllSelected,
+  isAnySelected,
+  idsForDrag,
+} = useRuleListSelection()
 
 const filteredRules = computed(() => {
   const keyword = searchTerm.value.trim().toLowerCase()
@@ -41,17 +68,117 @@ const filteredRules = computed(() => {
   ))
 })
 
+const visibleRuleIds = computed(() => filteredRules.value.map(r => r.id))
+const allVisibleSelected = computed(() => isAllSelected(visibleRuleIds.value))
+const anyVisibleSelected = computed(() => isAnySelected(visibleRuleIds.value))
+const someVisibleSelected = computed(() => anyVisibleSelected.value && !allVisibleSelected.value)
+
+const orderedRuleIds = computed(() => localRules.value.map(rule => rule.id))
+
 watch(filteredRules, (next) => {
-  // Keep a local mutable list for native drag-drop.
   localRules.value = [...next]
+  pruneSelection(next.map(rule => rule.id))
 }, { immediate: true })
 
 const dragDisabled = computed(() => props.reordering || searchTerm.value.trim().length > 0)
 
-function onDragEnd() {
+function toggleSelectAllVisible() {
+  const ids = visibleRuleIds.value
+  if (ids.length === 0) return
+  if (allVisibleSelected.value) {
+    clearSelection()
+  }
+  else {
+    setSelected(ids)
+  }
+}
+
+function clearSortableMultiSelect(rootEl: HTMLElement) {
+  rootEl.querySelectorAll('.sortable-selected').forEach((el) => {
+    Sortable.utils.deselect(el as HTMLElement)
+  })
+}
+
+function syncSortableMultiSelect(rootEl: HTMLElement, ruleIds: string[]) {
+  clearSortableMultiSelect(rootEl)
+  for (const id of ruleIds) {
+    const el = rootEl.querySelector(`li[data-rule-id="${id}"]`)
+    if (el) {
+      Sortable.utils.select(el as HTMLElement)
+    }
+  }
+}
+
+function prepareDragSelection(draggedId: string, rootEl: HTMLElement | null | undefined) {
+  const ids = idsForDrag(draggedId, orderedRuleIds.value)
+  draggingRuleIds.value = ids
+  if (rootEl) {
+    syncSortableMultiSelect(rootEl, ids)
+  }
+  return ids
+}
+
+function onSortableChoose(evt: SortableItemEvent) {
   if (dragDisabled.value) return
+  const draggedId = evt.item?.dataset.ruleId
+  if (!draggedId) return
+  prepareDragSelection(draggedId, evt.item?.parentElement ?? evt.from)
+  externalRuleDropHandled.value = false
+}
+
+function onSortableStart(evt: SortableItemEvent) {
+  if (dragDisabled.value) return
+  const index = evt.oldIndex
+  if (index == null || index < 0) return
+  const rule = localRules.value[index]
+  if (!rule) return
+  prepareDragSelection(rule.id, evt.from)
+}
+
+function onDragEnd() {
+  const skipReorder = externalRuleDropHandled.value
+  clearDraggingRuleIds()
+  externalRuleDropHandled.value = false
+  if (listRootRef.value) {
+    clearSortableMultiSelect(listRootRef.value)
+  }
+  if (dragDisabled.value || skipReorder) {
+    if (skipReorder) {
+      clearSelection()
+    }
+    return
+  }
   const ordered = localRules.value.map(r => r.id)
   emit('reorder', ordered)
+}
+
+function setDragData(dataTransfer: DataTransfer, dragEl: HTMLElement) {
+  if (dragDisabled.value) return
+  const draggedId = dragEl.dataset.ruleId
+  if (!draggedId) return
+  const ids = idsForDrag(draggedId, orderedRuleIds.value)
+  draggingRuleIds.value = ids
+  setRuleDragData(dataTransfer, ids)
+}
+
+function onRuleRowClick(rule: RuleWorkbenchRuleItem, index: number, ev: MouseEvent) {
+  // Click toggles selection (card highlight is selection state).
+  // Editing is done via the explicit buttons.
+  void index
+  void ev
+  toggleSelected(rule.id)
+}
+
+function onListBackgroundClick() {
+  clearSelection()
+}
+
+function dragHandleTitle(ruleId: string) {
+  const count = selectedCount.value
+  if (count > 1 && isSelected(ruleId)) {
+    return `拖拽排序；将移动 ${count} 条规则`
+  }
+  return '拖拽排序；拖到左侧项目可移动归属'
 }
 
 function ruleStateLabel(state?: RuleWorkbenchRuleItem['state']) {
@@ -69,7 +196,7 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
 
 <template>
   <section :class="cn('flex h-full min-h-0 flex-col overflow-hidden', props.class)">
-    <div class="flex items-center justify-between gap-2 px-2 pb-2">
+    <div class="flex items-center justify-between gap-2 px-2 pb-2 pt-2">
       <div class="relative flex-1">
         <ListFilter class="pointer-events-none absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
         <input
@@ -87,29 +214,80 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
       </Button>
     </div>
 
-    <ul class="flex-1 space-y-1 overflow-auto px-2 pb-2">
-      <li v-if="filteredRules.length === 0" :class="drawerEmptyStateClass">
+    <div class="flex items-center justify-between gap-2 px-2 pb-2">
+      <div class="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-sm px-1 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+          :disabled="visibleRuleIds.length === 0"
+          @click="toggleSelectAllVisible"
+        >
+          <input
+            type="checkbox"
+            class="h-3.5 w-3.5 accent-primary"
+            :checked="allVisibleSelected"
+            :indeterminate.prop="someVisibleSelected"
+            @click.stop
+            @change="toggleSelectAllVisible"
+          >
+          <span class="truncate">全选（当前可见）</span>
+        </button>
+
+        <span
+          class="text-xs text-muted-foreground"
+          :class="selectedCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0'"
+        >
+          已选 {{ selectedCount }}
+        </span>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-8 px-2 text-xs"
+          :class="selectedCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0'"
+          @click="clearSelection"
+        >
+          清空
+        </Button>
+      </div>
+    </div>
+
+    <div class="min-h-0 flex-1 overflow-auto px-2 pb-2" @click.self="onListBackgroundClick">
+      <div v-if="filteredRules.length === 0" :class="drawerEmptyStateClass">
         没有匹配当前筛选条件的规则。
-      </li>
+      </div>
+
       <Draggable
         v-else
+        ref="listRootRef"
         v-model="localRules"
         item-key="id"
+        tag="ul"
+        class="space-y-2"
         :disabled="dragDisabled"
         handle=".drag-handle"
+        :multi-drag="true"
+        selected-class="sortable-selected"
+        :set-data="setDragData"
         :animation="180"
         ghost-class="rule-drag-ghost"
         chosen-class="rule-drag-chosen"
         drag-class="rule-drag-dragging"
+        @choose="onSortableChoose"
+        @start="onSortableStart"
         @end="onDragEnd"
       >
-        <template #item="{ element: rule }">
-          <li>
+        <template #item="{ element: rule, index }">
+          <li :data-rule-id="rule.id">
             <div
               :class="cn(
-                drawerListItemClass(rule.id === props.selectedRuleId),
+                drawerListItemClass(isSelected(rule.id)),
+                'cursor-default',
                 !rule.enabled && 'opacity-70',
               )"
+              @click="onRuleRowClick(rule, index, $event)"
             >
               <div class="flex items-start gap-2">
                 <button
@@ -117,8 +295,9 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
                   class="drag-handle mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground"
                   :class="dragDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-grab active:cursor-grabbing'"
                   :disabled="dragDisabled"
-                  :aria-label="`拖拽排序 ${rule.name}`"
-                  title="拖拽排序"
+                  :aria-label="`拖拽排序或移动 ${rule.name}`"
+                  :title="dragHandleTitle(rule.id)"
+                  @click.stop
                 >
                   <GripVertical class="h-4 w-4" />
                 </button>
@@ -131,7 +310,7 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
                   />
                 </div>
 
-                <button type="button" class="min-w-0 flex-1 text-left" @click="emit('select', rule.id)">
+                <div class="min-w-0 flex-1 select-none text-left">
                   <div class="flex items-center justify-between gap-2">
                     <p class="truncate text-xs font-semibold text-foreground">{{ rule.name }}</p>
                     <span class="shrink-0 text-[10px] font-medium" :class="ruleStateClass(rule.state)">
@@ -141,14 +320,14 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
                   <p class="mt-1 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
                     {{ rule.summary || '暂无摘要。' }}
                   </p>
-                </button>
+                </div>
               </div>
 
               <div class="mt-2 flex justify-end gap-1">
-                <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="emit('edit', rule.id)">
+                <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click.stop="emit('edit', rule.id)">
                   编辑
                 </Button>
-                <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="emit('duplicate', rule.id)">
+                <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click.stop="emit('duplicate', rule.id)">
                   复制
                 </Button>
                 <Button
@@ -156,7 +335,7 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
                   size="sm"
                   class="h-7 px-2 text-xs text-destructive hover:text-destructive"
                   :aria-label="`删除 ${rule.name}`"
-                  @click="emit('delete', rule.id)"
+                  @click.stop="emit('delete', rule.id)"
                 >
                   删除
                 </Button>
@@ -165,7 +344,7 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
           </li>
         </template>
       </Draggable>
-    </ul>
+    </div>
   </section>
 </template>
 
@@ -181,5 +360,10 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
 .rule-drag-dragging {
   opacity: 0.85;
 }
-</style>
 
+/* Sortable MultiDrag adds class to the draggable item (li). Style the card (child div). */
+:deep(li.sortable-selected > div) {
+  border-color: hsl(var(--primary) / 0.45);
+  background-color: hsl(var(--primary) / 0.05);
+}
+</style>

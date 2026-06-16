@@ -6,7 +6,7 @@ use super::{
     proxy_forward_handler::ProxyForwardConfig,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase", tag = "type")]
 pub enum HandlerRuleType {
     Block(BlockHandlerConfig),
@@ -20,7 +20,7 @@ pub enum HandlerRuleType {
 }
 
 /// Handler rule configuration
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct HandlerRule {
     pub id: Option<i32>,

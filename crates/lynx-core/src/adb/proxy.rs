@@ -28,7 +28,7 @@ fn proxy_state_path(data_root: &Path, serial: &str) -> PathBuf {
     proxy_state_dir(data_root).join(format!("{safe}.json"))
 }
 
-pub async fn load_persisted(data_root: &Path, serial: &str) -> Option<PersistedProxyStateFile> {
+async fn load_persisted(data_root: &Path, serial: &str) -> Option<PersistedProxyStateFile> {
     let path = proxy_state_path(data_root, serial);
     let text = fs::read_to_string(path).await.ok()?;
     serde_json::from_str(&text).ok()

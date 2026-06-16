@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Chrome DevTools-style network throttling preset
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum ThrottlePreset {
     #[default]
@@ -12,7 +12,7 @@ pub enum ThrottlePreset {
 }
 
 /// Throttle handler configuration (latency + upload/download bandwidth)
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ThrottleHandlerConfig {
     pub preset: ThrottlePreset,

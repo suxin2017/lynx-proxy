@@ -1,3 +1,7 @@
+mod fingerprint;
+
+pub use fingerprint::{CA_COMMON_NAME, cert_sha256_fingerprint, cert_sha256_fingerprint_from_pem};
+
 use std::{fs, io::Cursor, net::IpAddr, path::PathBuf, sync::Arc};
 
 use anyhow::{Ok, Result, anyhow};
@@ -29,10 +33,10 @@ fn gen_ca_cert(key: &KeyPair) -> Result<Certificate> {
     params.is_ca = IsCa::Ca(BasicConstraints::Unconstrained);
     params
         .distinguished_name
-        .push(DnType::CommonName, "lynxProxy");
+        .push(DnType::CommonName, fingerprint::CA_COMMON_NAME);
     params
         .distinguished_name
-        .push(DnType::OrganizationName, "lynxProxy");
+        .push(DnType::OrganizationName, fingerprint::CA_COMMON_NAME);
     params.not_before = yesterday;
     params.not_after = tomorrow;
     params

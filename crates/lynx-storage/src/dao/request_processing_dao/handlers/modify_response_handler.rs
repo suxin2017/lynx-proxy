@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Modify request handler configuration
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ModifyResponseConfig {
     pub modify_headers: Option<std::collections::HashMap<String, String>>,

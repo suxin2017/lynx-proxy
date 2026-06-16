@@ -22,7 +22,6 @@ use axum::response::Response;
 use axum::routing::get;
 use file_service::get_file;
 use http::Method;
-use http::header::HeaderValue;
 use tower::ServiceExt;
 pub mod api;
 pub mod auth;
@@ -32,9 +31,13 @@ pub mod utils;
 
 pub use auth::AuthConfig;
 pub use auth_extensions::AuthConfigExtensionsExt;
-use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::cors::CorsLayer;
 #[cfg(debug_assertions)]
 use tower_http::cors::Any;
+#[cfg(not(debug_assertions))]
+use http::header::HeaderValue;
+#[cfg(not(debug_assertions))]
+use tower_http::cors::AllowOrigin;
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/api";
 
@@ -52,6 +55,7 @@ fn cors_layer(access_addr_list: &[SocketAddr]) -> CorsLayer {
 
     #[cfg(debug_assertions)]
     {
+        let _ = access_addr_list;
         return base.allow_origin(Any);
     }
 

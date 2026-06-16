@@ -20,6 +20,7 @@ use lynx_storage::dao::traffic_filter_history_dao::TrafficFilterHistoryDao;
 use crate::layers::message_package_layer::message_event_store::MessageEvent;
 use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
 use crate::self_service::api::net_request_service;
+use crate::self_service::api::projects_service;
 use crate::self_service::api::rules_service;
 use crate::self_service::api::capture_rules_service;
 use crate::self_service::api::adb_service;
@@ -716,7 +717,13 @@ async fn handle_client_request(
         }
 
         op::RULES_LIST_GET => {
-            match rules_service::list_rules(state).await {
+            let project_id = frame
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.get("projectId"))
+                .and_then(Value::as_str)
+                .map(str::to_string);
+            match rules_service::list_rules(state, project_id).await {
                 Ok(rules) => {
                     send_frame(
                         socket_tx,
@@ -976,6 +983,219 @@ async fn handle_client_request(
                             frame.op,
                             "DB_ERROR",
                             "Failed to list rule templates",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+
+        op::PROJECTS_LIST_GET => {
+            match projects_service::list_projects(state).await {
+                Ok(file) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(file).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to list projects",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::PROJECTS_ACTIVE_SET => {
+            let Some(project_id) = frame
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.get("projectId"))
+                .and_then(Value::as_str)
+            else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.projectId",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match projects_service::set_active_project(state, project_id).await {
+                Ok(file) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(file).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to set active project",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::PROJECTS_CREATE => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+            let Some(id) = payload.get("id").and_then(Value::as_str) else {
+                send_frame(
+                    socket_tx,
+                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.id", None),
+                )
+                .await;
+                return;
+            };
+            let Some(name) = payload.get("name").and_then(Value::as_str) else {
+                send_frame(
+                    socket_tx,
+                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.name", None),
+                )
+                .await;
+                return;
+            };
+
+            match projects_service::create_project(state, id.to_string(), name.to_string()).await {
+                Ok(project) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(project).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to create project",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::PROJECTS_RENAME => {
+            let Some(payload) = frame.payload.clone() else {
+                send_frame(
+                    socket_tx,
+                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload", None),
+                )
+                .await;
+                return;
+            };
+            let Some(project_id) = payload.get("projectId").and_then(Value::as_str) else {
+                send_frame(
+                    socket_tx,
+                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.projectId", None),
+                )
+                .await;
+                return;
+            };
+            let Some(name) = payload.get("name").and_then(Value::as_str) else {
+                send_frame(
+                    socket_tx,
+                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.name", None),
+                )
+                .await;
+                return;
+            };
+
+            match projects_service::rename_project(state, project_id, name.to_string()).await {
+                Ok(project) => {
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, serde_json::to_value(project).unwrap_or_default()),
+                    )
+                    .await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to rename project",
+                            Some(json!({ "reason": err.to_string() })),
+                        ),
+                    )
+                    .await;
+                }
+            }
+        }
+        op::PROJECTS_DELETE => {
+            let Some(project_id) = frame
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.get("projectId"))
+                .and_then(Value::as_str)
+            else {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.projectId",
+                        None,
+                    ),
+                )
+                .await;
+                return;
+            };
+
+            match projects_service::delete_project(state, project_id).await {
+                Ok(()) => {
+                    send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "projectId": project_id }))).await;
+                }
+                Err(err) => {
+                    send_frame(
+                        socket_tx,
+                        error_frame(
+                            frame.id,
+                            frame.op,
+                            "DB_ERROR",
+                            "Failed to delete project",
                             Some(json!({ "reason": err.to_string() })),
                         ),
                     )

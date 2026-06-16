@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Delay handler configuration for adding request processing delays
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct DelayHandlerConfig {
     /// Delay duration in milliseconds
@@ -13,7 +13,7 @@ pub struct DelayHandlerConfig {
 }
 
 /// Type of delay to apply
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub enum DelayType {
     /// Delay before processing the request

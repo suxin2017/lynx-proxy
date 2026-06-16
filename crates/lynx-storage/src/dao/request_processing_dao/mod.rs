@@ -37,12 +37,32 @@ impl RequestProcessingDao {
         Ok(rule_id)
     }
 
+    pub async fn create_rule_with_id(&self, rule_id: i32, mut rule: RequestRule) -> Result<()> {
+        if self.store.rule_path(rule_id).exists() {
+            return Err(anyhow!("Rule {rule_id} already exists"));
+        }
+        rule.id = Some(rule_id);
+        rule.capture.id = rule.capture.id.or(Some(rule_id));
+        write_json_atomic(&self.store.rule_path(rule_id), &rule).await?;
+        self.store.invalidate_rules_cache().await;
+        Ok(())
+    }
+
     pub async fn get_rule(&self, rule_id: i32) -> Result<Option<RequestRule>> {
         read_json(&self.store.rule_path(rule_id)).await
     }
 
     pub async fn list_rules(&self) -> Result<Vec<RequestRule>> {
         self.store.get_rules_cache().await
+    }
+
+    pub async fn list_rules_by_project(&self, project: &str) -> Result<Vec<RequestRule>> {
+        Ok(self
+            .list_rules()
+            .await?
+            .into_iter()
+            .filter(|rule| rule.project == project)
+            .collect())
     }
 
     pub async fn update_rule(&self, rule: RequestRule) -> Result<()> {

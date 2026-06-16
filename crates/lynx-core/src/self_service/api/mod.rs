@@ -9,4 +9,5 @@ pub mod capture_rules_service;
 pub mod net_request;
 pub mod net_request_service;
 pub mod net_request_ws;
+pub mod projects_service;
 pub mod rules_service;

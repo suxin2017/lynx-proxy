@@ -14,6 +14,7 @@ rcgen = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 rustls-pemfile = { workspace = true }
+sha2 = "0.10"
 rsa = "0.9.7"
 time = "0.3.37"
 rand = "0.8.5"

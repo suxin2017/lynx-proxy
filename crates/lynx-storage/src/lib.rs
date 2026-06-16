@@ -1,5 +1,6 @@
 pub mod dao;
 pub mod models;
+pub mod project_config;
 pub mod storage;
 
 pub use dao::api_studio::ApiStudioStore;

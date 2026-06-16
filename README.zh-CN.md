@@ -30,14 +30,66 @@
 
 ### 规则捕获与处理
 
-每条规则包含 **匹配表达式**（`matchExpr`）、一个或多个 **Action**（后端称 handler），以及 `priority`、`enabled`。请求面板顶栏的 **DSL 过滤**与规则的 `matchExpr` **语法相同**，仅用于界面筛选，不会改写流量。
+规则用于按条件 **改写 / Mock / 拦截 / 重定向** 流量。每条规则包含：
 
-**匹配与执行**
+- **匹配表达式**（`matchExpr`）
+- 一个或多个 **Action**（后端称 handler）
+- `enabled`（开关）与 `priority`（规则之间的排序）
+
+请求面板顶栏的 **DSL 过滤**与规则的 `matchExpr` **语法相同**，但它 **只影响界面筛选**，不会改写流量。
+
+#### 3 分钟上手（UI）
+
+1. 启动 Lynx 并打开 Web UI。
+2. 打开 **规则抽屉**，先选择一个 **项目** Tab（或保持 `Default`）。
+3. 点击 **新建**，填写：
+   - **matchExpr**：`httpbin.org AND /anything`
+   - 添加一个 Action：**修改响应** → 将响应 Body 设置为 `hello from lynx`
+   - 打开 **Enabled**，然后 **保存**。
+4. 触发一条命中该规则的请求（例如访问 `https://httpbin.org/anything`），确认响应被替换。
+
+提示：`task readme-demo` 会写入演示流量与演示规则（见 `scripts/fixtures/demo-rules.json`）。
+
+#### 常用配方（可直接复制）
+
+**拦截某个接口**
+
+```text
+example.com AND /api/v1/forbidden
+```
+
+Action：**拦截（Block）** → `statusCode=403`，`reason="Blocked by Lynx rule"`。
+
+**仅对 POST 注入请求头**
+
+```text
+httpbin.org AND -X POST
+```
+
+Action：**修改请求** → 添加 Header `X-Lynx-Demo: readme`。
+
+**重定向上游（Proxy forward）**
+
+```text
+example.com AND /static/**
+```
+
+Action：**Proxy forward** → 将 `targetScheme/targetAuthority/targetPath` 指向本地服务（例如 Vite/webpack dev server）。
+
+**用本地文件响应**
+
+```text
+example.com AND /assets/app.js
+```
+
+Action：**本地文件（Local file）** → `filePath=/绝对或相对路径/app.js`。
+
+#### 匹配与执行机制
 
 - 所有 **已启用** 且 `matchExpr` 命中的规则都会生效（不是「只取第一条」）。
 - 各规则下的 handler 合并后按 **`executionOrder` 升序**执行（数值越小越先执行）。
-- 请求阶段 **拦截（Block）**、**本地文件（Local file）** 可直接返回响应并跳过后续上游请求。
-- 上游响应返回后，会再次执行 **修改响应**、**HTML 脚本注入**、**延迟**（`afterRequest` / `both`）、**限速** 等支持响应阶段的 handler。
+- 请求阶段 **拦截（Block）**、**本地文件（Local file）** 可直接返回响应并跳过上游请求。
+- 上游响应返回后，会再次执行响应阶段的 Action（例如 **修改响应**、**HTML 脚本注入**、**延迟** 的 `afterRequest/both`、**限速** 等）。
 
 ```mermaid
 flowchart LR
@@ -94,7 +146,7 @@ NOT */rest/* AND -X POST
 
 #### Action（动作）
 
-同一规则可配置多个 Action，用 `executionOrder` 控制顺序。演示数据可执行 `task readme-demo`（见 [`scripts/fixtures/demo-rules.json`](scripts/fixtures/demo-rules.json)）。
+同一规则可配置多个 Action，用 `executionOrder` 控制顺序。
 
 | Action | 典型用途 | 主要字段 |
 |--------|----------|----------|
@@ -123,6 +175,51 @@ NOT */rest/* AND -X POST
 }
 ```
 
+#### 项目规则文件（`.lynx.json`）
+
+在项目根目录用 **`.lynx.json`** 管理可纳入 Git 的代理规则。默认路径为运行命令时的当前目录下的 `./.lynx.json`；代理运行时数据仍在 `--data-dir`（默认随系统）。
+
+规则按 **项目** 组织（每条规则带 `project` 标签）。UI 提供项目 Tab；CLI 使用 `--project <id>`（默认取 `data_dir/settings/projects.json` 中的当前项目）。`.lynx.json` 中每条规则有稳定的 **`id`**，供 pull/apply 按 id 匹配。
+
+`.lynx.json` 已支持 **JSON Schema**：文件顶层会包含 **`$schema`** 字段，VSCode/Cursor 可据此进行校验与自动补全。
+
+Schema URL 形式（固定到版本 tag）：`https://raw.githubusercontent.com/suxin2017/lynx-proxy/v<version>/schemas/rules-export.schema.json`
+
+| 命令 | 说明 |
+|------|------|
+| `lynx rules pull` | 从 `.lynx.json` 拉取 → 代理数据目录（按 `id` upsert）；文件不存在时自动创建；导入前自动备份；**不会**删除配置文件中未列出的已有规则。 |
+| `lynx rules push` | 从代理数据目录推送已持久化的规则 → `.lynx.json`（按 rule `id` 合并）；文件不存在时自动创建（生成 `configId`）。 |
+| `lynx rules apply` | **仅同步开关** — 在配置所属项目内，按 `id` 同步 `enabled` 开关；不创建、不删除、不改规则内容。若规则只存在于配置文件中，apply 会跳过它 —— 先执行 `lynx rules pull`。 |
+
+在本仓库中（重新）生成 schema 文件：
+
+```bash
+lynx rules schema export --out schemas/rules-export.schema.json
+```
+
+团队协作示例：
+
+```bash
+# UI 编辑规则后
+lynx rules push --project example-project
+git add .lynx.json && git commit -m "chore: 更新代理规则"
+
+# git pull / 切换分支后
+lynx rules pull     # 同步规则定义
+lynx rules apply    # 同步哪些规则处于开启状态
+```
+
+共用参数：`--file <路径>`（默认 `./.lynx.json`）、`--data-dir <路径>`、`--project <id>`。
+
+代理会在下一次请求时自动从磁盘重新加载规则，**无需 restart**。
+
+#### 排错清单（规则不生效时）
+
+- **UI 过滤 vs 规则**：请求面板 DSL 过滤只影响列表显示，不会改写流量。
+- **项目 Tab**：规则列表是按项目分组的，确认你在当前项目里编辑/开启了规则。
+- **Enabled + 顺序**：确认规则已开启，且 `executionOrder` 合理；可能被更早执行的规则短路（Block/Local file）。
+- **匹配要素**：origin-form 请求（URI 只有 path）时 host/port 来自 `Host` 头；只写 path 或只写 `?k=v` 的语义也不同（见上方“匹配说明”）。
+
 ### Compose（API 调试）
 
 在界面内直接构造并发送 HTTP 请求，编辑 Query / Header / Body，查看响应 —— 类似 Postman，与当前代理会话一体。
@@ -132,8 +229,25 @@ NOT */rest/* AND -X POST
 - `start` / `stop` / `restart` — 后台守护进程
 - `run` — 前台启动（默认端口 **7788**）
 - `status` — 查看进程、端口、数据目录
+- `rules push` / `rules pull` / `rules apply` — 项目级 `.lynx.json` 规则配置（见上文）
+- `cert install` / `cert status` / `cert uninstall` — macOS 下将根 CA 安装到 login Keychain（Chrome）
 
 跨平台：**Windows**、**macOS**、**Linux**。
+
+### 信任根证书（macOS + Chrome）
+
+HTTPS 解密需信任 Lynx 根 CA。macOS 上可一键安装到 **login Keychain**（Chrome 使用系统 Keychain）：
+
+```bash
+lynx cert install
+lynx cert status
+```
+
+- 当前仅支持 **macOS**；其他平台仍可在 Web UI **设置** 中下载证书手动安装。
+- 不支持 Firefox（独立 NSS 库）及启用证书固定（Certificate Pinning）的应用。
+- 根 CA 具备本地 HTTPS 解密能力，请仅在可信环境使用。
+- 若删除并重建数据目录，`lynx cert status` 可能显示 `mismatch`，需先 `uninstall` 再 `install`。
+- 安装/卸载时 Keychain 可能要求输入登录密码。
 
 ## 功能展示
 
@@ -256,6 +370,9 @@ lynx start        # 后台守护进程
 lynx stop
 lynx restart
 lynx status
+lynx rules push      # 导出已持久化规则 → ./.lynx.json
+lynx rules pull      # 从 ./.lynx.json 导入 → 数据目录（先备份）
+lynx rules apply     # 仅同步开关：按配置切换 enabled（必要时先 pull）
 ```
 
 ### 参数说明（`run` / `start`）
@@ -281,6 +398,8 @@ lynx status
 ```bash
 task setup-ui    # 安装 ui 依赖
 task dev         # 代理 :7788 + Vite 开发界面 :5173
+task lynx -- rules push   # 不安装，直接跑本地 CLI
+task dev-lynx    # 前台启动代理（debug 构建）
 ```
 
 其他常用任务：
@@ -288,6 +407,9 @@ task dev         # 代理 :7788 + Vite 开发界面 :5173
 | 任务 | 用途 |
 |------|------|
 | `task build-ui` | 构建生产 UI 并嵌入 CLI |
+| `task install-lynx` | 安装 debug 版 `lynx` 到 `~/.cargo/bin` |
+| `task lynx -- …` | 运行本地 CLI（如 `task lynx -- rules pull`） |
+| `task dev-lynx` | 从源码前台启动代理（debug 构建） |
 | `task traffic-sample` | 经代理发送示例 HTTP(S) 流量 |
 | `task readme-demo` | 写入文档用演示流量与规则 |
 | `task readme-screenshots` | 重新生成 `images/*.png`（使用系统 Chrome） |

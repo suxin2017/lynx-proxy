@@ -14,9 +14,11 @@ const props = withDefaults(defineProps<{
   modelValue: string
   tabs: DrawerTab[]
   trailing?: boolean
+  ariaLabel?: string
   class?: HTMLAttributes['class']
 }>(), {
   trailing: false,
+  ariaLabel: '抽屉导航',
 })
 
 const emit = defineEmits<{
@@ -36,7 +38,7 @@ function setTab(key: string) {
 <template>
   <div
     role="tablist"
-    aria-label="抽屉导航"
+    :aria-label="props.ariaLabel"
     :class="cn('flex items-center justify-between gap-2 border-b border-border/60', props.class)"
   >
     <div class="flex min-w-0 flex-1 items-center gap-2 pl-1">

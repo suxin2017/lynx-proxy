@@ -49,6 +49,11 @@ x-lynx-ops:
     - rules.enabled.set
     - rules.delete
     - rules.templates.get
+    - projects.list.get
+    - projects.active.set
+    - projects.create
+    - projects.rename
+    - projects.delete
     - capture.rules.focus.list.get
     - capture.rules.ignore.list.get
     - capture.rules.focus.upsert

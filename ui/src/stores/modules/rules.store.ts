@@ -14,7 +14,8 @@ import {
 } from '@/lib/ws/rules-mapper'
 import { useWsConnectionStore } from './ws-connection.store'
 import { WsOp } from '@/lib/generated/ws/v1'
-import type { RequestRuleDto, RulesListResponse } from '@/lib/ws/rules-types'
+import { projectIdFromName } from '@/lib/projects/project-id'
+import type { RequestRuleDto, RulesListResponse, ProjectsFileDto, RuleProjectDto } from '@/lib/ws/rules-types'
 
 export const useRulesStore = defineStore('rules', () => {
   const open = ref(false)
@@ -23,6 +24,8 @@ export const useRulesStore = defineStore('rules', () => {
   const assetsPane = ref<SecondaryPaneKey>('list')
 
   const rules = ref<RuleWorkbenchRuleItem[]>([])
+  const projects = ref<RuleProjectDto[]>([{ id: 'default', name: 'Default' }])
+  const activeProjectId = ref('default')
   const selectedRuleId = ref('')
   const ruleDraft = ref<RuleDraft | undefined>(undefined)
   const savedDraft = ref<RuleDraft | undefined>(undefined)
@@ -31,6 +34,8 @@ export const useRulesStore = defineStore('rules', () => {
   const saving = ref(false)
   const reordering = ref(false)
   const error = ref<string | null>(null)
+  const creatingProject = ref(false)
+  const createProjectError = ref<string | null>(null)
 
   const wsConnectionStore = useWsConnectionStore()
 
@@ -54,11 +59,22 @@ export const useRulesStore = defineStore('rules', () => {
     return JSON.stringify(ruleDraft.value) !== JSON.stringify(savedDraft.value)
   })
 
+  async function refreshProjects() {
+    const file = await wsConnectionStore.call<ProjectsFileDto>(WsOp.ProjectsListGet)
+    projects.value = file?.projects?.length
+      ? file.projects
+      : [{ id: 'default', name: 'Default' }]
+    activeProjectId.value = file?.activeProjectId || 'default'
+  }
+
   async function refreshRules() {
     loading.value = true
     error.value = null
     try {
-      const result = await wsConnectionStore.call<RulesListResponse>(WsOp.RulesListGet)
+      const result = await wsConnectionStore.call<RulesListResponse>(
+        WsOp.RulesListGet,
+        { projectId: activeProjectId.value },
+      )
       const list = result?.rules ?? []
       lastRulesDtoById = new Map(list.map(rule => [ruleIdToString(rule.id), rule]))
       rules.value = list.map(requestRuleToListItem)
@@ -72,12 +88,14 @@ export const useRulesStore = defineStore('rules', () => {
 
   async function openDrawer() {
     open.value = true
+    await refreshProjects()
     await refreshRules()
   }
 
   async function openAndroidDrawer() {
     activePrimaryTab.value = 'device'
     open.value = true
+    await refreshProjects()
     await refreshRules()
   }
 
@@ -88,7 +106,7 @@ export const useRulesStore = defineStore('rules', () => {
   async function loadRuleDraft(ruleId: string) {
     const numericId = parseRuleId(ruleId)
     if (numericId == null) {
-      ruleDraft.value = createRuleDraft({ id: ruleId })
+      ruleDraft.value = createRuleDraft({ id: ruleId, project: activeProjectId.value })
       savedDraft.value = cloneDraft(ruleDraft.value)
       return
     }
@@ -137,6 +155,7 @@ export const useRulesStore = defineStore('rules', () => {
       ...source,
       id: newDraftId('copy'),
       name: `${source.name} 副本`,
+      project: activeProjectId.value,
       actions: source.actions.map(action => ({
         ...action,
         id: newActionId(),
@@ -169,6 +188,7 @@ export const useRulesStore = defineStore('rules', () => {
     const nextDraft = createRuleDraft({
       id: draftId,
       name: `Override ${matchExpr}`,
+      project: activeProjectId.value,
       description: `quick-override:host+path\nmatchExpr=${matchExpr}\nformat=${input.isJson ? 'json' : 'text'}`,
       enabled: true,
       matchDsl: matchExpr,
@@ -199,7 +219,7 @@ export const useRulesStore = defineStore('rules', () => {
   }
 
   function createRule() {
-    const draft = createRuleDraft()
+    const draft = createRuleDraft({ project: activeProjectId.value })
     ruleDraft.value = draft
     savedDraft.value = cloneDraft(draft)
     selectedRuleId.value = draft.id
@@ -265,7 +285,10 @@ export const useRulesStore = defineStore('rules', () => {
     saving.value = true
     error.value = null
     try {
-      const payload = draftToRequestRule(ruleDraft.value)
+      const payload = draftToRequestRule(
+        { ...ruleDraft.value, project: activeProjectId.value },
+        activeProjectId.value,
+      )
       const saved = await wsConnectionStore.call<RequestRuleDto>(
         WsOp.RulesSaveSet,
         payload as unknown as Record<string, unknown>,
@@ -436,23 +459,139 @@ export const useRulesStore = defineStore('rules', () => {
     }
   }
 
+  async function selectProject(projectId: string) {
+    if (activeProjectId.value === projectId) return
+    activeProjectId.value = projectId
+    clearRuleEditor()
+    goToRulesList()
+    await wsConnectionStore.call(WsOp.ProjectsActiveSet, { projectId })
+    await refreshRules()
+  }
+
+  async function createProjectWithName(name: string) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+
+    creatingProject.value = true
+    createProjectError.value = null
+    try {
+      const id = projectIdFromName(trimmed)
+      await wsConnectionStore.call(WsOp.ProjectsCreate, { id, name: trimmed })
+      await refreshProjects()
+      await selectProject(id)
+    } catch (err) {
+      createProjectError.value = String(err)
+      throw err
+    } finally {
+      creatingProject.value = false
+    }
+  }
+
+  async function renameProject(projectId: string, name: string) {
+    const trimmed = name.trim()
+    if (!trimmed || projectId === 'default') return
+
+    creatingProject.value = true
+    createProjectError.value = null
+    try {
+      await wsConnectionStore.call(WsOp.ProjectsRename, { projectId, name: trimmed })
+      await refreshProjects()
+    } catch (err) {
+      createProjectError.value = String(err)
+      throw err
+    } finally {
+      creatingProject.value = false
+    }
+  }
+
+  async function moveRuleToProject(
+    ruleId: string,
+    targetProjectId: string,
+    options?: { refresh?: boolean },
+  ) {
+    const numericId = parseRuleId(ruleId)
+    if (numericId == null) return
+
+    let dto = lastRulesDtoById.get(ruleId)
+    if (!dto) {
+      dto = await wsConnectionStore.call<RequestRuleDto>(WsOp.RulesGet, { ruleId: numericId })
+      lastRulesDtoById.set(ruleId, dto)
+    }
+
+    const currentProject = dto.project ?? 'default'
+    if (currentProject === targetProjectId) return
+
+    error.value = null
+    try {
+      const saved = await wsConnectionStore.call<RequestRuleDto>(
+        WsOp.RulesSaveSet,
+        { ...dto, project: targetProjectId } as unknown as Record<string, unknown>,
+      )
+      lastRulesDtoById.set(ruleId, saved)
+      if (options?.refresh !== false) {
+        await refreshRules()
+      }
+    } catch (err) {
+      error.value = String(err)
+      throw err
+    }
+  }
+
+  async function moveRulesToProject(ruleIds: string[], targetProjectId: string) {
+    const uniqueIds = [...new Set(ruleIds)]
+    if (uniqueIds.length === 0) return
+
+    error.value = null
+    try {
+      for (const ruleId of uniqueIds) {
+        await moveRuleToProject(ruleId, targetProjectId, { refresh: false })
+      }
+      await refreshRules()
+    } catch (err) {
+      error.value = String(err)
+      throw err
+    }
+  }
+
+  async function deleteActiveProject() {
+    if (activeProjectId.value === 'default') return
+    const current = projects.value.find(project => project.id === activeProjectId.value)
+    const label = current?.name ?? activeProjectId.value
+    if (!globalThis.confirm(`确定删除项目「${label}」？`)) return
+    await wsConnectionStore.call(WsOp.ProjectsDelete, { projectId: activeProjectId.value })
+    await refreshProjects()
+    activeProjectId.value = 'default'
+    await refreshRules()
+  }
+
   return {
     open,
     activePrimaryTab,
     rulesPane,
     assetsPane,
     rules,
+    projects,
+    activeProjectId,
     selectedRuleId,
     ruleDraft,
     loading,
     saving,
     reordering,
     error,
+    creatingProject,
+    createProjectError,
     isDirty,
     openDrawer,
     openAndroidDrawer,
     closeDrawer,
+    refreshProjects,
     refreshRules,
+    selectProject,
+    createProjectWithName,
+    renameProject,
+    moveRuleToProject,
+    moveRulesToProject,
+    deleteActiveProject,
     editRule,
     duplicateRule,
     openOrCreateQuickOverrideRule,
