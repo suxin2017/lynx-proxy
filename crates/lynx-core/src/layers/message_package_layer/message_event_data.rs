@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use axum::body::Body as AxumBody;
 use base64::{Engine as _, engine::general_purpose};
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut, BufMut};
 use http::{HeaderMap, Method, Request, Response, Version};
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::Body;
@@ -169,11 +169,13 @@ pub struct MessageEventResponse {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct MessageEventBody(Bytes);
+pub struct MessageEventBody(BytesMut);
 
 impl MessageEventBody {
     pub fn new(bytes: Bytes) -> Self {
-        MessageEventBody(bytes)
+        let mut buf = BytesMut::with_capacity(bytes.len());
+        buf.put(bytes);
+        MessageEventBody(buf)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -183,6 +185,11 @@ impl MessageEventBody {
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_ref()
     }
+
+    /// Efficiently append a `Bytes` chunk without copying the entire buffer.
+    pub fn extend_from_bytes(&mut self, data: Bytes) {
+        self.0.put(data);
+    }
 }
 
 impl Serialize for MessageEventBody {
@@ -190,7 +197,7 @@ impl Serialize for MessageEventBody {
     where
         S: serde::Serializer,
     {
-        let base64_encoded = general_purpose::STANDARD.encode(&self.0);
+        let base64_encoded = general_purpose::STANDARD.encode(self.0.as_ref());
         serializer.serialize_str(&base64_encoded)
     }
 }
@@ -203,9 +210,10 @@ impl<'de> Deserialize<'de> for MessageEventBody {
         let base64_str = String::deserialize(deserializer)?;
         let decoded_bytes = general_purpose::STANDARD
             .decode(&base64_str)
-            .map(Bytes::from)
             .map_err(serde::de::Error::custom)?;
-        Ok(MessageEventBody(decoded_bytes))
+        let mut buf = BytesMut::with_capacity(decoded_bytes.len());
+        buf.put_slice(&decoded_bytes);
+        Ok(MessageEventBody(buf))
     }
 }
 
@@ -217,9 +225,7 @@ impl PartialEq for MessageEventBody {
 
 impl Extend<u8> for MessageEventBody {
     fn extend<T: IntoIterator<Item = u8>>(&mut self, iter: T) {
-        let mut bytes_vec = self.0.to_vec(); // Convert Bytes to Vec<u8>
-        bytes_vec.extend(iter); // Extend the Vec<u8>
-        self.0 = Bytes::from(bytes_vec); // Convert back to Bytes
+        self.0.extend(iter);
     }
 }
 
@@ -229,7 +235,7 @@ impl<B: Body> From<&Response<B>> for MessageEventResponse {
         let headers = res.headers().to_hash_map();
         let version = res.version().to_string_version();
         let header_size = MessageHeaderSize::from(res.headers().clone());
-        let body = MessageEventBody(Bytes::new());
+        let body = MessageEventBody::default();
 
         MessageEventResponse {
             status,
@@ -329,7 +335,7 @@ impl<B: Body> From<&Request<B>> for MessageEventRequest {
         let headers = req.headers().to_hash_map();
         let version = req.version().to_string_version();
         let header_size = MessageHeaderSize::from(req.headers().clone());
-        let body = MessageEventBody(Bytes::new());
+        let body = MessageEventBody::default();
         let matched_rules = req
             .extensions()
             .get::<MatchedRulesExt>()
@@ -396,6 +402,7 @@ mod tests {
     use futures_util::StreamExt;
     use http::Request;
     use http_body_util::BodyExt;
+    use serde_json;
 
     use crate::utils::full;
 
@@ -444,7 +451,7 @@ mod tests {
             message_event_request.headers.get("content-type"),
             Some(&"application/json".to_string())
         );
-        assert_eq!(message_event_request.body, MessageEventBody(Bytes::new()));
+        assert_eq!(message_event_request.body, MessageEventBody::default());
     }
 
     #[tokio::test]
@@ -500,5 +507,37 @@ mod tests {
                 + "Authorization".len()
                 + "Bearer token".len()
         );
+    }
+
+    #[test]
+    fn test_message_event_body_extend_from_bytes_keeps_payload() {
+        let chunks = vec![
+            Bytes::from_static(b"hello "),
+            Bytes::from_static(b"lynx "),
+            Bytes::from_static(b"proxy"),
+        ];
+
+        let mut by_bytes = MessageEventBody::default();
+        let mut by_iter = MessageEventBody::default();
+
+        for chunk in &chunks {
+            by_bytes.extend_from_bytes(chunk.clone());
+            by_iter.extend(chunk.iter().copied());
+        }
+
+        assert_eq!(by_bytes, by_iter);
+        assert_eq!(by_bytes.as_bytes(), b"hello lynx proxy");
+    }
+
+    #[test]
+    fn test_message_event_body_serde_roundtrip_stable() {
+        let mut body = MessageEventBody::default();
+        body.extend_from_bytes(Bytes::from_static(b"capture-body"));
+
+        let encoded = serde_json::to_string(&body).expect("serialize body");
+        let decoded: MessageEventBody = serde_json::from_str(&encoded).expect("deserialize body");
+
+        assert_eq!(decoded, body);
+        assert_eq!(decoded.as_bytes(), b"capture-body");
     }
 }

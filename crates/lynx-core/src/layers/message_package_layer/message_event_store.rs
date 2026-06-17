@@ -184,6 +184,9 @@ pub struct MessageEventStoreValue {
     pub messages: Option<MessageEventWebSocket>,
     pub tunnel: Option<MessageEventTunnel>,
     pub timings: MessageEventTimings,
+    /// Timestamp (ms since epoch) when this entry reached a terminal state.
+    #[serde(skip)]
+    pub completed_at: Option<u64>,
 }
 
 impl MessageEventStoreValue {
@@ -197,6 +200,7 @@ impl MessageEventStoreValue {
             messages: None,
             tunnel: None,
             timings: MessageEventTimings::default(),
+            completed_at: None,
         }
     }
 
@@ -227,12 +231,24 @@ impl MessageEventStoreValue {
         self.status = status;
     }
 
+    pub(crate) fn mark_completed_at(&mut self) {
+        if self.completed_at.is_none() {
+            self.completed_at = Some(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+            );
+        }
+    }
+
     pub fn get_status(&self) -> &MessageEventStatus {
         &self.status
     }
 
     pub fn mark_as_cancelled(&mut self) {
         self.status = MessageEventStatus::Cancelled;
+        self.mark_completed_at();
     }
 
     pub fn is_completed(&self) -> bool {
@@ -248,10 +264,27 @@ impl MessageEventStoreValue {
     }
 
     pub fn is_need_delteed(&self) -> bool {
+        // Never delete while a long connection is still active.
         if self.has_active_long_connection() {
             return false;
         }
-        self.is_completed() || self.is_error() || self.is_cancelled()
+        // Delete terminal entries.
+        if self.is_completed() || self.is_error() || self.is_cancelled() {
+            return true;
+        }
+        // Safety net: evict entries that have been in a non-terminal state for
+        // more than 10 minutes (e.g. stalled requests where events were lost).
+        const MAX_PENDING_AGE_MS: u64 = 10 * 60 * 1_000;
+        if let Some(at) = self.completed_at {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64;
+            if now.saturating_sub(at) > MAX_PENDING_AGE_MS {
+                return true;
+            }
+        }
+        false
     }
 
     fn has_active_long_connection(&self) -> bool {
@@ -299,13 +332,37 @@ impl MessageEventCache {
     }
     
     fn remove_oldest_completed(&self) {
-        if self.map.len() > 30 {
-            let oldest_key = {
-                self.map
-                    .iter()
-                    .find(|r| r.is_completed())
-                    .map(|r| r.key().clone())
-            };
+        const EVICT_THRESHOLD: usize = 10;
+        const MAX_COMPLETED_AGE_MS: u64 = 10 * 60 * 1_000; // 10 minutes
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        // Always evict completed entries that have exceeded the TTL.
+        let expired_keys: Vec<TraceId> = self
+            .map
+            .iter()
+            .filter(|r| {
+                r.is_need_delteed()
+                    && r.completed_at
+                        .is_some_and(|at| now.saturating_sub(at) > MAX_COMPLETED_AGE_MS)
+            })
+            .map(|r| r.key().clone())
+            .collect();
+        for key in expired_keys {
+            self.map.remove(&key);
+        }
+
+        // If still above threshold, evict the oldest completed entry.
+        if self.map.len() > EVICT_THRESHOLD {
+            let oldest_key = self
+                .map
+                .iter()
+                .filter(|r| r.is_need_delteed())
+                .min_by_key(|r| r.completed_at.unwrap_or(u64::MAX))
+                .map(|r| r.key().clone());
 
             if let Some(key) = oldest_key {
                 self.map.remove(&key);
@@ -398,5 +455,88 @@ impl MessageEventStoreExtensionsExt for Extensions {
         self.get::<Arc<MessageEventCache>>()
             .expect("MessageEventStore not found in Extensions")
             .clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::*;
+
+    fn now_ms() -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock should be monotonic")
+            .as_millis() as u64
+    }
+
+    fn completed_value(trace_id: &TraceId, completed_at: u64) -> MessageEventStoreValue {
+        let mut value = MessageEventStoreValue::new(trace_id.clone());
+        value.status = MessageEventStatus::Completed;
+        value.completed_at = Some(completed_at);
+        value
+    }
+
+    #[tokio::test]
+    async fn evicts_completed_entry_when_ttl_expired() {
+        let cache = MessageEventCache::new();
+        let id: TraceId = Arc::new("expired-entry".to_string());
+        let expired_at = now_ms() - (11 * 60 * 1_000);
+
+        cache
+            .insert(id.clone(), completed_value(&id, expired_at))
+            .await;
+
+        assert!(
+            cache.get(&id).is_none(),
+            "expired completed entry should be evicted"
+        );
+    }
+
+    #[tokio::test]
+    async fn keeps_active_websocket_entry_even_with_old_completed_at() {
+        let cache = MessageEventCache::new();
+        let active_id: TraceId = Arc::new("active-websocket".to_string());
+        let fresh_id: TraceId = Arc::new("fresh-completed".to_string());
+
+        let mut active = completed_value(&active_id, now_ms() - (11 * 60 * 1_000));
+        active.messages = Some(MessageEventWebSocket {
+            status: WebSocketStatus::Connected,
+            message: vec![],
+        });
+
+        cache.insert(active_id.clone(), active).await;
+        cache
+            .insert(fresh_id.clone(), completed_value(&fresh_id, now_ms()))
+            .await;
+
+        assert!(
+            cache.get(&active_id).is_some(),
+            "active websocket entries must not be evicted"
+        );
+        assert!(cache.get(&fresh_id).is_some());
+    }
+
+    #[tokio::test]
+    async fn threshold_eviction_removes_oldest_completed_entry() {
+        let cache = MessageEventCache::new();
+        let base = now_ms();
+        let mut ids: Vec<TraceId> = Vec::new();
+
+        for i in 0..11 {
+            let id: TraceId = Arc::new(format!("completed-{i}"));
+            ids.push(id.clone());
+            cache
+                .insert(id.clone(), completed_value(&id, base + i as u64))
+                .await;
+        }
+
+        assert!(
+            cache.get(&ids[0]).is_none(),
+            "oldest completed entry should be evicted when threshold is exceeded"
+        );
+        assert!(cache.get(&ids[10]).is_some());
     }
 }

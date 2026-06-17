@@ -36,7 +36,7 @@ pub async fn handle_message_event_single(
 
             if let Some(data) = data {
                 if let Some(req) = value.request_mut() {
-                    req.body.extend(data);
+                    req.body.extend_from_bytes(data);
                 }
                 value.timings_mut().set_request_body_start();
             } else {
@@ -59,6 +59,7 @@ pub async fn handle_message_event_single(
             let mut value = value.unwrap();
             value.timings_mut().set_request_end();
             value.status = super::message_event_store::MessageEventStatus::Completed;
+            value.mark_completed_at();
         }
         MessageEvent::OnError(id, error_reason) => {
             let value = cache.get_mut(&id);
@@ -68,6 +69,7 @@ pub async fn handle_message_event_single(
             let mut value = value.unwrap();
             value.timings_mut().set_request_end();
             value.status = super::message_event_store::MessageEventStatus::Error(error_reason);
+            value.mark_completed_at();
         }
         MessageEvent::OnResponseBody(id, data) => {
             let value = cache.get_mut(&id);
@@ -77,7 +79,7 @@ pub async fn handle_message_event_single(
             let mut value = value.unwrap();
             if let Some(data) = data {
                 if let Some(req) = value.response_mut() {
-                    req.body.extend(data);
+                    req.body.extend_from_bytes(data);
                 }
                 value.timings_mut().set_response_body_start();
             } else {
@@ -135,6 +137,7 @@ pub async fn handle_message_event_single(
             let mut value = value.unwrap();
             value.timings_mut().set_websocket_end();
             value.status = super::message_event_store::MessageEventStatus::Completed;
+            value.mark_completed_at();
             let msg = value.messages_mut();
 
             match msg {
@@ -158,6 +161,7 @@ pub async fn handle_message_event_single(
             let mut value = value.unwrap();
             value.timings_mut().set_websocket_end();
             value.status = super::message_event_store::MessageEventStatus::Completed;
+            value.mark_completed_at();
             if let Some(msg) = value.messages_mut() {
                 msg.status = WebSocketStatus::Disconnected;
             }
@@ -199,6 +203,7 @@ pub async fn handle_message_event_single(
             value.timings_mut().set_tunnel_end();
             value.timings_mut().set_request_end();
             value.status = super::message_event_store::MessageEventStatus::Completed;
+            value.mark_completed_at();
             let msg = &mut value.tunnel;
 
             match msg {
