@@ -353,14 +353,14 @@ lynx status
 lynx rules push      # export persisted rules → ./.lynx.json
 lynx rules pull      # import ./.lynx.json → persisted rules (backs up first)
 lynx rules apply     # toggle-only: sync enabled switches (run pull first if needed)
-lynx cert install    # macOS: trust root CA in login Keychain (Chrome)
+lynx cert install    # macOS: trust root CA in System Keychain (admin authorization required)
 lynx cert status
 lynx cert uninstall
 ```
 
-### Trust Lynx root CA (macOS + Chrome)
+### Trust Lynx root CA (macOS)
 
-For HTTPS decryption, install the Lynx root CA into your **login Keychain** (Chrome on macOS uses the system Keychain):
+For HTTPS decryption, install the Lynx root CA into your **System Keychain**:
 
 ```bash
 lynx cert install
@@ -371,7 +371,7 @@ lynx cert status
 - Does not configure Firefox (separate NSS store) or apps with certificate pinning.
 - Installing a trusted root CA allows local HTTPS interception — use only on machines you control.
 - If you delete and recreate the data directory, run `lynx cert status` (may show `mismatch`), then `uninstall` and `install` again.
-- Keychain may prompt for your login password during install or uninstall.
+- Installing to System Keychain requires administrator authorization.
 
 ### Options (`run` / `start`)
 

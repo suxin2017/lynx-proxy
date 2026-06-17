@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2026-06-17
+
+### 🐛 Bug Fixes
+
+- *(cli)* Install Lynx root CA into macOS System Keychain and fix cert status detection
+- *(docs)* Update README and Chinese README for System Keychain install flow
+
 ## [0.7.0] - 2026-06-16
 
 ### 🚀 Features

@@ -230,13 +230,13 @@ lynx rules apply    # 同步哪些规则处于开启状态
 - `run` — 前台启动（默认端口 **7788**）
 - `status` — 查看进程、端口、数据目录
 - `rules push` / `rules pull` / `rules apply` — 项目级 `.lynx.json` 规则配置（见上文）
-- `cert install` / `cert status` / `cert uninstall` — macOS 下将根 CA 安装到 login Keychain（Chrome）
+- `cert install` / `cert status` / `cert uninstall` — macOS 下将根 CA 安装到 System Keychain（需管理员授权）
 
 跨平台：**Windows**、**macOS**、**Linux**。
 
-### 信任根证书（macOS + Chrome）
+### 信任根证书（macOS）
 
-HTTPS 解密需信任 Lynx 根 CA。macOS 上可一键安装到 **login Keychain**（Chrome 使用系统 Keychain）：
+HTTPS 解密需信任 Lynx 根 CA。macOS 上可一键安装到 **System Keychain**：
 
 ```bash
 lynx cert install
@@ -247,7 +247,7 @@ lynx cert status
 - 不支持 Firefox（独立 NSS 库）及启用证书固定（Certificate Pinning）的应用。
 - 根 CA 具备本地 HTTPS 解密能力，请仅在可信环境使用。
 - 若删除并重建数据目录，`lynx cert status` 可能显示 `mismatch`，需先 `uninstall` 再 `install`。
-- 安装/卸载时 Keychain 可能要求输入登录密码。
+- 安装到 System Keychain 需要管理员授权。
 
 ## 功能展示
 

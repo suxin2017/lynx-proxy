@@ -118,7 +118,7 @@ pub mod platform {
             .iter()
             .any(|cert| fingerprints_match(&cert.sha256, &disk_fp))
         {
-            println!("Lynx root CA is already trusted in login Keychain.");
+            println!("Lynx root CA is already trusted in System Keychain.");
             println!("Certificate: {}", cert_path.display());
             println!("SHA-256: {disk_fp}");
             return Ok(());
@@ -126,19 +126,19 @@ pub mod platform {
 
         if !keychain_certs.is_empty() {
             bail!(
-                "Keychain contains a different lynxProxy certificate. \
+                "System Keychain contains a different lynxProxy certificate. \
                  Run `lynx cert uninstall` then `lynx cert install` again."
             );
         }
 
         install_certificate(&cert_path)?;
 
-        println!("Lynx root CA installed to login Keychain.");
+        println!("Lynx root CA installed to System Keychain.");
         println!("Certificate: {}", cert_path.display());
         println!("SHA-256: {disk_fp}");
         println!();
         println!("Warning: this root CA can decrypt HTTPS traffic on this machine.");
-        println!("Restart Chrome or visit chrome://restart to pick up the new trust setting.");
+        println!("System Keychain changes may require browser restart to take effect.");
 
         Ok(())
     }
@@ -153,7 +153,7 @@ pub mod platform {
 
         let keychain_certs = find_certificates()?;
         if keychain_certs.is_empty() {
-            println!("Lynx root CA is not installed in login Keychain.");
+            println!("Lynx root CA is not installed in System Keychain.");
             return Ok(());
         }
 
@@ -166,7 +166,9 @@ pub mod platform {
         };
 
         if target_fp.is_some() && to_remove.is_empty() {
-            println!("No matching lynxProxy certificate found in login Keychain for the current root.pem.");
+            println!(
+                "No matching lynxProxy certificate found in System Keychain for the current root.pem."
+            );
             return Ok(());
         }
 
@@ -181,7 +183,7 @@ pub mod platform {
             delete_certificate(&cert.sha1)?;
         }
 
-        println!("Removed Lynx root CA from login Keychain.");
+        println!("Removed Lynx root CA from System Keychain.");
         if cert_path.exists() {
             println!("Certificate file: {}", cert_path.display());
         }
@@ -203,7 +205,7 @@ pub mod platform {
                 if let Some(fp) = &report.disk_fingerprint {
                     println!("SHA-256 (disk): {fp}");
                 }
-                println!("Keychain: lynxProxy not trusted");
+                println!("System Keychain: lynxProxy not trusted");
             }
             TrustStatus::Installed => {
                 println!("Status: installed");
@@ -234,7 +236,7 @@ pub mod platform {
                     println!("SHA-256 (keychain): {}", cert.sha256);
                 }
                 println!(
-                    "Keychain trusts a different lynxProxy CA than root.pem. \
+                    "System Keychain trusts a different lynxProxy CA than root.pem. \
                      Run `lynx cert uninstall` then `lynx cert install`."
                 );
             }

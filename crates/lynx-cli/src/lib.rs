@@ -147,17 +147,17 @@ pub struct CertArgs {
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum CertCommands {
-    /// Trust the Lynx root CA in login Keychain (macOS + Chrome)
+    /// Trust the Lynx root CA in System Keychain (macOS)
     Install {
         #[command(flatten)]
         args: CertArgs,
     },
-    /// Remove the Lynx root CA from login Keychain
+    /// Remove the Lynx root CA from System Keychain
     Uninstall {
         #[command(flatten)]
         args: CertArgs,
     },
-    /// Show root CA and Keychain trust status
+    /// Show root CA and System Keychain trust status
     Status {
         #[command(flatten)]
         args: CertArgs,
