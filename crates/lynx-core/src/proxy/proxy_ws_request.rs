@@ -7,8 +7,7 @@ use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use http::{
     Request, Uri,
     header::{
-        HOST, HeaderValue, ORIGIN, PROXY_AUTHORIZATION,
-        SEC_WEBSOCKET_EXTENSIONS, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_PROTOCOL,
+        HOST, HeaderValue, PROXY_AUTHORIZATION, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_PROTOCOL,
     },
     request::Parts,
 };
@@ -69,10 +68,8 @@ fn normalize_websocket_uri(uri: Uri) -> Result<Uri> {
 }
 
 fn align_upstream_handshake_headers(parts: &mut Parts, uri: &Uri) -> Result<()> {
-    parts.headers.remove(SEC_WEBSOCKET_EXTENSIONS);
     parts.headers.remove(PROXY_AUTHORIZATION);
     parts.headers.remove(HOST);
-    parts.headers.remove(ORIGIN);
 
     if let Some(authority) = uri.authority() {
         parts.headers.insert(
@@ -299,7 +296,12 @@ where
 mod tests {
     use super::*;
     use axum::http::Method;
-    use http::{Uri, header::{CONNECTION, SEC_WEBSOCKET_VERSION, UPGRADE}};
+    use http::{
+        Uri,
+        header::{
+            CONNECTION, ORIGIN, SEC_WEBSOCKET_EXTENSIONS, SEC_WEBSOCKET_VERSION, UPGRADE,
+        },
+    };
 
     use crate::utils::empty;
 
@@ -342,8 +344,14 @@ mod tests {
             parts.headers.get(HOST).unwrap(),
             "127.0.0.1:5173"
         );
-        assert!(!parts.headers.contains_key(ORIGIN));
-        assert!(!parts.headers.contains_key(SEC_WEBSOCKET_EXTENSIONS));
+        assert_eq!(
+            parts.headers.get(ORIGIN).unwrap(),
+            "https://virtual.example.com"
+        );
+        assert_eq!(
+            parts.headers.get(SEC_WEBSOCKET_EXTENSIONS).unwrap(),
+            "permessage-deflate"
+        );
     }
 
     #[test]
@@ -393,6 +401,9 @@ mod tests {
             parts.headers.get(SEC_WEBSOCKET_PROTOCOL).unwrap(),
             "webpack-hmr"
         );
-        assert!(!parts.headers.contains_key(ORIGIN));
+        assert_eq!(
+            parts.headers.get(ORIGIN).unwrap(),
+            "https://not_exist.com"
+        );
     }
 }
