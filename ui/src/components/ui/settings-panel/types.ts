@@ -31,7 +31,7 @@ export interface SettingsPanelPreview {
 
 export const DEFAULT_SETTINGS_PREVIEW: SettingsPanelPreview = {
   general: {
-    maxLogSize: 1000,
+    maxLogSize: 5000,
     language: 'zh-CN',
     connectType: '1',
   },

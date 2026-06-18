@@ -5,7 +5,7 @@ import type { GeneralSetting } from '@/lib/http/settings-types'
 import { MAX_LOG_SIZE_MAX, MAX_LOG_SIZE_MIN } from '@/lib/http/settings-types'
 import { useWsConnectionStore } from './ws-connection.store'
 
-export const DEFAULT_MAX_LOG_SIZE = 1000
+export const DEFAULT_MAX_LOG_SIZE = 5000
 
 export function clampMaxLogSize(value: number): number {
   if (!Number.isFinite(value)) {

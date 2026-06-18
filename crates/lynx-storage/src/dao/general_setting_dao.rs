@@ -29,7 +29,7 @@ pub struct GeneralSetting {
 impl Default for GeneralSetting {
     fn default() -> Self {
         Self {
-            max_log_size: 1000,
+            max_log_size: 5000,
             connect_type: ConnectType::default(),
             language: "zh-CN".to_string(),
         }
@@ -81,7 +81,7 @@ mod tests {
         let dao = GeneralSettingDao::new(store);
 
         let setting = dao.get_general_setting().await.unwrap();
-        assert_eq!(setting.max_log_size, 1000);
+        assert_eq!(setting.max_log_size, 5000);
         assert!(matches!(setting.connect_type, ConnectType::SSE));
     }
 
