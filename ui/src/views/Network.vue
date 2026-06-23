@@ -337,6 +337,7 @@ onBeforeUnmount(async () => {
       @rules:create="rulesStore.createRule"
       @rules:edit="rulesStore.editRule"
       @rules:toggle-enabled="rulesStore.toggleRuleEnabled"
+      @rules:bulk-toggle="rulesStore.bulkToggleSelected"
       @rules:reorder="rulesStore.reorderRules"
       @rules:delete="id => rulesStore.deleteRule(id)"
       @update:rule-draft="rulesStore.updateRuleDraft"

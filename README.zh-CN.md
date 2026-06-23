@@ -183,7 +183,7 @@ NOT */rest/* AND -X POST
 
 `.lynx.json` 已支持 **JSON Schema**：文件顶层会包含 **`$schema`** 字段，VSCode/Cursor 可据此进行校验与自动补全。
 
-Schema URL 形式（固定到版本 tag）：`https://raw.githubusercontent.com/suxin2017/lynx-proxy/v<version>/schemas/rules-export.schema.json`
+Schema URL 形式（固定到版本 tag）：`https://raw.githubusercontent.com/xin2017338/lynx-proxy/v<version>/schemas/rules-export.schema.json`
 
 | 命令 | 说明 |
 |------|------|
@@ -294,21 +294,21 @@ Process Running: Yes
 
 ### 安装
 
-预编译包发布在 [GitHub Releases](https://github.com/suxin2017/lynx-proxy/releases)。安装脚本文件名为 **`lynx-cli-installer.*`**（cargo-dist 包名），安装后的命令是 **`lynx`**。
+预编译包发布在 [GitHub Releases](https://github.com/xin2017338/lynx-proxy/releases)。安装脚本文件名为 **`lynx-cli-installer.*`**（cargo-dist 包名），安装后的命令是 **`lynx`**。
 
-> **说明（v0.4.8 及更早版本）：** 仓库改名前的安装脚本，会从 `suxin2017/lynx-server` 下载二进制；脚本本身的 URL 用 `lynx-proxy` 或 `lynx-server` 均可，两个仓库目前镜像同一份 Release 资源。后续发版（已修正 `Cargo.toml` 中的 `repository`）将统一指向 `lynx-proxy`。
+> **说明（v0.4.8 及更早版本）：** 仓库改名前的安装脚本，会从 `xin2017338/lynx-server` 下载二进制；脚本本身的 URL 用 `lynx-proxy` 或 `lynx-server` 均可，两个仓库目前镜像同一份 Release 资源。后续发版（已修正 `Cargo.toml` 中的 `repository`）将统一指向 `lynx-proxy`。
 
 **macOS / Linux（推荐）**
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.sh | sh
+  https://github.com/xin2017338/lynx-proxy/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/xin2017338/lynx-proxy/releases/latest/download/lynx-cli-installer.ps1 | iex"
 ```
 
 安装完成后：
@@ -317,7 +317,7 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-pro
 - 默认路径：`~/.cargo/bin/lynx`，若终端找不到命令请将其加入 `PATH`
 - 验证：`lynx --version`
 
-**手动下载**（见 [Releases](https://github.com/suxin2017/lynx-proxy/releases)）：
+**手动下载**（见 [Releases](https://github.com/xin2017338/lynx-proxy/releases)）：
 
 | 平台 | 压缩包 |
 |------|--------|
@@ -330,7 +330,7 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-pro
 **从源码构建**
 
 ```bash
-git clone https://github.com/suxin2017/lynx-proxy.git
+git clone https://github.com/xin2017338/lynx-proxy.git
 cd lynx-proxy
 task build-ui && cargo install --path crates/lynx-cli
 ```
@@ -389,7 +389,7 @@ lynx rules apply     # 仅同步开关：按配置切换 enabled（必要时先 
 
 - Linux：`~/.local/share/lynx`
 - macOS：`~/Library/Application Support/lynx`
-- Windows：`%APPDATA%\suxin2017\lynx\data`
+- Windows：`%APPDATA%\xin2017338\lynx\data`
 
 ## 开发
 
@@ -429,7 +429,7 @@ MIT，详见 [LICENSE](LICENSE)。
 
 ## 反馈
 
-问题与建议请通过 [GitHub Issues](https://github.com/suxin2017/lynx-proxy/issues) 提交。
+问题与建议请通过 [GitHub Issues](https://github.com/xin2017338/lynx-proxy/issues) 提交。
 
 ## 项目状态
 

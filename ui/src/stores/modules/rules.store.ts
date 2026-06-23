@@ -346,6 +346,48 @@ export const useRulesStore = defineStore('rules', () => {
     }
   }
 
+  async function bulkToggleSelected(ids: string[], enabled: boolean) {
+    error.value = null
+    try {
+      const numericIds = ids
+        .map(id => parseRuleId(id))
+        .filter((id): id is number => id != null)
+
+      if (numericIds.length === 0) return
+
+      // Call backend for each rule in parallel
+      const updatePromises = numericIds.map(ruleId =>
+        wsConnectionStore.call<RequestRuleDto>(WsOp.RulesEnabledSet, {
+          ruleId,
+          enabled,
+        })
+      )
+
+      const updated = await Promise.all(updatePromises)
+
+      // Update cache for all updated rules
+      for (const updatedRule of updated) {
+        lastRulesDtoById.set(ruleIdToString(updatedRule.id), updatedRule)
+      }
+
+      // Update local state
+      rules.value = rules.value.map(rule => {
+        return ids.includes(rule.id) ? { ...rule, enabled } : rule
+      })
+
+      // Update draft if currently editing one of the selected rules
+      if (ruleDraft.value && ids.includes(ruleDraft.value.id)) {
+        ruleDraft.value = { ...ruleDraft.value, enabled }
+        if (savedDraft.value) {
+          savedDraft.value = { ...savedDraft.value, enabled }
+        }
+      }
+    } catch (err) {
+      error.value = String(err)
+      throw err
+    }
+  }
+
   function swapRules(idxA: number, idxB: number) {
     const next = [...rules.value]
     const tmp = next[idxA]
@@ -600,6 +642,7 @@ export const useRulesStore = defineStore('rules', () => {
     saveRule,
     goToRulesList,
     toggleRuleEnabled,
+    bulkToggleSelected,
     moveRuleUp,
     moveRuleDown,
     reorderRules,

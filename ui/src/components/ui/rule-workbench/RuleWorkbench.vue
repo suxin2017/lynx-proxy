@@ -293,7 +293,7 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
             </p>
           </div>
 
-          <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-3">
+          <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-3 scrollbar-gutter-stable">
             <div class="grid min-w-0 gap-3">
               <slot
                 name="editor"

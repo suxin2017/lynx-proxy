@@ -34,7 +34,7 @@ pub struct ServerArgs {
     /// The default data directory path following OS conventions:
     /// - Linux: ~/.local/share/lynx
     /// - macOS: ~/Library/Application Support/lynx  
-    /// - Windows: %APPDATA%\suxin2017\lynx\data
+    /// - Windows: %APPDATA%\xin2017338\lynx\data
     #[arg(long)]
     pub data_dir: Option<String>,
 
@@ -186,7 +186,7 @@ impl std::fmt::Display for LogLevel {
 }
 
 pub fn get_default_data_dir() -> Result<PathBuf> {
-    let project = ProjectDirs::from("cc", "suxin2017", "lynx")
+    let project = ProjectDirs::from("cc", "xin2017338", "lynx")
         .ok_or_else(|| anyhow::anyhow!("Failed to get project directories"))?;
 
     let data_dir = project.data_dir().to_path_buf();

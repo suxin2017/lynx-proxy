@@ -40,6 +40,7 @@ const emit = defineEmits<{
   delete: [id: string]
   select: [id: string]
   'toggle-enabled': [id: string, enabled: boolean]
+  'bulk-toggle': [ids: string[], enabled: boolean]
   reorder: [orderedIds: string[]]
 }>()
 
@@ -48,6 +49,7 @@ const localRules = ref<RuleWorkbenchRuleItem[]>([])
 const listRootRef = ref<HTMLElement | null>(null)
 
 const {
+  selectedIds,
   selectedCount,
   isSelected,
   clearSelection,
@@ -74,6 +76,21 @@ const anyVisibleSelected = computed(() => isAnySelected(visibleRuleIds.value))
 const someVisibleSelected = computed(() => anyVisibleSelected.value && !allVisibleSelected.value)
 
 const orderedRuleIds = computed(() => localRules.value.map(rule => rule.id))
+
+// Determine if all selected rules are enabled for bulk toggle
+const allSelectedEnabled = computed(() => {
+  if (selectedIds.value.size === 0) return false
+  const selectedRules = filteredRules.value.filter(rule => selectedIds.value.has(rule.id))
+  return selectedRules.length > 0 && selectedRules.every(rule => rule.enabled)
+})
+
+// Handle bulk toggle switch change
+function handleBulkToggle() {
+  if (selectedIds.value.size === 0) return
+  // Toggle: if all are enabled, disable all; otherwise enable all
+  const newState = !allSelectedEnabled.value
+  emit('bulk-toggle', Array.from(selectedIds.value), newState)
+}
 
 watch(filteredRules, (next) => {
   localRules.value = [...next]
@@ -241,20 +258,16 @@ function ruleStateClass(state?: RuleWorkbenchRuleItem['state']) {
         </span>
       </div>
 
-      <div class="flex shrink-0 items-center gap-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          class="h-8 px-2 text-xs"
-          :class="selectedCount > 0 ? 'opacity-100' : 'pointer-events-none opacity-0'"
-          @click="clearSelection"
-        >
-          清空
-        </Button>
+      <div v-if="selectedCount > 0" class="flex shrink-0 items-center gap-2">
+        <span class="text-xs text-muted-foreground">{{ allSelectedEnabled ? '批量禁用' : '批量启用' }}</span>
+        <Switch
+          :checked="allSelectedEnabled"
+          @update:checked="handleBulkToggle"
+        />
       </div>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-auto px-2 pb-2" @click.self="onListBackgroundClick">
+    <div class="min-h-0 flex-1 overflow-auto px-2 pb-2 scrollbar-gutter-stable" @click.self="onListBackgroundClick">
       <div v-if="filteredRules.length === 0" :class="drawerEmptyStateClass">
         没有匹配当前筛选条件的规则。
       </div>

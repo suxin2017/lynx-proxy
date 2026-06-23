@@ -129,6 +129,9 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
+  .scrollbar-gutter-stable {
+    scrollbar-gutter: stable;
+  }
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }

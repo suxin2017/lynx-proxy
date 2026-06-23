@@ -69,7 +69,7 @@ export const ProxyForward: Story = {
   render: () => ({
     components: { ProxyForwardActionConfig },
     setup() {
-      const value = ref<RuleProxyForwardActionConfig>({ targetScheme: 'https', targetAuthority: 'api.example.com', targetPath: '/v1' })
+      const value = ref<RuleProxyForwardActionConfig>({ targetScheme: 'http', targetAuthority: 'example.com:5173', targetPath: '/v1' })
       return { value }
     },
     template: renderCard('Proxy Forward', 'ProxyForwardActionConfig'),

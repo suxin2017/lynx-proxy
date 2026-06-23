@@ -59,6 +59,7 @@ const emit = defineEmits<{
   'rules:edit': [id: string]
   'rules:save': [id: string]
   'rules:toggle-enabled': [id: string, enabled: boolean]
+  'rules:bulk-toggle': [ids: string[], enabled: boolean]
   'rules:reorder': [orderedIds: string[]]
   'rules:delete': [id: string]
 }>()
@@ -186,8 +187,6 @@ const showDrawerBack = computed(() => (
   (activePrimaryTabDisplay.value === 'rules' && rulesPaneDisplay.value === 'editor')
 ))
 
-const isDetailPane = computed(() => showDrawerBack.value)
-
 function onDrawerBack() {
   openRulesList()
 }
@@ -244,7 +243,7 @@ function onRuleDraftUpdate(next: RuleDraft) {
 
         <div
           class="min-h-0 flex-1 overflow-x-hidden overflow-y-hidden"
-          :class="isDetailPane ? 'px-3 pb-3 pt-0' : (activePrimaryTabDisplay === 'compose' || activePrimaryTabDisplay === 'device') ? 'px-3 pb-3 pt-2' : 'p-3'"
+          :class="(activePrimaryTabDisplay === 'compose' || activePrimaryTabDisplay === 'device') ? 'px-3 pb-3 pt-2' : 'p-3'"
         >
           <div
             v-if="activePrimaryTabDisplay === 'device'"
@@ -304,6 +303,7 @@ function onRuleDraftUpdate(next: RuleDraft) {
                     @duplicate="onDuplicateRule"
                     @select="onSelectRule"
                     @toggle-enabled="(id, enabled) => emit('rules:toggle-enabled', id, enabled)"
+                    @bulk-toggle="(ids, enabled) => emit('rules:bulk-toggle', ids, enabled)"
                     @reorder="ids => emit('rules:reorder', ids)"
                     @delete="onDeleteRule"
                   />

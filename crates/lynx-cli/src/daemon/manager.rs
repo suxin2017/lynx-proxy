@@ -22,7 +22,7 @@ impl DaemonManager {
         let data_dir = if let Some(data_dir) = data_dir {
             data_dir
         } else {
-            let project = ProjectDirs::from("cc", "suxin2017", "lynx")
+            let project = ProjectDirs::from("cc", "xin2017338", "lynx")
                 .ok_or_else(|| anyhow!("Failed to get project dir"))?;
             project.data_dir().to_path_buf()
         };

@@ -12,14 +12,14 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.7.4"
-authors = ["suxin2017"]
+version = "0.8.0"
+authors = ["xin2017338"]
 description = "Lynx Proxy Server"
 edition = "2024"
 license = "MIT"
-documentation = "https://github.com/suxin2017/lynx-proxy"
-homepage = "https://github.com/suxin2017/lynx-proxy"
-repository = "https://github.com/suxin2017/lynx-proxy"
+documentation = "https://github.com/xin2017338/lynx-proxy"
+homepage = "https://github.com/xin2017338/lynx-proxy"
+repository = "https://github.com/xin2017338/lynx-proxy"
 
 # Add this config to your root Cargo.toml (virtual manifest)
 [workspace.metadata.release]

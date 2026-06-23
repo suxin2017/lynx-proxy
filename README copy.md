@@ -67,13 +67,13 @@ Process Running: Yes
 
 #### Bash
 ```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/xin2017338/lynx-server/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
 #### Powershell 
 
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-server/releases/latest/download/lynx-cli-installer.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/xin2017338/lynx-server/releases/latest/download/lynx-cli-installer.ps1 | iex"
 ```
 
 ### Quick Start
@@ -110,7 +110,7 @@ Usage: lynx-cli.exe start [OPTIONS]
 
 Options:
   -p, --port <PORT>          proxy server port [default: 7788]
-      --data-dir <DATA_DIR>  data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
+      --data-dir <DATA_DIR>  data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\xin2017338\lynx\data
   -h, --help                 Print help
 ```
 
@@ -122,7 +122,7 @@ Usage: lynx-cli.exe run [OPTIONS]
 
 Options:
   -p, --port <PORT>            proxy server port [default: 7788]
-      --data-dir <DATA_DIR>    data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\suxin2017\lynx\data
+      --data-dir <DATA_DIR>    data dir The default data directory path following OS conventions: - Linux: ~/.local/share/lynx - macOS: ~/Library/Application Support/lynx - Windows: %APPDATA%\xin2017338\lynx\data
       --log-level <LOG_LEVEL>  Log level for the proxy server [default: info] [possible values: silent, info, error, debug, trace]
   -h, --help                   Print help
 ```

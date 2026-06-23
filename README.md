@@ -183,7 +183,7 @@ Rules are organized by **project** (tag on each rule). The UI shows project tabs
 
 `.lynx.json` is **JSON Schema-enabled**: it includes a top-level **`$schema`** field so VSCode/Cursor can validate and autocomplete the file.
 
-Schema URL format (pinned to version tag): `https://raw.githubusercontent.com/suxin2017/lynx-proxy/v<version>/schemas/rules-export.schema.json`
+Schema URL format (pinned to version tag): `https://raw.githubusercontent.com/xin2017338/lynx-proxy/v<version>/schemas/rules-export.schema.json`
 
 | Command | Description |
 |---------|-------------|
@@ -278,21 +278,21 @@ Process Running: Yes
 
 ### Install
 
-Prebuilt releases are published on [GitHub Releases](https://github.com/suxin2017/lynx-proxy/releases). The install scripts are named **`lynx-cli-installer.*`** (cargo-dist package name), but they install the **`lynx`** command.
+Prebuilt releases are published on [GitHub Releases](https://github.com/xin2017338/lynx-proxy/releases). The install scripts are named **`lynx-cli-installer.*`** (cargo-dist package name), but they install the **`lynx`** command.
 
-> **Note (v0.4.8 and earlier):** installers built before the repo rename still download binaries from `suxin2017/lynx-server` internally. The script URL can use either `lynx-proxy` or `lynx-server` — both hosts mirror the same release assets today. Future releases (after updating `repository` in `Cargo.toml`) will point entirely at `lynx-proxy`.
+> **Note (v0.4.8 and earlier):** installers built before the repo rename still download binaries from `xin2017338/lynx-server` internally. The script URL can use either `lynx-proxy` or `lynx-server` — both hosts mirror the same release assets today. Future releases (after updating `repository` in `Cargo.toml`) will point entirely at `lynx-proxy`.
 
 **macOS / Linux (recommended)**
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.sh | sh
+  https://github.com/xin2017338/lynx-proxy/releases/latest/download/lynx-cli-installer.sh | sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://github.com/suxin2017/lynx-proxy/releases/latest/download/lynx-cli-installer.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/xin2017338/lynx-proxy/releases/latest/download/lynx-cli-installer.ps1 | iex"
 ```
 
 After install:
@@ -301,7 +301,7 @@ After install:
 - Default location: `~/.cargo/bin/lynx` — add it to your `PATH` if the installer did not
 - Verify: `lynx --version`
 
-**Manual download** (from [Releases](https://github.com/suxin2017/lynx-proxy/releases)):
+**Manual download** (from [Releases](https://github.com/xin2017338/lynx-proxy/releases)):
 
 | Platform | Archive |
 |----------|---------|
@@ -314,7 +314,7 @@ Intel Macs are not in the release matrix (avoids long `macos-13` CI queues); use
 **Build from source**
 
 ```bash
-git clone https://github.com/suxin2017/lynx-proxy.git
+git clone https://github.com/xin2017338/lynx-proxy.git
 cd lynx-proxy
 task build-ui && cargo install --path crates/lynx-cli
 ```
@@ -387,7 +387,7 @@ Default data directories:
 
 - Linux: `~/.local/share/lynx`
 - macOS: `~/Library/Application Support/lynx`
-- Windows: `%APPDATA%\suxin2017\lynx\data`
+- Windows: `%APPDATA%\xin2017338\lynx\data`
 
 ## Development
 
@@ -427,7 +427,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Feedback
 
-Questions and ideas: [GitHub Issues](https://github.com/suxin2017/lynx-proxy/issues).
+Questions and ideas: [GitHub Issues](https://github.com/xin2017338/lynx-proxy/issues).
 
 ## Status
 
