@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2026-06-25
+
+### 🐛 Bug Fixes
+
+- *(daemon)* Fix `lynx start -u -p` failing with "invalid type: map, expected a sequence" by making `/api/base_info/address` a public endpoint
+- *(daemon)* Show detailed running instance info (PID, port, auth, data dir) when daemon is already running
+
 ## [0.8.1] - 2026-06-25
 
 ### 🐛 Bug Fixes

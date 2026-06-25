@@ -54,12 +54,36 @@ impl DaemonManager {
     ) -> Result<()> {
         // Check if daemon is already running
         if let Ok(status) = self.get_status() {
-            if status.is_running() && self.is_process_running(status.pid) {
+            if self.is_process_running(status.pid) {
+                let port_info = if status.port != port {
+                    format!(" (requested port {}, actual port {})", port, status.port)
+                } else {
+                    String::new()
+                };
+                let auth_info = status.auth_user.map_or_else(
+                    || "disabled".to_string(),
+                    |u| format!("enabled (user: {})", u),
+                );
                 println!(
                     "{}",
                     style("Lynx proxy service is already running").yellow()
                 );
+                println!("  PID: {}", style(status.pid).cyan());
+                println!("  Port: {}", style(status.port).cyan());
+                println!("  Auth: {}", style(auth_info).cyan());
+                println!("  Data: {}", style(status.data_dir.display()).cyan());
+                if !port_info.is_empty() {
+                    println!("  {}", style(port_info).yellow());
+                }
                 return Ok(());
+            }
+
+            // Stale status file — process is no longer running
+            if status.is_running() {
+                println!(
+                    "{}",
+                    style("Found stale status file (process no longer running), starting fresh...").yellow()
+                );
             }
         }
 

@@ -8,6 +8,7 @@ const PUBLIC_PATHS: &[(&Method, &str)] = &[
     (&Method::GET, "/api/health"),
     (&Method::GET, "/api/auth/status"),
     (&Method::POST, "/api/auth/login"),
+    (&Method::GET, "/api/base_info/address"),
 ];
 
 pub fn is_public_http_path(method: &Method, path: &str) -> bool {
