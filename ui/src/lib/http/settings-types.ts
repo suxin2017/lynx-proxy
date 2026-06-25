@@ -1,7 +1,6 @@
 export interface GeneralSetting {
   maxLogSize: number
   language: string
-  connectType: string
 }
 
 export interface DomainFilter {

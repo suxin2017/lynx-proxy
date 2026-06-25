@@ -380,7 +380,6 @@ lynx cert status
 | `--port` | `7788` | Proxy listen port |
 | `--data-dir` | OS-specific | Rules and persistent data |
 | `--log-level` | `info` | `silent`, `info`, `error`, `debug`, `trace` |
-| `--connect-type` | `sse` | `sse` or `short-poll` |
 | `--local-only` | off | Bind to loopback only |
 
 Default data directories:

@@ -21,8 +21,8 @@ async fn main() -> Result<()> {
                     data_dir,
                     log_level,
                     local_only,
-                    user: _,
-                    pass: _,
+                    user,
+                    pass,
                 },
         } => {
             let resolved_data_dir = resolve_data_dir(data_dir)?;
@@ -33,6 +33,8 @@ async fn main() -> Result<()> {
                     Some(resolved_data_dir.to_string_lossy().to_string()),
                     log_level,
                     local_only,
+                    user,
+                    pass,
                 )
                 .await?;
         }

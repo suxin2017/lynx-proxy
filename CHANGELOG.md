@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-06-25
+
+### 🐛 Bug Fixes
+
+- *(daemon)* Forward `-u`/`-p` auth credentials to the subprocess in daemon mode
+- *(storage)* Remove unused `ConnectType` enum and `connect_type` field from `GeneralSetting`
+- *(docs)* Remove stale `--connect-type` CLI option from README
+
 ## [0.7.1] - 2026-06-17
 
 ### 🐛 Bug Fixes

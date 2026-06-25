@@ -33,7 +33,6 @@ export const DEFAULT_SETTINGS_PREVIEW: SettingsPanelPreview = {
   general: {
     maxLogSize: 5000,
     language: 'zh-CN',
-    connectType: '1',
   },
   capture: {
     ...DEFAULT_CAPTURE_FILTER,

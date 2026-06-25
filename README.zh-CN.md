@@ -382,7 +382,6 @@ lynx rules apply     # 仅同步开关：按配置切换 enabled（必要时先 
 | `--port` | `7788` | 代理监听端口 |
 | `--data-dir` | 随系统 | 规则与持久化数据目录 |
 | `--log-level` | `info` | `silent`、`info`、`error`、`debug`、`trace` |
-| `--connect-type` | `sse` | `sse` 或 `short-poll` |
 | `--local-only` | 关闭 | 仅绑定本机回环地址 |
 
 默认数据目录：
