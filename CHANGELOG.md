@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.4] - 2026-06-26
+
+### 🐛 Bug Fixes
+
+- *(auth)* Allow static assets (JS/CSS/images) to load without authentication so the login page can render properly
+- *(cert)* Fix `cert uninstall` failing with "No matching lynxProxy certificate found" when root.pem was regenerated — now removes all lynxProxy certificates from the System Keychain regardless of fingerprint match
+
 ## [0.8.3] - 2026-06-26
 
 ### 🚀 Features
