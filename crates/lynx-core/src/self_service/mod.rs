@@ -152,7 +152,9 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
     let path = uri.path().to_string();
     let headers = req.headers().clone();
 
-    if auth.enabled && !is_public_http_path(&method, &path) {
+    // Only require auth for API endpoints; static files (JS, CSS, HTML, images)
+    // must be accessible without authentication so the login page can load.
+    if auth.enabled && path.starts_with("/api/") && !is_public_http_path(&method, &path) {
         if !authorize_http(&auth, &method, &path, &uri, &headers) {
             return Ok(unauthorized_response());
         }

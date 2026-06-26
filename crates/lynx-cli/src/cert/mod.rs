@@ -166,9 +166,22 @@ pub mod platform {
         };
 
         if target_fp.is_some() && to_remove.is_empty() {
+            // The current root.pem doesn't match any keychain cert (e.g. root.pem
+            // was regenerated). Remove all lynxProxy certs anyway since the user
+            // explicitly asked to uninstall.
             println!(
-                "No matching lynxProxy certificate found in System Keychain for the current root.pem."
+                "Warning: current root.pem fingerprint does not match any lynxProxy \
+                 certificate in System Keychain (root.pem may have been regenerated)."
             );
+            println!("Removing all lynxProxy certificates from System Keychain...");
+            for cert in &keychain_certs {
+                delete_certificate(&cert.sha1)?;
+            }
+            println!("Removed Lynx root CA from System Keychain.");
+            if cert_path.exists() {
+                println!("Certificate file: {}", cert_path.display());
+            }
+            println!("You can now run `lynx cert install` to install the current certificate.");
             return Ok(());
         }
 
