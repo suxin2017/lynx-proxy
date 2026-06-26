@@ -3,15 +3,36 @@ use clap::Parser;
 use lynx_cli::cert_cmd::{self, CertOptions};
 use lynx_cli::daemon::DaemonManager;
 use lynx_cli::rules_cmd::{RulesOptions, run_apply, run_pull, run_push, run_schema_export};
+use lynx_cli::version_check;
 use lynx_cli::{
     Args, CertCommands, Commands, LogConfig, ProxyServerApp, RulesCommands, RulesSchemaCommands,
     ServerArgs, resolve_data_dir,
 };
 use tokio::signal;
 
+/// Commands that start a long-running server — for these we check updates
+/// before starting so the prompt doesn't get buried.
+fn is_server_command(cmd: &Commands) -> bool {
+    matches!(cmd, Commands::Run { .. } | Commands::Start { .. })
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+    let is_server = is_server_command(&args.command);
+
+    // Check for new version (max 3 seconds)
+    let latest = version_check::check_for_updates().await;
+
+    if let Some(ref v) = latest {
+        if is_server {
+            // Server commands: print banner only (no stdin prompt)
+            version_check::print_update_banner(v);
+        } else {
+            // Other commands: interactively ask to update
+            version_check::prompt_and_update(v);
+        }
+    }
 
     match args.command {
         Commands::Start {

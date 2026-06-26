@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.3] - 2026-06-26
+
+### 🚀 Features
+
+- *(cli)* Auto-check for new version on every command; interactive update prompt when newer release is available
+- *(cli)* Use `lynx-cli-update` (cargo-dist updater) when updating
+
 ## [0.8.2] - 2026-06-25
 
 ### 🐛 Bug Fixes

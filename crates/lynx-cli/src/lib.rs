@@ -10,6 +10,7 @@ pub mod cert_cmd;
 pub mod log_config;
 pub mod proxy_server_app;
 pub mod rules_cmd;
+pub mod version_check;
 
 pub use daemon::DaemonManager;
 pub use log_config::LogConfig;
