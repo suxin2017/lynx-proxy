@@ -16,7 +16,10 @@ pub fn parse_expression(source: &str, base_offset: usize) -> Result<Option<Expr>
 }
 
 /// Like [`parse_expression`], but keeps successfully parsed terms and reports the first error.
-pub fn parse_expression_partial(source: &str, base_offset: usize) -> (Option<Expr>, Option<ParseError>) {
+pub fn parse_expression_partial(
+    source: &str,
+    base_offset: usize,
+) -> (Option<Expr>, Option<ParseError>) {
     let trimmed = source.trim();
     if trimmed.is_empty() {
         return (None, None);
@@ -132,8 +135,7 @@ fn parse_not_expression(source: &str, base_offset: usize) -> Result<NotExpr, Par
         });
     }
     if trimmed.len() >= 3 && trimmed[..3].eq_ignore_ascii_case("NOT") {
-        let boundary_ok = trimmed.len() == 3
-            || !trimmed.as_bytes()[3].is_ascii_alphanumeric();
+        let boundary_ok = trimmed.len() == 3 || !trimmed.as_bytes()[3].is_ascii_alphanumeric();
         if boundary_ok {
             return Err(ParseError::Syntax {
                 span: Span::new(term_start, term_start + trimmed.len()),
@@ -212,7 +214,10 @@ fn split_top_level(
         if allow_unclosed_group {
             let segment = &source[start..];
             if !segment.trim().is_empty() {
-                segments.push(Segment { start, text: segment });
+                segments.push(Segment {
+                    start,
+                    text: segment,
+                });
             }
             return Ok(segments);
         }
@@ -227,7 +232,10 @@ fn split_top_level(
 
     let segment = &source[start..];
     if !segment.trim().is_empty() {
-        segments.push(Segment { start, text: segment });
+        segments.push(Segment {
+            start,
+            text: segment,
+        });
     }
 
     if segments.is_empty() {

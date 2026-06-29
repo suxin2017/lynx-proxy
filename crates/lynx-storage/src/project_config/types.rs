@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::dao::request_processing_dao::{CaptureRule, HandlerRule, RequestRule};
 use crate::dao::request_processing_dao::types::DEFAULT_PROJECT_ID;
+use crate::dao::request_processing_dao::{CaptureRule, HandlerRule, RequestRule};
 
-pub const RULES_EXPORT_SCHEMA_URL: &str =
-    "https://raw.githubusercontent.com/xin2017338/lynx-proxy/v{version}/schemas/rules-export.schema.json";
+pub const RULES_EXPORT_SCHEMA_URL: &str = "https://raw.githubusercontent.com/xin2017338/lynx-proxy/v{version}/schemas/rules-export.schema.json";
 
 pub fn default_rules_export_schema_url() -> String {
     RULES_EXPORT_SCHEMA_URL.replace("{version}", env!("CARGO_PKG_VERSION"))

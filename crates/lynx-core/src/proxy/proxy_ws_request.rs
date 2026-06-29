@@ -2,15 +2,13 @@ use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
 use axum::response::{IntoResponse, Response};
-use http_body_util::BodyExt;
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use http::{
     Request, Uri,
-    header::{
-        HOST, HeaderValue, PROXY_AUTHORIZATION, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_PROTOCOL,
-    },
+    header::{HOST, HeaderValue, PROXY_AUTHORIZATION, SEC_WEBSOCKET_KEY, SEC_WEBSOCKET_PROTOCOL},
     request::Parts,
 };
+use http_body_util::BodyExt;
 use hyper_tungstenite::HyperWebsocket;
 use serde::{Deserialize, Serialize};
 use tokio::spawn;
@@ -43,13 +41,18 @@ fn normalize_websocket_uri(uri: Uri) -> Result<Uri> {
         Some("http") => "ws".try_into().expect("valid ws scheme"),
         Some("https") | Some("wss") => "wss".try_into().expect("valid wss scheme"),
         Some("ws") => "ws".try_into().expect("valid ws scheme"),
-        Some(other) => other.try_into().map_err(|_| anyhow!("invalid scheme: {other}"))?,
+        Some(other) => other
+            .try_into()
+            .map_err(|_| anyhow!("invalid scheme: {other}"))?,
         None => "ws".try_into().expect("valid ws scheme"),
     });
 
     if let Some(authority) = parts.authority.as_ref() {
         let strip_default_port = matches!(
-            (parts.scheme.as_ref().map(|s| s.as_str()), authority.port_u16()),
+            (
+                parts.scheme.as_ref().map(|s| s.as_str()),
+                authority.port_u16()
+            ),
             (Some("ws"), Some(80))
                 | (Some("wss"), Some(443))
                 | (Some("http"), Some(80))
@@ -74,9 +77,8 @@ fn align_upstream_handshake_headers(parts: &mut Parts, uri: &Uri) -> Result<()> 
     if let Some(authority) = uri.authority() {
         parts.headers.insert(
             HOST,
-            HeaderValue::from_str(authority.as_str()).map_err(|e| {
-                anyhow!(e).context("invalid Host header for upstream websocket")
-            })?,
+            HeaderValue::from_str(authority.as_str())
+                .map_err(|e| anyhow!(e).context("invalid Host header for upstream websocket"))?,
         );
     }
 
@@ -159,7 +161,9 @@ async fn proxy_ws_inner(mut req: Req) -> Result<Response> {
 
     let (mut parts, body) = client_res.into_parts();
     if let Some(protocol) = upstream_res.headers().get(SEC_WEBSOCKET_PROTOCOL) {
-        parts.headers.insert(SEC_WEBSOCKET_PROTOCOL, protocol.clone());
+        parts
+            .headers
+            .insert(SEC_WEBSOCKET_PROTOCOL, protocol.clone());
     }
     let bytes = body.collect().await?.to_bytes();
     let client_res = Response::from_parts(parts, full(bytes));
@@ -214,8 +218,7 @@ where
         "client-to-upstream",
     );
 
-    let (_res_upstream, _res_client) =
-        tokio::join!(upstream_to_client, client_to_upstream);
+    let (_res_upstream, _res_client) = tokio::join!(upstream_to_client, client_to_upstream);
 
     Ok(())
 }
@@ -272,7 +275,10 @@ where
                 .unwrap_or_else(|| ("none".to_string(), String::new()));
             debug!(
                 direction,
-                ?send_type, code, reason, "websocket close frame received"
+                ?send_type,
+                code,
+                reason,
+                "websocket close frame received"
             );
         }
 
@@ -298,9 +304,7 @@ mod tests {
     use axum::http::Method;
     use http::{
         Uri,
-        header::{
-            CONNECTION, ORIGIN, SEC_WEBSOCKET_EXTENSIONS, SEC_WEBSOCKET_VERSION, UPGRADE,
-        },
+        header::{CONNECTION, ORIGIN, SEC_WEBSOCKET_EXTENSIONS, SEC_WEBSOCKET_VERSION, UPGRADE},
     };
 
     use crate::utils::empty;
@@ -340,10 +344,7 @@ mod tests {
 
         align_upstream_handshake_headers(&mut parts, &uri).unwrap();
 
-        assert_eq!(
-            parts.headers.get(HOST).unwrap(),
-            "127.0.0.1:5173"
-        );
+        assert_eq!(parts.headers.get(HOST).unwrap(), "127.0.0.1:5173");
         assert_eq!(
             parts.headers.get(ORIGIN).unwrap(),
             "https://virtual.example.com"
@@ -393,17 +394,11 @@ mod tests {
 
         let parts = ws_req.0.into_parts().0;
         assert_eq!(parts.uri.to_string(), "ws://127.0.0.1:9090/ws/strict-host");
-        assert_eq!(
-            parts.headers.get(HOST).unwrap(),
-            "127.0.0.1:9090"
-        );
+        assert_eq!(parts.headers.get(HOST).unwrap(), "127.0.0.1:9090");
         assert_eq!(
             parts.headers.get(SEC_WEBSOCKET_PROTOCOL).unwrap(),
             "webpack-hmr"
         );
-        assert_eq!(
-            parts.headers.get(ORIGIN).unwrap(),
-            "https://not_exist.com"
-        );
+        assert_eq!(parts.headers.get(ORIGIN).unwrap(), "https://not_exist.com");
     }
 }

@@ -12,9 +12,7 @@ const PUBLIC_PATHS: &[(&Method, &str)] = &[
 ];
 
 pub fn is_public_http_path(method: &Method, path: &str) -> bool {
-    PUBLIC_PATHS
-        .iter()
-        .any(|(m, p)| m == method && *p == path)
+    PUBLIC_PATHS.iter().any(|(m, p)| m == method && *p == path)
 }
 
 pub fn extract_bearer_token(headers: &HeaderMap) -> Option<String> {
@@ -61,9 +59,7 @@ pub fn authorize_http(
         return true;
     }
 
-    let token = extract_bearer_token(headers).or_else(|| {
-        uri.query().and_then(parse_token_query)
-    });
+    let token = extract_bearer_token(headers).or_else(|| uri.query().and_then(parse_token_query));
 
     let Some(token) = token else {
         return false;

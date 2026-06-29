@@ -54,7 +54,11 @@ impl CaptureRulesDao {
         })
     }
 
-    pub async fn upsert(&self, kind: CaptureRuleKind, mut rule: CaptureRule) -> Result<CaptureRule> {
+    pub async fn upsert(
+        &self,
+        kind: CaptureRuleKind,
+        mut rule: CaptureRule,
+    ) -> Result<CaptureRule> {
         let mut rules = self.get_rules().await?;
         let next_id_value = next_id(&rules);
         let list = match kind {
@@ -83,7 +87,11 @@ impl CaptureRulesDao {
         }
 
         // Stable ordering for UI.
-        list.sort_by(|a, b| b.updated_at.cmp(&a.updated_at).then_with(|| b.id.cmp(&a.id)));
+        list.sort_by(|a, b| {
+            b.updated_at
+                .cmp(&a.updated_at)
+                .then_with(|| b.id.cmp(&a.id))
+        });
 
         write_json_atomic(&self.path(), &rules).await?;
         Ok(rule)
@@ -104,7 +112,12 @@ impl CaptureRulesDao {
         Ok(())
     }
 
-    pub async fn set_enabled(&self, kind: CaptureRuleKind, rule_id: i32, enabled: bool) -> Result<CaptureRule> {
+    pub async fn set_enabled(
+        &self,
+        kind: CaptureRuleKind,
+        rule_id: i32,
+        enabled: bool,
+    ) -> Result<CaptureRule> {
         let mut rules = self.get_rules().await?;
         let list = match kind {
             CaptureRuleKind::Focus => &mut rules.focus_rules,
@@ -172,4 +185,3 @@ mod tests {
         Ok(())
     }
 }
-

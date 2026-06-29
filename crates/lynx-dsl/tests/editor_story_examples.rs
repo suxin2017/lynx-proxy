@@ -1,8 +1,6 @@
 mod common;
 
-use common::editor_story_fixtures::{
-    DSL_STORY_EXAMPLES, DSL_STORY_EXTRA_VALID, DSL_STORY_INVALID,
-};
+use common::editor_story_fixtures::{DSL_STORY_EXAMPLES, DSL_STORY_EXTRA_VALID, DSL_STORY_INVALID};
 use lynx_dsl::{format_dsl, has_parse_errors, parse_program};
 
 #[test]

@@ -71,10 +71,7 @@ mod tests {
         .expect("deserialize proxy forward config");
 
         assert!(config.target_scheme.is_none());
-        assert_eq!(
-            config.target_authority.as_deref(),
-            Some("127.0.0.1:8000")
-        );
+        assert_eq!(config.target_authority.as_deref(), Some("127.0.0.1:8000"));
         assert!(config.target_path.is_none());
     }
 
@@ -87,10 +84,7 @@ mod tests {
         );
 
         assert!(config.target_scheme.is_none());
-        assert_eq!(
-            config.target_authority.as_deref(),
-            Some("127.0.0.1:8000")
-        );
+        assert_eq!(config.target_authority.as_deref(), Some("127.0.0.1:8000"));
         assert!(config.target_path.is_none());
     }
 }

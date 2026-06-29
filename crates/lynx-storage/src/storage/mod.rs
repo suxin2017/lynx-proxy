@@ -8,13 +8,13 @@ use anyhow::{Result, anyhow};
 use tokio::fs;
 use tokio::sync::RwLock;
 
-use crate::dao::net_request_dao::CaptureSwitch;
-use crate::dao::request_processing_dao::types::RequestRule;
-use crate::dao::{https_capture_dao::CaptureFilter, general_setting_dao::GeneralSetting};
-use crate::dao::client_proxy_dao::ClientProxyConfig;
-use crate::dao::request_processing_dao::matcher::{CompiledRule, RuleMatcher};
 use crate::dao::capture_rules_dao::CaptureRules;
+use crate::dao::client_proxy_dao::ClientProxyConfig;
+use crate::dao::net_request_dao::CaptureSwitch;
+use crate::dao::request_processing_dao::matcher::{CompiledRule, RuleMatcher};
+use crate::dao::request_processing_dao::types::RequestRule;
 use crate::dao::traffic_filter_history_dao::TrafficFilterHistory;
+use crate::dao::{general_setting_dao::GeneralSetting, https_capture_dao::CaptureFilter};
 
 pub use json_file::{read_json, read_json_or_default, write_json_atomic};
 
@@ -100,7 +100,6 @@ impl DataStore {
         self.rules_dir().join("templates.json")
     }
 
-
     pub async fn invalidate_rules_cache(&self) {
         let mut cache = self.rules_cache.write().await;
         *cache = None;
@@ -138,10 +137,10 @@ impl DataStore {
     }
 
     pub async fn get_rules_cache_entry(&self) -> Result<RulesCacheEntry> {
-        if let Some(state) = self.rules_cache.read().await.clone() {
-            if !self.is_rules_cache_stale(&state.fingerprint).await? {
-                return Ok(state.entry);
-            }
+        if let Some(state) = self.rules_cache.read().await.clone()
+            && !self.is_rules_cache_stale(&state.fingerprint).await?
+        {
+            return Ok(state.entry);
         }
 
         let fingerprint = self.rules_dir_fingerprint().await?;
@@ -218,10 +217,7 @@ impl DataStore {
                 "https_capture",
                 serde_json::to_value(CaptureFilter::default())?,
             ),
-            (
-                "general",
-                serde_json::to_value(GeneralSetting::default())?,
-            ),
+            ("general", serde_json::to_value(GeneralSetting::default())?),
             (
                 "client_proxy",
                 serde_json::to_value(ClientProxyConfig::default())?,

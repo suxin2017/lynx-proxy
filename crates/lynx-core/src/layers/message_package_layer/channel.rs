@@ -1,23 +1,23 @@
+use axum::extract::Request;
+use bytes::Bytes;
+use hyper::body::Body;
 use std::fmt::Debug;
 use std::sync::Arc;
-use bytes::Bytes;
-use axum::extract::Request;
-use hyper::body::Body;
 use tokio::{spawn, sync::broadcast};
 use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tokio_tungstenite::tungstenite;
 use tracing::{Instrument, instrument};
 
-use crate::proxy::proxy_ws_request::SendType;
 use crate::common::Res;
+use crate::proxy::proxy_ws_request::SendType;
 
+use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
 use super::compression::process_compressed_body;
 use super::event_handler::handle_message_event_single;
 use super::message_event_data::{
     MessageEventRequest, MessageEventResponse, WebSocketDirection, WebSocketLog, WebSocketMessage,
 };
 use super::message_event_store::MessageEvent;
-use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
 
 pub struct MessageEventChannel {
     broadcast_sender: tokio::sync::broadcast::Sender<MessageEvent>,
@@ -26,6 +26,12 @@ pub struct MessageEventChannel {
 impl Debug for MessageEventChannel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MessageEventChannel").finish()
+    }
+}
+
+impl Default for MessageEventChannel {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -38,10 +44,7 @@ impl MessageEventChannel {
         }
     }
 
-    pub fn setup_short_poll(
-        self: &Self,
-        cache: Arc<super::message_event_store::MessageEventCache>
-    ) {
+    pub fn setup_short_poll(&self, cache: Arc<super::message_event_store::MessageEventCache>) {
         let cache_clone = cache.clone();
         let mut rx = self.subscribe();
         spawn(async move {

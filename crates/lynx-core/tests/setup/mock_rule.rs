@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::Result;
+use lynx_storage::DataStore;
 use lynx_storage::dao::request_processing_dao::{
     CaptureRule, HandlerRule, RequestProcessingDao, RequestRule,
 };
-use lynx_storage::DataStore;
 
 #[allow(dead_code)]
 pub async fn create_test_rule(
@@ -35,10 +35,7 @@ pub fn create_basic_capture_rule() -> CaptureRule {
 }
 
 #[allow(dead_code)]
-pub async fn mock_test_rule(
-    store: Arc<DataStore>,
-    handlers: Vec<HandlerRule>,
-) -> Result<i32> {
+pub async fn mock_test_rule(store: Arc<DataStore>, handlers: Vec<HandlerRule>) -> Result<i32> {
     let dao = RequestProcessingDao::new(store);
 
     let rule = RequestRule {
@@ -56,4 +53,3 @@ pub async fn mock_test_rule(
     };
     dao.create_rule(rule).await
 }
-

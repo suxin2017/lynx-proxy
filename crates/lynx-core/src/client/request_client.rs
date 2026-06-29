@@ -118,13 +118,17 @@ impl RequestClientExt for Extensions {
     fn try_get_http_client(&self) -> CoreResult<Arc<HttpClient>> {
         self.get::<ShareRequestClient>()
             .map(|c| Arc::clone(&c.http_client))
-            .ok_or_else(|| CoreError::MissingExtension { name: "RequestClient" })
+            .ok_or_else(|| CoreError::MissingExtension {
+                name: "RequestClient",
+            })
     }
 
     fn try_get_websocket_client(&self) -> CoreResult<Arc<WebsocketClient>> {
         self.get::<ShareRequestClient>()
             .map(|c| Arc::clone(&c.websocket_client))
-            .ok_or_else(|| CoreError::MissingExtension { name: "RequestClient" })
+            .ok_or_else(|| CoreError::MissingExtension {
+                name: "RequestClient",
+            })
     }
 }
 

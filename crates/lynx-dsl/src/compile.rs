@@ -4,13 +4,9 @@ use std::sync::Arc;
 
 use thiserror::Error;
 
-use crate::ast::{
-    AndExpr, CliArg, CliArgValue, CliArgs, NotExpr, OrExpr, Primary, Program, Url,
-};
+use crate::ast::{AndExpr, CliArg, CliArgValue, CliArgs, NotExpr, OrExpr, Primary, Program, Url};
 use crate::error::ParseError;
-use crate::ir::{
-    EvalPlan, MatchProgram, PathMatcher, Predicate, SegmentPattern,
-};
+use crate::ir::{EvalPlan, MatchProgram, PathMatcher, Predicate, SegmentPattern};
 use crate::parser::parse_program;
 use crate::query::parse_query_pairs;
 
@@ -129,9 +125,7 @@ impl LowerCtx {
             indices.push(self.push_predicate(Predicate::PortEq(port_num)));
         }
         if let Some(path) = &url.path {
-            indices.push(self.push_predicate(Predicate::PathGlob(compile_path(
-                &path.value,
-            )?)));
+            indices.push(self.push_predicate(Predicate::PathGlob(compile_path(&path.value)?)));
         }
         if let Some(query) = &url.query {
             let pairs: Vec<(Arc<str>, Arc<str>)> = parse_query_pairs(&query.value)

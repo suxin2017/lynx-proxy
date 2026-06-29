@@ -49,9 +49,7 @@ impl HandlerTrait for ThrottleHandlerConfig {
         }
 
         let body = std::mem::replace(response.body_mut(), Body::empty());
-        let boxed = body
-            .map_err(|e| anyhow::anyhow!("{e}"))
-            .boxed_unsync();
+        let boxed = body.map_err(|e| anyhow::anyhow!("{e}")).boxed_unsync();
         let throttled = ThrottledBody::new(boxed, effective.download_kbps);
         *response.body_mut() = Body::new(throttled);
 
@@ -85,9 +83,7 @@ mod tests {
         match result {
             HandleRequestType::Response(response) => {
                 assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
-                let body = BodyExt::collect(response.into_body())
-                    .await?
-                    .to_bytes();
+                let body = BodyExt::collect(response.into_body()).await?.to_bytes();
                 assert_eq!(body, "Network offline (simulated)");
             }
             HandleRequestType::Request(_) => panic!("expected short-circuit response"),

@@ -21,8 +21,14 @@ pub fn router() -> Router<RouteState> {
             "/collections/nodes/{id}/move",
             post(handlers::move_collection_node),
         )
-        .route("/drafts/{id}", get(handlers::get_draft).put(handlers::save_draft))
-        .route("/history", get(handlers::list_history).post(handlers::append_history))
+        .route(
+            "/drafts/{id}",
+            get(handlers::get_draft).put(handlers::save_draft),
+        )
+        .route(
+            "/history",
+            get(handlers::list_history).post(handlers::append_history),
+        )
         .route("/history/clear", delete(handlers::clear_history))
         .route("/history/{id}", delete(handlers::delete_history_entry))
 }

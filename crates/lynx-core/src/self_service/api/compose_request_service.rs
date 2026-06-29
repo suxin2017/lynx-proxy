@@ -186,14 +186,17 @@ pub async fn execute_compose_request(
 
     builder = apply_headers(builder, &payload.headers)?;
 
-    if let Some(timeout_secs) = payload.timeout {
-        if timeout_secs > 0 {
-            builder = builder.timeout(Duration::from_secs(timeout_secs));
-        }
+    if let Some(timeout_secs) = payload.timeout
+        && timeout_secs > 0
+    {
+        builder = builder.timeout(Duration::from_secs(timeout_secs));
     }
 
     if !payload.body.is_empty()
-        && !matches!(payload.method, ComposeHttpMethod::Get | ComposeHttpMethod::Head)
+        && !matches!(
+            payload.method,
+            ComposeHttpMethod::Get | ComposeHttpMethod::Head
+        )
     {
         // Send the body exactly as edited (cURL / Postman parity); do not re-serialize JSON.
         builder = builder.body(payload.body);

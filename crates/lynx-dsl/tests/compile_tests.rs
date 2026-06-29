@@ -1,4 +1,4 @@
-use lynx_dsl::{compile_match_expr, CompileError, EvalPlan, MatchProgram, Predicate};
+use lynx_dsl::{CompileError, EvalPlan, MatchProgram, Predicate, compile_match_expr};
 
 #[test]
 fn compiles_valid_story_examples() {
@@ -80,7 +80,12 @@ fn compiles_scheme_host_port_path() {
 #[test]
 fn compiles_cli_method_and_headers() {
     let program = compile_match_expr("example.com -X POST --header Authorization=Bearer").unwrap();
-    assert!(program.predicates.iter().any(|pred| matches!(pred, Predicate::HostEq(_))));
+    assert!(
+        program
+            .predicates
+            .iter()
+            .any(|pred| matches!(pred, Predicate::HostEq(_)))
+    );
     assert!(program.predicates.iter().any(|pred| matches!(
         pred,
         Predicate::MethodEq(method) if method.as_ref() == "POST"

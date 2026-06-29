@@ -10,16 +10,12 @@ use setup::{setup_mock_server::setup_mock_server, setup_proxy_server::setup_prox
 mod setup;
 
 fn proxy_url(proxy_server: &lynx_core::proxy_server::ProxyServer) -> String {
-    format!(
-        "http://{}",
-        proxy_server.access_addr_list.first().unwrap()
-    )
+    format!("http://{}", proxy_server.access_addr_list.first().unwrap())
 }
 
 async fn setup_client() -> Result<(lynx_mock::server::MockServer, MockClient)> {
     let mock_server = setup_mock_server().await?;
-    let proxy_server =
-        setup_proxy_server(Some(Arc::new(vec![mock_server.cert.clone()]))).await?;
+    let proxy_server = setup_proxy_server(Some(Arc::new(vec![mock_server.cert.clone()]))).await?;
     let proxy_server_root_ca = proxy_server.server_ca_manager.ca_cert.clone();
     let client = MockClient::new(
         Some(vec![mock_server.cert.clone(), proxy_server_root_ca]),
@@ -53,10 +49,7 @@ async fn proxy_slow_http_exceeds_old_five_second_timeout() -> Result<()> {
         "expected slow response, got {:?}",
         elapsed
     );
-    assert!(
-        mock_server.addr.port() > 0,
-        "mock server should be running"
-    );
+    assert!(mock_server.addr.port() > 0, "mock server should be running");
 
     Ok(())
 }
@@ -72,7 +65,7 @@ async fn proxy_websocket_sustained_messages() -> Result<()> {
     let message_count = 100;
     for i in 0..message_count {
         let payload = format!("sustained-{i}");
-        ws.send(Message::Text(payload.clone().into())).await?;
+        ws.send(Message::Text(payload.clone())).await?;
         let reply = ws.next().await.expect("stream ended early")?;
         match reply {
             Message::Text(text) => assert_eq!(text, payload),
@@ -109,7 +102,7 @@ async fn proxy_websocket_with_permessage_deflate_request_header() -> Result<()> 
     let message_count = 100;
     for i in 0..message_count {
         let payload = format!("deflate-ext-{i}");
-        ws.send(Message::Text(payload.clone().into())).await?;
+        ws.send(Message::Text(payload.clone())).await?;
         let reply = ws.next().await.expect("stream ended early")?;
         match reply {
             Message::Text(text) => assert_eq!(text, payload),

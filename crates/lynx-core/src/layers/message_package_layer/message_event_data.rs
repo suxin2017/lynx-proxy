@@ -1,18 +1,18 @@
+use crate::common::BoxBody;
+use crate::utils::empty;
 use anyhow::anyhow;
 use axum::body::Body as AxumBody;
 use base64::{Engine as _, engine::general_purpose};
-use bytes::{Bytes, BytesMut, BufMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use http::{HeaderMap, Method, Request, Response, Version};
 use http_body_util::{BodyExt, StreamBody};
 use hyper::body::Body;
+use hyper_tungstenite::is_upgrade_request;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::warn;
 use url::Url;
-use hyper_tungstenite::is_upgrade_request;
-use crate::common::BoxBody;
-use crate::utils::empty;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -375,12 +375,11 @@ pub fn copy_body_stream(
 
     tokio::spawn(async move {
         while let Some(frame) = m_body.frame().await {
-            if let Ok(frame) = &frame {
-                if let Some(data) = frame.data_ref() {
-                    if tx1.send(data.clone()).await.is_err() {
-                        warn!("Failed to send data");
-                    }
-                }
+            if let Ok(frame) = &frame
+                && let Some(data) = frame.data_ref()
+                && tx1.send(data.clone()).await.is_err()
+            {
+                warn!("Failed to send data");
             }
             if tx2.send(frame).await.is_err() {
                 warn!("Failed to send frame");

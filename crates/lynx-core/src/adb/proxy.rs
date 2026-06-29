@@ -23,7 +23,13 @@ fn proxy_state_dir(data_root: &Path) -> PathBuf {
 fn proxy_state_path(data_root: &Path, serial: &str) -> PathBuf {
     let safe: String = serial
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     proxy_state_dir(data_root).join(format!("{safe}.json"))
 }
@@ -52,7 +58,12 @@ async fn remove_persisted(data_root: &Path, serial: &str) -> Result<()> {
 }
 
 pub async fn get_http_proxy(adb_path: &Path, serial: &str) -> Result<Option<String>> {
-    let output = run_adb(adb_path, Some(serial), &["shell", "settings", "get", "global", "http_proxy"]).await?;
+    let output = run_adb(
+        adb_path,
+        Some(serial),
+        &["shell", "settings", "get", "global", "http_proxy"],
+    )
+    .await?;
     ensure_success(&output, "get http_proxy")?;
     let value = adb_output_message(&output).trim().to_string();
     if value.is_empty() || value == "null" {
@@ -84,7 +95,10 @@ pub async fn remove_reverse(adb_path: &Path, serial: &str, port: u16) -> Result<
     let spec = format!("tcp:{port}");
     let output = run_adb(adb_path, Some(serial), &["reverse", "--remove", &spec]).await?;
     if !output.status.success() {
-        tracing::debug!("adb reverse --remove ignored: {}", adb_output_message(&output));
+        tracing::debug!(
+            "adb reverse --remove ignored: {}",
+            adb_output_message(&output)
+        );
     }
     Ok(())
 }
@@ -120,10 +134,10 @@ pub fn pick_lan_host(access_addrs: &[SocketAddr], override_host: Option<&str>) -
 }
 
 fn strip_port_from_host(host: &str) -> String {
-    if host.starts_with('[') {
-        if let Some(end) = host.find(']') {
-            return host[1..end].to_string();
-        }
+    if host.starts_with('[')
+        && let Some(end) = host.find(']')
+    {
+        return host[1..end].to_string();
     }
     host.split(':').next().unwrap_or(host).to_string()
 }
@@ -173,15 +187,14 @@ pub async fn enable_proxy(
         ));
     }
 
-    let port = payload.port.unwrap_or_else(|| {
-        access_addrs
-            .first()
-            .map(|a| a.port())
-            .unwrap_or(7788)
-    });
+    let port = payload
+        .port
+        .unwrap_or_else(|| access_addrs.first().map(|a| a.port()).unwrap_or(7788));
 
     if load_persisted(data_root, &payload.serial).await.is_some() {
-        return Err(anyhow!("proxy already enabled for this device; disable first"));
+        return Err(anyhow!(
+            "proxy already enabled for this device; disable first"
+        ));
     }
 
     let backup = get_http_proxy(adb_path, &payload.serial).await?;

@@ -15,21 +15,14 @@ struct RulesBackup {
     rules: Vec<RequestRule>,
 }
 
-pub async fn backup_rules_snapshot(
-    store: &DataStore,
-    config_id: &str,
-) -> Result<PathBuf> {
+pub async fn backup_rules_snapshot(store: &DataStore, config_id: &str) -> Result<PathBuf> {
     let rules = store.get_rules_cache().await?;
     let backed_up_at = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .context("system time before unix epoch")?
         .as_secs();
 
-    let backup_dir = store
-        .root()
-        .join("backups")
-        .join("lynx")
-        .join(config_id);
+    let backup_dir = store.root().join("backups").join("lynx").join(config_id);
     fs::create_dir_all(&backup_dir)
         .await
         .with_context(|| format!("create backup dir {}", backup_dir.display()))?;

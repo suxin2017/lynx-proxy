@@ -183,9 +183,7 @@ where
 
                 match handler_result {
                     Ok(HandleRequestType::Request(req)) => {
-                        tracing::trace!(
-                            "Handler modified request, continuing with next handler"
-                        );
+                        tracing::trace!("Handler modified request, continuing with next handler");
                         current_request = req;
                     }
                     Ok(HandleRequestType::Response(mut response)) => {
@@ -197,7 +195,11 @@ where
                         return Ok(response);
                     }
                     Err(e) => {
-                        tracing::warn!("Handler failed (type={}): {}", handler_kind_label(&handler.handler_type), e);
+                        tracing::warn!(
+                            "Handler failed (type={}): {}",
+                            handler_kind_label(&handler.handler_type),
+                            e
+                        );
                         return Err(handler_rule_error(
                             handler_kind_label(&handler.handler_type),
                             &handler.handler_type,
@@ -257,10 +259,8 @@ where
                                 "Executing delay response handler (type: {:?})",
                                 delay_config.delay_type
                             );
-                            response = delay_config
-                                .handle_response(response)
-                                .await
-                                .map_err(|e| {
+                            response =
+                                delay_config.handle_response(response).await.map_err(|e| {
                                     handler_rule_error(
                                         handler_kind_label(&handler.handler_type),
                                         &handler.handler_type,
@@ -273,21 +273,20 @@ where
                                 "Executing throttle response handler (preset: {:?})",
                                 throttle_config.preset
                             );
-                            response = throttle_config
-                                .handle_response(response)
-                                .await
-                                .map_err(|e| {
-                                    handler_rule_error(
-                                        handler_kind_label(&handler.handler_type),
-                                        &handler.handler_type,
-                                        e,
-                                    )
-                                })?;
+                            response =
+                                throttle_config
+                                    .handle_response(response)
+                                    .await
+                                    .map_err(|e| {
+                                        handler_rule_error(
+                                            handler_kind_label(&handler.handler_type),
+                                            &handler.handler_type,
+                                            e,
+                                        )
+                                    })?;
                         }
                         _ => {
-                            tracing::trace!(
-                                "Handler type does not support response processing"
-                            );
+                            tracing::trace!("Handler type does not support response processing");
                             continue;
                         }
                     };

@@ -15,17 +15,20 @@ fn map_validation(err: RequestProcessingError) -> anyhow::Error {
     }
 }
 
-pub async fn list_rules(state: &RouteState, project_id: Option<String>) -> Result<Vec<RequestRule>> {
+pub async fn list_rules(
+    state: &RouteState,
+    project_id: Option<String>,
+) -> Result<Vec<RequestRule>> {
     let dao = RequestProcessingDao::new(state.store.clone());
     match project_id {
-        Some(project) => dao.list_rules_by_project(&project).await.map_err(Into::into),
-        None => dao.list_rules().await.map_err(Into::into),
+        Some(project) => dao.list_rules_by_project(&project).await,
+        None => dao.list_rules().await,
     }
 }
 
 pub async fn get_rule(state: &RouteState, rule_id: i32) -> Result<Option<RequestRule>> {
     let dao = RequestProcessingDao::new(state.store.clone());
-    dao.get_rule(rule_id).await.map_err(Into::into)
+    dao.get_rule(rule_id).await
 }
 
 pub async fn save_rule(state: &RouteState, rule: RequestRule) -> Result<RequestRule> {
@@ -50,7 +53,7 @@ pub async fn delete_rule(state: &RouteState, rule_id: i32) -> Result<()> {
     if dao.get_rule(rule_id).await?.is_none() {
         return Err(anyhow!("Rule {rule_id} not found"));
     }
-    dao.delete_rule(rule_id).await.map_err(Into::into)
+    dao.delete_rule(rule_id).await
 }
 
 pub async fn set_rule_enabled(
@@ -67,5 +70,5 @@ pub async fn set_rule_enabled(
 
 pub async fn list_templates(state: &RouteState) -> Result<Vec<HandlerRule>> {
     let dao = RequestProcessingDao::new(state.store.clone());
-    dao.get_template_handlers().await.map_err(Into::into)
+    dao.get_template_handlers().await
 }

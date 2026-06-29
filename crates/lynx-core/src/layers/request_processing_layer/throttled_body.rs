@@ -76,18 +76,18 @@ where
 
             match self.as_mut().project().inner.poll_frame(cx) {
                 Poll::Ready(Some(Ok(frame))) => {
-                    if let Some(chunk) = frame.data_ref() {
-                        if let Some(duration) = Self::delay_for_chunk(
+                    if let Some(chunk) = frame.data_ref()
+                        && let Some(duration) = Self::delay_for_chunk(
                             *self.as_mut().project().bytes_per_sec,
                             chunk.len(),
-                        ) {
-                            self.as_mut().project().pending.replace(frame);
-                            self.as_mut()
-                                .project()
-                                .delay
-                                .set(Some(Box::pin(tokio::time::sleep(duration))));
-                            continue;
-                        }
+                        )
+                    {
+                        self.as_mut().project().pending.replace(frame);
+                        self.as_mut()
+                            .project()
+                            .delay
+                            .set(Some(Box::pin(tokio::time::sleep(duration))));
+                        continue;
                     }
                     return Poll::Ready(Some(Ok(frame)));
                 }

@@ -1,9 +1,12 @@
-use http::uri::{Authority, PathAndQuery, Scheme};
 use http::Uri;
+use http::uri::{Authority, PathAndQuery, Scheme};
 use lynx_storage::dao::request_processing_dao::handlers::proxy_forward_handler::ProxyForwardConfig;
 
 use super::handler_trait::{HandleRequestType, HandlerTrait};
-use crate::{common::Req, error::{CoreError, CoreResult}};
+use crate::{
+    common::Req,
+    error::{CoreError, CoreResult},
+};
 
 fn proxy_forward_validation_message(
     config: &ProxyForwardConfig,
@@ -29,20 +32,17 @@ impl HandlerTrait for ProxyForwardConfig {
         let mut uri_builder = Uri::builder();
 
         // Use target scheme or fallback to original
-        let scheme = if let Some(target_scheme) = ProxyForwardConfig::optional_field(&self.target_scheme) {
-            Some(
-                target_scheme
-                    .parse::<Scheme>()
-                    .map_err(|_| {
-                        proxy_forward_validation_message(
-                            self,
-                            format!("scheme '{target_scheme}' is not valid"),
-                        )
-                    })?,
-            )
-        } else {
-            current_parts.scheme
-        };
+        let scheme =
+            if let Some(target_scheme) = ProxyForwardConfig::optional_field(&self.target_scheme) {
+                Some(target_scheme.parse::<Scheme>().map_err(|_| {
+                    proxy_forward_validation_message(
+                        self,
+                        format!("scheme '{target_scheme}' is not valid"),
+                    )
+                })?)
+            } else {
+                current_parts.scheme
+            };
         if let Some(scheme) = scheme {
             uri_builder = uri_builder.scheme(scheme);
         }
@@ -51,14 +51,12 @@ impl HandlerTrait for ProxyForwardConfig {
         let authority = if let Some(target_authority) =
             ProxyForwardConfig::optional_field(&self.target_authority)
         {
-            Some(
-                target_authority.parse::<Authority>().map_err(|_| {
-                    proxy_forward_validation_message(
-                        self,
-                        format!("authority '{target_authority}' is not valid"),
-                    )
-                })?,
-            )
+            Some(target_authority.parse::<Authority>().map_err(|_| {
+                proxy_forward_validation_message(
+                    self,
+                    format!("authority '{target_authority}' is not valid"),
+                )
+            })?)
         } else {
             current_parts.authority
         };
@@ -67,36 +65,35 @@ impl HandlerTrait for ProxyForwardConfig {
         }
 
         // Use target path or original path and query
-        let path_and_query = if let Some(target_path) = ProxyForwardConfig::optional_field(&self.target_path) {
-            if let Some(current_pq) = current_parts.path_and_query {
-                // Combine target path with original query
-                if target_path != "/" {
-                    format!(
-                        "{}{}?{}",
-                        target_path,
-                        current_pq.path(),
-                        current_pq.query().unwrap_or("")
-                    )
+        let path_and_query =
+            if let Some(target_path) = ProxyForwardConfig::optional_field(&self.target_path) {
+                if let Some(current_pq) = current_parts.path_and_query {
+                    // Combine target path with original query
+                    if target_path != "/" {
+                        format!(
+                            "{}{}?{}",
+                            target_path,
+                            current_pq.path(),
+                            current_pq.query().unwrap_or("")
+                        )
+                    } else {
+                        format!("{}?{}", current_pq.path(), current_pq.query().unwrap_or(""))
+                    }
                 } else {
-                    format!("{}?{}", current_pq.path(), current_pq.query().unwrap_or(""))
+                    target_path.to_string()
                 }
+            } else if let Some(current_pq) = current_parts.path_and_query {
+                current_pq.to_string()
             } else {
-                target_path.to_string()
-            }
-        } else if let Some(current_pq) = current_parts.path_and_query {
-            current_pq.to_string()
-        } else {
-            "/".to_string()
-        };
+                "/".to_string()
+            };
 
-        let path_and_query = path_and_query
-            .parse::<PathAndQuery>()
-            .map_err(|e| {
-                proxy_forward_validation_message(
-                    self,
-                    format!("path and query '{path_and_query}' is not valid: {e}"),
-                )
-            })?;
+        let path_and_query = path_and_query.parse::<PathAndQuery>().map_err(|e| {
+            proxy_forward_validation_message(
+                self,
+                format!("path and query '{path_and_query}' is not valid: {e}"),
+            )
+        })?;
         uri_builder = uri_builder.path_and_query(path_and_query);
 
         // Build the new URI and update the request

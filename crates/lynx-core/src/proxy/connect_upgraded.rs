@@ -64,20 +64,20 @@ impl AsyncRead for ConnectUpgraded {
         cx: &mut task::Context<'_>,
         buf: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
-        if let Some(prefix) = self.pre.take() {
-            if !prefix.is_empty() {
-                let copy_len = cmp::min(prefix.len(), buf.remaining());
-                buf.put_slice(&prefix[..copy_len]);
+        if let Some(prefix) = self.pre.take()
+            && !prefix.is_empty()
+        {
+            let copy_len = cmp::min(prefix.len(), buf.remaining());
+            buf.put_slice(&prefix[..copy_len]);
 
-                // Put back remaining bytes if any
-                if copy_len < prefix.len() {
-                    let mut remaining = prefix;
-                    remaining.advance(copy_len);
-                    self.pre = Some(remaining);
-                }
-
-                return Poll::Ready(Ok(()));
+            // Put back remaining bytes if any
+            if copy_len < prefix.len() {
+                let mut remaining = prefix;
+                remaining.advance(copy_len);
+                self.pre = Some(remaining);
             }
+
+            return Poll::Ready(Ok(()));
         }
         Pin::new(&mut self.inner).poll_read(cx, buf)
     }

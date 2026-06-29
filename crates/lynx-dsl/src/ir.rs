@@ -27,10 +27,7 @@ pub enum Predicate {
     MethodEq(Arc<str>),
     QueryContains(Arc<str>),
     QueryParamsAll(Vec<(Arc<str>, Arc<str>)>),
-    HeaderEq {
-        key: Arc<str>,
-        value: Arc<str>,
-    },
+    HeaderEq { key: Arc<str>, value: Arc<str> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

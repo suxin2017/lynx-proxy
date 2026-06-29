@@ -1,5 +1,5 @@
 use http::{HeaderMap, HeaderValue, Method, Request};
-use lynx_dsl::{compile_match_expr, eval_program, RequestFacts};
+use lynx_dsl::{RequestFacts, compile_match_expr, eval_program};
 
 /// Real-world style tests: build an `http::Request` (absolute URI, query, headers),
 /// then derive `RequestFacts` and evaluate the compiled IR.
@@ -62,7 +62,9 @@ fn origin_form_uri_uses_host_header() {
         .unwrap();
 
     let facts = facts_from_http_request(&request, &headers);
-    let program = compile_match_expr("example.com AND /api/v1/users AND --header authorization=Bearer").unwrap();
+    let program =
+        compile_match_expr("example.com AND /api/v1/users AND --header authorization=Bearer")
+            .unwrap();
     assert!(eval_program(&program, &facts));
 }
 
@@ -118,10 +120,9 @@ fn url_embedded_query_matches_real_request() {
         .unwrap();
 
     let facts = facts_from_http_request(&request, &HeaderMap::new());
-    let program = compile_match_expr(
-        "example.com/v1/graphql?operationName=GetFeed&platform=android",
-    )
-    .unwrap();
+    let program =
+        compile_match_expr("example.com/v1/graphql?operationName=GetFeed&platform=android")
+            .unwrap();
     assert!(eval_program(&program, &facts));
 }
 
@@ -222,12 +223,11 @@ fn host_and_port_from_request(
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
 
-    if let Some((host, port)) = host_value.rsplit_once(':') {
-        if let Ok(port) = port.parse::<u16>() {
-            return (host.to_string(), Some(port));
-        }
+    if let Some((host, port)) = host_value.rsplit_once(':')
+        && let Ok(port) = port.parse::<u16>()
+    {
+        return (host.to_string(), Some(port));
     }
 
     (host_value.to_string(), None)
 }
-

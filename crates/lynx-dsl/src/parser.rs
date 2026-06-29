@@ -1,9 +1,7 @@
 use pest::Parser;
 use pest_derive::Parser;
 
-use crate::ast::{
-    CliArg, CliArgValue, CliArgs, Primary, Program, Span, Spanned, Url,
-};
+use crate::ast::{CliArg, CliArgValue, CliArgs, Primary, Program, Span, Spanned, Url};
 use crate::error::ParseError;
 use crate::error::ParseErrorInfo;
 use crate::expr_parser::parse_expression;
@@ -113,7 +111,10 @@ fn spanned_text<'i>(
 ) -> Spanned<String> {
     let span = span_from_pair(pair.as_span(), source);
     let value = pair.as_str().to_string();
-    Spanned::new(value, Span::new(base_offset + span.start, base_offset + span.end))
+    Spanned::new(
+        value,
+        Span::new(base_offset + span.start, base_offset + span.end),
+    )
 }
 
 fn parse_primary(
@@ -138,7 +139,10 @@ fn parse_primary(
             let mut parts = child.into_inner();
             let url_pair = parts.next().unwrap();
             let url = parse_url(url_pair, source, base_offset)?;
-            let cli = parts.next().map(|p| parse_cli_args(p, source, base_offset)).transpose()?;
+            let cli = parts
+                .next()
+                .map(|p| parse_cli_args(p, source, base_offset))
+                .transpose()?;
             Ok(Primary::Url { url, cli })
         }
         _ => Err(ParseError::Syntax {
@@ -192,7 +196,11 @@ fn apply_url_part(
     }
 }
 
-fn parse_url(pair: pest::iterators::Pair<'_, Rule>, source: &str, base_offset: usize) -> Result<Url, ParseError> {
+fn parse_url(
+    pair: pest::iterators::Pair<'_, Rule>,
+    source: &str,
+    base_offset: usize,
+) -> Result<Url, ParseError> {
     let span = span_from_pair(pair.as_span(), source);
     let child = pair.into_inner().next().ok_or_else(|| ParseError::Syntax {
         span: Span::new(base_offset + span.start, base_offset + span.end),
@@ -212,7 +220,10 @@ fn parse_url(pair: pest::iterators::Pair<'_, Rule>, source: &str, base_offset: u
             }
         }
         Rule::query_only => {
-            let query_pair = child.into_inner().find(|p| p.as_rule() == Rule::query).unwrap();
+            let query_pair = child
+                .into_inner()
+                .find(|p| p.as_rule() == Rule::query)
+                .unwrap();
             parts.query = Some(parse_query_spanned(query_pair, source, base_offset));
         }
         _ => {
@@ -285,8 +296,15 @@ fn parse_cli_arg_value(
     })?;
     match child.as_rule() {
         Rule::eq_cli_value => {
-            let value_pair = child.into_inner().find(|p| p.as_rule() == Rule::cli_value).unwrap();
-            Ok(CliArgValue::Eq(spanned_text(value_pair, source, base_offset)))
+            let value_pair = child
+                .into_inner()
+                .find(|p| p.as_rule() == Rule::cli_value)
+                .unwrap();
+            Ok(CliArgValue::Eq(spanned_text(
+                value_pair,
+                source,
+                base_offset,
+            )))
         }
         Rule::cli_value => Ok(CliArgValue::Bare(spanned_text(child, source, base_offset))),
         _ => Err(ParseError::Syntax {

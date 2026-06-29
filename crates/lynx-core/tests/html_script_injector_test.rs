@@ -1,7 +1,5 @@
 use anyhow::Result;
-use lynx_storage::dao::request_processing_dao::{
-    handlers::{HandlerRule, HtmlScriptInjectorConfig},
-};
+use lynx_storage::dao::request_processing_dao::handlers::{HandlerRule, HtmlScriptInjectorConfig};
 
 #[tokio::test]
 async fn test_html_script_injector_integration() -> Result<()> {
@@ -32,7 +30,10 @@ async fn test_html_script_injector_config_builder() -> Result<()> {
         .with_content("<script>console.log('test');</script>".to_string())
         .with_injection_position("head".to_string());
 
-    assert_eq!(config.content, Some("<script>console.log('test');</script>".to_string()));
+    assert_eq!(
+        config.content,
+        Some("<script>console.log('test');</script>".to_string())
+    );
     assert_eq!(config.injection_position, Some("head".to_string()));
 
     Ok(())

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.6] - 2026-06-29
+
+### 🚀 Features
+
+- *(daemon)* Support custom restart params and hide PID/uptime on stopped status
+
 ## [0.8.5] - 2026-06-26
 
 ### 🐛 Bug Fixes

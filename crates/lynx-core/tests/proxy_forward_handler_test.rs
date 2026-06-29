@@ -262,4 +262,3 @@ async fn proxy_forward_handler_unreachable_upstream_test() -> Result<()> {
 
     Ok(())
 }
-

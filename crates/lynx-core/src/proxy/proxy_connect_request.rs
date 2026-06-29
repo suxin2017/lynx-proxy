@@ -212,4 +212,3 @@ pub async fn proxy_connect_request(req: Req) -> Result<Response> {
 
     Ok(Response::new(Body::empty()))
 }
-

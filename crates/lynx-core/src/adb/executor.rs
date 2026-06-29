@@ -65,11 +65,7 @@ pub fn bundled_adb_path(platform_tools_dir: &Path) -> PathBuf {
 }
 
 pub async fn resolve_path_adb() -> Option<PathBuf> {
-    let output = Command::new("adb")
-        .arg("version")
-        .output()
-        .await
-        .ok()?;
+    let output = Command::new("adb").arg("version").output().await.ok()?;
     if output.status.success() {
         Some(PathBuf::from("adb"))
     } else {

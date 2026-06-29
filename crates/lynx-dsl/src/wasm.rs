@@ -2,9 +2,9 @@ use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    collect_syntax_diagnostics, compile_match_expr, eval_program, format_dsl,
-    parse_program_partial, validate, validate_dsl_document, Diagnostic, MatchProgram,
-    RequestFacts, ValidationResult,
+    Diagnostic, MatchProgram, RequestFacts, ValidationResult, collect_syntax_diagnostics,
+    compile_match_expr, eval_program, format_dsl, parse_program_partial, validate,
+    validate_dsl_document,
 };
 
 #[derive(Serialize)]
@@ -51,10 +51,7 @@ pub fn parse_dsl_program_wasm(source: &str) -> JsValue {
 #[wasm_bindgen]
 pub fn compile_match_expr_wasm(source: &str) -> JsValue {
     let result = match compile_match_expr(source) {
-        Ok(program) => CompileMatchResult::Ok {
-            ok: true,
-            program,
-        },
+        Ok(program) => CompileMatchResult::Ok { ok: true, program },
         Err(error) => CompileMatchResult::Err {
             ok: false,
             error: error.to_string(),

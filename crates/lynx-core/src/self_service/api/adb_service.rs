@@ -42,7 +42,10 @@ pub async fn proxy_state(state: &RouteState, serial: &str) -> Result<Value, Stri
     serde_json::to_value(proxy).map_err(|e| e.to_string())
 }
 
-pub async fn enable_proxy(state: &RouteState, payload: EnableProxyPayload) -> Result<Value, String> {
+pub async fn enable_proxy(
+    state: &RouteState,
+    payload: EnableProxyPayload,
+) -> Result<Value, String> {
     let addrs: Vec<_> = state.access_addr_list.iter().copied().collect();
     let proxy = state
         .adb
@@ -60,4 +63,3 @@ pub async fn disable_proxy(state: &RouteState, serial: &str) -> Result<Value, St
         .map_err(|e| e.to_string())?;
     serde_json::to_value(proxy).map_err(|e| e.to_string())
 }
-

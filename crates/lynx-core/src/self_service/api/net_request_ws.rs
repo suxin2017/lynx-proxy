@@ -1,35 +1,35 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use axum::Router;
 use axum::extract::State;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::http::{HeaderMap, Uri};
 use axum::response::{IntoResponse, Response};
+use axum::routing::get;
 use base64::{Engine as _, engine::general_purpose};
 use futures_util::{SinkExt, StreamExt};
+use lynx_storage::dao::general_setting_dao::{GeneralSetting, GeneralSettingDao};
+use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
 use lynx_storage::dao::net_request_dao::RecordingStatus;
+use lynx_storage::dao::traffic_filter_history_dao::TrafficFilterHistoryDao;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use tokio::sync::broadcast;
 use tracing::{debug, error, warn};
-use axum::Router;
-use axum::routing::get;
-use lynx_storage::dao::general_setting_dao::{GeneralSetting, GeneralSettingDao};
-use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
-use lynx_storage::dao::traffic_filter_history_dao::TrafficFilterHistoryDao;
 
+use crate::adb::EnableProxyPayload;
 use crate::layers::message_package_layer::message_event_store::MessageEvent;
+use crate::self_service::RouteState;
+use crate::self_service::api::adb_service;
+use crate::self_service::api::capture_rules_service;
+use crate::self_service::api::compose_request_service;
 use crate::self_service::api::generated::ws_v1::{WS_VERSION, frame_kind, op};
 use crate::self_service::api::net_request_service;
 use crate::self_service::api::projects_service;
 use crate::self_service::api::rules_service;
-use crate::self_service::api::capture_rules_service;
-use crate::self_service::api::adb_service;
-use crate::self_service::api::compose_request_service;
-use crate::adb::EnableProxyPayload;
-use lynx_storage::dao::request_processing_dao::RequestRule;
-use lynx_storage::dao::capture_rules_dao::CaptureRule;
 use crate::self_service::auth::{authorize_ws, unauthorized_response};
-use crate::self_service::RouteState;
+use lynx_storage::dao::capture_rules_dao::CaptureRule;
+use lynx_storage::dao::request_processing_dao::RequestRule;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -84,7 +84,13 @@ fn event_frame(op: String, payload: Value) -> WsFrame {
     }
 }
 
-fn error_frame(id: String, op: String, code: &str, message: &str, details: Option<Value>) -> WsFrame {
+fn error_frame(
+    id: String,
+    op: String,
+    code: &str,
+    message: &str,
+    details: Option<Value>,
+) -> WsFrame {
     WsFrame {
         version: WS_VERSION.to_string(),
         kind: "error".to_string(),
@@ -125,7 +131,6 @@ fn parse_bool_payload(payload: &Option<Value>, key: &str) -> Option<bool> {
         .and_then(|value| value.get(key))
         .and_then(|value| value.as_bool())
 }
-
 
 fn parse_i32_payload(payload: &Option<Value>, key: &str) -> Option<i32> {
     payload
@@ -263,13 +268,14 @@ fn message_event_to_ws_event(event: MessageEvent) -> Option<WsFrame> {
         MessageEvent::OnProxyStart(_)
         | MessageEvent::OnTunnelStart(_)
         | MessageEvent::OnTunnelEnd(_)
-        | MessageEvent::OnWebSocketStart(_) => {
-            None
-        }
+        | MessageEvent::OnWebSocketStart(_) => None,
     }
 }
 
-async fn send_frame(socket: &mut futures_util::stream::SplitSink<WebSocket, Message>, frame: WsFrame) {
+async fn send_frame(
+    socket: &mut futures_util::stream::SplitSink<WebSocket, Message>,
+    frame: WsFrame,
+) {
     match serde_json::to_string(&frame) {
         Ok(payload) => {
             if let Err(err) = socket.send(Message::Text(payload.into())).await {
@@ -358,33 +364,38 @@ async fn handle_client_request(
                 return;
             };
 
-            match serde_json::from_value::<compose_request_service::ComposeRequestPayload>(payload) {
-                Ok(compose_payload) => match compose_request_service::execute_compose_request(state, compose_payload).await {
-                    Ok(result) => {
-                        send_frame(
-                            socket_tx,
-                            response_frame(
-                                frame.id,
-                                frame.op,
-                                serde_json::to_value(result).unwrap_or_default(),
-                            ),
-                        )
-                        .await;
+            match serde_json::from_value::<compose_request_service::ComposeRequestPayload>(payload)
+            {
+                Ok(compose_payload) => {
+                    match compose_request_service::execute_compose_request(state, compose_payload)
+                        .await
+                    {
+                        Ok(result) => {
+                            send_frame(
+                                socket_tx,
+                                response_frame(
+                                    frame.id,
+                                    frame.op,
+                                    serde_json::to_value(result).unwrap_or_default(),
+                                ),
+                            )
+                            .await;
+                        }
+                        Err(err) => {
+                            send_frame(
+                                socket_tx,
+                                error_frame(
+                                    frame.id,
+                                    frame.op,
+                                    "REQUEST_ERROR",
+                                    "Failed to execute compose request",
+                                    Some(json!({ "reason": err.to_string() })),
+                                ),
+                            )
+                            .await;
+                        }
                     }
-                    Err(err) => {
-                        send_frame(
-                            socket_tx,
-                            error_frame(
-                                frame.id,
-                                frame.op,
-                                "REQUEST_ERROR",
-                                "Failed to execute compose request",
-                                Some(json!({ "reason": err.to_string() })),
-                            ),
-                        )
-                        .await;
-                    }
-                },
+                }
                 Err(err) => {
                     send_frame(
                         socket_tx,
@@ -400,36 +411,34 @@ async fn handle_client_request(
                 }
             }
         }
-        op::CAPTURE_STATUS_GET => {
-            match net_request_service::get_capture_status(state).await {
-                Ok(status) => {
-                    send_frame(
-                        socket_tx,
-                        response_frame(
-                            frame.id,
-                            frame.op,
-                            json!({
-                                "recordingStatus": recording_status_to_text(&status.recording_status),
-                            }),
-                        ),
-                    )
-                    .await;
-                }
-                Err(err) => {
-                    send_frame(
-                        socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "DB_ERROR",
-                            "Failed to get capture status",
-                            Some(json!({ "reason": err.to_string() })),
-                        ),
-                    )
-                    .await;
-                }
+        op::CAPTURE_STATUS_GET => match net_request_service::get_capture_status(state).await {
+            Ok(status) => {
+                send_frame(
+                    socket_tx,
+                    response_frame(
+                        frame.id,
+                        frame.op,
+                        json!({
+                            "recordingStatus": recording_status_to_text(&status.recording_status),
+                        }),
+                    ),
+                )
+                .await;
             }
-        }
+            Err(err) => {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "DB_ERROR",
+                        "Failed to get capture status",
+                        Some(json!({ "reason": err.to_string() })),
+                    ),
+                )
+                .await;
+            }
+        },
         op::CAPTURE_CONTROL_SET => {
             let Some(recording) = parse_bool_payload(&frame.payload, "recording") else {
                 send_frame(
@@ -448,7 +457,11 @@ async fn handle_client_request(
 
             match net_request_service::set_capture_recording(state, recording).await {
                 Ok(new_status) => {
-                    send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ok": true }))).await;
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, json!({ "ok": true })),
+                    )
+                    .await;
                     send_frame(
                         socket_tx,
                         event_frame(
@@ -524,23 +537,24 @@ async fn handle_client_request(
         op::REQUEST_STREAM_SUBSCRIBE => {
             *subscribed = true;
 
-            let cached_requests = match net_request_service::get_cached_requests(state, Vec::new()).await {
-                Ok(records) => records,
-                Err(err) => {
-                    send_frame(
-                        socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "CACHE_ERROR",
-                            "Failed to get cached requests",
-                            Some(json!({ "reason": err.to_string() })),
-                        ),
-                    )
-                    .await;
-                    return;
-                }
-            };
+            let cached_requests =
+                match net_request_service::get_cached_requests(state, Vec::new()).await {
+                    Ok(records) => records,
+                    Err(err) => {
+                        send_frame(
+                            socket_tx,
+                            error_frame(
+                                frame.id,
+                                frame.op,
+                                "CACHE_ERROR",
+                                "Failed to get cached requests",
+                                Some(json!({ "reason": err.to_string() })),
+                            ),
+                        )
+                        .await;
+                        return;
+                    }
+                };
 
             send_frame(
                 socket_tx,
@@ -557,7 +571,11 @@ async fn handle_client_request(
         }
         op::REQUEST_STREAM_UNSUBSCRIBE => {
             *subscribed = false;
-            send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "subscribed": false }))).await;
+            send_frame(
+                socket_tx,
+                response_frame(frame.id, frame.op, json!({ "subscribed": false })),
+            )
+            .await;
         }
         op::SETTINGS_GENERAL_GET => {
             let dao = GeneralSettingDao::new(state.store.clone());
@@ -565,7 +583,11 @@ async fn handle_client_request(
                 Ok(setting) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(setting).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(setting).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -605,7 +627,11 @@ async fn handle_client_request(
                     let dao = GeneralSettingDao::new(state.store.clone());
                     match dao.update_general_setting(setting).await {
                         Ok(()) => {
-                            send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ok": true }))).await;
+                            send_frame(
+                                socket_tx,
+                                response_frame(frame.id, frame.op, json!({ "ok": true })),
+                            )
+                            .await;
                         }
                         Err(err) => {
                             send_frame(
@@ -643,7 +669,11 @@ async fn handle_client_request(
                 Ok(filter) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(filter).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(filter).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -683,7 +713,11 @@ async fn handle_client_request(
                     let dao = HttpsCaptureDao::new(state.store.clone());
                     match dao.update_capture_filter(filter).await {
                         Ok(()) => {
-                            send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ok": true }))).await;
+                            send_frame(
+                                socket_tx,
+                                response_frame(frame.id, frame.op, json!({ "ok": true })),
+                            )
+                            .await;
                         }
                         Err(err) => {
                             send_frame(
@@ -727,11 +761,7 @@ async fn handle_client_request(
                 Ok(rules) => {
                     send_frame(
                         socket_tx,
-                        response_frame(
-                            frame.id,
-                            frame.op,
-                            json!({ "rules": rules }),
-                        ),
+                        response_frame(frame.id, frame.op, json!({ "rules": rules })),
                     )
                     .await;
                 }
@@ -770,20 +800,18 @@ async fn handle_client_request(
                 Ok(Some(rule)) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(rule).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
                 Ok(None) => {
                     send_frame(
                         socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "NOT_FOUND",
-                            "Rule not found",
-                            None,
-                        ),
+                        error_frame(frame.id, frame.op, "NOT_FOUND", "Rule not found", None),
                     )
                     .await;
                 }
@@ -823,7 +851,11 @@ async fn handle_client_request(
                     Ok(saved) => {
                         send_frame(
                             socket_tx,
-                            response_frame(frame.id, frame.op, serde_json::to_value(saved).unwrap_or_default()),
+                            response_frame(
+                                frame.id,
+                                frame.op,
+                                serde_json::to_value(saved).unwrap_or_default(),
+                            ),
                         )
                         .await;
                     }
@@ -876,11 +908,7 @@ async fn handle_client_request(
                 Ok(()) => {
                     send_frame(
                         socket_tx,
-                        response_frame(
-                            frame.id,
-                            frame.op,
-                            json!({ "ruleId": rule_id }),
-                        ),
+                        response_frame(frame.id, frame.op, json!({ "ruleId": rule_id })),
                     )
                     .await;
                 }
@@ -938,7 +966,11 @@ async fn handle_client_request(
                 Ok(rule) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(rule).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -962,59 +994,55 @@ async fn handle_client_request(
                 }
             }
         }
-        op::RULES_TEMPLATES_GET => {
-            match rules_service::list_templates(state).await {
-                Ok(templates) => {
-                    send_frame(
-                        socket_tx,
-                        response_frame(
-                            frame.id,
-                            frame.op,
-                            json!({ "templates": templates }),
-                        ),
-                    )
-                    .await;
-                }
-                Err(err) => {
-                    send_frame(
-                        socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "DB_ERROR",
-                            "Failed to list rule templates",
-                            Some(json!({ "reason": err.to_string() })),
-                        ),
-                    )
-                    .await;
-                }
+        op::RULES_TEMPLATES_GET => match rules_service::list_templates(state).await {
+            Ok(templates) => {
+                send_frame(
+                    socket_tx,
+                    response_frame(frame.id, frame.op, json!({ "templates": templates })),
+                )
+                .await;
             }
-        }
+            Err(err) => {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "DB_ERROR",
+                        "Failed to list rule templates",
+                        Some(json!({ "reason": err.to_string() })),
+                    ),
+                )
+                .await;
+            }
+        },
 
-        op::PROJECTS_LIST_GET => {
-            match projects_service::list_projects(state).await {
-                Ok(file) => {
-                    send_frame(
-                        socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(file).unwrap_or_default()),
-                    )
-                    .await;
-                }
-                Err(err) => {
-                    send_frame(
-                        socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "DB_ERROR",
-                            "Failed to list projects",
-                            Some(json!({ "reason": err.to_string() })),
-                        ),
-                    )
-                    .await;
-                }
+        op::PROJECTS_LIST_GET => match projects_service::list_projects(state).await {
+            Ok(file) => {
+                send_frame(
+                    socket_tx,
+                    response_frame(
+                        frame.id,
+                        frame.op,
+                        serde_json::to_value(file).unwrap_or_default(),
+                    ),
+                )
+                .await;
             }
-        }
+            Err(err) => {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "DB_ERROR",
+                        "Failed to list projects",
+                        Some(json!({ "reason": err.to_string() })),
+                    ),
+                )
+                .await;
+            }
+        },
         op::PROJECTS_ACTIVE_SET => {
             let Some(project_id) = frame
                 .payload
@@ -1040,7 +1068,11 @@ async fn handle_client_request(
                 Ok(file) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(file).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(file).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -1077,7 +1109,13 @@ async fn handle_client_request(
             let Some(id) = payload.get("id").and_then(Value::as_str) else {
                 send_frame(
                     socket_tx,
-                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.id", None),
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.id",
+                        None,
+                    ),
                 )
                 .await;
                 return;
@@ -1085,7 +1123,13 @@ async fn handle_client_request(
             let Some(name) = payload.get("name").and_then(Value::as_str) else {
                 send_frame(
                     socket_tx,
-                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.name", None),
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.name",
+                        None,
+                    ),
                 )
                 .await;
                 return;
@@ -1095,7 +1139,11 @@ async fn handle_client_request(
                 Ok(project) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(project).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(project).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -1118,7 +1166,13 @@ async fn handle_client_request(
             let Some(payload) = frame.payload.clone() else {
                 send_frame(
                     socket_tx,
-                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload", None),
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload",
+                        None,
+                    ),
                 )
                 .await;
                 return;
@@ -1126,7 +1180,13 @@ async fn handle_client_request(
             let Some(project_id) = payload.get("projectId").and_then(Value::as_str) else {
                 send_frame(
                     socket_tx,
-                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.projectId", None),
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.projectId",
+                        None,
+                    ),
                 )
                 .await;
                 return;
@@ -1134,7 +1194,13 @@ async fn handle_client_request(
             let Some(name) = payload.get("name").and_then(Value::as_str) else {
                 send_frame(
                     socket_tx,
-                    error_frame(frame.id, frame.op, "INVALID_PAYLOAD", "Missing payload.name", None),
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "INVALID_PAYLOAD",
+                        "Missing payload.name",
+                        None,
+                    ),
                 )
                 .await;
                 return;
@@ -1144,7 +1210,11 @@ async fn handle_client_request(
                 Ok(project) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(project).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(project).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -1186,7 +1256,11 @@ async fn handle_client_request(
 
             match projects_service::delete_project(state, project_id).await {
                 Ok(()) => {
-                    send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "projectId": project_id }))).await;
+                    send_frame(
+                        socket_tx,
+                        response_frame(frame.id, frame.op, json!({ "projectId": project_id })),
+                    )
+                    .await;
                 }
                 Err(err) => {
                     send_frame(
@@ -1204,30 +1278,28 @@ async fn handle_client_request(
             }
         }
 
-        op::CAPTURE_RULES_FOCUS_LIST_GET => {
-            match capture_rules_service::list_focus(state).await {
-                Ok(rules) => {
-                    send_frame(
-                        socket_tx,
-                        response_frame(frame.id, frame.op, json!({ "rules": rules })),
-                    )
-                    .await;
-                }
-                Err(err) => {
-                    send_frame(
-                        socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "DB_ERROR",
-                            "Failed to list focus capture rules",
-                            Some(json!({ "reason": err.to_string() })),
-                        ),
-                    )
-                    .await;
-                }
+        op::CAPTURE_RULES_FOCUS_LIST_GET => match capture_rules_service::list_focus(state).await {
+            Ok(rules) => {
+                send_frame(
+                    socket_tx,
+                    response_frame(frame.id, frame.op, json!({ "rules": rules })),
+                )
+                .await;
             }
-        }
+            Err(err) => {
+                send_frame(
+                    socket_tx,
+                    error_frame(
+                        frame.id,
+                        frame.op,
+                        "DB_ERROR",
+                        "Failed to list focus capture rules",
+                        Some(json!({ "reason": err.to_string() })),
+                    ),
+                )
+                .await;
+            }
+        },
         op::CAPTURE_RULES_IGNORE_LIST_GET => {
             match capture_rules_service::list_ignore(state).await {
                 Ok(rules) => {
@@ -1269,9 +1341,22 @@ async fn handle_client_request(
             };
 
             match serde_json::from_value::<CaptureRuleUpsertPayload>(payload) {
-                Ok(rule_payload) => match capture_rules_service::upsert_focus(state, capture_rule_from_payload(rule_payload)).await {
+                Ok(rule_payload) => match capture_rules_service::upsert_focus(
+                    state,
+                    capture_rule_from_payload(rule_payload),
+                )
+                .await
+                {
                     Ok(saved) => {
-                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(saved).unwrap_or_default())).await;
+                        send_frame(
+                            socket_tx,
+                            response_frame(
+                                frame.id,
+                                frame.op,
+                                serde_json::to_value(saved).unwrap_or_default(),
+                            ),
+                        )
+                        .await;
                     }
                     Err(err) => {
                         send_frame(
@@ -1319,9 +1404,22 @@ async fn handle_client_request(
             };
 
             match serde_json::from_value::<CaptureRuleUpsertPayload>(payload) {
-                Ok(rule_payload) => match capture_rules_service::upsert_ignore(state, capture_rule_from_payload(rule_payload)).await {
+                Ok(rule_payload) => match capture_rules_service::upsert_ignore(
+                    state,
+                    capture_rule_from_payload(rule_payload),
+                )
+                .await
+                {
                     Ok(saved) => {
-                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(saved).unwrap_or_default())).await;
+                        send_frame(
+                            socket_tx,
+                            response_frame(
+                                frame.id,
+                                frame.op,
+                                serde_json::to_value(saved).unwrap_or_default(),
+                            ),
+                        )
+                        .await;
                     }
                     Err(err) => {
                         send_frame(
@@ -1368,24 +1466,34 @@ async fn handle_client_request(
                 return;
             };
             match serde_json::from_value::<CaptureRuleIdPayload>(payload) {
-                Ok(id_payload) => match capture_rules_service::delete_focus(state, id_payload.rule_id).await {
-                    Ok(()) => {
-                        send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ruleId": id_payload.rule_id }))).await;
+                Ok(id_payload) => {
+                    match capture_rules_service::delete_focus(state, id_payload.rule_id).await {
+                        Ok(()) => {
+                            send_frame(
+                                socket_tx,
+                                response_frame(
+                                    frame.id,
+                                    frame.op,
+                                    json!({ "ruleId": id_payload.rule_id }),
+                                ),
+                            )
+                            .await;
+                        }
+                        Err(err) => {
+                            send_frame(
+                                socket_tx,
+                                error_frame(
+                                    frame.id,
+                                    frame.op,
+                                    "DB_ERROR",
+                                    "Failed to delete focus capture rule",
+                                    Some(json!({ "reason": err.to_string() })),
+                                ),
+                            )
+                            .await;
+                        }
                     }
-                    Err(err) => {
-                        send_frame(
-                            socket_tx,
-                            error_frame(
-                                frame.id,
-                                frame.op,
-                                "DB_ERROR",
-                                "Failed to delete focus capture rule",
-                                Some(json!({ "reason": err.to_string() })),
-                            ),
-                        )
-                        .await;
-                    }
-                },
+                }
                 Err(err) => {
                     send_frame(
                         socket_tx,
@@ -1417,24 +1525,34 @@ async fn handle_client_request(
                 return;
             };
             match serde_json::from_value::<CaptureRuleIdPayload>(payload) {
-                Ok(id_payload) => match capture_rules_service::delete_ignore(state, id_payload.rule_id).await {
-                    Ok(()) => {
-                        send_frame(socket_tx, response_frame(frame.id, frame.op, json!({ "ruleId": id_payload.rule_id }))).await;
+                Ok(id_payload) => {
+                    match capture_rules_service::delete_ignore(state, id_payload.rule_id).await {
+                        Ok(()) => {
+                            send_frame(
+                                socket_tx,
+                                response_frame(
+                                    frame.id,
+                                    frame.op,
+                                    json!({ "ruleId": id_payload.rule_id }),
+                                ),
+                            )
+                            .await;
+                        }
+                        Err(err) => {
+                            send_frame(
+                                socket_tx,
+                                error_frame(
+                                    frame.id,
+                                    frame.op,
+                                    "DB_ERROR",
+                                    "Failed to delete ignore capture rule",
+                                    Some(json!({ "reason": err.to_string() })),
+                                ),
+                            )
+                            .await;
+                        }
                     }
-                    Err(err) => {
-                        send_frame(
-                            socket_tx,
-                            error_frame(
-                                frame.id,
-                                frame.op,
-                                "DB_ERROR",
-                                "Failed to delete ignore capture rule",
-                                Some(json!({ "reason": err.to_string() })),
-                            ),
-                        )
-                        .await;
-                    }
-                },
+                }
                 Err(err) => {
                     send_frame(
                         socket_tx,
@@ -1466,9 +1584,23 @@ async fn handle_client_request(
                 return;
             };
             match serde_json::from_value::<CaptureRuleEnabledPayload>(payload) {
-                Ok(enabled_payload) => match capture_rules_service::set_focus_enabled(state, enabled_payload.rule_id, enabled_payload.enabled).await {
+                Ok(enabled_payload) => match capture_rules_service::set_focus_enabled(
+                    state,
+                    enabled_payload.rule_id,
+                    enabled_payload.enabled,
+                )
+                .await
+                {
                     Ok(rule) => {
-                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default())).await;
+                        send_frame(
+                            socket_tx,
+                            response_frame(
+                                frame.id,
+                                frame.op,
+                                serde_json::to_value(rule).unwrap_or_default(),
+                            ),
+                        )
+                        .await;
                     }
                     Err(err) => {
                         send_frame(
@@ -1515,9 +1647,23 @@ async fn handle_client_request(
                 return;
             };
             match serde_json::from_value::<CaptureRuleEnabledPayload>(payload) {
-                Ok(enabled_payload) => match capture_rules_service::set_ignore_enabled(state, enabled_payload.rule_id, enabled_payload.enabled).await {
+                Ok(enabled_payload) => match capture_rules_service::set_ignore_enabled(
+                    state,
+                    enabled_payload.rule_id,
+                    enabled_payload.enabled,
+                )
+                .await
+                {
                     Ok(rule) => {
-                        send_frame(socket_tx, response_frame(frame.id, frame.op, serde_json::to_value(rule).unwrap_or_default())).await;
+                        send_frame(
+                            socket_tx,
+                            response_frame(
+                                frame.id,
+                                frame.op,
+                                serde_json::to_value(rule).unwrap_or_default(),
+                            ),
+                        )
+                        .await;
                     }
                     Err(err) => {
                         send_frame(
@@ -1566,50 +1712,34 @@ async fn handle_client_request(
             let payload = adb_service::status(state).await;
             send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
         }
-        op::DEVICE_ADB_INSTALL => {
-            match adb_service::install(state).await {
-                Ok(payload) => {
-                    send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
-                }
-                Err(message) => {
-                    send_frame(
-                        socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "ADB_INSTALL_FAILED",
-                            &message,
-                            None,
-                        ),
-                    )
-                    .await;
-                }
+        op::DEVICE_ADB_INSTALL => match adb_service::install(state).await {
+            Ok(payload) => {
+                send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
             }
-        }
+            Err(message) => {
+                send_frame(
+                    socket_tx,
+                    error_frame(frame.id, frame.op, "ADB_INSTALL_FAILED", &message, None),
+                )
+                .await;
+            }
+        },
         op::DEVICE_ADB_INSTALL_PROGRESS_GET => {
             let payload = adb_service::install_progress(state).await;
             send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
         }
-        op::DEVICE_ADB_DEVICES_LIST => {
-            match adb_service::list_devices(state).await {
-                Ok(payload) => {
-                    send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
-                }
-                Err(message) => {
-                    send_frame(
-                        socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "ADB_ERROR",
-                            &message,
-                            None,
-                        ),
-                    )
-                    .await;
-                }
+        op::DEVICE_ADB_DEVICES_LIST => match adb_service::list_devices(state).await {
+            Ok(payload) => {
+                send_frame(socket_tx, response_frame(frame.id, frame.op, payload)).await;
             }
-        }
+            Err(message) => {
+                send_frame(
+                    socket_tx,
+                    error_frame(frame.id, frame.op, "ADB_ERROR", &message, None),
+                )
+                .await;
+            }
+        },
         op::DEVICE_ADB_PROXY_STATE_GET => {
             let Some(payload) = frame.payload.clone() else {
                 send_frame(
@@ -1651,13 +1781,7 @@ async fn handle_client_request(
                 Err(message) => {
                     send_frame(
                         socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "ADB_ERROR",
-                            &message,
-                            None,
-                        ),
+                        error_frame(frame.id, frame.op, "ADB_ERROR", &message, None),
                     )
                     .await;
                 }
@@ -1679,24 +1803,20 @@ async fn handle_client_request(
                 return;
             };
             match serde_json::from_value::<EnableProxyPayload>(payload) {
-                Ok(enable_payload) => match adb_service::enable_proxy(state, enable_payload).await {
-                    Ok(result) => {
-                        send_frame(socket_tx, response_frame(frame.id, frame.op, result)).await;
+                Ok(enable_payload) => {
+                    match adb_service::enable_proxy(state, enable_payload).await {
+                        Ok(result) => {
+                            send_frame(socket_tx, response_frame(frame.id, frame.op, result)).await;
+                        }
+                        Err(message) => {
+                            send_frame(
+                                socket_tx,
+                                error_frame(frame.id, frame.op, "ADB_ERROR", &message, None),
+                            )
+                            .await;
+                        }
                     }
-                    Err(message) => {
-                        send_frame(
-                            socket_tx,
-                            error_frame(
-                                frame.id,
-                                frame.op,
-                                "ADB_ERROR",
-                                &message,
-                                None,
-                            ),
-                        )
-                        .await;
-                    }
-                },
+                }
                 Err(err) => {
                     send_frame(
                         socket_tx,
@@ -1718,7 +1838,11 @@ async fn handle_client_request(
                 Ok(history) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(history).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(history).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -1758,7 +1882,11 @@ async fn handle_client_request(
                 Ok(history) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(history).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(history).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -1783,7 +1911,11 @@ async fn handle_client_request(
                 Ok(history) => {
                     send_frame(
                         socket_tx,
-                        response_frame(frame.id, frame.op, serde_json::to_value(history).unwrap_or_default()),
+                        response_frame(
+                            frame.id,
+                            frame.op,
+                            serde_json::to_value(history).unwrap_or_default(),
+                        ),
                     )
                     .await;
                 }
@@ -1843,13 +1975,7 @@ async fn handle_client_request(
                 Err(message) => {
                     send_frame(
                         socket_tx,
-                        error_frame(
-                            frame.id,
-                            frame.op,
-                            "ADB_ERROR",
-                            &message,
-                            None,
-                        ),
+                        error_frame(frame.id, frame.op, "ADB_ERROR", &message, None),
                     )
                     .await;
                 }
@@ -1935,7 +2061,8 @@ async fn message_events_ws(
         return unauthorized_response();
     }
 
-    ws.on_upgrade(move |socket| message_events_ws_handler(socket, route_state)).into_response()
+    ws.on_upgrade(move |socket| message_events_ws_handler(socket, route_state))
+        .into_response()
 }
 
 pub fn router() -> Router<RouteState> {

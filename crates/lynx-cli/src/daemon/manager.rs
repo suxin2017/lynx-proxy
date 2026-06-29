@@ -8,8 +8,8 @@ use std::thread::sleep;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tracing::{error, info, warn};
 
-use crate::daemon::status::{DaemonStatus, ProcessStatus};
 use crate::LogLevel;
+use crate::daemon::status::{DaemonStatus, ProcessStatus};
 
 pub struct DaemonManager {
     data_dir: PathBuf,
@@ -82,7 +82,8 @@ impl DaemonManager {
             if status.is_running() {
                 println!(
                     "{}",
-                    style("Found stale status file (process no longer running), starting fresh...").yellow()
+                    style("Found stale status file (process no longer running), starting fresh...")
+                        .yellow()
                 );
             }
         }
@@ -94,7 +95,16 @@ impl DaemonManager {
         };
 
         // Start the daemon process
-        let status = self.spawn_daemon_process(port, data_dir.clone(), log_level, local_only, auth_user, auth_pass).await?;
+        let status = self
+            .spawn_daemon_process(
+                port,
+                data_dir.clone(),
+                log_level,
+                local_only,
+                auth_user,
+                auth_pass,
+            )
+            .await?;
 
         // Save status
         self.save_status(&status)?;
@@ -156,8 +166,7 @@ impl DaemonManager {
         saved: &DaemonStatus,
     ) -> (u16, String, LogLevel, bool, Option<String>, Option<String>) {
         let port = cli_port.unwrap_or(saved.port);
-        let data_dir = cli_data_dir
-            .unwrap_or_else(|| saved.data_dir.to_string_lossy().to_string());
+        let data_dir = cli_data_dir.unwrap_or_else(|| saved.data_dir.to_string_lossy().to_string());
         let log_level = cli_log_level.unwrap_or(saved.log_level);
         let local_only = cli_local_only.unwrap_or(saved.local_only);
         let auth_user = cli_auth_user.or_else(|| saved.auth_user.clone());
@@ -185,14 +194,14 @@ impl DaemonManager {
         // Use provided values or fall back to saved status
         let (port, data_dir, log_level, local_only, auth_user, auth_pass) =
             Self::resolve_restart_params(
-            port,
-            data_dir,
-            log_level,
-            local_only,
-            auth_user,
-            auth_pass,
-            &current_status,
-        );
+                port,
+                data_dir,
+                log_level,
+                local_only,
+                auth_user,
+                auth_pass,
+                &current_status,
+            );
 
         // Stop the daemon
         if let Err(e) = self.stop_daemon() {
@@ -203,7 +212,15 @@ impl DaemonManager {
         std::thread::sleep(std::time::Duration::from_millis(500));
 
         // Start the daemon again
-        self.start_daemon(port, Some(data_dir), log_level, local_only, auth_user, auth_pass).await?;
+        self.start_daemon(
+            port,
+            Some(data_dir),
+            log_level,
+            local_only,
+            auth_user,
+            auth_pass,
+        )
+        .await?;
 
         println!(
             "{}",
@@ -240,20 +257,14 @@ impl DaemonManager {
                         style(auth_user).cyan(),
                     );
                 } else {
-                    println!(
-                        "Auth: {}",
-                        style("disabled").yellow()
-                    );
+                    println!("Auth: {}", style("disabled").yellow());
                 }
 
-                if status.is_running() {
-                    if let Ok(_start_time) = status.start_time.duration_since(std::time::UNIX_EPOCH) {
-                        let formatted_time = self.format_start_time(&status.start_time);
-                        println!(
-                            "Running: {}",
-                            style(formatted_time).cyan()
-                        );
-                    }
+                if status.is_running()
+                    && let Ok(_start_time) = status.start_time.duration_since(std::time::UNIX_EPOCH)
+                {
+                    let formatted_time = self.format_start_time(&status.start_time);
+                    println!("Running: {}", style(formatted_time).cyan());
                 }
 
                 // Check if process is actually running
@@ -398,24 +409,24 @@ impl DaemonManager {
         match start_time.duration_since(UNIX_EPOCH) {
             Ok(duration) => {
                 let secs = duration.as_secs();
-                
+
                 // Calculate uptime by comparing with current time
                 if let Ok(now) = SystemTime::now().duration_since(UNIX_EPOCH) {
                     let now_secs = now.as_secs();
-                    
+
                     // Handle edge case where start_time is in the future
                     if secs > now_secs {
                         return "Invalid start time".to_string();
                     }
-                    
+
                     let uptime_secs = now_secs - secs;
                     let uptime_days = uptime_secs / 86400;
                     let uptime_hours = (uptime_secs % 86400) / 3600;
                     let uptime_minutes = (uptime_secs % 3600) / 60;
                     let uptime_seconds = uptime_secs % 60;
-                    
+
                     let mut parts = Vec::new();
-                    
+
                     if uptime_days > 0 {
                         let unit = if uptime_days == 1 { "day" } else { "days" };
                         parts.push(format!("{} {}", uptime_days, unit));
@@ -425,20 +436,28 @@ impl DaemonManager {
                         parts.push(format!("{} {}", uptime_hours, unit));
                     }
                     if uptime_minutes > 0 {
-                        let unit = if uptime_minutes == 1 { "minute" } else { "minutes" };
+                        let unit = if uptime_minutes == 1 {
+                            "minute"
+                        } else {
+                            "minutes"
+                        };
                         parts.push(format!("{} {}", uptime_minutes, unit));
                     }
                     if uptime_seconds > 0 || parts.is_empty() {
-                        let unit = if uptime_seconds == 1 { "second" } else { "seconds" };
+                        let unit = if uptime_seconds == 1 {
+                            "second"
+                        } else {
+                            "seconds"
+                        };
                         parts.push(format!("{} {}", uptime_seconds, unit));
                     }
-                    
+
                     format!("{} ago", parts.join(" "))
                 } else {
                     format!("{} seconds since epoch", secs)
                 }
             }
-            Err(_) => "Unknown".to_string()
+            Err(_) => "Unknown".to_string(),
         }
     }
 
@@ -505,7 +524,7 @@ impl DaemonManager {
         if local_only {
             command.arg("--local-only");
         }
-        
+
         command
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -516,7 +535,9 @@ impl DaemonManager {
         let child = command.spawn()?;
         let pid = child.id();
 
-        let mut status = DaemonStatus::new(pid, port, data_dir, log_level, local_only, auth_user, auth_pass);
+        let mut status = DaemonStatus::new(
+            pid, port, data_dir, log_level, local_only, auth_user, auth_pass,
+        );
 
         std::mem::forget(child);
 
@@ -577,10 +598,10 @@ fn test_log() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{SystemTime, Duration};
+    use std::time::{Duration, SystemTime};
 
     fn create_test_manager() -> DaemonManager {
-        DaemonManager::new(Some(PathBuf::from("/tmp/test_lynx")),).unwrap()
+        DaemonManager::new(Some(PathBuf::from("/tmp/test_lynx"))).unwrap()
     }
 
     fn test_status() -> DaemonStatus {
@@ -660,7 +681,10 @@ mod tests {
         let saved = test_status();
         let (port, _data_dir, _log_level, _local_only, auth_user, auth_pass) =
             DaemonManager::resolve_restart_params(
-                None, None, None, None,
+                None,
+                None,
+                None,
+                None,
                 Some("override_user".to_string()),
                 Some("override_pass".to_string()),
                 &saved,
@@ -688,7 +712,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(30);
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "30 seconds ago");
     }
@@ -698,7 +722,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(1);
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "1 second ago");
     }
@@ -708,7 +732,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(150); // 2 minutes 30 seconds
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "2 minutes 30 seconds ago");
     }
@@ -718,7 +742,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(90); // 1 minute 30 seconds
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "1 minute 30 seconds ago");
     }
@@ -728,7 +752,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(7290); // 2 hours 1 minute 30 seconds
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "2 hours 1 minute 30 seconds ago");
     }
@@ -738,7 +762,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(3661); // 1 hour 1 minute 1 second
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "1 hour 1 minute 1 second ago");
     }
@@ -748,7 +772,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(176461); // 2 days 1 hour 1 minute 1 second
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "2 days 1 hour 1 minute 1 second ago");
     }
@@ -758,7 +782,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(90061); // 1 day 1 hour 1 minute 1 second
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "1 day 1 hour 1 minute 1 second ago");
     }
@@ -768,7 +792,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(300); // 5 minutes exactly
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "5 minutes ago");
     }
@@ -778,7 +802,7 @@ mod tests {
         let manager = create_test_manager();
         let now = SystemTime::now();
         let start_time = now - Duration::from_secs(7200); // 2 hours exactly
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "2 hours ago");
     }
@@ -787,7 +811,7 @@ mod tests {
     fn test_format_start_time_just_started() {
         let manager = create_test_manager();
         let now = SystemTime::now();
-        
+
         let formatted = manager.format_start_time(&now);
         assert!(formatted == "0 seconds ago" || formatted.contains("second"));
     }
@@ -799,7 +823,7 @@ mod tests {
         // 3 days, 5 hours, 23 minutes, 45 seconds
         let total_seconds = 3 * 86400 + 5 * 3600 + 23 * 60 + 45;
         let start_time = now - Duration::from_secs(total_seconds);
-        
+
         let formatted = manager.format_start_time(&start_time);
         assert_eq!(formatted, "3 days 5 hours 23 minutes 45 seconds ago");
     }
@@ -809,7 +833,7 @@ mod tests {
         let manager = create_test_manager();
         // Create a time that's in the future (invalid for start time)
         let future_time = SystemTime::now() + Duration::from_secs(3600);
-        
+
         let formatted = manager.format_start_time(&future_time);
         assert_eq!(formatted, "Invalid start time");
     }

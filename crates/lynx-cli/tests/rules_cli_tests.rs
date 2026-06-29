@@ -7,11 +7,11 @@
 use std::process::Command;
 
 use anyhow::Result;
+use lynx_storage::DataStore;
 use lynx_storage::dao::request_processing_dao::{
     CaptureRule, HandlerRule, RequestProcessingDao, RequestRule,
 };
 use lynx_storage::project_config::read_project_config;
-use lynx_storage::DataStore;
 use tempfile::tempdir;
 
 fn lynx_bin() -> Command {
@@ -28,26 +28,30 @@ async fn cli_rules_push_pull_apply_acceptance() -> Result<()> {
     let store = DataStore::new(data.path()).await?;
     let dao = RequestProcessingDao::new(store.clone());
 
-    let mut enabled_rule = RequestRule::default();
-    enabled_rule.name = "enabled-rule".to_string();
-    enabled_rule.priority = 50;
-    enabled_rule.capture = CaptureRule {
-        id: None,
-        match_expr: "enabled.example.com".to_string(),
+    let enabled_rule = RequestRule {
+        name: "enabled-rule".to_string(),
+        priority: 50,
+        capture: CaptureRule {
+            id: None,
+            match_expr: "enabled.example.com".to_string(),
+        },
+        handlers: vec![HandlerRule::block_handler(Some(404), None)],
+        enabled: true,
+        ..Default::default()
     };
-    enabled_rule.handlers = vec![HandlerRule::block_handler(Some(404), None)];
-    enabled_rule.enabled = true;
     dao.create_rule(enabled_rule).await?;
 
-    let mut orphan = RequestRule::default();
-    orphan.name = "orphan-rule".to_string();
-    orphan.priority = 50;
-    orphan.capture = CaptureRule {
-        id: None,
-        match_expr: "orphan.example.com".to_string(),
+    let orphan = RequestRule {
+        name: "orphan-rule".to_string(),
+        priority: 50,
+        capture: CaptureRule {
+            id: None,
+            match_expr: "orphan.example.com".to_string(),
+        },
+        handlers: vec![HandlerRule::block_handler(Some(404), None)],
+        enabled: true,
+        ..Default::default()
     };
-    orphan.handlers = vec![HandlerRule::block_handler(Some(404), None)];
-    orphan.enabled = true;
     dao.create_rule(orphan).await?;
 
     let push = lynx_bin()

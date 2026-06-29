@@ -59,11 +59,14 @@ impl HistoryStore {
                 entries.push(entry);
             }
         }
-        entries.sort_by(|a, b| b.sent_at.cmp(&a.sent_at));
+        entries.sort_by_key(|b| std::cmp::Reverse(b.sent_at));
         Ok(entries)
     }
 
-    pub async fn list(&self, params: HistoryListParams) -> Result<Vec<HistoryEntry>, ApiStudioError> {
+    pub async fn list(
+        &self,
+        params: HistoryListParams,
+    ) -> Result<Vec<HistoryEntry>, ApiStudioError> {
         let limit = params
             .limit
             .unwrap_or(DEFAULT_HISTORY_LIMIT)
@@ -75,7 +78,9 @@ impl HistoryStore {
 
     pub async fn append(&self, req: CreateHistoryEntry) -> Result<HistoryEntry, ApiStudioError> {
         let id = new_id();
-        let sent_at = req.sent_at.unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
+        let sent_at = req
+            .sent_at
+            .unwrap_or_else(|| chrono::Utc::now().timestamp_millis());
         let entry = HistoryEntry {
             id: id.clone(),
             sent_at,
@@ -107,9 +112,7 @@ impl HistoryStore {
         for entry in to_remove {
             let path = self.store.api_studio_history_path(&entry.id);
             if path.exists() {
-                fs::remove_file(&path)
-                    .await
-                    .map_err(storage_err)?;
+                fs::remove_file(&path).await.map_err(storage_err)?;
             }
         }
         Ok(())
@@ -120,9 +123,7 @@ impl HistoryStore {
         if !path.exists() {
             return Ok(false);
         }
-        fs::remove_file(&path)
-            .await
-            .map_err(storage_err)?;
+        fs::remove_file(&path).await.map_err(storage_err)?;
         Ok(true)
     }
 
@@ -134,9 +135,7 @@ impl HistoryStore {
         let mut removed = 0u64;
         let mut read_dir = fs::read_dir(&dir).await.map_err(storage_err)?;
         while let Some(entry) = read_dir.next_entry().await.map_err(storage_err)? {
-            fs::remove_file(entry.path())
-                .await
-                .map_err(storage_err)?;
+            fs::remove_file(entry.path()).await.map_err(storage_err)?;
             removed += 1;
         }
         Ok(removed)
@@ -221,7 +220,10 @@ mod tests {
             .await
             .unwrap();
 
-        let list = studio.list_history(HistoryListParams { limit: Some(10) }).await.unwrap();
+        let list = studio
+            .list_history(HistoryListParams { limit: Some(10) })
+            .await
+            .unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].url, "https://example.com");
         assert_eq!(list[0].draft.body, r#"{"hello":"world"}"#);

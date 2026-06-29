@@ -3,8 +3,8 @@ use std::sync::Arc;
 use anyhow::{Ok, Result};
 
 use lynx_core::proxy_server::ProxyServer;
-use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
 use lynx_mock::{client::MockClient, server::MockServer};
+use lynx_storage::dao::https_capture_dao::{CaptureFilter, HttpsCaptureDao};
 
 use super::{setup_mock_server::setup_mock_server, setup_proxy_server::setup_proxy_server};
 
@@ -30,4 +30,3 @@ pub async fn setup_proxy_handler_server() -> Result<(ProxyServer, MockServer, Mo
     )?;
     Ok((proxy_server, mock_server, client))
 }
-

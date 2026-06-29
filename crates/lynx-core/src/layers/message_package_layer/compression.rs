@@ -1,13 +1,13 @@
+use async_compression::tokio::bufread::{BrotliDecoder, GzipDecoder, ZlibDecoder};
 use bytes::Bytes;
 use http::HeaderMap;
-use tokio_stream::{StreamExt, wrappers::ReceiverStream};
-use tracing::trace;
-use async_compression::tokio::bufread::{BrotliDecoder, GzipDecoder, ZlibDecoder};
 use tokio::io::BufReader;
+use tokio_stream::{StreamExt, wrappers::ReceiverStream};
 use tokio_util::io::{ReaderStream, StreamReader};
+use tracing::trace;
 
-use super::message_event_store::MessageEvent;
 use super::super::trace_id_layer::service::TraceId;
+use super::message_event_store::MessageEvent;
 
 /// 根据响应头创建解压流
 pub async fn process_compressed_body(
@@ -16,7 +16,7 @@ pub async fn process_compressed_body(
     sender: tokio::sync::broadcast::Sender<MessageEvent>,
     trace_id: TraceId,
 ) {
-    let error_stream = body_stream.map(|bytes| Ok::<Bytes, std::io::Error>(bytes));
+    let error_stream = body_stream.map(Ok::<Bytes, std::io::Error>);
 
     if let Some(encoding) = headers.get("content-encoding") {
         match encoding.to_str().unwrap_or("").to_lowercase().as_str() {

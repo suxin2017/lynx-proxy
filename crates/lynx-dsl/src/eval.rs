@@ -81,9 +81,7 @@ fn header_matches(facts: &RequestFacts, key: &str, expected: &str) -> bool {
 
 fn match_path(matcher: &PathMatcher, path: &str) -> bool {
     match matcher {
-        PathMatcher::Exact(expected) => {
-            path_prefix_match(expected.as_ref(), path)
-        }
+        PathMatcher::Exact(expected) => path_prefix_match(expected.as_ref(), path),
         PathMatcher::Segments(segments) => {
             let path_segments = split_path_segments(path);
             match_path_segments(segments, &path_segments, 0, 0)
@@ -109,12 +107,7 @@ fn split_path_segments(path: &str) -> Vec<&str> {
         .collect()
 }
 
-fn match_path_segments(
-    pattern: &[SegmentPattern],
-    path: &[&str],
-    pi: usize,
-    ti: usize,
-) -> bool {
+fn match_path_segments(pattern: &[SegmentPattern], path: &[&str], pi: usize, ti: usize) -> bool {
     if pi == pattern.len() {
         return ti == path.len();
     }

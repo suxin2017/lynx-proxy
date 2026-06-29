@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    BlockHandlerConfig, DelayHandlerConfig, DelayType, HtmlScriptInjectorConfig, LocalFileConfig, ModifyRequestConfig,
-    ThrottleHandlerConfig, ThrottlePreset, modify_response_handler::ModifyResponseConfig,
-    proxy_forward_handler::ProxyForwardConfig,
+    BlockHandlerConfig, DelayHandlerConfig, DelayType, HtmlScriptInjectorConfig, LocalFileConfig,
+    ModifyRequestConfig, ThrottleHandlerConfig, ThrottlePreset,
+    modify_response_handler::ModifyResponseConfig, proxy_forward_handler::ProxyForwardConfig,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, schemars::JsonSchema)]
@@ -129,11 +129,7 @@ impl HandlerRule {
         }
     }
 
-    pub fn delay_handler(
-        delay_ms: u64,
-        variance_ms: Option<u64>,
-        delay_type: DelayType,
-    ) -> Self {
+    pub fn delay_handler(delay_ms: u64, variance_ms: Option<u64>, delay_type: DelayType) -> Self {
         Self {
             id: None,
             handler_type: HandlerRuleType::Delay(DelayHandlerConfig {

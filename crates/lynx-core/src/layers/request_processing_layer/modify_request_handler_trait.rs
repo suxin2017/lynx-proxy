@@ -22,32 +22,32 @@ impl HandlerTrait for ModifyRequestConfig {
         }
 
         // Modify method if specified
-        if let Some(ref new_method) = self.modify_method {
-            if let Ok(method) = new_method.parse::<Method>() {
-                *request.method_mut() = method;
-            }
+        if let Some(ref new_method) = self.modify_method
+            && let Ok(method) = new_method.parse::<Method>()
+        {
+            *request.method_mut() = method;
         }
 
         // Modify URL if specified
-        if let Some(ref new_url) = self.modify_url {
-            if let Ok(uri) = new_url.parse::<Uri>() {
-                let new_uri = uri.into_parts();
-                let old_uri = request.uri_mut();
-                let mut url_builder = Uri::builder();
-                if let Some(schema) = new_uri.scheme.or(old_uri.scheme().cloned()) {
-                    url_builder = url_builder.scheme(schema);
-                }
-                if let Some(authority) = new_uri.authority.or(old_uri.authority().cloned()) {
-                    url_builder = url_builder.authority(authority);
-                }
-                if let Some(path_and_query) =
-                    new_uri.path_and_query.or(old_uri.path_and_query().cloned())
-                {
-                    url_builder = url_builder.path_and_query(path_and_query);
-                }
-                let new_uri = url_builder.build()?;
-                *request.uri_mut() = new_uri;
+        if let Some(ref new_url) = self.modify_url
+            && let Ok(uri) = new_url.parse::<Uri>()
+        {
+            let new_uri = uri.into_parts();
+            let old_uri = request.uri_mut();
+            let mut url_builder = Uri::builder();
+            if let Some(schema) = new_uri.scheme.or(old_uri.scheme().cloned()) {
+                url_builder = url_builder.scheme(schema);
             }
+            if let Some(authority) = new_uri.authority.or(old_uri.authority().cloned()) {
+                url_builder = url_builder.authority(authority);
+            }
+            if let Some(path_and_query) =
+                new_uri.path_and_query.or(old_uri.path_and_query().cloned())
+            {
+                url_builder = url_builder.path_and_query(path_and_query);
+            }
+            let new_uri = url_builder.build()?;
+            *request.uri_mut() = new_uri;
         }
 
         // Modify body if specified

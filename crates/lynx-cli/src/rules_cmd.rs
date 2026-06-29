@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use lynx_storage::project_config::{apply_config, pull_rules, push_rules};
 use lynx_storage::DataStore;
+use lynx_storage::project_config::{apply_config, pull_rules, push_rules};
 use serde_json::json;
 
 use crate::resolve_data_dir;
@@ -108,7 +108,9 @@ pub async fn run_schema_export(out: Option<PathBuf>) -> Result<()> {
 
     let out_path = match out {
         Some(path) => path,
-        None => std::env::current_dir()?.join("schemas").join("rules-export.schema.json"),
+        None => std::env::current_dir()?
+            .join("schemas")
+            .join("rules-export.schema.json"),
     };
     if let Some(parent) = out_path.parent() {
         tokio::fs::create_dir_all(parent).await?;

@@ -4,25 +4,25 @@ use lynx_storage::dao::request_processing_dao::RequestProcessingDao;
 
 use crate::self_service::RouteState;
 
-pub async fn list_projects(state: &RouteState) -> Result<lynx_storage::dao::projects_dao::ProjectsFile> {
-    ProjectsDao::new(state.store.clone()).ensure_default().await.map_err(Into::into)
+pub async fn list_projects(
+    state: &RouteState,
+) -> Result<lynx_storage::dao::projects_dao::ProjectsFile> {
+    ProjectsDao::new(state.store.clone()).ensure_default().await
 }
 
-pub async fn set_active_project(state: &RouteState, project_id: &str) -> Result<lynx_storage::dao::projects_dao::ProjectsFile> {
+pub async fn set_active_project(
+    state: &RouteState,
+    project_id: &str,
+) -> Result<lynx_storage::dao::projects_dao::ProjectsFile> {
     let dao = ProjectsDao::new(state.store.clone());
     dao.set_active_project(project_id).await?;
-    dao.ensure_default().await.map_err(Into::into)
+    dao.ensure_default().await
 }
 
-pub async fn create_project(
-    state: &RouteState,
-    id: String,
-    name: String,
-) -> Result<RuleProject> {
+pub async fn create_project(state: &RouteState, id: String, name: String) -> Result<RuleProject> {
     ProjectsDao::new(state.store.clone())
         .create_project(id, name)
         .await
-        .map_err(Into::into)
 }
 
 pub async fn rename_project(
@@ -33,7 +33,6 @@ pub async fn rename_project(
     ProjectsDao::new(state.store.clone())
         .rename_project(project_id, name)
         .await
-        .map_err(Into::into)
 }
 
 pub async fn delete_project(state: &RouteState, project_id: &str) -> Result<()> {
@@ -44,5 +43,5 @@ pub async fn delete_project(state: &RouteState, project_id: &str) -> Result<()> 
     if !rules.is_empty() {
         return Err(anyhow!("cannot delete project with existing rules"));
     }
-    ProjectsDao::new(store).delete_project(project_id).await.map_err(Into::into)
+    ProjectsDao::new(store).delete_project(project_id).await
 }

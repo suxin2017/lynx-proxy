@@ -62,7 +62,10 @@ fn parses_url_with_query() {
 fn parses_query_only_operand() {
     let input = "?user_id=123&fields=id,name";
     assert!(!has_parse_errors(input));
-    assert_eq!(node_kinds(input, "Query"), vec!["?user_id=123&fields=id,name"]);
+    assert_eq!(
+        node_kinds(input, "Query"),
+        vec!["?user_id=123&fields=id,name"]
+    );
 }
 
 #[test]

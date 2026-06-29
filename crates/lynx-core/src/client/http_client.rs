@@ -46,8 +46,12 @@ pub struct HttpClientBuilder {
 impl HttpClient {
     fn headers_timeout(&self) -> Duration {
         match self {
-            HttpClient::Direct { headers_timeout, .. } => *headers_timeout,
-            HttpClient::Proxy { headers_timeout, .. } => *headers_timeout,
+            HttpClient::Direct {
+                headers_timeout, ..
+            } => *headers_timeout,
+            HttpClient::Proxy {
+                headers_timeout, ..
+            } => *headers_timeout,
         }
     }
 
@@ -96,9 +100,7 @@ impl HttpClientBuilder {
     pub fn build(&self) -> Result<HttpClient> {
         let cert_chain = self.custom_certs.clone();
         let client_config = gen_client_config_by_cert(cert_chain.clone())?;
-        let headers_timeout = self
-            .headers_timeout
-            .unwrap_or(DEFAULT_HEADERS_TIMEOUT);
+        let headers_timeout = self.headers_timeout.unwrap_or(DEFAULT_HEADERS_TIMEOUT);
 
         match &self.proxy_config {
             ProxyType::None => {

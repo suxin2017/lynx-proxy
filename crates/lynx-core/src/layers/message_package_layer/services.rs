@@ -21,12 +21,12 @@ use crate::{
     self_service::is_self_service,
 };
 
-use super::channel::MessageEventChannel;
+use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
 use super::capture_gate::{CaptureDecision, CaptureGate};
+use super::channel::MessageEventChannel;
 use super::message_event_data::copy_body_stream;
 use super::message_event_data::{MatchedRuleInfo, MatchedRulesExt};
 use super::message_event_store::MessageEvent;
-use super::super::trace_id_layer::service::{TraceId, TraceIdExt};
 use crate::layers::extend_extension_layer::DataStoreExtensionsExt;
 use lynx_storage::dao::request_processing_dao::RequestProcessingDao;
 
@@ -45,7 +45,9 @@ impl MessageEventLayerExt for Extensions {
     fn try_get_message_event_cannel(&self) -> CoreResult<Arc<MessageEventChannel>> {
         self.get::<Arc<MessageEventChannel>>()
             .cloned()
-            .ok_or(CoreError::MissingExtension { name: "MessageEventChannel" })
+            .ok_or(CoreError::MissingExtension {
+                name: "MessageEventChannel",
+            })
     }
 }
 

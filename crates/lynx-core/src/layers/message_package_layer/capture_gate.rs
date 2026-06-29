@@ -4,8 +4,8 @@ use http::HeaderMap;
 use http_body::Body as HttpBody;
 use hyper_tungstenite::is_upgrade_request;
 use lynx_dsl::{RequestFacts, compile_match_expr, eval_program};
+use lynx_storage::dao::capture_rules_dao::{CaptureRule, CaptureRulesDao};
 use lynx_storage::dao::net_request_dao::{CaptureSwitchDao, RecordingStatus};
-use lynx_storage::dao::capture_rules_dao::{CaptureRulesDao, CaptureRule};
 use tracing::warn;
 
 use crate::layers::extend_extension_layer::DataStoreExtensionsExt;
@@ -29,7 +29,9 @@ impl CaptureGate {
             capture_switch.recording_status,
             RecordingStatus::StartRecording
         ) {
-            return Ok(CaptureDecision::Bypass { reason: "recording_off" });
+            return Ok(CaptureDecision::Bypass {
+                reason: "recording_off",
+            });
         }
 
         let rules_dao = CaptureRulesDao::new(store);
@@ -139,12 +141,11 @@ fn host_and_port(
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
 
-    if let Some((host, port)) = host_value.rsplit_once(':') {
-        if let Ok(port) = port.parse::<u16>() {
-            return (host.to_string(), Some(port));
-        }
+    if let Some((host, port)) = host_value.rsplit_once(':')
+        && let Ok(port) = port.parse::<u16>()
+    {
+        return (host.to_string(), Some(port));
     }
 
     (host_value.to_string(), None)
 }
-

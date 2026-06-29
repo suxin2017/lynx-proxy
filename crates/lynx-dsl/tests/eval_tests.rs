@@ -1,7 +1,8 @@
-use lynx_dsl::{compile_match_expr, eval_program, RequestFacts};
+use lynx_dsl::{RequestFacts, compile_match_expr, eval_program};
 
 fn assert_matches(dsl: &str, facts: lynx_dsl::RequestFactsBuilder, expected: bool) {
-    let program = compile_match_expr(dsl).unwrap_or_else(|error| panic!("compile {dsl:?}: {error}"));
+    let program =
+        compile_match_expr(dsl).unwrap_or_else(|error| panic!("compile {dsl:?}: {error}"));
     let facts = facts.build();
     assert_eq!(eval_program(&program, &facts), expected, "dsl={dsl:?}");
 }
@@ -154,11 +155,7 @@ fn boolean_and_or_precedence() {
 
 #[test]
 fn not_expression() {
-    assert_matches(
-        "NOT /health",
-        RequestFacts::builder().path("/api"),
-        true,
-    );
+    assert_matches("NOT /health", RequestFacts::builder().path("/api"), true);
     assert_matches(
         "NOT /health",
         RequestFacts::builder().path("/health"),
@@ -182,23 +179,15 @@ fn grouped_expression() {
 
 #[test]
 fn cli_method_flag() {
-    assert_matches(
-        "-X POST",
-        RequestFacts::builder().method("POST"),
-        true,
-    );
+    assert_matches("-X POST", RequestFacts::builder().method("POST"), true);
     assert_matches(
         "example.com -X GET",
-        RequestFacts::builder()
-            .host("example.com")
-            .method("GET"),
+        RequestFacts::builder().host("example.com").method("GET"),
         true,
     );
     assert_matches(
         "example.com - X POST",
-        RequestFacts::builder()
-            .host("example.com")
-            .method("POST"),
+        RequestFacts::builder().host("example.com").method("POST"),
         true,
     );
 }
@@ -288,9 +277,7 @@ fn cli_only_post_with_glob_path() {
     );
     assert_matches(
         "NOT */rest/* AND -X POST",
-        RequestFacts::builder()
-            .method("POST")
-            .path("/foo/rest/bar"),
+        RequestFacts::builder().method("POST").path("/foo/rest/bar"),
         false,
     );
 }

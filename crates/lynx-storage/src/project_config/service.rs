@@ -6,7 +6,8 @@ use anyhow::{Result, anyhow};
 
 use super::backup::backup_rules_snapshot;
 use super::types::{
-    ApplyReport, ConfigRule, LynxProjectConfig, PullReport, PushReport, default_rules_export_schema_url,
+    ApplyReport, ConfigRule, LynxProjectConfig, PullReport, PushReport,
+    default_rules_export_schema_url,
 };
 use crate::dao::projects_dao::ProjectsDao;
 use crate::dao::request_processing_dao::{RequestProcessingDao, RuleValidator};
@@ -109,7 +110,8 @@ pub async fn pull_rules(
             dao.update_rule(request_rule).await?;
             updated += 1;
         } else {
-            dao.create_rule_with_id(config_rule.id, request_rule).await?;
+            dao.create_rule_with_id(config_rule.id, request_rule)
+                .await?;
             created += 1;
         }
     }
@@ -219,11 +221,16 @@ mod tests {
         let store = DataStore::new(data.path()).await?;
         let dao = RequestProcessingDao::new(store.clone());
 
-        let mut rule = RequestRule::default();
-        rule.name = "roundtrip".to_string();
-        rule.capture.match_expr = "example.com".to_string();
-        rule.handlers = vec![HandlerRule::block_handler(Some(404), None)];
-        rule.enabled = true;
+        let rule = RequestRule {
+            name: "roundtrip".to_string(),
+            capture: CaptureRule {
+                id: None,
+                match_expr: "example.com".to_string(),
+            },
+            handlers: vec![HandlerRule::block_handler(Some(404), None)],
+            enabled: true,
+            ..Default::default()
+        };
         let rule_id = dao.create_rule(rule).await?;
 
         push_rules(&config_path, store.clone(), Some("default".to_string())).await?;
@@ -232,7 +239,8 @@ mod tests {
         config.rules[0].name = "updated".to_string();
         write_json_atomic(&config_path, &config).await?;
 
-        let pull_report = pull_rules(&config_path, store.clone(), Some("default".to_string())).await?;
+        let pull_report =
+            pull_rules(&config_path, store.clone(), Some("default".to_string())).await?;
         assert_eq!(pull_report.created, 0);
         assert_eq!(pull_report.updated, 1);
 
@@ -283,31 +291,46 @@ mod tests {
         let store = DataStore::new(data.path()).await?;
         let dao = RequestProcessingDao::new(store.clone());
 
-        let mut in_config = RequestRule::default();
-        in_config.name = "in-config".to_string();
-        in_config.project = "default".to_string();
-        in_config.capture.match_expr = "a.example.com".to_string();
-        in_config.priority = 50;
-        in_config.handlers = vec![HandlerRule::block_handler(Some(404), None)];
-        in_config.enabled = true;
+        let in_config = RequestRule {
+            name: "in-config".to_string(),
+            project: "default".to_string(),
+            capture: CaptureRule {
+                id: None,
+                match_expr: "a.example.com".to_string(),
+            },
+            priority: 50,
+            handlers: vec![HandlerRule::block_handler(Some(404), None)],
+            enabled: true,
+            ..Default::default()
+        };
         let in_config_id = dao.create_rule(in_config).await?;
 
-        let mut orphan = RequestRule::default();
-        orphan.name = "orphan".to_string();
-        orphan.project = "default".to_string();
-        orphan.capture.match_expr = "b.example.com".to_string();
-        orphan.priority = 50;
-        orphan.handlers = vec![HandlerRule::block_handler(Some(404), None)];
-        orphan.enabled = true;
+        let orphan = RequestRule {
+            name: "orphan".to_string(),
+            project: "default".to_string(),
+            capture: CaptureRule {
+                id: None,
+                match_expr: "b.example.com".to_string(),
+            },
+            priority: 50,
+            handlers: vec![HandlerRule::block_handler(Some(404), None)],
+            enabled: true,
+            ..Default::default()
+        };
         dao.create_rule(orphan).await?;
 
-        let mut other_project = RequestRule::default();
-        other_project.name = "other-project".to_string();
-        other_project.project = "other".to_string();
-        other_project.capture.match_expr = "c.example.com".to_string();
-        other_project.priority = 50;
-        other_project.handlers = vec![HandlerRule::block_handler(Some(404), None)];
-        other_project.enabled = true;
+        let other_project = RequestRule {
+            name: "other-project".to_string(),
+            project: "other".to_string(),
+            capture: CaptureRule {
+                id: None,
+                match_expr: "c.example.com".to_string(),
+            },
+            priority: 50,
+            handlers: vec![HandlerRule::block_handler(Some(404), None)],
+            enabled: true,
+            ..Default::default()
+        };
         dao.create_rule(other_project).await?;
 
         let config = LynxProjectConfig {
@@ -342,9 +365,14 @@ mod tests {
         let store = DataStore::new(data.path()).await?;
         let dao = RequestProcessingDao::new(store.clone());
 
-        let mut keep = RequestRule::default();
-        keep.name = "keep-me".to_string();
-        keep.capture.match_expr = "keep.example.com".to_string();
+        let keep = RequestRule {
+            name: "keep-me".to_string(),
+            capture: CaptureRule {
+                id: None,
+                match_expr: "keep.example.com".to_string(),
+            },
+            ..Default::default()
+        };
         dao.create_rule(keep).await?;
 
         let config = LynxProjectConfig {

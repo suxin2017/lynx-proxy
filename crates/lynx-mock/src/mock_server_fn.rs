@@ -12,7 +12,6 @@ use hyper::{
     body::{Frame, Incoming},
 };
 use hyper_tungstenite::tungstenite::Message;
-use serde_json;
 use tokio_stream::{StreamExt, wrappers::BroadcastStream};
 use tracing::{instrument, trace, warn};
 
@@ -380,7 +379,8 @@ pub async fn mock_server_fn(
                 .map(|data| Ok(Frame::data(Bytes::from(data))));
             let body = BodyExt::boxed(StreamBody::new(stream));
             let mut res = Response::new(body);
-            res.headers_mut().insert(CONTENT_TYPE, "text/event-stream".parse().unwrap());
+            res.headers_mut()
+                .insert(CONTENT_TYPE, "text/event-stream".parse().unwrap());
             Ok(res)
         }
         _ => {

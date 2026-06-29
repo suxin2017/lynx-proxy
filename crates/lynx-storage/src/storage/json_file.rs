@@ -1,8 +1,8 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use tokio::fs;
 
 pub async fn read_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>> {
@@ -12,8 +12,8 @@ pub async fn read_json<T: DeserializeOwned>(path: &Path) -> Result<Option<T>> {
     let content = fs::read_to_string(path)
         .await
         .with_context(|| format!("read {}", path.display()))?;
-    let value = serde_json::from_str(&content)
-        .with_context(|| format!("parse json {}", path.display()))?;
+    let value =
+        serde_json::from_str(&content).with_context(|| format!("parse json {}", path.display()))?;
     Ok(Some(value))
 }
 

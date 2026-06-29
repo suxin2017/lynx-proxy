@@ -99,8 +99,8 @@ impl ProxyServerBuilder {
 
         let port = self.port.flatten().unwrap_or(0);
         let local_only = self.local_only.unwrap_or(false);
-        let network_interfaces = list_afinet_netifas()
-            .map_err(|e| anyhow!("get network interfaces error: {e}"))?;
+        let network_interfaces =
+            list_afinet_netifas().map_err(|e| anyhow!("get network interfaces error: {e}"))?;
         let access_addr_list: Vec<SocketAddr> = network_interfaces
             .into_iter()
             .filter(|(_, ip)| ip.is_ipv4())
@@ -111,9 +111,9 @@ impl ProxyServerBuilder {
                     match ip {
                         std::net::IpAddr::V4(ipv4) => {
                             // Exclude unspecified, link-local (169.254.x.x), multicast, and broadcast addresses
-                            !ipv4.is_unspecified() 
-                                && !ipv4.is_link_local() 
-                                && !ipv4.is_multicast() 
+                            !ipv4.is_unspecified()
+                                && !ipv4.is_link_local()
+                                && !ipv4.is_multicast()
                                 && !ipv4.is_broadcast()
                         }
                         _ => false, // Already filtered for IPv4 above, but just in case
@@ -144,7 +144,10 @@ impl ProxyServerBuilder {
             access_addr_list,
             custom_certs,
             api_custom_certs,
-            config: self.config.clone().ok_or_else(|| anyhow!("config is required"))?,
+            config: self
+                .config
+                .clone()
+                .ok_or_else(|| anyhow!("config is required"))?,
             data_dir: self.data_dir.clone().flatten(),
             static_dir: self.static_dir.clone().flatten(),
             server_ca_manager: self

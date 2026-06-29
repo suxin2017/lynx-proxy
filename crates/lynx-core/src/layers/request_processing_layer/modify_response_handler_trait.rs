@@ -28,10 +28,10 @@ impl HandlerTrait for ModifyResponseConfig {
         }
 
         // Modify status code if specified
-        if let Some(status_code) = self.modify_status_code {
-            if let Ok(new_status) = StatusCode::from_u16(status_code) {
-                *response.status_mut() = new_status;
-            }
+        if let Some(status_code) = self.modify_status_code
+            && let Ok(new_status) = StatusCode::from_u16(status_code)
+        {
+            *response.status_mut() = new_status;
         }
 
         // Modify body if specified
@@ -281,8 +281,12 @@ mod tests {
 
         // Create a response with compression headers
         let mut response = create_test_response();
-        response.headers_mut().insert("content-encoding", "gzip".parse().unwrap());
-        response.headers_mut().insert("transfer-encoding", "chunked".parse().unwrap());
+        response
+            .headers_mut()
+            .insert("content-encoding", "gzip".parse().unwrap());
+        response
+            .headers_mut()
+            .insert("transfer-encoding", "chunked".parse().unwrap());
 
         let result = config.handle_response(response).await?;
 

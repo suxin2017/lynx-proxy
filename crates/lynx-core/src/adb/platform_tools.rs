@@ -99,12 +99,12 @@ pub async fn download_and_extract(
         let chunk = chunk.context("read download chunk")?;
         downloaded += chunk.len() as u64;
         file.write_all(&chunk).await?;
-        if let Some(total) = total {
-            if total > 0 {
-                let percent = ((downloaded * 100) / total).min(99) as u8;
-                let mut p = progress.write().await;
-                p.percent = percent;
-            }
+        if let Some(total) = total
+            && total > 0
+        {
+            let percent = ((downloaded * 100) / total).min(99) as u8;
+            let mut p = progress.write().await;
+            p.percent = percent;
         }
     }
     file.flush().await?;

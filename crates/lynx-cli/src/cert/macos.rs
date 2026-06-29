@@ -35,10 +35,7 @@ pub fn find_certificates() -> Result<Vec<KeychainCertificate>> {
         if stderr.contains("could not be found") || stderr.contains("SecItemCopyMatching") {
             return Ok(Vec::new());
         }
-        bail!(
-            "security find-certificate failed: {}",
-            stderr.trim()
-        );
+        bail!("security find-certificate failed: {}", stderr.trim());
     }
 
     Ok(parse_find_certificate_output(&String::from_utf8_lossy(
@@ -78,10 +75,7 @@ pub fn install_certificate(cert_path: &Path) -> Result<()> {
         );
     }
 
-    bail!(
-        "security add-trusted-cert failed: {}",
-        stderr.trim()
-    );
+    bail!("security add-trusted-cert failed: {}", stderr.trim());
 }
 
 pub fn delete_certificate(sha1: &str) -> Result<()> {
@@ -131,10 +125,7 @@ pub fn parse_find_certificate_output(output: &str) -> Vec<KeychainCertificate> {
     }
 
     if let (Some(sha1), Some(sha256)) = (current_sha1, current_sha256) {
-        certs.push(KeychainCertificate {
-            sha1,
-            sha256,
-        });
+        certs.push(KeychainCertificate { sha1, sha256 });
     }
 
     certs
@@ -196,7 +187,10 @@ SHA-1 hash: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
         let certs = parse_find_certificate_output(output);
         assert_eq!(certs.len(), 1);
         assert_eq!(certs[0].sha1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-        assert_eq!(certs[0].sha256, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+        assert_eq!(
+            certs[0].sha256,
+            "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+        );
     }
 
     #[test]
@@ -206,9 +200,6 @@ SHA-1 hash: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
     #[test]
     fn fingerprint_match_ignores_case_and_separators() {
-        assert!(fingerprints_match(
-            "ab:cd:ef",
-            "ABCD EF"
-        ));
+        assert!(fingerprints_match("ab:cd:ef", "ABCD EF"));
     }
 }

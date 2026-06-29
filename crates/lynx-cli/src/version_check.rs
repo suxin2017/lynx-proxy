@@ -32,12 +32,7 @@ async fn check_for_updates_inner() -> Result<Option<String>> {
         .timeout(std::time::Duration::from_secs(3))
         .build()?;
 
-    let release: GitHubRelease = client
-        .get(GITHUB_API_URL)
-        .send()
-        .await?
-        .json()
-        .await?;
+    let release: GitHubRelease = client.get(GITHUB_API_URL).send().await?.json().await?;
 
     let latest_tag = release.tag_name.trim_start_matches('v');
     let latest = Version::parse(latest_tag)?;
@@ -55,11 +50,7 @@ pub fn print_update_banner(latest: &str) {
     println!(
         "{}{}",
         style("Update available: ").bold().green(),
-        style(format!(
-            "v{} (current: v{})",
-            latest, CARGO_PKG_VERSION
-        ))
-        .cyan(),
+        style(format!("v{} (current: v{})", latest, CARGO_PKG_VERSION)).cyan(),
     );
 }
 
@@ -80,10 +71,7 @@ pub fn prompt_and_update(latest: &str) {
 
     let answer = input.trim().to_lowercase();
     if answer != "y" && answer != "yes" {
-        println!(
-            "  {}",
-            style("Skipped. You can update manually:").yellow()
-        );
+        println!("  {}", style("Skipped. You can update manually:").yellow());
         println!(
             "    {}",
             style("https://github.com/xin2017338/lynx-proxy/releases/latest")
@@ -99,11 +87,7 @@ pub fn prompt_and_update(latest: &str) {
             println!("  {} Updated to v{}!", style("Done").bold().green(), latest);
         }
         Err(e) => {
-            eprintln!(
-                "  {} Failed to update: {}",
-                style("Error").bold().red(),
-                e
-            );
+            eprintln!("  {} Failed to update: {}", style("Error").bold().red(), e);
         }
     }
 }

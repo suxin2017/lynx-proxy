@@ -13,6 +13,7 @@ pub struct ProxyConfig {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+#[derive(Default)]
 pub struct ClientProxyConfig {
     pub proxy_requests: ProxyConfig,
     pub api_debug: ProxyConfig,
@@ -23,15 +24,6 @@ impl Default for ProxyConfig {
         Self {
             proxy_type: "none".to_string(),
             url: None,
-        }
-    }
-}
-
-impl Default for ClientProxyConfig {
-    fn default() -> Self {
-        Self {
-            proxy_requests: ProxyConfig::default(),
-            api_debug: ProxyConfig::default(),
         }
     }
 }

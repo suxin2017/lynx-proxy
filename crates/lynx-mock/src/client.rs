@@ -250,7 +250,7 @@ impl MockClient {
             debug!("proxy recv: {:?}", p_recv);
 
             assert_eq!(d_recv.len(), p_recv.len());
-            for (d_msg, p_msg) in d_recv.into_iter().zip(p_recv.into_iter()) {
+            for (d_msg, p_msg) in d_recv.into_iter().zip(p_recv) {
                 assert_eq!(MessageWrapper(d_msg?), MessageWrapper(p_msg?));
             }
         }

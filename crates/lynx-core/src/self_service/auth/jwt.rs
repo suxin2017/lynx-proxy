@@ -24,11 +24,7 @@ impl AuthConfig {
             iat: now,
             jti: Some(nanoid::nanoid!()),
         };
-        let token = encode(
-            &Header::new(Algorithm::HS256),
-            &claims,
-            self.encoding_key(),
-        )?;
+        let token = encode(&Header::new(Algorithm::HS256), &claims, self.encoding_key())?;
         Ok((token, exp))
     }
 

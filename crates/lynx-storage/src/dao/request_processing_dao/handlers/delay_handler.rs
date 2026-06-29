@@ -80,7 +80,7 @@ mod tests {
         for delay_type in delay_types {
             let json = serde_json::to_string(&delay_type).unwrap();
             let deserialized: DelayType = serde_json::from_str(&json).unwrap();
-            
+
             match (&delay_type, &deserialized) {
                 (DelayType::BeforeRequest, DelayType::BeforeRequest) => (),
                 (DelayType::AfterRequest, DelayType::AfterRequest) => (),

@@ -46,9 +46,10 @@ pub enum MessageEvent {
     OnError(TraceId, String),
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
 pub enum MessageEventStatus {
     // Initial state, request just created
+    #[default]
     Initial,
     // Request processing has started
     RequestStarted,
@@ -58,12 +59,6 @@ pub enum MessageEventStatus {
     Error(String),
     // Request was cancelled
     Cancelled,
-}
-
-impl Default for MessageEventStatus {
-    fn default() -> Self {
-        Self::Initial
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
@@ -330,7 +325,7 @@ impl MessageEventCache {
     pub fn clear(&self) {
         self.map.clear();
     }
-    
+
     fn remove_oldest_completed(&self) {
         const EVICT_THRESHOLD: usize = 10;
         const MAX_COMPLETED_AGE_MS: u64 = 10 * 60 * 1_000; // 10 minutes

@@ -22,19 +22,14 @@ pub fn parse_query_pairs(query: &str) -> Vec<(String, String)> {
 }
 
 /// Subset match: every expected pair must appear in the actual query (extra params allowed).
-pub fn query_params_subset_match(
-    expected: &[(Arc<str>, Arc<str>)],
-    actual: Option<&str>,
-) -> bool {
+pub fn query_params_subset_match(expected: &[(Arc<str>, Arc<str>)], actual: Option<&str>) -> bool {
     if expected.is_empty() {
         return actual.map(str::is_empty).unwrap_or(true);
     }
     let Some(actual) = actual else {
         return false;
     };
-    let actual_map: HashMap<String, String> = parse_query_pairs(actual)
-        .into_iter()
-        .collect();
+    let actual_map: HashMap<String, String> = parse_query_pairs(actual).into_iter().collect();
     expected.iter().all(|(key, value)| {
         actual_map
             .get(key.as_ref())
@@ -50,7 +45,10 @@ mod tests {
     fn parses_pairs() {
         assert_eq!(
             parse_query_pairs("a=1&b=2"),
-            vec![("a".to_string(), "1".to_string()), ("b".to_string(), "2".to_string())]
+            vec![
+                ("a".to_string(), "1".to_string()),
+                ("b".to_string(), "2".to_string())
+            ]
         );
     }
 

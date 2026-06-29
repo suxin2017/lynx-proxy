@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 /// HTTP method (serde matches UI: UPPERCASE).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum HttpMethod {
+    #[default]
     Get,
     Post,
     Put,
@@ -11,12 +12,6 @@ pub enum HttpMethod {
     Delete,
     Head,
     Options,
-}
-
-impl Default for HttpMethod {
-    fn default() -> Self {
-        Self::Get
-    }
 }
 
 /// Collection tree node kind (aligned with API Studio UI).

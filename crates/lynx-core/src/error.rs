@@ -1,5 +1,8 @@
 use anyhow::Error as AnyError;
-use axum::{Json, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    response::{IntoResponse, Response},
+};
 use http::StatusCode;
 use serde::Serialize;
 
@@ -182,13 +185,8 @@ impl CoreError {
     ) -> Self {
         let handler_name = handler_name.into();
         let (failure_phase, message) = match &err {
-            CoreError::Validation { message } => {
-                (RequestRuleFailurePhase::Config, message.clone())
-            }
-            _ => (
-                RequestRuleFailurePhase::Execution,
-                err.public_message(),
-            ),
+            CoreError::Validation { message } => (RequestRuleFailurePhase::Config, message.clone()),
+            _ => (RequestRuleFailurePhase::Execution, err.public_message()),
         };
         CoreError::RequestRuleFailed {
             handler_name,
@@ -269,8 +267,8 @@ impl From<std::string::FromUtf8Error> for CoreError {
 impl IntoResponse for CoreError {
     fn into_response(self) -> Response {
         let error_response = self.to_response();
-        let status = StatusCode::from_u16(error_response.code)
-            .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        let status =
+            StatusCode::from_u16(error_response.code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
         (status, Json(error_response)).into_response()
     }
 }
@@ -305,7 +303,10 @@ mod tests {
         assert_eq!(err.category(), "validation");
         assert!(err.public_message().contains("dev-forward"));
         assert!(err.public_message().contains("proxy_forward"));
-        assert!(err.public_message().contains("Invalid proxy forward target"));
+        assert!(
+            err.public_message()
+                .contains("Invalid proxy forward target")
+        );
     }
 
     #[test]
@@ -314,9 +315,6 @@ mod tests {
             operation: "request handling",
             source: anyhow::anyhow!("connection refused").context("upstream HTTP request"),
         };
-        assert_eq!(
-            err.public_message(),
-            "request handling: connection refused"
-        );
+        assert_eq!(err.public_message(), "request handling: connection refused");
     }
 }

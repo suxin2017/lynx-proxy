@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use crate::adb::AdbManager;
 use crate::client::ReqwestClient;
 use crate::client::request_client::RequestClientExt;
 use crate::common::Req;
@@ -9,7 +10,6 @@ use crate::layers::message_package_layer::MessageEventChannel;
 use crate::layers::message_package_layer::MessageEventLayerExt;
 use crate::layers::message_package_layer::message_event_store::MessageEventCache;
 use crate::layers::message_package_layer::message_event_store::MessageEventStoreExtensionsExt;
-use crate::adb::AdbManager;
 use crate::proxy_server::StaticDir;
 use crate::proxy_server::listen_info::ProxyListenInfoExtensionsExt;
 use crate::proxy_server::server_config::ProxyServerConfig;
@@ -31,13 +31,13 @@ pub mod utils;
 
 pub use auth::AuthConfig;
 pub use auth_extensions::AuthConfigExtensionsExt;
-use tower_http::cors::CorsLayer;
-#[cfg(debug_assertions)]
-use tower_http::cors::Any;
 #[cfg(not(debug_assertions))]
 use http::header::HeaderValue;
 #[cfg(not(debug_assertions))]
 use tower_http::cors::AllowOrigin;
+#[cfg(debug_assertions)]
+use tower_http::cors::Any;
+use tower_http::cors::CorsLayer;
 
 pub const SELF_SERVICE_PATH_PREFIX: &str = "/api";
 
@@ -56,7 +56,7 @@ fn cors_layer(access_addr_list: &[SocketAddr]) -> CorsLayer {
     #[cfg(debug_assertions)]
     {
         let _ = access_addr_list;
-        return base.allow_origin(Any);
+        base.allow_origin(Any)
     }
 
     #[cfg(not(debug_assertions))]
@@ -126,10 +126,7 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
 
     let store = req.extensions().get_data_store();
     let listen_info = req.extensions().get_proxy_listen_info();
-    let adb = Arc::new(AdbManager::new(
-        store.root().to_path_buf(),
-        listen_info.local_only,
-    ));
+    let adb = Arc::new(AdbManager::new(store.root(), listen_info.local_only));
 
     let state = RouteState {
         store,
@@ -154,10 +151,12 @@ pub async fn self_service_router(req: Req) -> Result<Response> {
 
     // Only require auth for API endpoints; static files (JS, CSS, HTML, images)
     // must be accessible without authentication so the login page can load.
-    if auth.enabled && path.starts_with("/api/") && !is_public_http_path(&method, &path) {
-        if !authorize_http(&auth, &method, &path, &uri, &headers) {
-            return Ok(unauthorized_response());
-        }
+    if auth.enabled
+        && path.starts_with("/api/")
+        && !is_public_http_path(&method, &path)
+        && !authorize_http(&auth, &method, &path, &uri, &headers)
+    {
+        return Ok(unauthorized_response());
     }
 
     let cors = cors_layer(&state.access_addr_list);

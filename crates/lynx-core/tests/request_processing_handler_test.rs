@@ -524,4 +524,3 @@ async fn throttle_handler_offline_integration() -> Result<()> {
 
     Ok(())
 }
-

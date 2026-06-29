@@ -18,8 +18,9 @@ impl RuleMatcher {
         let mut compiled = Vec::with_capacity(rules.len());
         for rule in rules {
             let expr = rule.capture.match_expr.trim();
-            let program = compile_match_expr(expr)
-                .map_err(|error| anyhow::anyhow!("Rule {} matchExpr invalid: {error}", rule.id.unwrap_or(-1)))?;
+            let program = compile_match_expr(expr).map_err(|error| {
+                anyhow::anyhow!("Rule {} matchExpr invalid: {error}", rule.id.unwrap_or(-1))
+            })?;
             compiled.push(CompiledRule {
                 rule: rule.clone(),
                 program,
@@ -88,10 +89,10 @@ fn host_and_port(
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
 
-    if let Some((host, port)) = host_value.rsplit_once(':') {
-        if let Ok(port) = port.parse::<u16>() {
-            return (host.to_string(), Some(port));
-        }
+    if let Some((host, port)) = host_value.rsplit_once(':')
+        && let Ok(port) = port.parse::<u16>()
+    {
+        return (host.to_string(), Some(port));
     }
 
     (host_value.to_string(), None)

@@ -33,7 +33,7 @@ pub fn mock_server_config(
         let cert = Arc::new(cert);
         (cert, key)
     };
-    let server_config = gen_server_config_by_ca(&[cert.clone()], &key)?;
+    let server_config = gen_server_config_by_ca(std::slice::from_ref(&cert), &key)?;
     Ok((server_config, cert, key))
 }
 

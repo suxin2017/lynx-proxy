@@ -7,7 +7,10 @@ pub fn parse_devices_output(stdout: &str) -> Vec<AdbDevice> {
         if line.is_empty() || line.starts_with("List of devices") {
             continue;
         }
-        let Some((serial, rest)) = line.split_once('\t').or_else(|| line.split_once("  ").map(|(a, b)| (a.trim(), b.trim()))) else {
+        let Some((serial, rest)) = line
+            .split_once('\t')
+            .or_else(|| line.split_once("  ").map(|(a, b)| (a.trim(), b.trim())))
+        else {
             continue;
         };
         let serial = serial.trim().to_string();

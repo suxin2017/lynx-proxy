@@ -13,10 +13,10 @@ pub async fn next_id_in_dir(dir: &Path) -> Result<i32> {
     while let Some(entry) = entries.next_entry().await? {
         let file_name = entry.file_name();
         let name = file_name.to_string_lossy();
-        if let Some(stem) = name.strip_suffix(".json") {
-            if let Ok(id) = stem.parse::<i32>() {
-                max_id = max_id.max(id);
-            }
+        if let Some(stem) = name.strip_suffix(".json")
+            && let Ok(id) = stem.parse::<i32>()
+        {
+            max_id = max_id.max(id);
         }
     }
     Ok(max_id + 1)

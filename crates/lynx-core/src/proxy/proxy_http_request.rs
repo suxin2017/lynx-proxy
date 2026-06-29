@@ -141,10 +141,8 @@ mod tests {
             .path_and_query("/")
             .build()
             .unwrap();
-        let err = classify_upstream_error(
-            &uri,
-            anyhow::anyhow!("Request headers timeout after 30s"),
-        );
+        let err =
+            classify_upstream_error(&uri, anyhow::anyhow!("Request headers timeout after 30s"));
         assert_eq!(err.status_code(), http::StatusCode::REQUEST_TIMEOUT);
         assert_eq!(err.category(), "timeout");
     }

@@ -78,4 +78,3 @@ fn format_error_chain(err: &anyhow::Error) -> String {
             output
         })
 }
-

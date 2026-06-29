@@ -79,10 +79,7 @@ fn highlight_expr(expr: &Expr, source: &str, spans: &mut Vec<HighlightSpan>) {
 }
 
 fn and_expr_end(and: &AndExpr) -> usize {
-    and.terms
-        .last()
-        .map(not_expr_end)
-        .unwrap_or(and.span.end)
+    and.terms.last().map(not_expr_end).unwrap_or(and.span.end)
 }
 
 fn and_expr_start(and: &AndExpr) -> usize {
@@ -150,11 +147,7 @@ fn highlight_primary(primary: &Primary, source: &str, spans: &mut Vec<HighlightS
             }
             let close = source[..span.end].rfind(')');
             if let Some(index) = close {
-                push_span(
-                    spans,
-                    Span::new(index, index + 1),
-                    HighlightKind::Paren,
-                );
+                push_span(spans, Span::new(index, index + 1), HighlightKind::Paren);
             }
             highlight_expr(expr, source, spans);
         }
@@ -270,10 +263,7 @@ fn not_expr_end(not_expr: &NotExpr) -> usize {
 fn primary_start(primary: &Primary) -> usize {
     match primary {
         Primary::CliOnly(cli) => cli.span.start,
-        Primary::Url { url, cli } => cli
-            .as_ref()
-            .map(|c| c.span.start)
-            .unwrap_or(url.span.start),
+        Primary::Url { url, cli } => cli.as_ref().map(|c| c.span.start).unwrap_or(url.span.start),
         Primary::Grouped(expr) => expr.span.start,
     }
 }

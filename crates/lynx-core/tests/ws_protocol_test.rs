@@ -28,11 +28,7 @@ async fn ws_capture_status_get() -> Result<()> {
         .send(Message::Text(request.to_string().into()))
         .await?;
 
-    let response = socket
-        .next()
-        .await
-        .expect("ws response")?
-        .into_text()?;
+    let response = socket.next().await.expect("ws response")?.into_text()?;
 
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
@@ -64,11 +60,7 @@ async fn ws_settings_general_get() -> Result<()> {
         .send(Message::Text(request.to_string().into()))
         .await?;
 
-    let response = socket
-        .next()
-        .await
-        .expect("ws response")?
-        .into_text()?;
+    let response = socket.next().await.expect("ws response")?.into_text()?;
 
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
@@ -100,11 +92,7 @@ async fn ws_rules_list_get() -> Result<()> {
         .send(Message::Text(request.to_string().into()))
         .await?;
 
-    let response = socket
-        .next()
-        .await
-        .expect("ws response")?
-        .into_text()?;
+    let response = socket.next().await.expect("ws response")?.into_text()?;
 
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
@@ -133,7 +121,9 @@ async fn ws_capture_rules_focus_crud() -> Result<()> {
         "op": "capture.rules.focus.list.get",
         "timestamp": 0,
     });
-    socket.send(Message::Text(request.to_string().into())).await?;
+    socket
+        .send(Message::Text(request.to_string().into()))
+        .await?;
     let response = socket.next().await.expect("ws response")?.into_text()?;
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
@@ -153,7 +143,9 @@ async fn ws_capture_rules_focus_crud() -> Result<()> {
           "matchExpr": "example.com"
         }
     });
-    socket.send(Message::Text(request.to_string().into())).await?;
+    socket
+        .send(Message::Text(request.to_string().into()))
+        .await?;
     let response = socket.next().await.expect("ws response")?.into_text()?;
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
@@ -172,12 +164,17 @@ async fn ws_capture_rules_focus_crud() -> Result<()> {
           "ruleId": rule_id
         }
     });
-    socket.send(Message::Text(request.to_string().into())).await?;
+    socket
+        .send(Message::Text(request.to_string().into()))
+        .await?;
     let response = socket.next().await.expect("ws response")?.into_text()?;
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
     assert_eq!(frame["op"], "capture.rules.focus.delete");
-    assert_eq!(frame["payload"]["ruleId"].as_i64().unwrap_or_default(), rule_id);
+    assert_eq!(
+        frame["payload"]["ruleId"].as_i64().unwrap_or_default(),
+        rule_id
+    );
 
     Ok(())
 }
@@ -200,7 +197,9 @@ async fn ws_traffic_filter_history_crud() -> Result<()> {
         "op": "network.trafficFilter.history.get",
         "timestamp": 0,
     });
-    socket.send(Message::Text(request.to_string().into())).await?;
+    socket
+        .send(Message::Text(request.to_string().into()))
+        .await?;
     let response = socket.next().await.expect("ws response")?.into_text()?;
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
@@ -217,7 +216,9 @@ async fn ws_traffic_filter_history_crud() -> Result<()> {
             "expr": "host contains example.com"
         }
     });
-    socket.send(Message::Text(request.to_string().into())).await?;
+    socket
+        .send(Message::Text(request.to_string().into()))
+        .await?;
     let response = socket.next().await.expect("ws response")?.into_text()?;
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
@@ -234,12 +235,17 @@ async fn ws_traffic_filter_history_crud() -> Result<()> {
         "op": "network.trafficFilter.history.clear",
         "timestamp": 0,
     });
-    socket.send(Message::Text(request.to_string().into())).await?;
+    socket
+        .send(Message::Text(request.to_string().into()))
+        .await?;
     let response = socket.next().await.expect("ws response")?.into_text()?;
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
     assert_eq!(frame["op"], "network.trafficFilter.history.clear");
-    assert_eq!(frame["payload"]["entries"].as_array().map(Vec::len), Some(0));
+    assert_eq!(
+        frame["payload"]["entries"].as_array().map(Vec::len),
+        Some(0)
+    );
 
     Ok(())
 }

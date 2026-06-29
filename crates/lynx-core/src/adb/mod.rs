@@ -14,7 +14,9 @@ use tokio::sync::RwLock;
 pub use types::*;
 
 use devices::parse_devices_output;
-use executor::{adb_output_message, adb_version, bundled_adb_path, ensure_success, resolve_path_adb, run_adb};
+use executor::{
+    adb_output_message, adb_version, bundled_adb_path, ensure_success, resolve_path_adb, run_adb,
+};
 use platform_tools::{download_and_extract, platform_tools_dir, verify_bundled};
 use proxy::{disable_proxy, enable_proxy, get_proxy_state};
 
@@ -39,10 +41,10 @@ impl AdbManager {
     }
 
     pub async fn resolve_adb_path(&self) -> Result<Option<PathBuf>> {
-        if let Some(path) = resolve_path_adb().await {
-            if adb_version(&path).await.is_ok() {
-                return Ok(Some(path));
-            }
+        if let Some(path) = resolve_path_adb().await
+            && adb_version(&path).await.is_ok()
+        {
+            return Ok(Some(path));
         }
         let bundled_dir = platform_tools_dir(&self.data_root);
         let bundled = bundled_adb_path(&bundled_dir);
@@ -56,7 +58,7 @@ impl AdbManager {
         match self.resolve_adb_path().await {
             Ok(Some(path)) => {
                 let version = adb_version(&path).await.ok();
-                let source = if path == PathBuf::from("adb") {
+                let source = if path == *"adb" {
                     AdbSource::Path
                 } else {
                     AdbSource::Bundled

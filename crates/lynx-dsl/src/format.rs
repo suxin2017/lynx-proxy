@@ -131,7 +131,10 @@ fn format_url(url: &crate::ast::Url) -> String {
         text.push_str(&port.value);
     }
     if let Some(path) = &url.path {
-        if url.host.is_some() && !path.value.starts_with('/') && text.ends_with(&url.host.as_ref().unwrap().value) {
+        if url.host.is_some()
+            && !path.value.starts_with('/')
+            && text.ends_with(&url.host.as_ref().unwrap().value)
+        {
             text.push(' ');
         }
         text.push_str(&path.value);

@@ -49,7 +49,10 @@ async fn shared_channel_delivers_proxied_request_events() -> Result<()> {
 
     let proxy_addr = proxy_url(&proxy_server, 0);
     let client = lynx_mock::client::MockClient::new(
-        Some(vec![mock_server.cert.clone(), proxy_server.server_ca_manager.ca_cert.clone()]),
+        Some(vec![
+            mock_server.cert.clone(),
+            proxy_server.server_ca_manager.ca_cert.clone(),
+        ]),
         Some(proxy_addr),
     )?;
 
@@ -101,7 +104,10 @@ async fn ws_stream_receives_events_when_traffic_uses_other_listen_address() -> R
 
     let traffic_proxy = proxy_url(&proxy_server, 0);
     let client = lynx_mock::client::MockClient::new(
-        Some(vec![mock_server.cert.clone(), proxy_server.server_ca_manager.ca_cert.clone()]),
+        Some(vec![
+            mock_server.cert.clone(),
+            proxy_server.server_ca_manager.ca_cert.clone(),
+        ]),
         Some(traffic_proxy),
     )?;
 

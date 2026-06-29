@@ -31,9 +31,7 @@ impl TrafficFilterHistoryDao {
 
     pub async fn replace(&self, entries: Vec<String>) -> Result<TrafficFilterHistory> {
         let sanitized = sanitize_entries(entries);
-        let history = TrafficFilterHistory {
-            entries: sanitized,
-        };
+        let history = TrafficFilterHistory { entries: sanitized };
         write_json_atomic(&self.path(), &history).await?;
         Ok(history)
     }
@@ -47,7 +45,9 @@ impl TrafficFilterHistoryDao {
         let mut history = self.get().await?;
         history.entries.retain(|entry| entry != trimmed);
         history.entries.insert(0, trimmed.to_string());
-        history.entries.truncate(DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT);
+        history
+            .entries
+            .truncate(DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT);
         write_json_atomic(&self.path(), &history).await?;
         Ok(history)
     }
@@ -108,7 +108,10 @@ mod tests {
 
         let history = dao.get().await.unwrap();
         assert_eq!(history.entries.len(), DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT);
-        assert_eq!(history.entries[0], format!("v{}", DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT + 4));
+        assert_eq!(
+            history.entries[0],
+            format!("v{}", DEFAULT_TRAFFIC_FILTER_HISTORY_LIMIT + 4)
+        );
     }
 
     #[tokio::test]

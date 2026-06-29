@@ -20,12 +20,14 @@ async fn matches_new_schema_rule() -> Result<()> {
     let store = DataStore::new(dir.path()).await?;
     let dao = RequestProcessingDao::new(store.clone());
 
-    let mut rule = RequestRule::default();
-    rule.name = "dsl rule".to_string();
-    rule.priority = 100;
-    rule.capture = CaptureRule {
-        id: None,
-        match_expr: "example.com AND /api AND -X GET".to_string(),
+    let rule = RequestRule {
+        name: "dsl rule".to_string(),
+        priority: 100,
+        capture: CaptureRule {
+            id: None,
+            match_expr: "example.com AND /api AND -X GET".to_string(),
+        },
+        ..Default::default()
     };
 
     let rule_id = dao.create_rule(rule).await?;
@@ -82,4 +84,3 @@ async fn old_schema_rule_file_causes_load_error() -> Result<()> {
     );
     Ok(())
 }
-

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::format::validate_dsl_document;
-use crate::highlight::{collect_highlights, HighlightSpan};
+use crate::highlight::{HighlightSpan, collect_highlights};
 use crate::parser::parse_program;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

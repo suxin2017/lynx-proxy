@@ -1,8 +1,8 @@
 use anyhow::Result;
 use axum::body::Body;
 use axum::extract::Request;
-use lynx_storage::dao::capture_rules_dao::{CaptureRule, CaptureRuleKind, CaptureRulesDao};
 use lynx_storage::DataStore;
+use lynx_storage::dao::capture_rules_dao::{CaptureRule, CaptureRuleKind, CaptureRulesDao};
 use tempfile::TempDir;
 
 use lynx_core::layers::message_package_layer::capture_gate::{CaptureDecision, CaptureGate};
@@ -83,7 +83,9 @@ async fn capture_gate_ignore_overrides_focus() -> Result<()> {
 
     let req = req_with_store("http://example.com/hello", store);
     let decision = CaptureGate::decide(&req).await?;
-    assert!(matches!(decision, CaptureDecision::Bypass { reason: "ignored" }));
+    assert!(matches!(
+        decision,
+        CaptureDecision::Bypass { reason: "ignored" }
+    ));
     Ok(())
 }
-

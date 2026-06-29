@@ -4,9 +4,7 @@ use serde::Deserialize;
 
 use crate::dao::api_studio::error::{ApiStudioError, storage as storage_err};
 use crate::dao::api_studio::ids::new_id;
-use crate::models::api_studio::{
-    ApiStudioDraft, HttpMethod, KeyValueRow, RequestSettings,
-};
+use crate::models::api_studio::{ApiStudioDraft, HttpMethod, KeyValueRow, RequestSettings};
 use crate::storage::{DataStore, read_json, write_json_atomic};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -45,7 +43,11 @@ impl DraftStore {
             .map_err(storage_err)
     }
 
-    pub async fn save(&self, id: &str, req: SaveDraftRequest) -> Result<ApiStudioDraft, ApiStudioError> {
+    pub async fn save(
+        &self,
+        id: &str,
+        req: SaveDraftRequest,
+    ) -> Result<ApiStudioDraft, ApiStudioError> {
         let now = chrono::Utc::now().timestamp_millis();
         let path = self.store.api_studio_draft_path(id);
         let draft = if path.exists() {
@@ -87,7 +89,10 @@ impl DraftStore {
         Ok(draft)
     }
 
-    pub async fn create_default(&self, name: impl Into<String>) -> Result<ApiStudioDraft, ApiStudioError> {
+    pub async fn create_default(
+        &self,
+        name: impl Into<String>,
+    ) -> Result<ApiStudioDraft, ApiStudioError> {
         let id = new_id();
         self.save(
             &id,
@@ -111,9 +116,7 @@ impl DraftStore {
         if !path.exists() {
             return Ok(false);
         }
-        tokio::fs::remove_file(&path)
-            .await
-            .map_err(storage_err)?;
+        tokio::fs::remove_file(&path).await.map_err(storage_err)?;
         Ok(true)
     }
 }

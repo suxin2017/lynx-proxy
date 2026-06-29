@@ -4,9 +4,9 @@ use anyhow::Result;
 use clap::{Args as ClapArgs, Parser, Subcommand, ValueEnum};
 use directories::ProjectDirs;
 
-pub mod daemon;
 pub mod cert;
 pub mod cert_cmd;
+pub mod daemon;
 pub mod log_config;
 pub mod proxy_server_app;
 pub mod rules_cmd;

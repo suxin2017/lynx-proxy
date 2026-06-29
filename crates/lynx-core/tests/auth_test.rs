@@ -104,11 +104,7 @@ async fn auth_login_and_access_protected_routes() -> Result<()> {
     socket
         .send(Message::Text(request.to_string().into()))
         .await?;
-    let response = socket
-        .next()
-        .await
-        .expect("ws response")?
-        .into_text()?;
+    let response = socket.next().await.expect("ws response")?.into_text()?;
     let frame: serde_json::Value = serde_json::from_str(&response)?;
     assert_eq!(frame["kind"], "response");
     Ok(())

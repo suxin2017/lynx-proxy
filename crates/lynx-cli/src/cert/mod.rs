@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, bail};
-use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 use lynx_cert::cert_sha256_fingerprint;
+use lynx_core::proxy_server::server_ca_manage::ServerCaManagerBuilder;
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -226,16 +226,12 @@ pub mod platform {
                 if let Some(fp) = &report.disk_fingerprint {
                     println!("SHA-256 (disk): {fp}");
                 }
-                if let Some(cert) = report
-                    .keychain_certificates
-                    .iter()
-                    .find(|cert| {
-                        report
-                            .disk_fingerprint
-                            .as_ref()
-                            .is_some_and(|fp| fingerprints_match(&cert.sha256, fp))
-                    })
-                {
+                if let Some(cert) = report.keychain_certificates.iter().find(|cert| {
+                    report
+                        .disk_fingerprint
+                        .as_ref()
+                        .is_some_and(|fp| fingerprints_match(&cert.sha256, fp))
+                }) {
                     println!("SHA-256 (keychain): {}", cert.sha256);
                 }
             }

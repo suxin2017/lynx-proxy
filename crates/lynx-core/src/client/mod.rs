@@ -3,17 +3,12 @@ pub mod request_client;
 pub mod reqwest_client;
 pub mod websocket_client;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum ProxyType {
+    #[default]
     None,
     System,
     Custom(String), // URL
-}
-
-impl Default for ProxyType {
-    fn default() -> Self {
-        ProxyType::None
-    }
 }
 
 impl ProxyType {

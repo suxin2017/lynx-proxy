@@ -144,9 +144,7 @@ pub async fn list_history(
     Query(query): Query<HistoryListQuery>,
 ) -> CoreResult<Json<HistoryListResponse>> {
     let entries = studio(&state)
-        .list_history(HistoryListParams {
-            limit: query.limit,
-        })
+        .list_history(HistoryListParams { limit: query.limit })
         .await
         .map_err(map_err)?;
     Ok(Json(HistoryListResponse { entries }))
@@ -156,10 +154,7 @@ pub async fn append_history(
     State(state): State<RouteState>,
     Json(body): Json<CreateHistoryEntry>,
 ) -> CoreResult<(StatusCode, Json<HistoryEntry>)> {
-    let entry = studio(&state)
-        .append_history(body)
-        .await
-        .map_err(map_err)?;
+    let entry = studio(&state).append_history(body).await.map_err(map_err)?;
     Ok((StatusCode::CREATED, Json(entry)))
 }
 
@@ -180,7 +175,9 @@ pub async fn delete_history_entry(
     }
 }
 
-pub async fn clear_history(State(state): State<RouteState>) -> CoreResult<Json<ClearHistoryResponse>> {
+pub async fn clear_history(
+    State(state): State<RouteState>,
+) -> CoreResult<Json<ClearHistoryResponse>> {
     let deleted = studio(&state).clear_history().await.map_err(map_err)?;
     Ok(Json(ClearHistoryResponse { deleted }))
 }

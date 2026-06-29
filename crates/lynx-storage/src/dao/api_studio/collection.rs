@@ -99,9 +99,9 @@ impl CollectionStore {
             (CollectionKind::Collection, Some(_)) => Err(ApiStudioError::Validation(
                 "collection nodes must be at the root".into(),
             )),
-            (CollectionKind::Folder | CollectionKind::Request, None) => Err(ApiStudioError::Validation(
-                "folder and request nodes require a parent".into(),
-            )),
+            (CollectionKind::Folder | CollectionKind::Request, None) => Err(
+                ApiStudioError::Validation("folder and request nodes require a parent".into()),
+            ),
             (CollectionKind::Folder | CollectionKind::Request, Some(pid)) => {
                 let Some(parent) = Self::find_node(file, pid) else {
                     return Err(ApiStudioError::NotFound(format!("parent node {pid}")));
@@ -116,11 +116,7 @@ impl CollectionStore {
         }
     }
 
-    fn would_create_cycle(
-        file: &CollectionFile,
-        node_id: &str,
-        target_parent_id: &str,
-    ) -> bool {
+    fn would_create_cycle(file: &CollectionFile, node_id: &str, target_parent_id: &str) -> bool {
         if node_id == target_parent_id {
             return true;
         }
@@ -142,25 +138,27 @@ impl CollectionStore {
     ) {
         let now = chrono::Utc::now().timestamp_millis();
         for node in nodes.iter_mut() {
-            if &node.parent_id == parent_id {
-                if let Some(order) = node.order {
-                    if order >= from_order {
-                        node.order = Some(order + delta);
-                        node.updated_at = now;
-                    }
-                }
+            if &node.parent_id == parent_id
+                && let Some(order) = node.order
+                && order >= from_order
+            {
+                node.order = Some(order + delta);
+                node.updated_at = now;
             }
         }
     }
 
-    pub async fn create(&self, req: CreateCollectionNode) -> Result<CollectionNode, ApiStudioError> {
+    pub async fn create(
+        &self,
+        req: CreateCollectionNode,
+    ) -> Result<CollectionNode, ApiStudioError> {
         let mut file = self.load().await?;
         Self::validate_parent_kind(&file, &req.kind, &req.parent_id)?;
 
-        if let Some(parent_id) = &req.parent_id {
-            if Self::find_node(&file, parent_id).is_none() {
-                return Err(ApiStudioError::NotFound(format!("parent node {parent_id}")));
-            }
+        if let Some(parent_id) = &req.parent_id
+            && Self::find_node(&file, parent_id).is_none()
+        {
+            return Err(ApiStudioError::NotFound(format!("parent node {parent_id}")));
         }
 
         let id = new_id();
@@ -172,9 +170,7 @@ impl CollectionStore {
                 let draft_id = new_id();
                 self.drafts.save(&draft_id, draft_req).await?
             } else {
-                self.drafts
-                    .create_default(req.name.clone())
-                    .await?
+                self.drafts.create_default(req.name.clone()).await?
             };
             (Some(draft.id), req.method.or(Some(draft.method)))
         } else {
@@ -235,7 +231,9 @@ impl CollectionStore {
                 return Err(ApiStudioError::NotFound(format!("parent node {parent_id}")));
             }
             if Self::would_create_cycle(&file, id, parent_id) {
-                return Err(ApiStudioError::Validation("move would create a cycle".into()));
+                return Err(ApiStudioError::Validation(
+                    "move would create a cycle".into(),
+                ));
             }
             Self::validate_parent_kind(&file, &node_kind, &req.new_parent_id)?;
         } else {
@@ -255,8 +253,7 @@ impl CollectionStore {
                 .ok_or_else(|| ApiStudioError::NotFound(format!("sibling node {before_id}")))?
                 .order
                 .unwrap_or(0);
-            if Self::find_node(&file, before_id)
-                .map(|n| n.parent_id.as_ref())
+            if Self::find_node(&file, before_id).map(|n| n.parent_id.as_ref())
                 != Some(new_parent.as_ref())
             {
                 return Err(ApiStudioError::Validation(
@@ -269,9 +266,7 @@ impl CollectionStore {
             Self::max_order(&file, &new_parent) + 1
         };
 
-        if old_parent != new_parent {
-            Self::shift_sibling_orders(&mut file.nodes, &old_parent, old_order + 1, -1);
-        } else if old_order < new_order {
+        if old_parent != new_parent || old_order < new_order {
             Self::shift_sibling_orders(&mut file.nodes, &old_parent, old_order + 1, -1);
         } else if old_order > new_order {
             Self::shift_sibling_orders(&mut file.nodes, &old_parent, new_order, 1);
@@ -290,7 +285,11 @@ impl CollectionStore {
         Ok(updated)
     }
 
-    async fn delete_subtree(&self, file: &mut CollectionFile, id: &str) -> Result<(), ApiStudioError> {
+    async fn delete_subtree(
+        &self,
+        file: &mut CollectionFile,
+        id: &str,
+    ) -> Result<(), ApiStudioError> {
         let children: Vec<String> = file
             .nodes
             .iter()
@@ -302,10 +301,10 @@ impl CollectionStore {
             Box::pin(self.delete_subtree(file, &child_id)).await?;
         }
 
-        if let Some(node) = file.nodes.iter().find(|n| n.id == id) {
-            if let Some(draft_id) = &node.draft_id {
-                let _ = self.drafts.delete(draft_id).await?;
-            }
+        if let Some(node) = file.nodes.iter().find(|n| n.id == id)
+            && let Some(draft_id) = &node.draft_id
+        {
+            let _ = self.drafts.delete(draft_id).await?;
         }
 
         file.nodes.retain(|n| n.id != id);

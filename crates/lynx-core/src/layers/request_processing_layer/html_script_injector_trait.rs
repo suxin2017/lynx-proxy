@@ -105,7 +105,7 @@ impl HandlerTrait for HtmlScriptInjectorConfig {
         // Remove content-encoding header since we're returning uncompressed content
         response.headers_mut().remove(CONTENT_ENCODING);
         response.headers_mut().remove(CONTENT_LENGTH);
-        
+
         // Remove cache-related headers to prevent caching of modified content
         response.headers_mut().remove("cache-control");
         response.headers_mut().remove("etag");
@@ -162,10 +162,10 @@ impl HtmlScriptInjectorExt for HtmlScriptInjectorConfig {
         }
 
         // Generate content tag if content is specified and not empty
-        if let Some(ref content) = self.content {
-            if !content.trim().is_empty() {
-                return content.clone();
-            }
+        if let Some(ref content) = self.content
+            && !content.trim().is_empty()
+        {
+            return content.clone();
         }
 
         String::new()
@@ -173,19 +173,19 @@ impl HtmlScriptInjectorExt for HtmlScriptInjectorConfig {
 
     fn inject_in_head(&self, html: &str, content_tag: &str) -> String {
         // Try to inject before </head>
-        if let Ok(re) = Regex::new(r"(?i)</head>") {
-            if re.is_match(html) {
-                return re
-                    .replace(html, &format!("{}</head>", content_tag))
-                    .to_string();
-            }
+        if let Ok(re) = Regex::new(r"(?i)</head>")
+            && re.is_match(html)
+        {
+            return re
+                .replace(html, &format!("{}</head>", content_tag))
+                .to_string();
         }
 
         // Fallback: inject after <head>
-        if let Ok(re) = Regex::new(r"(?i)<head[^>]*>") {
-            if re.is_match(html) {
-                return re.replace(html, &format!("$0{}", content_tag)).to_string();
-            }
+        if let Ok(re) = Regex::new(r"(?i)<head[^>]*>")
+            && re.is_match(html)
+        {
+            return re.replace(html, &format!("$0{}", content_tag)).to_string();
         }
 
         // Last resort: inject at the beginning of HTML
@@ -194,10 +194,10 @@ impl HtmlScriptInjectorExt for HtmlScriptInjectorConfig {
 
     fn inject_in_body_start(&self, html: &str, content_tag: &str) -> String {
         // Try to inject after <body>
-        if let Ok(re) = Regex::new(r"(?i)<body[^>]*>") {
-            if re.is_match(html) {
-                return re.replace(html, &format!("$0{}", content_tag)).to_string();
-            }
+        if let Ok(re) = Regex::new(r"(?i)<body[^>]*>")
+            && re.is_match(html)
+        {
+            return re.replace(html, &format!("$0{}", content_tag)).to_string();
         }
 
         // Fallback: inject at the beginning of HTML
@@ -206,12 +206,12 @@ impl HtmlScriptInjectorExt for HtmlScriptInjectorConfig {
 
     fn inject_in_body_end(&self, html: &str, content_tag: &str) -> String {
         // Try to inject before </body>
-        if let Ok(re) = Regex::new(r"(?i)</body>") {
-            if re.is_match(html) {
-                return re
-                    .replace(html, &format!("{}</body>", content_tag))
-                    .to_string();
-            }
+        if let Ok(re) = Regex::new(r"(?i)</body>")
+            && re.is_match(html)
+        {
+            return re
+                .replace(html, &format!("{}</body>", content_tag))
+                .to_string();
         }
 
         // Fallback: inject at the end of HTML

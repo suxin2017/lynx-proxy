@@ -40,6 +40,4 @@ impl GeneralSettingDao {
     pub async fn update_general_setting(&self, setting: GeneralSetting) -> Result<()> {
         write_json_atomic(&self.path(), &setting).await
     }
-
 }
-

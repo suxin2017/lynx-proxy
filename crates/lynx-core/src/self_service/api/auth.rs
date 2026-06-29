@@ -1,12 +1,12 @@
 use axum::Json;
+use axum::Router;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::{get, post};
-use axum::Router;
 use serde::{Deserialize, Serialize};
 
-use crate::self_service::auth::extract_bearer_token;
 use crate::self_service::RouteState;
+use crate::self_service::auth::extract_bearer_token;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,8 +55,7 @@ async fn status(
     let authed = if !auth.enabled {
         true
     } else {
-        extract_bearer_token(&headers)
-            .is_some_and(|token| auth.validate_token(&token).is_ok())
+        extract_bearer_token(&headers).is_some_and(|token| auth.validate_token(&token).is_ok())
     };
 
     Json(AuthStatusResponse {

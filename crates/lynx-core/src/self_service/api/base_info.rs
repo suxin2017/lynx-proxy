@@ -1,7 +1,7 @@
 use crate::error::CoreError;
 use crate::self_service::RouteState;
-use axum::{Json, extract::State, routing::get};
 use axum::Router;
+use axum::{Json, extract::State, routing::get};
 
 async fn get_base_info(
     State(RouteState {

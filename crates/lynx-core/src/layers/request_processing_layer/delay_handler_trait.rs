@@ -65,7 +65,10 @@ impl HandlerTrait for DelayHandlerConfig {
                     self.delay_ms
                 };
 
-                tracing::trace!("Applying {}ms delay after request processing", actual_delay_ms);
+                tracing::trace!(
+                    "Applying {}ms delay after request processing",
+                    actual_delay_ms
+                );
                 sleep(Duration::from_millis(actual_delay_ms)).await;
             }
             DelayType::Both => {
@@ -79,7 +82,10 @@ impl HandlerTrait for DelayHandlerConfig {
                 };
 
                 let half_delay = actual_delay_ms / 2;
-                tracing::trace!("Applying remaining {}ms delay after request processing", half_delay);
+                tracing::trace!(
+                    "Applying remaining {}ms delay after request processing",
+                    half_delay
+                );
                 sleep(Duration::from_millis(half_delay)).await;
             }
             DelayType::BeforeRequest => {
@@ -94,11 +100,11 @@ impl HandlerTrait for DelayHandlerConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::full;
     use anyhow::Result;
     use axum::http::Method;
     use http::Request;
     use std::time::Instant;
-    use crate::utils::full;
 
     #[tokio::test]
     async fn test_delay_handler_before_request() -> Result<()> {
