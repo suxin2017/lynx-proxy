@@ -63,9 +63,18 @@ async fn main() -> Result<()> {
             let manager = DaemonManager::new(None)?;
             manager.stop_daemon()?;
         }
-        Commands::Restart => {
+        Commands::Restart {
+            port,
+            data_dir,
+            log_level,
+            local_only,
+            user,
+            pass,
+        } => {
             let manager = DaemonManager::new(None)?;
-            manager.restart_daemon().await?;
+            manager
+                .restart_daemon(port, data_dir, log_level, local_only, user, pass)
+                .await?;
         }
         Commands::Status => {
             let manager = DaemonManager::new(None)?;

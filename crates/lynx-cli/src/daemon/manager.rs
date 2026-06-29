@@ -144,7 +144,37 @@ impl DaemonManager {
         Ok(())
     }
 
-    pub async fn restart_daemon(&self) -> Result<()> {
+    /// Resolve restart parameters by merging CLI-provided values with saved status.
+    /// CLI values take precedence; if not provided, saved values are used.
+    fn resolve_restart_params(
+        cli_port: Option<u16>,
+        cli_data_dir: Option<String>,
+        cli_log_level: Option<LogLevel>,
+        cli_local_only: Option<bool>,
+        cli_auth_user: Option<String>,
+        cli_auth_pass: Option<String>,
+        saved: &DaemonStatus,
+    ) -> (u16, String, LogLevel, bool, Option<String>, Option<String>) {
+        let port = cli_port.unwrap_or(saved.port);
+        let data_dir = cli_data_dir
+            .unwrap_or_else(|| saved.data_dir.to_string_lossy().to_string());
+        let log_level = cli_log_level.unwrap_or(saved.log_level);
+        let local_only = cli_local_only.unwrap_or(saved.local_only);
+        let auth_user = cli_auth_user.or_else(|| saved.auth_user.clone());
+        let auth_pass = cli_auth_pass.or_else(|| saved.auth_pass.clone());
+
+        (port, data_dir, log_level, local_only, auth_user, auth_pass)
+    }
+
+    pub async fn restart_daemon(
+        &self,
+        port: Option<u16>,
+        data_dir: Option<String>,
+        log_level: Option<LogLevel>,
+        local_only: Option<bool>,
+        auth_user: Option<String>,
+        auth_pass: Option<String>,
+    ) -> Result<()> {
         println!("{}", style("Restarting Lynx proxy service...").cyan());
 
         // Get current configuration
@@ -152,12 +182,17 @@ impl DaemonManager {
             anyhow!("No Lynx proxy service status found. Use 'daemon start' instead.")
         })?;
 
-        let port = current_status.port;
-        let data_dir = Some(current_status.data_dir.to_string_lossy().to_string());
-        let log_level = current_status.log_level;
-        let local_only = current_status.local_only;
-        let auth_user = current_status.auth_user.clone();
-        let auth_pass = current_status.auth_pass.clone();
+        // Use provided values or fall back to saved status
+        let (port, data_dir, log_level, local_only, auth_user, auth_pass) =
+            Self::resolve_restart_params(
+            port,
+            data_dir,
+            log_level,
+            local_only,
+            auth_user,
+            auth_pass,
+            &current_status,
+        );
 
         // Stop the daemon
         if let Err(e) = self.stop_daemon() {
@@ -168,7 +203,7 @@ impl DaemonManager {
         std::thread::sleep(std::time::Duration::from_millis(500));
 
         // Start the daemon again
-        self.start_daemon(port, data_dir, log_level, local_only, auth_user, auth_pass).await?;
+        self.start_daemon(port, Some(data_dir), log_level, local_only, auth_user, auth_pass).await?;
 
         println!(
             "{}",
@@ -188,7 +223,9 @@ impl DaemonManager {
         match self.get_status() {
             Ok(status) => {
                 println!("{}", style("=== Lynx Proxy Service Status ===").bold());
-                println!("PID: {}", style(status.pid).cyan());
+                if status.is_running() {
+                    println!("PID: {}", style(status.pid).cyan());
+                }
                 println!("Port: {}", style(status.port).cyan());
                 println!("Status: {}", self.format_status(&status));
                 println!(
@@ -209,12 +246,14 @@ impl DaemonManager {
                     );
                 }
 
-                if let Ok(_start_time) = status.start_time.duration_since(std::time::UNIX_EPOCH) {
-                    let formatted_time = self.format_start_time(&status.start_time);
-                    println!(
-                        "Running: {}",
-                        style(formatted_time).cyan()
-                    );
+                if status.is_running() {
+                    if let Ok(_start_time) = status.start_time.duration_since(std::time::UNIX_EPOCH) {
+                        let formatted_time = self.format_start_time(&status.start_time);
+                        println!(
+                            "Running: {}",
+                            style(formatted_time).cyan()
+                        );
+                    }
                 }
 
                 // Check if process is actually running
@@ -542,6 +581,106 @@ mod tests {
 
     fn create_test_manager() -> DaemonManager {
         DaemonManager::new(Some(PathBuf::from("/tmp/test_lynx")),).unwrap()
+    }
+
+    fn test_status() -> DaemonStatus {
+        DaemonStatus::new(
+            12345,
+            7788,
+            PathBuf::from("/tmp/test_lynx"),
+            LogLevel::Info,
+            false,
+            Some("admin".to_string()),
+            Some("pass123".to_string()),
+        )
+    }
+
+    // --- resolve_restart_params tests ---
+
+    #[test]
+    fn test_restart_params_all_provided() {
+        let saved = test_status();
+        let (port, data_dir, log_level, local_only, auth_user, auth_pass) =
+            DaemonManager::resolve_restart_params(
+                Some(9090),
+                Some("/new/data".to_string()),
+                Some(LogLevel::Debug),
+                Some(true),
+                Some("new_user".to_string()),
+                Some("new_pass".to_string()),
+                &saved,
+            );
+
+        assert_eq!(port, 9090);
+        assert_eq!(data_dir, "/new/data");
+        assert_eq!(log_level, LogLevel::Debug);
+        assert!(local_only);
+        assert_eq!(auth_user, Some("new_user".to_string()));
+        assert_eq!(auth_pass, Some("new_pass".to_string()));
+    }
+
+    #[test]
+    fn test_restart_params_all_fallback() {
+        let saved = test_status();
+        let (port, data_dir, log_level, local_only, auth_user, auth_pass) =
+            DaemonManager::resolve_restart_params(None, None, None, None, None, None, &saved);
+
+        assert_eq!(port, 7788);
+        assert_eq!(data_dir, "/tmp/test_lynx");
+        assert_eq!(log_level, LogLevel::Info);
+        assert!(!local_only);
+        assert_eq!(auth_user, Some("admin".to_string()));
+        assert_eq!(auth_pass, Some("pass123".to_string()));
+    }
+
+    #[test]
+    fn test_restart_params_partial_override() {
+        let saved = test_status();
+        let (port, data_dir, log_level, local_only, auth_user, auth_pass) =
+            DaemonManager::resolve_restart_params(
+                Some(9090),
+                None,
+                None,
+                Some(true),
+                None,
+                None,
+                &saved,
+            );
+
+        assert_eq!(port, 9090);
+        assert_eq!(data_dir, "/tmp/test_lynx");
+        assert_eq!(log_level, LogLevel::Info);
+        assert!(local_only);
+        assert_eq!(auth_user, Some("admin".to_string()));
+        assert_eq!(auth_pass, Some("pass123".to_string()));
+    }
+
+    #[test]
+    fn test_restart_params_override_auth() {
+        let saved = test_status();
+        let (port, _data_dir, _log_level, _local_only, auth_user, auth_pass) =
+            DaemonManager::resolve_restart_params(
+                None, None, None, None,
+                Some("override_user".to_string()),
+                Some("override_pass".to_string()),
+                &saved,
+            );
+
+        assert_eq!(port, 7788);
+        assert_eq!(auth_user, Some("override_user".to_string()));
+        assert_eq!(auth_pass, Some("override_pass".to_string()));
+    }
+
+    #[test]
+    fn test_restart_params_no_auth_in_saved() {
+        let mut saved = test_status();
+        saved.auth_user = None;
+        saved.auth_pass = None;
+        let (_, _, _, _, auth_user, auth_pass) =
+            DaemonManager::resolve_restart_params(None, None, None, None, None, None, &saved);
+
+        assert_eq!(auth_user, None);
+        assert_eq!(auth_pass, None);
     }
 
     #[test]

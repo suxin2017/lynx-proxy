@@ -65,8 +65,33 @@ pub enum Commands {
     },
     /// Stop the background proxy service
     Stop,
-    /// Restart the background proxy service
-    Restart,
+    /// Restart the background proxy service.
+    /// All parameters are optional — defaults to saved values from the running daemon.
+    Restart {
+        /// proxy server port (keeps saved value if not specified)
+        #[arg(long)]
+        port: Option<u16>,
+
+        /// data dir (keeps saved value if not specified)
+        #[arg(long)]
+        data_dir: Option<String>,
+
+        /// Log level for the proxy server (keeps saved value if not specified)
+        #[arg(long, value_enum)]
+        log_level: Option<LogLevel>,
+
+        /// Enable local only mode (keeps saved value if not specified)
+        #[arg(long)]
+        local_only: Option<bool>,
+
+        /// Self-service login username (optional; requires --pass)
+        #[arg(long, short = 'u')]
+        user: Option<String>,
+
+        /// Self-service login password (optional; requires --user)
+        #[arg(long, short = 'p')]
+        pass: Option<String>,
+    },
     /// Show background proxy service status
     Status,
     /// Start the proxy server in foreground mode
